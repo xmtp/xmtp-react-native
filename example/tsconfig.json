@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "xmtp-react-native-sdk": ["../src/index"],
+      "xmtp-react-native-sdk/*": ["../src/*"]
+    }
+  }
+}
