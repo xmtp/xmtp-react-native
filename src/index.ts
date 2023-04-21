@@ -1,26 +1,19 @@
-import { NativeModulesProxy, EventEmitter, Subscription } from 'expo-modules-core';
+import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 
 // Import the native module. On web, it will be resolved to XMTP.web.ts
 // and on native platforms to XMTP.ts
-import XMTPModule from './XMTPModule';
-import XMTPView from './XMTPView';
-import { ChangeEventPayload, XMTPViewProps } from './XMTP.types';
+import XMTPModule from "./XMTPModule";
 
-// Get the native constant value.
-export const PI = XMTPModule.PI;
-
-export function hello(): string {
-  return XMTPModule.hello();
+export function address(): string {
+  return XMTPModule.address();
 }
 
-export async function setValueAsync(value: string) {
-  return await XMTPModule.setValueAsync(value);
+export async function auth(address: string) {
+  return await XMTPModule.auth(address);
 }
 
-const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);
-
-export function addChangeListener(listener: (event: ChangeEventPayload) => void): Subscription {
-  return emitter.addListener<ChangeEventPayload>('onChange', listener);
+export async function receiveSignature(requestID: string, signature: string) {
+  return await XMTPModule.receiveSignature(requestID, signature);
 }
 
-export { XMTPView, XMTPViewProps, ChangeEventPayload };
+export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);

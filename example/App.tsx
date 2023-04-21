@@ -1,20 +1,32 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ThirdwebProvider } from "@thirdweb-dev/react-native";
+import React, { useState } from "react";
+import { SafeAreaView, StyleSheet } from "react-native";
+import * as XMTPModule from "xmtp-react-native-sdk";
 
-import * as XMTP from 'xmtp-react-native-sdk';
+import AuthView from "./src/AuthView";
+import HomeView from "./src/HomeView";
 
 export default function App() {
+  const [authed, setAuthed] = useState<boolean>(false);
+
+  XMTPModule.emitter.addListener("authed", () => {
+    setAuthed(true);
+  });
+
   return (
-    <View style={styles.container}>
-      <Text>{XMTP.hello()}</Text>
-    </View>
+    <ThirdwebProvider activeChain="mainnet">
+      <SafeAreaView style={{ flexGrow: 1 }}>
+        {authed ? <HomeView /> : <AuthView />}
+      </SafeAreaView>
+    </ThirdwebProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

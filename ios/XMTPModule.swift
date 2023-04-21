@@ -1,44 +1,90 @@
 import ExpoModulesCore
+import XMTP
+
+class ReactNativeSigner: NSObject, XMTP.SigningKey {
+	enum Error: Swift.Error {
+		case invalidSignature
+	}
+
+	var module: XMTPModule
+	var address: String
+	var continuations: [String: CheckedContinuation<XMTP.Signature, Swift.Error>] = [:]
+
+	init(module: XMTPModule, address: String) {
+		self.module = module
+		self.address = address
+	}
+
+	func handle(id: String, signature: String) throws {
+		guard let continuation = continuations[id] else {
+			return
+		}
+
+		guard let signatureData = Data(base64Encoded: Data(signature.utf8)), signatureData.count == 65 else {
+			continuation.resume(throwing: Error.invalidSignature)
+			continuations.removeValue(forKey: id)
+			return
+		}
+
+		let signature = XMTP.Signature.with {
+			$0.ecdsaCompact.bytes = signatureData[0 ..< 64]
+			$0.ecdsaCompact.recovery = UInt32(signatureData[64])
+		}
+
+		continuation.resume(returning: signature)
+		continuations.removeValue(forKey: id)
+	}
+
+	func sign(_ data: Data) async throws -> XMTP.Signature {
+		let request = SignatureRequest(message: String(data: data, encoding: .utf8)!)
+
+		module.sendEvent("sign", [
+			"id": request.id,
+			"message": request.message
+		])
+
+		return try await withCheckedThrowingContinuation { continuation in
+			continuations[request.id] = continuation
+		}
+	}
+
+	func sign(message: String) async throws -> XMTP.Signature {
+		return try await sign(Data(message.utf8))
+	}
+}
+
+struct SignatureRequest: Codable {
+	var id = UUID().uuidString
+	var message: String
+}
 
 public class XMTPModule: Module {
-  // Each module class must implement the definition function. The definition consists of components
-  // that describes the module's functionality and behavior.
-  // See https://docs.expo.dev/modules/module-api for more details about available components.
-  public func definition() -> ModuleDefinition {
-    // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
-    // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
-    // The module will be accessible from `requireNativeModule('XMTP')` in JavaScript.
+	var client: XMTP.Client?
+	var signer: ReactNativeSigner?
+
+	public func definition() -> ModuleDefinition {
     Name("XMTP")
 
-    // Sets constant properties on the module. Can take a dictionary or a closure that returns a dictionary.
-    Constants([
-      "PI": Double.pi
-    ])
+    Events("sign", "authed")
 
-    // Defines event names that the module can send to JavaScript.
-    Events("onChange")
-
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      return "Hello world! 👋"
+		Function("address") { () -> String in
+			if let client {
+				return client.address
+			} else {
+				return "No Client."
+			}
     }
 
-    // Defines a JavaScript function that always returns a Promise and whose native code
-    // is by default dispatched on the different thread than the JavaScript runtime runs on.
-    AsyncFunction("setValueAsync") { (value: String) in
-      // Send an event to JavaScript.
-      self.sendEvent("onChange", [
-        "value": value
-      ])
+    AsyncFunction("auth") { (address: String) in
+			let signer = ReactNativeSigner(module: self, address: address)
+			self.signer = signer
+			self.client = try await XMTP.Client.create(account: signer)
+			self.signer = nil
+			sendEvent("authed")
     }
 
-    // Enables the module to be used as a native view. Definition components that are accepted as part of the
-    // view definition: Prop, Events.
-    View(XMTPView.self) {
-      // Defines a setter for the `name` prop.
-      Prop("name") { (view: XMTPView, prop: String) in
-        print(prop)
-      }
-    }
+		Function("receiveSignature") { (requestID: String, signature: String) in
+			try signer?.handle(id: requestID, signature: signature)
+		}
   }
 }
