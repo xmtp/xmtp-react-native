@@ -88,7 +88,6 @@ public class XMTPModule: Module {
     }
 
 		AsyncFunction("listConversations") { () -> [String] in
-			print("LISTING CONVERSATIONS")
 			do {
 				guard let client else {
 					throw Error.noClient
@@ -96,14 +95,10 @@ public class XMTPModule: Module {
 
 				let conversations = try await client.conversations.list()
 
-				print("GOT CONVERSATIONS \(conversations)")
-
 				return try conversations.map { conversation in
-					print("WRAPPING CONVERSATION \(conversation)")
 					return try ConversationWrapper.encode(conversation)
 				}
 			} catch {
-				print("ERROR GETTING CONVOS: \(error)")
 				return []
 			}
 		}
