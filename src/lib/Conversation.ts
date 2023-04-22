@@ -1,5 +1,4 @@
 import { DecodedMessage } from "./DecodedMessage";
-
 import * as XMTP from "../index";
 
 export class Conversation {
