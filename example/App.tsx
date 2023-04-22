@@ -1,22 +1,22 @@
 import { ThirdwebProvider } from "@thirdweb-dev/react-native";
 import React, { useState } from "react";
 import { SafeAreaView, StyleSheet } from "react-native";
-import * as XMTPModule from "xmtp-react-native-sdk";
+import * as XMTP from "xmtp-react-native-sdk";
 
 import AuthView from "./src/AuthView";
 import HomeView from "./src/HomeView";
 
 export default function App() {
-  const [authed, setAuthed] = useState<boolean>(false);
-
-  XMTPModule.emitter.addListener("authed", () => {
-    setAuthed(true);
-  });
+  const [client, setClient] = useState<XMTP.Client | null>(null);
 
   return (
     <ThirdwebProvider activeChain="mainnet">
       <SafeAreaView style={{ flexGrow: 1 }}>
-        {authed ? <HomeView /> : <AuthView />}
+        {client != null ? (
+          <HomeView client={client} />
+        ) : (
+          <AuthView setClient={setClient} />
+        )}
       </SafeAreaView>
     </ThirdwebProvider>
   );

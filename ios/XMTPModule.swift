@@ -62,6 +62,10 @@ public class XMTPModule: Module {
 	var client: XMTP.Client?
 	var signer: ReactNativeSigner?
 
+	enum Error: Swift.Error {
+		case noClient
+	}
+
 	public func definition() -> ModuleDefinition {
     Name("XMTP")
 
@@ -82,6 +86,27 @@ public class XMTPModule: Module {
 			self.signer = nil
 			sendEvent("authed")
     }
+
+		AsyncFunction("listConversations") { () -> [String] in
+			print("LISTING CONVERSATIONS")
+			do {
+				guard let client else {
+					throw Error.noClient
+				}
+
+				let conversations = try await client.conversations.list()
+
+				print("GOT CONVERSATIONS \(conversations)")
+
+				return try conversations.map { conversation in
+					print("WRAPPING CONVERSATION \(conversation)")
+					return try ConversationWrapper.encode(conversation)
+				}
+			} catch {
+				print("ERROR GETTING CONVOS: \(error)")
+				return []
+			}
+		}
 
 		Function("receiveSignature") { (requestID: String, signature: String) in
 			try signer?.handle(id: requestID, signature: signature)
