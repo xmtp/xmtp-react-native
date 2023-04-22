@@ -1,31 +1,5 @@
 import { Conversation } from "./Conversation";
 import * as XMTPModule from "../index";
-import { EventEmitter } from "events";
-
-class EventIterable<T> {
-  private emitter = new EventEmitter();
-
-  constructor(private readonly eventName: string) {
-    this.eventName = eventName;
-  }
-
-  subscribe() {
-    XMTPModule.emitter.addListener(this.eventName, (value) => {
-      this.emitter.emit(this.eventName, value);
-    });
-  }
-
-  async *[Symbol.asyncIterator]() {
-    while (true) {
-      const value: T = await new Promise<T>((resolve) => {
-        this.emitter.once(this.eventName, resolve);
-      });
-
-      yield value;
-    }
-  }
-}
-
 export default class Conversations {
   private known = {} as { [topic: string]: boolean };
 
