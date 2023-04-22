@@ -2,6 +2,10 @@
 
 Wraps for native xmtp sdks for react native
 
+## NOTES
+
+- To use the example app, you need to `npm install --force`
+
 # API documentation
 
 - [Documentation for the main branch](https://github.com/expo/expo/blob/main/docs/pages/versions/unversioned/sdk/xmtp-react-native-sdk.md)
@@ -25,11 +29,8 @@ npm install xmtp-react-native-sdk
 
 Run `npx pod-install` after installing the npm package.
 
-
 ### Configure for Android
-
-
 
 # Contributing
 
-Contributions are very welcome! Please refer to guidelines described in the [contributing guide]( https://github.com/expo/expo#contributing).
+Contributions are very welcome! Please refer to guidelines described in the [contributing guide](https://github.com/expo/expo#contributing).

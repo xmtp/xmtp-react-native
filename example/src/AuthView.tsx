@@ -6,6 +6,7 @@
  */
 import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native";
 import React, { useEffect, Dispatch, SetStateAction } from "react";
+import { SafeAreaView, Button, ScrollView } from "react-native";
 import * as XMTP from "xmtp-react-native-sdk";
 
 function AuthView({
@@ -24,7 +25,19 @@ function AuthView({
     })();
   }, [signer]);
 
-  return <ConnectWallet />;
+  const generateWallet = async () => {
+    const client = await XMTP.Client.createRandom();
+    setClient(client);
+  };
+
+  return (
+    <SafeAreaView style={{ flexGrow: 1 }}>
+      <ScrollView style={{ flexGrow: 1 }}>
+        <ConnectWallet />
+        <Button title="Generate Wallet" onPress={generateWallet} />
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
 export default AuthView;

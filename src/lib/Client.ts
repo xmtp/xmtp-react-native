@@ -40,8 +40,13 @@ export class Client {
     });
   }
 
+  static async createRandom(): Promise<Client> {
+    const address = await XMTPModule.createRandom();
+    return new Client(address);
+  }
+
   constructor(address: string) {
     this.address = address;
-    this.conversations = new Conversations(this);
+    this.conversations = new Conversations();
   }
 }
