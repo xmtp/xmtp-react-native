@@ -1,6 +1,6 @@
 # xmtp-react-native-sdk
 
-Wraps for native xmtp sdks for react native
+Wrappers for native xmtp sdks for react native
 
 ## NOTES
 
