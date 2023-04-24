@@ -27,7 +27,8 @@
   },
   "release": {
     "branches": [
-      "main"
+      "main",
+      "release"
     ]
   },
   "author": "XMTP Labs <eng@xmtp.com>",
