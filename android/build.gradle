@@ -89,4 +89,5 @@ dependencies {
   implementation project(':expo-modules-core')
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${getKotlinVersion()}"
   implementation "org.xmtp:android:0.1.1"
+  implementation 'com.google.code.gson:gson:2.10.1'
 }

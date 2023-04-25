@@ -5,6 +5,8 @@ import android.util.Base64.NO_WRAP
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Conversation
