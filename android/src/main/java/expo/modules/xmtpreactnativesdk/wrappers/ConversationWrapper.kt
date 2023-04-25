@@ -12,7 +12,7 @@ class ConversationWrapper {
                 Pair("topic", model.topic),
                 Pair("peerAddress", model.peerAddress),
                 Pair("version", if (model.version == Conversation.Version.V1) "v1" else "v2"),
-                Pair("conversationId", model.conversationId)
+                Pair("conversationID", model.conversationId)
             )
             return gson.toJson(conversation)
         }

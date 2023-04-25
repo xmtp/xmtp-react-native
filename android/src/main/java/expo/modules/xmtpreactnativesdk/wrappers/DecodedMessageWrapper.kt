@@ -12,13 +12,7 @@ class DecodedMessageWrapper {
             val gson = GsonBuilder().create()
             val message = mapOf(
                 Pair("id", model.id),
-                Pair(
-                    "content", (try {
-                        model.content()
-                    } catch (e: Exception) {
-                        null
-                    }) ?: model.fallbackContent
-                ),
+                Pair("content", model.body),
                 Pair("senderAddress", model.senderAddress),
                 Pair("sent", model.sent)
             )
