@@ -10,14 +10,8 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Conversation
@@ -27,7 +21,6 @@ import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.proto.message.contents.SignatureOuterClass
-import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
@@ -180,7 +173,7 @@ class XMTPModule : Module() {
     //
     // Helpers
     //
-    fun findConversation(topic: String, conversationId: String?): Conversation? {
+    private fun findConversation(topic: String, conversationId: String?): Conversation? {
         if (client == null) {
             throw XMTPException("No client")
         }
@@ -203,7 +196,7 @@ class XMTPModule : Module() {
         return null
     }
 
-    fun subscribeToConversations() {
+    private fun subscribeToConversations() {
         if (client == null) {
             throw XMTPException("No client")
         }
@@ -230,8 +223,9 @@ class XMTPModule : Module() {
         }
     }
 
-    fun subscribeToMessages(topic: String, conversationId: String?) {
-        val conversation = findConversation(topic = topic, conversationId = conversationId) ?: return
+    private fun subscribeToMessages(topic: String, conversationId: String?) {
+        val conversation =
+            findConversation(topic = topic, conversationId = conversationId) ?: return
         subscriptions[conversation.cacheKey] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 conversation.streamMessages().collect { message ->
@@ -254,7 +248,7 @@ class XMTPModule : Module() {
         }
     }
 
-    fun unsubscribeFromMessages(topic: String, conversationId: String?) {
+    private fun unsubscribeFromMessages(topic: String, conversationId: String?) {
         val conversation =
             findConversation(topic = topic, conversationId = conversationId) ?: return
         subscriptions[conversation.cacheKey]?.cancel()
