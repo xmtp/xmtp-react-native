@@ -138,7 +138,7 @@ class XMTPModule : Module() {
             val conversation =
                 findConversation(topic = conversationTopic, conversationId = conversationID)
                     ?: throw XMTPException("no conversation found for $conversationTopic")
-            conversation.messages(after = Date())
+            conversation.messages()
                 .map { DecodedMessageWrapper.encode(it) }
         }
         // TODO: Support content types (?????)
@@ -231,11 +231,9 @@ class XMTPModule : Module() {
     }
 
     fun subscribeToMessages(topic: String, conversationId: String?) {
-        val conversation =
-            findConversation(topic = topic, conversationId = conversationId) ?: return
+        val conversation = findConversation(topic = topic, conversationId = conversationId) ?: return
         subscriptions[conversation.cacheKey] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client!!.conversations.stream()
                 conversation.streamMessages().collect { message ->
                     sendEvent(
                         "message",
