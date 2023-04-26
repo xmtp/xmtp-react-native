@@ -1,36 +1,66 @@
-# xmtp-react-native-sdk
+# xmtp-react-native
 
-Wrappers for native xmtp sdks for react native
+![Lint](https://github.com/xmtp/xmtp-android/actions/workflows/lint.yml/badge.svg) ![Status](https://img.shields.io/badge/Project_Status-Pre--Preview-red)
 
-## NOTES
+This repo provides a package you can use to build with XMTP in a React Native or Expo app.
 
-- To use the example app, you need to `npm install --force`
+> **Important:**  
+> This SDK is in **Pre-Preview** status and ready for you to start experimenting with.
+>
+> However, we do **not** recommend using Pre-Preview software in production apps. Software in this status will change as we add features and iterate based on feedback.
 
-# API documentation
+Currently, these are the features supported by this SDK:
 
-- [Documentation for the main branch](https://github.com/expo/expo/blob/main/docs/pages/versions/unversioned/sdk/xmtp-react-native-sdk.md)
-- [Documentation for the latest stable release](https://docs.expo.dev/versions/latest/sdk/xmtp-react-native-sdk/)
+- Create a `Client` from an ethers `Signer`
+- List conversations
+- List messages (unpaginated for now) in a conversation
+- Start a conversation
+- The SDK connects to the `dev` environment only. We are working on support for connecting to `production` and `local` environments. You can follow the work in [this issue](https://github.com/xmtp/xmtp-react-native/issues/4).
 
-# Installation in managed Expo projects
+We're still working on adding several features to bring this SDK to parity with the [XMTP client SDK for JavaScript](https://github.com/xmtp/xmtp-js) (`xmtp-js`). Here's a [list of features and issues](https://github.com/xmtp/xmtp-react-native/issues) we're working on.
 
-For [managed](https://docs.expo.dev/versions/latest/introduction/managed-vs-bare/) Expo projects, please follow the installation instructions in the [API documentation for the latest stable release](#api-documentation). If you follow the link and there is no documentation available then this library is not yet usable within managed projects &mdash; it is likely to be included in an upcoming Expo SDK release.
+Is there a feature you need that's not on the list? Please [open an issue](https://github.com/xmtp/xmtp-react-native/issues).
 
-# Installation in bare React Native projects
+Or better yet, open a PR and we'll get it reviewed and merged as soon as possible. If you contribute a PR that gets merged into this repo, you'll be eligible to [claim this XMTP contributor POAP](https://www.gitpoap.io/gp/1042)!
 
-For bare React Native projects, you must ensure that you have [installed and configured the `expo` package](https://docs.expo.dev/bare/installing-expo-modules/) before continuing.
+To learn more about XMTP and get answers to frequently asked questions, see [FAQ about XMTP](https://xmtp.org/docs/dev-concepts/faq).
+
+![x-red-sm](https://user-images.githubusercontent.com/510695/163488403-1fb37e86-c673-4b48-954e-8460ae4d4b05.png)
+
+## Example app
+
+This repo provides an [example app](example) that you can use to experiment and explore implementation details.
+
+To use the example app, run:
+
+```bash
+cd example
+npm install --force
+npm run [ios or android]
+```
+
+## Install in a managed Expo project
+
+```bash
+npx expo prebuild
+```
+
+## Install in bare React Native project
+
+For bare React Native projects, [install and configure the `expo` package](https://docs.expo.dev/bare/installing-expo-modules/) before continuing.
 
 ### Add the package to your npm dependencies
 
-```
-npm install xmtp-react-native-sdk
-```
+We're working on making the package installable using npm. You can follow the work in [this issue](https://github.com/xmtp/xmtp-react-native/pull/12).
 
 ### Configure for iOS
 
-Run `npx pod-install` after installing the npm package.
+```bash
+npx pod-install
+```
+
+Once the package is installable using npm, we'll test the end-to-end installation and provide more platform-specific configuration details.
 
 ### Configure for Android
 
-# Contributing
-
-Contributions are very welcome! Please refer to guidelines described in the [contributing guide](https://github.com/expo/expo#contributing).
+Once the package is installable using npm, we'll test the end-to-end installation and provide more platform-specific configuration details.
