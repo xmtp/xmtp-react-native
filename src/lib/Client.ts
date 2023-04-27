@@ -8,7 +8,7 @@ export class Client {
   address: string;
   conversations: Conversations;
 
-  static async create(signer: Signer): Promise<Client> {
+  static async create(signer: Signer, environment: 'local' | 'dev' | 'production'): Promise<Client> {
     return new Promise<Client>((resolve, reject) => {
       (async () => {
         XMTPModule.emitter.addListener(
@@ -35,13 +35,13 @@ export class Client {
           resolve(new Client(address));
         });
 
-        XMTPModule.auth(await signer.getAddress());
+        XMTPModule.auth(await signer.getAddress(), environment);
       })();
     });
   }
 
-  static async createRandom(): Promise<Client> {
-    const address = await XMTPModule.createRandom();
+  static async createRandom(environment: 'local' | 'dev' | 'production'): Promise<Client> {
+    const address = await XMTPModule.createRandom(environment);
     return new Client(address);
   }
 
