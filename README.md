@@ -65,4 +65,6 @@ We're working on testing the end-to-end installation and will provide more platf
 
 ### Configure for Android
 
+Your app must use Android `minSdkVersion = 22` to work with the `xmtp-react-native` SDK.
+
 We're working on testing the end-to-end installation and will provide more platform-specific configuration details.
