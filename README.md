@@ -51,7 +51,9 @@ For bare React Native projects, [install and configure the `expo` package](https
 
 ### Add the package to your npm dependencies
 
-We're working on making the package installable using npm. You can follow the work in [this issue](https://github.com/xmtp/xmtp-react-native/pull/12).
+```bash
+npm i @xmtp/react-native-sdk
+```
 
 ### Configure for iOS
 
@@ -59,8 +61,10 @@ We're working on making the package installable using npm. You can follow the wo
 npx pod-install
 ```
 
-Once the package is installable using npm, we'll test the end-to-end installation and provide more platform-specific configuration details.
+We're working on testing the end-to-end installation and will provide more platform-specific configuration details.
 
 ### Configure for Android
 
-Once the package is installable using npm, we'll test the end-to-end installation and provide more platform-specific configuration details.
+Your app must use Android `minSdkVersion = 22` to work with the `xmtp-react-native` SDK.
+
+We're working on testing the end-to-end installation and will provide more platform-specific configuration details.
