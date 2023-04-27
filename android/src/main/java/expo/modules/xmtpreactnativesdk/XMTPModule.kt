@@ -14,8 +14,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.xmtp.android.library.Client
+import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.SigningKey
+import org.xmtp.android.library.XMTPEnvironment
 import org.xmtp.android.library.XMTPException
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.PrivateKeyBuilder
@@ -75,6 +77,12 @@ val Conversation.cacheKey: String
     }
 
 class XMTPModule : Module() {
+    private val apiEnvironments = mapOf(
+        "local" to ClientOptions.Api(env = XMTPEnvironment.LOCAL, isSecure = false),
+        "dev" to ClientOptions.Api(env = XMTPEnvironment.DEV, isSecure = true),
+        "production" to ClientOptions.Api(env = XMTPEnvironment.PRODUCTION, isSecure = true)
+    )
+
     private var client: Client? = null
     private var signer: ReactNativeSigner? = null
     private val conversations: MutableMap<String, Conversation> = mutableMapOf()
@@ -95,10 +103,11 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String ->
+        AsyncFunction("auth") { address: String, environment: String ->
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
-            client = Client().create(account = reactSigner)
+            val options = ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
+            client = Client().create(account = reactSigner, options = options)
             signer = null
             sendEvent("authed")
         }
@@ -106,9 +115,10 @@ class XMTPModule : Module() {
             signer?.handle(id = requestID, signature = signature)
         }
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") {
+        AsyncFunction("createRandom") { environment: String ->
             val privateKey = PrivateKeyBuilder()
-            val randomClient = Client().create(account = privateKey)
+            val options = ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
+            val randomClient = Client().create(account = privateKey, options = options)
             client = randomClient
             randomClient.address
         }

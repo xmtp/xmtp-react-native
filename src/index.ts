@@ -8,7 +8,7 @@ export function address(): string {
   return XMTPModule.address();
 }
 
-export async function auth(address: string) {
+export async function auth(address: string, environment: 'local' | 'dev' | 'production') {
   return await XMTPModule.auth(address);
 }
 
@@ -16,7 +16,7 @@ export async function receiveSignature(requestID: string, signature: string) {
   return await XMTPModule.receiveSignature(requestID, signature);
 }
 
-export async function createRandom(): Promise<string> {
+export async function createRandom(environment: 'local' | 'dev' | 'production'): Promise<string> {
   return await XMTPModule.createRandom();
 }
 

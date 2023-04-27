@@ -69,6 +69,21 @@ extension Conversation {
 }
 
 public class XMTPModule: Module {
+	var apiEnvironments = [
+		"local": XMTP.ClientOptions.Api(
+			env: XMTP.XMTPEnvironment.local,
+			isSecure: false
+		),
+		"dev": XMTP.ClientOptions.Api(
+			env: XMTP.XMTPEnvironment.dev,
+			isSecure: true
+		),
+		"production": XMTP.ClientOptions.Api(
+			env: XMTP.XMTPEnvironment.production,
+			isSecure: true
+		),
+	]
+
 	var client: XMTP.Client?
 	var signer: ReactNativeSigner?
 	var conversations: [String: Conversation] = [:]
@@ -94,10 +109,11 @@ public class XMTPModule: Module {
 		//
 		// Auth functions
 		//
-		AsyncFunction("auth") { (address: String) in
+		AsyncFunction("auth") { (address: String, environment: String) in
 				let signer = ReactNativeSigner(module: self, address: address)
 				self.signer = signer
-				self.client = try await XMTP.Client.create(account: signer)
+				let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["local"]!)
+				self.client = try await XMTP.Client.create(account: signer, options: options)
 				self.signer = nil
 				sendEvent("authed")
 		}
@@ -107,9 +123,10 @@ public class XMTPModule: Module {
 		}
 
 		// Generate a random wallet and set the client to that
-		AsyncFunction("createRandom") { () -> String in
+		AsyncFunction("createRandom") { (environment: String) -> String in
 			let privateKey = try PrivateKey.generate()
-			let client = try await Client.create(account: privateKey)
+			let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["local"]!)
+			let client = try await Client.create(account: privateKey, options: options)
 
 			self.client = client
 			return client.address
