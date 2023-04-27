@@ -1,6 +1,6 @@
 {
-  "name": "xmtp-react-native-sdk",
-  "version": "0.2.0",
+  "name": "@xmtp/react-native-sdk",
+  "version": "0.0.0-development",
   "description": "Wraps for native xmtp sdks for react native",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -21,15 +21,18 @@
     "xmtp-react-native-sdk",
     "XMTP"
   ],
-  "repository": "https://github.com/xmtp/xmtp-react-native-sdk",
+  "repository": "https://github.com/xmtp/xmtp-react-native",
   "bugs": {
-    "url": "https://github.com/xmtp/xmtp-react-native-sdk/issues"
+    "url": "https://github.com/xmtp/xmtp-react-native/issues"
   },
   "release": {
     "branches": [
       "main",
       "release"
     ]
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "author": "XMTP Labs <eng@xmtp.com>",
   "license": "MIT",
