@@ -89,18 +89,18 @@ public class XMTPModule: Module {
 			} else {
 				return "No Client."
 			}
-    }
+    	}
 
 		//
-		// Auth fucntions
+		// Auth functions
 		//
-    AsyncFunction("auth") { (address: String) in
-			let signer = ReactNativeSigner(module: self, address: address)
-			self.signer = signer
-			self.client = try await XMTP.Client.create(account: signer)
-			self.signer = nil
-			sendEvent("authed")
-    }
+		AsyncFunction("auth") { (address: String) in
+				let signer = ReactNativeSigner(module: self, address: address)
+				self.signer = signer
+				self.client = try await XMTP.Client.create(account: signer)
+				self.signer = nil
+				sendEvent("authed")
+		}
 
 		Function("receiveSignature") { (requestID: String, signature: String) in
 			try signer?.handle(id: requestID, signature: signature)
@@ -131,7 +131,7 @@ public class XMTPModule: Module {
 			}
 		}
 
-		// TODO: Support pagination and conversation ID here, don't do a full lookup each time
+		// TODO: Support pagination
 		AsyncFunction("loadMessages") { (conversationTopic: String, conversationID: String?) -> [String] in
 			guard let client else {
 				throw Error.noClient
@@ -144,7 +144,7 @@ public class XMTPModule: Module {
 			return try await conversation.messages(after: Date.init(timeIntervalSince1970: 0)).map { try DecodedMessageWrapper.encode($0) }
 		}
 
-		// TODO: Support content types (?????)
+		// TODO: Support content types
 		AsyncFunction("sendMessage") { (conversationTopic: String, conversationID: String?, content: String) -> String in
 			guard let client else {
 				throw Error.noClient
@@ -162,7 +162,6 @@ public class XMTPModule: Module {
 			return try DecodedMessageWrapper.encode(decodedMessage)
 		}
 
-		// TODO: Support conversationID
 		AsyncFunction("createConversation") { (peerAddress: String, conversationID: String?) -> String in
 			guard let client else {
 				throw Error.noClient
