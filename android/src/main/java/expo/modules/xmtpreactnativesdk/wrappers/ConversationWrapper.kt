@@ -9,10 +9,10 @@ class ConversationWrapper {
         fun encode(model: Conversation): String {
             val gson = GsonBuilder().create()
             val conversation = mapOf(
-                Pair("topic", model.topic),
-                Pair("peerAddress", model.peerAddress),
-                Pair("version", if (model.version == Conversation.Version.V1) "v1" else "v2"),
-                Pair("conversationID", model.conversationId)
+                "topic" to model.topic,
+                "peerAddress" to model.peerAddress,
+                "version" to if (model.version == Conversation.Version.V1) "v1" else "v2",
+                "conversationID" to model.conversationId
             )
             return gson.toJson(conversation)
         }
