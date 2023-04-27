@@ -1,6 +1,6 @@
 {
-  "name": "xmtp-react-native-sdk",
-  "version": "0.1.0",
+  "name": "@xmtp/react-native-sdk",
+  "version": "0.0.0-development",
   "description": "Wraps for native xmtp sdks for react native",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -21,15 +21,25 @@
     "xmtp-react-native-sdk",
     "XMTP"
   ],
-  "repository": "https://github.com/xmtp/xmtp-react-native-sdk",
+  "repository": "https://github.com/xmtp/xmtp-react-native",
   "bugs": {
-    "url": "https://github.com/xmtp/xmtp-react-native-sdk/issues"
+    "url": "https://github.com/xmtp/xmtp-react-native/issues"
   },
-  "author": "Pat Nakajima <pat@xmtp.com> (https://github.com/xmtp)",
+  "release": {
+    "branches": [
+      "main",
+      "release"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "XMTP Labs <eng@xmtp.com>",
   "license": "MIT",
-  "homepage": "https://github.com/xmtp/xmtp-react-native-sdk#readme",
+  "homepage": "https://github.com/xmtp/xmtp-react-native#readme",
   "dependencies": {
-    "ethers": "^5.7.2"
+    "ethers": "^5.7.2",
+    "semantic-release": "^21.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.0.25",
