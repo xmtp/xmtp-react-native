@@ -9,7 +9,7 @@ export function address(): string {
 }
 
 export async function auth(address: string, environment: 'local' | 'dev' | 'production') {
-  return await XMTPModule.auth(address);
+  return await XMTPModule.auth(address, environment);
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
@@ -17,7 +17,7 @@ export async function receiveSignature(requestID: string, signature: string) {
 }
 
 export async function createRandom(environment: 'local' | 'dev' | 'production'): Promise<string> {
-  return await XMTPModule.createRandom();
+  return await XMTPModule.createRandom(environment);
 }
 
 export async function listConversations(): Promise<Conversation[]> {

@@ -19,14 +19,14 @@ function AuthView({
   useEffect(() => {
     (async () => {
       if (signer) {
-        const client = await XMTP.Client.create(signer);
+        const client = await XMTP.Client.create(signer, "dev");
         setClient(client);
       }
     })();
   }, [signer]);
 
   const generateWallet = async () => {
-    const client = await XMTP.Client.createRandom();
+    const client = await XMTP.Client.createRandom("dev");
     setClient(client);
   };
 

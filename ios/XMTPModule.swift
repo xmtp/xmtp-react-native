@@ -125,7 +125,7 @@ public class XMTPModule: Module {
 		// Generate a random wallet and set the client to that
 		AsyncFunction("createRandom") { (environment: String) -> String in
 			let privateKey = try PrivateKey.generate()
-			let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["local"]!)
+			let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["dev"]!)
 			let client = try await Client.create(account: privateKey, options: options)
 
 			self.client = client
