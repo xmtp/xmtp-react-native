@@ -106,22 +106,27 @@ class XMTPModule : Module() {
         AsyncFunction("auth") { address: String, environment: String ->
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
-            val options = ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
+            val options =
+                ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
             client = Client().create(account = reactSigner, options = options)
             signer = null
             sendEvent("authed")
         }
+       
         Function("receiveSignature") { requestID: String, signature: String ->
             signer?.handle(id = requestID, signature = signature)
         }
+        
         // Generate a random wallet and set the client to that
         AsyncFunction("createRandom") { environment: String ->
             val privateKey = PrivateKeyBuilder()
-            val options = ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
+            val options =
+                ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
             val randomClient = Client().create(account = privateKey, options = options)
             client = randomClient
             randomClient.address
         }
+        
         //
         // Client API
         AsyncFunction("listConversations") { ->
@@ -134,16 +139,18 @@ class XMTPModule : Module() {
                 ConversationWrapper.encode(conversation)
             }
         }
-        // TODO: Support pagination
-        AsyncFunction("loadMessages") { conversationTopic: String, conversationID: String? ->
+
+        AsyncFunction("loadMessages") { conversationTopic: String, conversationID: String?, limit: Int?, before: Date?, after: Date? ->
             if (client == null) {
                 throw XMTPException("No client")
             }
             val conversation =
                 findConversation(topic = conversationTopic, conversationId = conversationID)
                     ?: throw XMTPException("no conversation found for $conversationTopic")
-            conversation.messages(after = Date(0)).map { DecodedMessageWrapper.encode(it) }
+            conversation.messages(limit = limit, before = before, after = after)
+                .map { DecodedMessageWrapper.encode(it) }
         }
+        
         // TODO: Support content types
         AsyncFunction("sendMessage") { conversationTopic: String, conversationID: String?, content: String ->
             if (client == null) {
@@ -157,6 +164,7 @@ class XMTPModule : Module() {
             preparedMessage.send()
             DecodedMessageWrapper.encode(decodedMessage)
         }
+        
         AsyncFunction("createConversation") { peerAddress: String, conversationID: String? ->
             if (client == null) {
                 throw XMTPException("No client")
@@ -171,9 +179,11 @@ class XMTPModule : Module() {
         }
 
         Function("subscribeToConversations") { subscribeToConversations() }
+        
         AsyncFunction("subscribeToMessages") { topic: String, conversationID: String? ->
             subscribeToMessages(topic = topic, conversationId = conversationID)
         }
+        
         AsyncFunction("unsubscribeFromMessages") { topic: String, conversationID: String? ->
             unsubscribeFromMessages(topic = topic, conversationId = conversationID)
         }

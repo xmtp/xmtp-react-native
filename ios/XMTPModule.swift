@@ -148,8 +148,7 @@ public class XMTPModule: Module {
 			}
 		}
 
-		// TODO: Support pagination
-		AsyncFunction("loadMessages") { (conversationTopic: String, conversationID: String?) -> [String] in
+		AsyncFunction("loadMessages") { (conversationTopic: String, conversationID: String?, limit: Int?, before: Date?, after: Date?) -> [String] in
 			guard let client else {
 				throw Error.noClient
 			}
@@ -158,7 +157,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
 
-			return try await conversation.messages(after: Date.init(timeIntervalSince1970: 0)).map { try DecodedMessageWrapper.encode($0) }
+			return try await conversation.messages(limit: limit, before: before, after: after).map { try DecodedMessageWrapper.encode($0) }
 		}
 
 		// TODO: Support content types
