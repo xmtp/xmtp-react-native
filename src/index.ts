@@ -29,11 +29,11 @@ export async function listConversations(): Promise<Conversation[]> {
 export async function listMessages(
   conversationTopic: string,
   conversationID: string | undefined,
-  limit: number | undefined, 
-  before: Date | undefined, 
-  after: Date | undefined
+  limit?: number | undefined, 
+  before?: Date | undefined, 
+  after?: Date | undefined
 ): Promise<DecodedMessage[]> {
-  return (await XMTPModule.loadMessages(conversationTopic, conversationID, limit, before, after)).map(
+  return (await XMTPModule.loadMessages(conversationTopic, conversationID, limit, before?.getTime, after?.getTime)).map(
     (json: string) => {
       return JSON.parse(json);
     }

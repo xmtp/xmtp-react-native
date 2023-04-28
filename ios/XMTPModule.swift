@@ -148,7 +148,7 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("loadMessages") { (conversationTopic: String, conversationID: String?, limit: Int?, before: Date?, after: Date?) -> [String] in
+		AsyncFunction("loadMessages") { (conversationTopic: String, conversationID: String?, limit: Int?, before: Long?, after: Long?) -> [String] in
 			guard let client else {
 				throw Error.noClient
 			}
@@ -156,8 +156,10 @@ public class XMTPModule: Module {
 			guard let conversation = try await findConversation(topic: conversationTopic, conversationID: conversationID) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
+			let beforeDate = if(before) Date(timeIntervalSince1970: before) else nil
+            let afterDate = if(after) Date(timeIntervalSince1970: after) else nil
 
-			return try await conversation.messages(limit: limit, before: before, after: after).map { try DecodedMessageWrapper.encode($0) }
+			return try await conversation.messages(limit: limit, before: beforeDate, after: afterDate).map { try DecodedMessageWrapper.encode($0) }
 		}
 
 		// TODO: Support content types

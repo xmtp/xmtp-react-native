@@ -140,14 +140,17 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadMessages") { conversationTopic: String, conversationID: String?, limit: Int?, before: Date?, after: Date? ->
+        AsyncFunction("loadMessages") { conversationTopic: String, conversationID: String?, limit: Int?, before: Long?, after: Long? ->
             if (client == null) {
                 throw XMTPException("No client")
             }
             val conversation =
                 findConversation(topic = conversationTopic, conversationId = conversationID)
                     ?: throw XMTPException("no conversation found for $conversationTopic")
-            conversation.messages(limit = limit, before = before, after = after)
+            val beforeDate = if(before != null) Date(before) else null
+            val afterDate = if(after != null) Date(after) else null
+
+            conversation.messages(limit = limit, before = beforeDate, after = afterDate)
                 .map { DecodedMessageWrapper.encode(it) }
         }
         

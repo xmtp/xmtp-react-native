@@ -20,7 +20,7 @@ export class Conversation {
   }
 
   // TODO: Support pagination and conversation ID here
-  async messages(limit: number | undefined, before: Date | undefined, after: Date | undefined): Promise<DecodedMessage[]> {
+  async messages(limit?: number | undefined, before?: Date | undefined, after?: Date | undefined): Promise<DecodedMessage[]> {
     try {
       return await XMTP.listMessages(this.topic, this.conversationID, limit, before, after);
     } catch (e) {
