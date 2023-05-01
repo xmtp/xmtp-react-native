@@ -8,7 +8,10 @@ export class Client {
   address: string;
   conversations: Conversations;
 
-  static async create(signer: Signer, environment: 'local' | 'dev' | 'production'): Promise<Client> {
+  static async create(
+    signer: Signer,
+    environment: "local" | "dev" | "production"
+  ): Promise<Client> {
     return new Promise<Client>((resolve, reject) => {
       (async () => {
         XMTPModule.emitter.addListener(
@@ -40,7 +43,9 @@ export class Client {
     });
   }
 
-  static async createRandom(environment: 'local' | 'dev' | 'production'): Promise<Client> {
+  static async createRandom(
+    environment: "local" | "dev" | "production"
+  ): Promise<Client> {
     const address = await XMTPModule.createRandom(environment);
     return new Client(address);
   }
