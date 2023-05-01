@@ -67,19 +67,11 @@ export default function ConversationView({ route }: Props): JSX.Element {
 
   useEffect(() => {
     const unsubscribe = conversation.streamMessages(async (message) => {
-      const uniqueMessages = [
-        ...new Map(
-          [message, ...messages].map((item: DecodedMessage) => [item.id, item])
-        ).values(),
-      ].sort((a, b) => {
-        return a.sent > b.sent ? 1 : -1;
-      });
-
-      setMessages(uniqueMessages);
+      await loadMessages();
     });
 
     return unsubscribe;
-  });
+  }, []);
 
   return (
     <>

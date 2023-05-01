@@ -247,7 +247,7 @@ class XMTPModule : Module() {
             findConversation(topic = topic, conversationId = conversationId) ?: return
         subscriptions[conversation.cacheKey] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                conversation.streamMessages().collect() { message ->
+                conversation.streamMessages().collect { message ->
                     sendEvent(
                         "message",
                         mapOf(
