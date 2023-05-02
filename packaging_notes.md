@@ -31,6 +31,14 @@ These are the same SDKs that native iOS or Android apps would use, but are wrapp
            |-> Finishes Android-specific module setup
 ```
 
+## What all is being packaged for NPM?
+
+Our React Native SDK relies on [Expo](https://expo.dev/). Practically, this involves an `expo` NPM package which edits Android/iOS build files upon install. Expo then does its own resolution of Cocoapods and Android artifacts, links that to the Typescript code in this SDK and provides a nice clean import interface for consumers. Consumers just have to `npm install @xmtp/react-native-sdk`, include some platform-specific build tweaks (we're working to remove, like minIOS version, modular headers etc), and they're good to go.
+
+This means our NPM package is pretty light. It contains Typescript code that implements a nice `XMTP` interface, and then per-platform manifests that tell Expo what to look for in Cocoapods / Maven to find native code.
+
+## Expo Detailed Walkthrough
+
 The top-level npm package.json includes `"expo": "^48.0.15"` in addition to `@xmtp/react-native-sdk`. Expo is the tool that interprets and effectively "expands" the rather minimal node_module we see above.
 
 How it does so is via a process called [Expo Autolinking](https://docs.expo.dev/modules/autolinking/). You can see the invocations to autolinking logic that are automatically added when install `expo` in your consuming project [docs](https://docs.expo.dev/bare/installing-expo-modules/).
