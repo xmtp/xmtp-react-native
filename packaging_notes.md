@@ -11,7 +11,8 @@ These are the same SDKs that native iOS or Android apps would use, but are wrapp
     |-> NPM (node_modules)
      |-> Expo (installed as npm module)
       |-> expo-modules-autolinking
-       |-> iOS
+      |-> `npm install @xmtp/react-native-sdk` saves files to node_modules
+       |-> iOS (at build time)
        | |-> autolinking script added to Podfile (and minIOS set to 13.0) as part of expo npm install
        | |-> autolinking script executes as part of pod install
        | |-> finds @xmtp/react-native-sdk/expo-module.config.json
@@ -20,7 +21,7 @@ These are the same SDKs that native iOS or Android apps would use, but are wrapp
        |   |-> Installs the `XMTP` Cocoapod
        |  |-> Runs code to patch React imports, finish up iOS-specific (TODO flush out more)
        |
-       |-> Android
+       |-> Android (at build time)
         |-> autolinking script added to settings.gradle as part of expo npm install
          |-> executes as part of Gradle build
          |-> finds @xmtp/react-native-sdk/expo-module.config.json
