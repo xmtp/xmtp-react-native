@@ -20,10 +20,11 @@
     "react-native-crypto": "^2.2.0",
     "react-native-get-random-values": "^1.8.0",
     "react-native-mmkv": "^2.8.0",
+    "react-native-push-notification": "^8.1.1",
     "react-native-randombytes": "^3.6.1",
-    "react-native-svg": "^13.9.0",
+    "react-native-safe-area-context": "4.5.0",
     "react-native-screens": "~3.20.0",
-    "react-native-safe-area-context": "4.5.0"
+    "react-native-svg": "^13.9.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
