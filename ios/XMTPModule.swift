@@ -59,11 +59,11 @@ struct SignatureRequest: Codable {
 }
 
 extension Conversation {
-	var cacheKey: String {
+	func cacheKey(_ clientAddress: String) -> String {
 		if let conversationID, conversationID != "" {
-			return "\(topic):\(conversationID)"
+			return "\(clientAddress):\(topic):\(conversationID)"
 		} else {
-			return topic
+			return "\(clientAddress):\(topic)"
 		}
 	}
 }
@@ -84,7 +84,7 @@ public class XMTPModule: Module {
 		),
 	]
 
-	var client: XMTP.Client?
+	var clients: [String: XMTP.Client] = [:]
 	var signer: ReactNativeSigner?
 	var conversations: [String: Conversation] = [:]
 	var subscriptions: [String: Task<Void, Never>] = [:]
@@ -98,12 +98,12 @@ public class XMTPModule: Module {
 
     Events("sign", "authed", "conversation", "message")
 
-		Function("address") { () -> String in
-			if let client {
-				return client.address
-			} else {
-				return "No Client."
-			}
+		Function("address") { (clientAddress: String) -> String in
+			if let client = clients[clientAddress] {
+					return client.address
+				} else {
+					return "No Client."
+				}
     	}
 
 		//
@@ -113,7 +113,7 @@ public class XMTPModule: Module {
 				let signer = ReactNativeSigner(module: self, address: address)
 				self.signer = signer
 				let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["local"]!)
-				self.client = try await XMTP.Client.create(account: signer, options: options)
+				self.clients[address] = try await XMTP.Client.create(account: signer, options: options)
 				self.signer = nil
 				sendEvent("authed")
 		}
@@ -128,47 +128,55 @@ public class XMTPModule: Module {
 			let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["dev"]!)
 			let client = try await Client.create(account: privateKey, options: options)
 
-			self.client = client
+			self.clients[client.address] = client
 			return client.address
 		}
 
 		//
 		// Client API
-		AsyncFunction("listConversations") { () -> [String] in
-			guard let client else {
+		AsyncFunction("listConversations") { (clientAddress: String) -> [String] in
+			guard let client = clients[clientAddress] else {
 				throw Error.noClient
 			}
 
 			let conversations = try await client.conversations.list()
 
 			return try conversations.map { conversation in
-				self.conversations[conversation.cacheKey] = conversation
+				self.conversations[conversation.cacheKey(clientAddress)] = conversation
 
-				return try ConversationWrapper.encode(conversation)
+				return try ConversationWrapper.encode(ConversationWithClientAddress(client: client, conversation: conversation))
 			}
 		}
 
-		AsyncFunction("loadMessages") { (conversationTopic: String, conversationID: String?, limit: Int?, before: Double?, after: Double?) -> [String] in
-			guard let client else {
-				throw Error.noClient
-			}
+		AsyncFunction("loadMessages") { (clientAddress: String, conversationTopic: String, conversationID: String?, limit: Int?, before: Double?, after: Double?) -> [String] in
 
-			guard let conversation = try await findConversation(topic: conversationTopic, conversationID: conversationID) else {
+			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
             let beforeDate = before != nil ? Date(timeIntervalSince1970: before!) : nil
             let afterDate = after != nil ? Date(timeIntervalSince1970: after!) : nil
 
-			return try await conversation.messages(limit: limit, before: beforeDate, after: afterDate).map { try DecodedMessageWrapper.encode($0) }
+			let messages = try await conversation.messages(limit: limit, before: beforeDate, after: afterDate).map { try DecodedMessageWrapper.encode($0) }
+
+			let client = clients[clientAddress]!
+			print("OUR (\(clientAddress) CONVERSATIONS \(try! await client.conversations.list().map(\.topic))")
+
+			for (_, client) in clients {
+				print("CONVERSATIONS for \(client.address) \(try! await client.conversations.list().map(\.topic))")
+			}
+
+			print("GOT MESSAGES FOR \(clientAddress): \(messages)")
+
+			return messages
 		}
 
 		// TODO: Support content types
-		AsyncFunction("sendMessage") { (conversationTopic: String, conversationID: String?, content: String) -> String in
-			guard let client else {
+		AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: String) -> String in
+			guard let client = clients[clientAddress] else {
 				throw Error.noClient
 			}
 
-			guard let conversation = try await findConversation(topic: conversationTopic, conversationID: conversationID) else {
+			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
 
@@ -180,28 +188,33 @@ public class XMTPModule: Module {
 			return try DecodedMessageWrapper.encode(decodedMessage)
 		}
 
-		AsyncFunction("createConversation") { (peerAddress: String, conversationID: String?) -> String in
-			guard let client else {
+		AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, conversationID: String?) -> String in
+			guard let client = clients[clientAddress] else {
 				throw Error.noClient
 			}
 
-			let conversation = try await client.conversations.newConversation(with: peerAddress, context: .init(
-				conversationID: conversationID ?? "",
-				metadata: [:]
-			))
-			return try ConversationWrapper.encode(conversation)
+			do {
+				let conversation = try await client.conversations.newConversation(with: peerAddress, context: .init(
+					conversationID: conversationID ?? ""
+				))
+
+				return try ConversationWrapper.encode(ConversationWithClientAddress(client: client, conversation: conversation))
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
 		}
 
-		Function("subscribeToConversations") {
-			subscribeToConversations()
+		Function("subscribeToConversations") { (clientAddress: String) in
+			subscribeToConversations(clientAddress: clientAddress)
 		}
 
-		AsyncFunction("subscribeToMessages") { (topic: String, conversationID: String?) in
-			try await subscribeToMessages(topic: topic, conversationID: conversationID)
+		AsyncFunction("subscribeToMessages") { (clientAddress: String, topic: String, conversationID: String?) in
+			try await subscribeToMessages(clientAddress: clientAddress, topic: topic, conversationID: conversationID)
 		}
 
-		AsyncFunction("unsubscribeFromMessages") { (topic: String, conversationID: String?) in
-			try await unsubscribeFromMessages(topic: topic, conversationID: conversationID)
+		AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String, conversationID: String?) in
+			try await unsubscribeFromMessages(clientAddress: clientAddress, topic: topic, conversationID: conversationID)
 		}
   }
 
@@ -209,31 +222,32 @@ public class XMTPModule: Module {
 	// Helpers
 	//
 
-	func findConversation(topic: String, conversationID: String?) async throws -> Conversation? {
-		guard let client else {
+	func findConversation(clientAddress: String, topic: String, conversationID: String?) async throws -> Conversation? {
+		guard let client = clients[clientAddress] else {
+			fatalError("NO CLIENT FOR ADDRES: \(clientAddress)")
 			throw Error.noClient
 		}
 
 		let cacheKey: String
 
 		if let conversationID, conversationID != "" {
-			cacheKey = "\(topic):\(conversationID)"
+			cacheKey = "\(clientAddress):\(topic):\(conversationID)"
 		} else {
-			cacheKey = topic
+			cacheKey = "\(clientAddress):\(topic)"
 		}
 
 		if let conversation = conversations[cacheKey] {
 			return conversation
 		} else if let conversation = try await client.conversations.list().first(where: { $0.topic == topic && $0.conversationID == conversationID }) {
-			conversations[conversation.cacheKey] = conversation
+			conversations[conversation.cacheKey(clientAddress)] = conversation
 			return conversation
 		}
 
 		return nil
 	}
 
-	func subscribeToConversations() {
-		guard let client else {
+	func subscribeToConversations(clientAddress: String) {
+		guard let client = clients[clientAddress] else {
 			return
 		}
 
@@ -254,12 +268,12 @@ public class XMTPModule: Module {
 		}
 	}
 
-	func subscribeToMessages(topic: String, conversationID: String?) async throws {
-		guard let conversation = try await findConversation(topic: topic, conversationID: conversationID) else {
+	func subscribeToMessages(clientAddress: String, topic: String, conversationID: String?) async throws {
+		guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic, conversationID: conversationID) else {
 			return
 		}
 
-		subscriptions[conversation.cacheKey] = Task {
+		subscriptions[conversation.cacheKey(clientAddress)] = Task {
 			do {
 				for try await message in conversation.streamMessages() {
 					print("GOT A MESSAGE IN SWIFT \(message)")
@@ -271,16 +285,16 @@ public class XMTPModule: Module {
 				}
 			} catch {
 				print("Error in messages subscription: \(error)")
-				subscriptions[conversation.cacheKey]?.cancel()
+				subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
 			}
 		}
 	}
 
-	func unsubscribeFromMessages(topic: String, conversationID: String?) async throws {
-		guard let conversation = try await findConversation(topic: topic, conversationID: conversationID) else {
+	func unsubscribeFromMessages(clientAddress: String, topic: String, conversationID: String?) async throws {
+		guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic, conversationID: conversationID) else {
 			return
 		}
 
-		subscriptions[conversation.cacheKey]?.cancel()
+		subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
 	}
 }

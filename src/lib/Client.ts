@@ -1,14 +1,16 @@
 import { Signer, utils } from "ethers";
-
 import Conversations from "./Conversations";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
-
+declare const Buffer;
 export class Client {
   address: string;
   conversations: Conversations;
 
-  static async create(signer: Signer, environment: 'local' | 'dev' | 'production'): Promise<Client> {
+  static async create(
+    signer: Signer,
+    environment: "local" | "dev" | "production"
+  ): Promise<Client> {
     return new Promise<Client>((resolve, reject) => {
       (async () => {
         XMTPModule.emitter.addListener(
@@ -40,13 +42,15 @@ export class Client {
     });
   }
 
-  static async createRandom(environment: 'local' | 'dev' | 'production'): Promise<Client> {
+  static async createRandom(
+    environment: "local" | "dev" | "production"
+  ): Promise<Client> {
     const address = await XMTPModule.createRandom(environment);
     return new Client(address);
   }
 
   constructor(address: string) {
     this.address = address;
-    this.conversations = new Conversations();
+    this.conversations = new Conversations(this);
   }
 }

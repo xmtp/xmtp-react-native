@@ -5,7 +5,7 @@ import * as XMTP from "xmtp-react-native-sdk";
 
 import AuthView from "./src/AuthView";
 import HomeView from "./src/HomeView";
-import TestView from "./src/TestView";
+import TestsView from "./src/TestsView";
 
 export default function App() {
   const [client, setClient] = useState<XMTP.Client | null>(null);
@@ -13,7 +13,7 @@ export default function App() {
 
   return isTesting ? (
     <SafeAreaView style={{ flexGrow: 1 }}>
-      <TestView />
+      <TestsView />
     </SafeAreaView>
   ) : (
     <ThirdwebProvider activeChain="mainnet">
