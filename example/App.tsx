@@ -23,10 +23,7 @@ export default function App() {
         ) : (
           <View>
             <AuthView setClient={setClient} />
-            <Button
-              onPress={() => setIsTesting(true)}
-              title="Enable Test Mode"
-            />
+            <Button onPress={() => setIsTesting(true)} title="Unit tests" />
           </View>
         )}
       </SafeAreaView>
