@@ -26,6 +26,12 @@ function TestView({ test }: { test: Test }): JSX.Element {
     }
   }
 
+  useEffect(() => {
+    (async () => {
+      await run();
+    })();
+  }, [test]);
+
   const backgroundColor = {
     waiting: "#fafafa",
     success: "#d4edda",
