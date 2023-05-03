@@ -25,8 +25,6 @@ test("can make a client", async () => {
 test("can message a client", async () => {
   const bob = await XMTP.Client.createRandom("local");
   const alice = await XMTP.Client.createRandom("local");
-  console.log("BOB ADDRESS: ", bob.address);
-  console.log("ALICE ADDRESS: ", alice.address);
 
   if (bob.address === alice.address) {
     throw new Error("bob and alice should be different");
