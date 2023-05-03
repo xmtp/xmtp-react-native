@@ -1,18 +1,22 @@
 import { DecodedMessage } from "./DecodedMessage";
 import * as XMTP from "../index";
+import { Client } from "./Client";
 
 export class Conversation {
+  clientAddress: string;
   topic: string;
   peerAddress: string;
   version: string;
   conversationID?: string | undefined;
 
   constructor(params: {
+    clientAddress: string;
     topic: string;
     peerAddress: string;
     version: string;
     conversationID?: string | undefined;
   }) {
+    this.clientAddress = params.clientAddress;
     this.topic = params.topic;
     this.peerAddress = params.peerAddress;
     this.version = params.version;
@@ -26,7 +30,14 @@ export class Conversation {
     after?: Date | undefined
   ): Promise<DecodedMessage[]> {
     try {
-      return await XMTP.listMessages(this.topic, this.conversationID, limit, before, after);
+      return await XMTP.listMessages(
+        this.clientAddress,
+        this.topic,
+        this.conversationID,
+        limit,
+        before,
+        after
+      );
     } catch (e) {
       console.info("ERROR in listMessages", e);
       return [];
@@ -36,7 +47,12 @@ export class Conversation {
   // TODO: support content types and conversation ID
   async send(content: any): Promise<DecodedMessage> {
     try {
-      return await XMTP.sendMessage(this.topic, this.conversationID, content);
+      return await XMTP.sendMessage(
+        this.clientAddress,
+        this.topic,
+        this.conversationID,
+        content
+      );
     } catch (e) {
       console.info("ERROR in send()", e);
       throw e;
@@ -46,7 +62,11 @@ export class Conversation {
   streamMessages(
     callback: (message: DecodedMessage) => Promise<void>
   ): () => void {
-    XMTP.subscribeToMessages(this.topic, this.conversationID);
+    XMTP.subscribeToMessages(
+      this.clientAddress,
+      this.topic,
+      this.conversationID
+    );
 
     XMTP.emitter.addListener(
       "message",
@@ -65,7 +85,11 @@ export class Conversation {
     );
 
     return () => {
-      XMTP.unsubscribeFromMessages(this.topic, this.conversationID);
+      XMTP.unsubscribeFromMessages(
+        this.clientAddress,
+        this.topic,
+        this.conversationID
+      );
     };
   }
 }
