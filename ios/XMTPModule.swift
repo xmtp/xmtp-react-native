@@ -159,13 +159,6 @@ public class XMTPModule: Module {
 			let messages = try await conversation.messages(limit: limit, before: beforeDate, after: afterDate).map { try DecodedMessageWrapper.encode($0) }
 
 			let client = clients[clientAddress]!
-			print("OUR (\(clientAddress) CONVERSATIONS \(try! await client.conversations.list().map(\.topic))")
-
-			for (_, client) in clients {
-				print("CONVERSATIONS for \(client.address) \(try! await client.conversations.list().map(\.topic))")
-			}
-
-			print("GOT MESSAGES FOR \(clientAddress): \(messages)")
 
 			return messages
 		}
@@ -276,7 +269,6 @@ public class XMTPModule: Module {
 		subscriptions[conversation.cacheKey(clientAddress)] = Task {
 			do {
 				for try await message in conversation.streamMessages() {
-					print("GOT A MESSAGE IN SWIFT \(message)")
 					sendEvent("message", [
 						"topic": conversation.topic,
 						"conversationID": conversation.conversationID,
