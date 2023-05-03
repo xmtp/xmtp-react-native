@@ -5,7 +5,14 @@ import { tests, Test } from "./tests";
 
 type Result = "waiting" | "running" | "success" | "failure" | "error";
 
-function TestView({ test }: { test: Test }): JSX.Element {
+function TestView({
+  test,
+  onComplete,
+}: {
+  test: Test;
+  onComplete: () => void;
+}): JSX.Element {
+  const [markedComplete, setMarkedComplete] = useState<boolean>(false);
   const [result, setResult] = useState<Result>("waiting");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
@@ -23,6 +30,11 @@ function TestView({ test }: { test: Test }): JSX.Element {
       } else {
         setErrorMessage(JSON.stringify(err));
       }
+    }
+
+    if (!markedComplete) {
+      onComplete();
+      setMarkedComplete(true);
     }
   }
 
@@ -56,9 +68,19 @@ function TestView({ test }: { test: Test }): JSX.Element {
           title={result == "running" ? "Running..." : "Run"}
         />
       </View>
+      {result == "failure" && (
+        <Text
+          testID="FAIL"
+          style={{ paddingHorizontal: 12, paddingBottom: 12 }}
+        >
+          {test.name} failed
+        </Text>
+      )}
       {errorMessage && (
         <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
-          <Text style={{ color: "#721c24" }}>Error: {errorMessage}</Text>
+          <Text testID="FAIL" style={{ color: "#721c24" }}>
+            Error: {errorMessage}
+          </Text>
         </View>
       )}
     </View>
@@ -66,18 +88,36 @@ function TestView({ test }: { test: Test }): JSX.Element {
 }
 
 export default function TestsView(): JSX.Element {
-  const [text, setText] = useState<string>("");
+  const [completedTests, setCompletedTests] = useState<number>(0);
 
   return (
     <ScrollView>
       <View>
         <View style={{ padding: 12 }}>
-          <Text>Test View</Text>
-          <Text testID="Test View">This view is used by unit tests.</Text>
+          <Text testID="Test View">Unit Tests</Text>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <Text>
+              Running {completedTests}/{tests.length}
+            </Text>
+
+            {completedTests == tests.length && (
+              <Text testID="tests-complete">Done</Text>
+            )}
+          </View>
         </View>
         <View testID="tests" style={{ paddingHorizontal: 12 }}>
           {tests.map((test: Test, i) => {
-            return <TestView test={test} key={i} />;
+            return (
+              <TestView
+                test={test}
+                onComplete={() => {
+                  setCompletedTests((prev) => prev + 1);
+                }}
+                key={i}
+              />
+            );
           })}
         </View>
       </View>

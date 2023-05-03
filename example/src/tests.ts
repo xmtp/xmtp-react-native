@@ -17,6 +17,10 @@ function test(name: string, perform: () => Promise<boolean>) {
   tests.push({ name, run: perform });
 }
 
+// test("can fail", async () => {
+//   return false;
+// });
+
 test("can make a client", async () => {
   const client = await XMTP.Client.createRandom("local");
   return client.address.length > 0;
