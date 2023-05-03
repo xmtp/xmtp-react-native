@@ -36,8 +36,6 @@ test("can message a client", async () => {
     alice.address
   );
 
-  await sleep(1000);
-
   const aliceConversation = (await alice.conversations.list())[0];
   if (!aliceConversation) {
     throw new Error("aliceConversation should exist");
