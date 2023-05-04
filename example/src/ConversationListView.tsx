@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import React, { useEffect, useState } from "react";
 import { Text, ScrollView, RefreshControl } from "react-native";
-import { Conversation } from "xmtp-react-native-sdk";
+import { Conversation, XMTPPush } from "xmtp-react-native-sdk";
 
 import HomeHeaderView from "./HomeHeaderView";
 import { RootStackParamList } from "./HomeView";
@@ -19,6 +19,7 @@ export default function ConversationListView({
 
   async function refreshConversations() {
     const conversations = await client.conversations.list();
+    XMTPPush.subscribe(conversations.map((c) => c.topic));
     setConversations(conversations);
   }
 

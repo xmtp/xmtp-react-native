@@ -90,8 +90,12 @@ export async function unsubscribeFromMessages(
   return await XMTPModule.unsubscribeFromMessages(topic, conversationID);
 }
 
-export function subscribePushToken(pushServer: string, token: string) {
-  return XMTPModule.subscribePushToken(pushServer, token);
+export function registerPushToken(pushServer: string, token: string) {
+  return XMTPModule.registerPushToken(pushServer, token);
+}
+
+export function subscribePushTopics(topics: string[]) {
+  return XMTPModule.subscribePushTopics(topics);
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);

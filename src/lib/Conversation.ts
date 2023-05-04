@@ -26,7 +26,13 @@ export class Conversation {
     after?: Date | undefined
   ): Promise<DecodedMessage[]> {
     try {
-      return await XMTP.listMessages(this.topic, this.conversationID, limit, before, after);
+      return await XMTP.listMessages(
+        this.topic,
+        this.conversationID,
+        limit,
+        before,
+        after
+      );
     } catch (e) {
       console.info("ERROR in listMessages", e);
       return [];

@@ -85,6 +85,7 @@ class XMTPModule : Module() {
     )
 
     private var client: Client? = null
+    private var xmtpPush: XMTPPush? = null
     private var signer: ReactNativeSigner? = null
     private val conversations: MutableMap<String, Conversation> = mutableMapOf()
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
@@ -192,9 +193,16 @@ class XMTPModule : Module() {
             unsubscribeFromMessages(topic = topic, conversationId = conversationID)
         }
 
-        Function("subscribePushToken") { pushServer: String, token: String ->
-            val xmtpPush = XMTPPush(appContext.reactContext!!, pushServer)
-            xmtpPush.register(token)
+        Function("registerPushToken") { pushServer: String, token: String ->
+            xmtpPush = XMTPPush(appContext.reactContext!!, pushServer)
+            xmtpPush?.register(token)
+        }
+
+        Function("subscribePushTopics") { topics: List<String> ->
+            if (xmtpPush == null) {
+                throw XMTPException("Push server not registered")
+            }
+            xmtpPush?.subscribe(topics)
         }
     }
 
