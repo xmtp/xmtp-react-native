@@ -22,6 +22,7 @@ import org.xmtp.android.library.XMTPException
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
+import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.message.contents.SignatureOuterClass
 import java.util.Date
 import java.util.UUID
@@ -189,6 +190,11 @@ class XMTPModule : Module() {
         
         AsyncFunction("unsubscribeFromMessages") { topic: String, conversationID: String? ->
             unsubscribeFromMessages(topic = topic, conversationId = conversationID)
+        }
+
+        Function("subscribePushToken") { pushServer: String, token: String ->
+            val xmtpPush = XMTPPush(appContext.reactContext!!, pushServer)
+            xmtpPush.register(token)
         }
     }
 

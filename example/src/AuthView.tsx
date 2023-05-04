@@ -26,7 +26,7 @@ function AuthView({
   }, [signer]);
 
   const generateWallet = async () => {
-    const client = await XMTP.Client.createRandom("dev");
+    const client = await XMTP.Client.createRandom("production");
     setClient(client);
   };
 
