@@ -102,7 +102,9 @@ export async function decodeMessage(
   encryptedMessage: string,
   conversationID?: string | undefined
 ): Promise<DecodedMessage> {
-  return XMTPModule.decodeMessage(topic, encryptedMessage, conversationID);
+  return JSON.parse(
+    await XMTPModule.decodeMessage(topic, encryptedMessage, conversationID)
+  );
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);

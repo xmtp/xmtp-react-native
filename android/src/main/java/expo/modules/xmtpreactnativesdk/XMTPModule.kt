@@ -213,14 +213,12 @@ class XMTPModule : Module() {
                 throw XMTPException("No client")
             }
             val encryptedMessageData = Base64.decode(encryptedMessage, Base64.NO_WRAP)
-            if (encryptedMessageData.isNotEmpty()) {
-                val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
-                val conversation =
-                    findConversation(topic = topic, conversationId = conversationID)
-                        ?: throw XMTPException("no conversation found for $topic")
-                val decodedMessage = conversation.decode(envelope)
-                DecodedMessageWrapper.encode(decodedMessage)
-            }
+            val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
+            val conversation =
+                findConversation(topic = topic, conversationId = conversationID)
+                    ?: throw XMTPException("no conversation found for $topic")
+            val decodedMessage = conversation.decode(envelope)
+            DecodedMessageWrapper.encode(decodedMessage)
         }
     }
 

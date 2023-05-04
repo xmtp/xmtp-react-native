@@ -5,7 +5,6 @@ import { Client, Conversation } from "xmtp-react-native-sdk";
 
 import ConversationListView from "./ConversationListView";
 import ConversationView from "./ConversationView";
-// eslint-disable-next-line import/namespace
 import PushController from "./PushController";
 
 export type RootStackParamList = {

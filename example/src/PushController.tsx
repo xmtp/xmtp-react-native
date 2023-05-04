@@ -1,16 +1,10 @@
-import { Component } from "react";
+import { useEffect } from "react";
 import { PushNotificationIOS } from "react-native/Libraries/PushNotificationIOS/PushNotificationIOS";
 import PushNotification from "react-native-push-notification";
 import { XMTPPush, Client } from "xmtp-react-native-sdk";
 
-export default class PushController extends Component {
-  client: Client;
-  constructor(props: any) {
-    console.log("PROPS:", props);
-    super(props);
-    this.client = props as Client;
-  }
-  componentDidMount() {
+function PushController({ client }: { client: Client }) {
+  useEffect(() => {
     PushNotification.configure({
       // (optional) Called when Token is generated (iOS and Android)
       onRegister(token: any) {
@@ -20,8 +14,6 @@ export default class PushController extends Component {
       // (required) Called when a remote or local notification is opened or received
       onNotification(notification: any) {
         console.log("NOTIFICATION:", notification);
-        console.log("PROPS:", this.props);
-        console.log("CLIENT:", this.client);
 
         const encryptedMessage = notification.data.encryptedMessage;
         const topic = notification.data.topic;
@@ -29,21 +21,25 @@ export default class PushController extends Component {
         if (encryptedMessage == null || topic == null) {
           return;
         }
-        const conversation = this.props.client.conversations
-          .list()
-          .find((c: { topic: string }) => c.topic === topic);
-        if (conversation == null) {
-          return;
-        }
+        (async () => {
+          const conversations = await client.conversations.list();
+          const conversation = conversations.find(
+            (c: { topic: string }) => c.topic === topic
+          );
+          if (conversation == null) {
+            return;
+          }
 
-        const peerAddress = conversation.peerAddress;
-        const decodedMessage = conversation.decodeMessage(encryptedMessage);
+          const peerAddress = conversation.peerAddress;
+          const decodedMessage = await conversation.decodeMessage(
+            encryptedMessage
+          );
+          const body = decodedMessage.content;
+          const title = peerAddress;
 
-        const body = decodedMessage.body;
-        const title = peerAddress;
-
-        console.log("BODY:", body);
-        console.log("TITLE:", title);
+          console.log("BODY:", body);
+          console.log("TITLE:", title);
+        })();
 
         // process the notification here
         // required on iOS only
@@ -60,8 +56,7 @@ export default class PushController extends Component {
       popInitialNotification: true,
       requestPermissions: true,
     });
-  }
-  render() {
-    return null;
-  }
+  });
+  return null;
 }
+export default PushController;
