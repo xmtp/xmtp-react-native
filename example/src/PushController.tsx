@@ -8,8 +8,7 @@ function PushController({ client }: { client: Client }) {
     PushNotification.configure({
       // (optional) Called when Token is generated (iOS and Android)
       onRegister(token: any) {
-        console.log("TOKEN:", token);
-        XMTPPush.register("localhost:8080", token.token as string);
+        XMTPPush.register("YOUR_SERVER_ADDRESS", token.token as string);
         PushNotification.createChannel({
           channelId: "xmtp-react-native-example-dm", // (required)
           channelName: "XMTP React Native Example", // (required)
@@ -17,8 +16,6 @@ function PushController({ client }: { client: Client }) {
       },
       // (required) Called when a remote or local notification is opened or received
       onNotification(notification: any) {
-        console.log("NOTIFICATION:", notification);
-
         const encryptedMessage = notification.data.encryptedMessage;
         const topic = notification.data.topic;
 
@@ -40,8 +37,6 @@ function PushController({ client }: { client: Client }) {
           );
           const body = decodedMessage.content;
 
-          console.log("BODY:", body);
-          console.log("TITLE:", peerAddress);
           PushNotification.localNotification({
             /* Android Only Properties */
             channelId: "xmtp-react-native-example-dm", // (required) channelId, if the channel doesn't exist, notification will not trigger.
@@ -63,7 +58,7 @@ function PushController({ client }: { client: Client }) {
         notification.finish(PushNotificationIOS?.FetchResult.NoData);
       },
       // Android only
-      senderID: "609788839593",
+      senderID: "YOUR_FIREBASE_SENDER_ID",
       // iOS only
       permissions: {
         alert: true,
