@@ -9,7 +9,7 @@ export default class PushController extends Component {
       // (optional) Called when Token is generated (iOS and Android)
       onRegister(token: any) {
         console.log("TOKEN:", token);
-        XMTPPush.register("10.0.2.2:8080", token);
+        XMTPPush.register("10.0.2.2:8080", JSON.stringify(token));
       },
       // (required) Called when a remote or local notification is opened or received
       onNotification(notification: { finish: (arg0: any) => void; }) {

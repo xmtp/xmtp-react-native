@@ -199,10 +199,13 @@ class XMTPModule : Module() {
         }
 
         Function("subscribePushTopics") { topics: List<String> ->
-            if (xmtpPush == null) {
-                throw XMTPException("Push server not registered")
+            Log.d("KOTLIN SUBSCRIBING",topics.toString())
+            if (topics.isNotEmpty()) {
+                if (xmtpPush == null) {
+                    throw XMTPException("Push server not registered")
+                }
+                xmtpPush?.subscribe(topics)
             }
-            xmtpPush?.subscribe(topics)
         }
     }
 
