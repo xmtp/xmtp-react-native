@@ -5,6 +5,8 @@ import { Client, Conversation } from "xmtp-react-native-sdk";
 
 import ConversationListView from "./ConversationListView";
 import ConversationView from "./ConversationView";
+// eslint-disable-next-line import/namespace
+import PushController from "./PushController";
 
 export type RootStackParamList = {
   "Conversation List": { client: Client };
@@ -24,6 +26,7 @@ const HomeView = ({ client }: { client: Client }) => {
         />
         <Stack.Screen name="Conversation View" component={ConversationView} />
       </Stack.Navigator>
+      <PushController client={client} />
     </NavigationContainer>
   );
 };

@@ -49,6 +49,19 @@ export class Conversation {
     }
   }
 
+  async decodeMessage(encryptedMessage: string): Promise<DecodedMessage> {
+    try {
+      return await XMTP.decodeMessage(
+        this.topic,
+        encryptedMessage,
+        this.conversationID
+      );
+    } catch (e) {
+      console.info("ERROR in decodeMessage()", e);
+      throw e;
+    }
+  }
+
   streamMessages(
     callback: (message: DecodedMessage) => Promise<void>
   ): () => void {

@@ -97,6 +97,14 @@ export function subscribePushTopics(topics: string[]) {
   return XMTPModule.subscribePushTopics(topics);
 }
 
+export async function decodeMessage(
+  topic: string,
+  encryptedMessage: string,
+  conversationID?: string | undefined
+): Promise<DecodedMessage> {
+  return XMTPModule.decodeMessage(topic, encryptedMessage, conversationID);
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);
 
 export { Client } from "./lib/Client";

@@ -19,6 +19,7 @@ import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.SigningKey
 import org.xmtp.android.library.XMTPEnvironment
 import org.xmtp.android.library.XMTPException
+import org.xmtp.android.library.messages.EnvelopeBuilder
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
@@ -199,12 +200,26 @@ class XMTPModule : Module() {
         }
 
         Function("subscribePushTopics") { topics: List<String> ->
-            Log.d("KOTLIN SUBSCRIBING",topics.toString())
             if (topics.isNotEmpty()) {
                 if (xmtpPush == null) {
                     throw XMTPException("Push server not registered")
                 }
                 xmtpPush?.subscribe(topics)
+            }
+        }
+
+        AsyncFunction("decodeMessage") { topic: String, encryptedMessage: String, conversationID: String? ->
+            if (client == null) {
+                throw XMTPException("No client")
+            }
+            val encryptedMessageData = Base64.decode(encryptedMessage, Base64.NO_WRAP)
+            if (encryptedMessageData.isNotEmpty()) {
+                val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
+                val conversation =
+                    findConversation(topic = topic, conversationId = conversationID)
+                        ?: throw XMTPException("no conversation found for $topic")
+                val decodedMessage = conversation.decode(envelope)
+                DecodedMessageWrapper.encode(decodedMessage)
             }
         }
     }

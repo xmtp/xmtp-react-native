@@ -5,7 +5,6 @@ import { Conversation, XMTPPush } from "xmtp-react-native-sdk";
 
 import HomeHeaderView from "./HomeHeaderView";
 import { RootStackParamList } from "./HomeView";
-import PushController from "./PushController";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Conversation List">;
 
@@ -75,7 +74,6 @@ export default function ConversationListView({
       {conversations.length === 0 && (
         <Text style={{ padding: 12 }}>No conversations yet.</Text>
       )}
-      <PushController />
     </ScrollView>
   );
 }
