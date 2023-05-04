@@ -38,6 +38,17 @@
                ReferencedContainer = "container:xmtpreactnativesdkexample.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A6A5DB842A00551E001DF8C2"
+               BuildableName = "xmtpreactnativesdkexampleUITests.xctest"
+               BlueprintName = "xmtpreactnativesdkexampleUITests"
+               ReferencedContainer = "container:xmtpreactnativesdkexample.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

@@ -25,13 +25,18 @@ export async function createRandom(
   return await XMTPModule.createRandom(environment);
 }
 
-export async function listConversations(): Promise<Conversation[]> {
-  return (await XMTPModule.listConversations()).map((json: string) => {
-    return new Conversation(JSON.parse(json));
-  });
+export async function listConversations(
+  clientAddress: string
+): Promise<Conversation[]> {
+  return (await XMTPModule.listConversations(clientAddress)).map(
+    (json: string) => {
+      return new Conversation(JSON.parse(json));
+    }
+  );
 }
 
 export async function listMessages(
+  clientAddress: string,
   conversationTopic: string,
   conversationID: string | undefined,
   limit?: number | undefined,
@@ -40,6 +45,7 @@ export async function listMessages(
 ): Promise<DecodedMessage[]> {
   return (
     await XMTPModule.loadMessages(
+      clientAddress,
       conversationTopic,
       conversationID,
       limit,
@@ -53,40 +59,63 @@ export async function listMessages(
 
 // TODO: support conversation ID
 export async function createConversation(
+  clientAddress: string,
   peerAddress: string,
   conversationID: string | undefined
 ): Promise<Conversation> {
   return new Conversation(
-    JSON.parse(await XMTPModule.createConversation(peerAddress, conversationID))
+    JSON.parse(
+      await XMTPModule.createConversation(
+        clientAddress,
+        peerAddress,
+        conversationID
+      )
+    )
   );
 }
 
 export async function sendMessage(
+  clientAddress: string,
   conversationTopic: string,
   conversationID: string | undefined,
   content: any
 ): Promise<DecodedMessage> {
   return JSON.parse(
-    await XMTPModule.sendMessage(conversationTopic, conversationID, content)
+    await XMTPModule.sendMessage(
+      clientAddress,
+      conversationTopic,
+      conversationID,
+      content
+    )
   );
 }
 
-export function subscribeToConversations() {
-  return XMTPModule.subscribeToConversations();
+export function subscribeToConversations(clientAddress: string) {
+  return XMTPModule.subscribeToConversations(clientAddress);
 }
 
 export async function subscribeToMessages(
+  clientAddress: string,
   topic: string,
   conversationID?: string | undefined
 ) {
-  return await XMTPModule.subscribeToMessages(topic, conversationID);
+  return await XMTPModule.subscribeToMessages(
+    clientAddress,
+    topic,
+    conversationID
+  );
 }
 
 export async function unsubscribeFromMessages(
+  clientAddress: string,
   topic: string,
   conversationID?: string | undefined
 ) {
-  return await XMTPModule.unsubscribeFromMessages(topic, conversationID);
+  return await XMTPModule.unsubscribeFromMessages(
+    clientAddress,
+    topic,
+    conversationID
+  );
 }
 
 export function registerPushToken(pushServer: string, token: string) {

@@ -2,6 +2,7 @@
 {
   "extends": "expo-module-scripts/tsconfig.base",
   "compilerOptions": {
+    "lib": ["es2015", "DOM"],
     "outDir": "./build"
   },
   "include": ["./src"],

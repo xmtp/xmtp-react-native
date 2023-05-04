@@ -1,9 +1,8 @@
 import { Signer, utils } from "ethers";
-
 import Conversations from "./Conversations";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
-
+declare const Buffer;
 export class Client {
   address: string;
   conversations: Conversations;
@@ -52,6 +51,6 @@ export class Client {
 
   constructor(address: string) {
     this.address = address;
-    this.conversations = new Conversations();
+    this.conversations = new Conversations(this);
   }
 }
