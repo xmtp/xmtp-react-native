@@ -140,7 +140,11 @@ class XMTPModule : Module() {
 
         AsyncFunction("loadMessages") { clientAddress: String, conversationTopic: String, conversationID: String?, limit: Int?, before: Long?, after: Long? ->
             val conversation =
-                findConversation(clientAddress = clientAddress, topic = conversationTopic, conversationId = conversationID)
+                findConversation(
+                    clientAddress = clientAddress,
+                    topic = conversationTopic,
+                    conversationId = conversationID
+                )
                     ?: throw XMTPException("no conversation found for $conversationTopic")
             val beforeDate = if (before != null) Date(before) else null
             val afterDate = if (after != null) Date(after) else null
@@ -152,7 +156,11 @@ class XMTPModule : Module() {
         // TODO: Support content types
         AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, conversationID: String?, content: String ->
             val conversation =
-                findConversation(clientAddress = clientAddress, topic = conversationTopic, conversationId = conversationID)
+                findConversation(
+                    clientAddress = clientAddress,
+                    topic = conversationTopic,
+                    conversationId = conversationID
+                )
                     ?: throw XMTPException("no conversation found for $conversationTopic")
             val preparedMessage = conversation.prepareMessage(content = content)
             val decodedMessage = preparedMessage.decodedMessage()
@@ -177,11 +185,19 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String, conversationID: String? ->
-            subscribeToMessages(clientAddress = clientAddress, topic = topic, conversationId = conversationID)
+            subscribeToMessages(
+                clientAddress = clientAddress,
+                topic = topic,
+                conversationId = conversationID
+            )
         }
 
         AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String, conversationID: String? ->
-            unsubscribeFromMessages(clientAddress = clientAddress, topic = topic, conversationId = conversationID)
+            unsubscribeFromMessages(
+                clientAddress = clientAddress,
+                topic = topic,
+                conversationId = conversationID
+            )
         }
 
         Function("registerPushToken") { pushServer: String, token: String ->
@@ -202,7 +218,11 @@ class XMTPModule : Module() {
             val encryptedMessageData = Base64.decode(encryptedMessage, Base64.NO_WRAP)
             val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
             val conversation =
-                findConversation(clientAddress = clientAddress, topic = topic, conversationId = conversationID)
+                findConversation(
+                    clientAddress = clientAddress,
+                    topic = topic,
+                    conversationId = conversationID
+                )
                     ?: throw XMTPException("no conversation found for $topic")
             val decodedMessage = conversation.decode(envelope)
             DecodedMessageWrapper.encode(decodedMessage)
@@ -212,7 +232,11 @@ class XMTPModule : Module() {
     //
     // Helpers
     //
-    private fun findConversation(clientAddress: String, topic: String, conversationId: String?): Conversation? {
+    private fun findConversation(
+        clientAddress: String,
+        topic: String,
+        conversationId: String?,
+    ): Conversation? {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
         val cacheKey: String = if (!conversationId.isNullOrBlank()) {
@@ -260,29 +284,42 @@ class XMTPModule : Module() {
 
     private fun subscribeToMessages(clientAddress: String, topic: String, conversationId: String?) {
         val conversation =
-            findConversation(clientAddress = clientAddress, topic = topic, conversationId = conversationId) ?: return
-        subscriptions[conversation.cacheKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                conversation.streamMessages().collect { message ->
-                    sendEvent(
-                        "message",
-                        mapOf(
-                            "topic" to conversation.topic,
-                            "conversationID" to conversation.conversationId,
-                            "messageJSON" to DecodedMessageWrapper.encode(message)
+            findConversation(
+                clientAddress = clientAddress,
+                topic = topic,
+                conversationId = conversationId
+            ) ?: return
+        subscriptions[conversation.cacheKey(clientAddress)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    conversation.streamMessages().collect { message ->
+                        sendEvent(
+                            "message",
+                            mapOf(
+                                "topic" to conversation.topic,
+                                "conversationID" to conversation.conversationId,
+                                "messageJSON" to DecodedMessageWrapper.encode(message)
+                            )
                         )
-                    )
+                    }
+                } catch (e: Exception) {
+                    Log.e("XMTPModule", "Error in messages subscription: $e")
+                    subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
                 }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in messages subscription: $e")
-                subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
             }
-        }
     }
 
-    private fun unsubscribeFromMessages(clientAddress: String, topic: String, conversationId: String?) {
+    private fun unsubscribeFromMessages(
+        clientAddress: String,
+        topic: String,
+        conversationId: String?,
+    ) {
         val conversation =
-            findConversation(clientAddress = clientAddress, topic = topic, conversationId = conversationId) ?: return
+            findConversation(
+                clientAddress = clientAddress,
+                topic = topic,
+                conversationId = conversationId
+            ) ?: return
         subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
     }
 }
