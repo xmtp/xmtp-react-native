@@ -218,7 +218,7 @@ public class XMTPModule: Module {
             // TODO
         }
 
-        AsyncFunction("decodeMessage") { (topic: String, encryptedMessage: String, conversationID: String?) in
+        AsyncFunction("decodeMessage") { (clientAddress: String, topic: String, encryptedMessage: String, conversationID: String?) in
             // TODO
         }
   }
