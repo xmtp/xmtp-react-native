@@ -19,9 +19,11 @@ import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.SigningKey
 import org.xmtp.android.library.XMTPEnvironment
 import org.xmtp.android.library.XMTPException
+import org.xmtp.android.library.messages.EnvelopeBuilder
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
+import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.message.contents.SignatureOuterClass
 import java.util.Date
 import java.util.UUID
@@ -84,6 +86,7 @@ class XMTPModule : Module() {
     )
 
     private var client: Client? = null
+    private var xmtpPush: XMTPPush? = null
     private var signer: ReactNativeSigner? = null
     private val conversations: MutableMap<String, Conversation> = mutableMapOf()
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
@@ -92,7 +95,7 @@ class XMTPModule : Module() {
         Name("XMTP")
         Events("sign", "authed", "conversation", "message")
 
-        Function("address") {
+        Function("address") { clientAddress: String ->
             if (client != null) {
                 client!!.address
             } else {
@@ -129,7 +132,7 @@ class XMTPModule : Module() {
         
         //
         // Client API
-        AsyncFunction("listConversations") { ->
+        AsyncFunction("listConversations") { clientAddress: String ->
             if (client == null) {
                 throw XMTPException("No client")
             }
@@ -140,7 +143,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadMessages") { conversationTopic: String, conversationID: String?, limit: Int?, before: Long?, after: Long? ->
+        AsyncFunction("loadMessages") { clientAddress: String, conversationTopic: String, conversationID: String?, limit: Int?, before: Long?, after: Long? ->
             if (client == null) {
                 throw XMTPException("No client")
             }
@@ -155,7 +158,7 @@ class XMTPModule : Module() {
         }
         
         // TODO: Support content types
-        AsyncFunction("sendMessage") { conversationTopic: String, conversationID: String?, content: String ->
+        AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, conversationID: String?, content: String ->
             if (client == null) {
                 throw XMTPException("No client")
             }
@@ -168,7 +171,7 @@ class XMTPModule : Module() {
             DecodedMessageWrapper.encode(decodedMessage)
         }
         
-        AsyncFunction("createConversation") { peerAddress: String, conversationID: String? ->
+        AsyncFunction("createConversation") { clientAddress: String, peerAddress: String, conversationID: String? ->
             if (client == null) {
                 throw XMTPException("No client")
             }
@@ -181,14 +184,43 @@ class XMTPModule : Module() {
             ConversationWrapper.encode(conversation)
         }
 
-        Function("subscribeToConversations") { subscribeToConversations() }
+        Function("subscribeToConversations") { clientAddress: String ->
+            subscribeToConversations()
+        }
         
-        AsyncFunction("subscribeToMessages") { topic: String, conversationID: String? ->
+        AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String, conversationID: String? ->
             subscribeToMessages(topic = topic, conversationId = conversationID)
         }
         
-        AsyncFunction("unsubscribeFromMessages") { topic: String, conversationID: String? ->
+        AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String, conversationID: String? ->
             unsubscribeFromMessages(topic = topic, conversationId = conversationID)
+        }
+
+        Function("registerPushToken") { pushServer: String, token: String ->
+            xmtpPush = XMTPPush(appContext.reactContext!!, pushServer)
+            xmtpPush?.register(token)
+        }
+
+        Function("subscribePushTopics") { topics: List<String> ->
+            if (topics.isNotEmpty()) {
+                if (xmtpPush == null) {
+                    throw XMTPException("Push server not registered")
+                }
+                xmtpPush?.subscribe(topics)
+            }
+        }
+
+        AsyncFunction("decodeMessage") { topic: String, encryptedMessage: String, conversationID: String? ->
+            if (client == null) {
+                throw XMTPException("No client")
+            }
+            val encryptedMessageData = Base64.decode(encryptedMessage, Base64.NO_WRAP)
+            val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
+            val conversation =
+                findConversation(topic = topic, conversationId = conversationID)
+                    ?: throw XMTPException("no conversation found for $topic")
+            val decodedMessage = conversation.decode(envelope)
+            DecodedMessageWrapper.encode(decodedMessage)
         }
     }
 

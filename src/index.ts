@@ -118,8 +118,27 @@ export async function unsubscribeFromMessages(
   );
 }
 
+export function registerPushToken(pushServer: string, token: string) {
+  return XMTPModule.registerPushToken(pushServer, token);
+}
+
+export function subscribePushTopics(topics: string[]) {
+  return XMTPModule.subscribePushTopics(topics);
+}
+
+export async function decodeMessage(
+  topic: string,
+  encryptedMessage: string,
+  conversationID?: string | undefined
+): Promise<DecodedMessage> {
+  return JSON.parse(
+    await XMTPModule.decodeMessage(topic, encryptedMessage, conversationID)
+  );
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);
 
 export { Client } from "./lib/Client";
 export { Conversation } from "./lib/Conversation";
 export { DecodedMessage } from "./lib/DecodedMessage";
+export { XMTPPush } from "./lib/XMTPPush";

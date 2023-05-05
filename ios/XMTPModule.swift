@@ -209,6 +209,18 @@ public class XMTPModule: Module {
 		AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String, conversationID: String?) in
 			try await unsubscribeFromMessages(clientAddress: clientAddress, topic: topic, conversationID: conversationID)
 		}
+
+		Function("registerPushToken") { (pushServer: String, token: String) in
+            // TODO
+        }
+
+        Function("subscribePushTopics") { (topics: [String]) in
+            // TODO
+        }
+
+        AsyncFunction("decodeMessage") { (topic: String, encryptedMessage: String, conversationID: String?) in
+            // TODO
+        }
   }
 
 	//

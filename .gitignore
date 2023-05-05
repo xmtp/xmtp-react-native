@@ -36,6 +36,7 @@ project.xcworkspace
 .settings
 local.properties
 android.iml
+*google-services.json
 
 # Cocoapods
 #
