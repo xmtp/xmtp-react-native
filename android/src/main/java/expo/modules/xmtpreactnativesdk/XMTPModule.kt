@@ -260,7 +260,7 @@ class XMTPModule : Module() {
 
     private fun subscribeToMessages(clientAddress: String, topic: String, conversationId: String?) {
         val conversation =
-            findConversation(topic = topic, conversationId = conversationId) ?: return
+            findConversation(clientAddress = clientAddress, topic = topic, conversationId = conversationId) ?: return
         subscriptions[conversation.cacheKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 conversation.streamMessages().collect { message ->

@@ -62,6 +62,7 @@ export class Conversation {
   async decodeMessage(encryptedMessage: string): Promise<DecodedMessage> {
     try {
       return await XMTP.decodeMessage(
+        this.clientAddress,
         this.topic,
         encryptedMessage,
         this.conversationID
