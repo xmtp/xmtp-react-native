@@ -69,13 +69,13 @@ Your app must use Android `minSdkVersion = 22` to work with the `xmtp-react-nati
 
 We're working on testing the end-to-end installation and will provide more platform-specific configuration details.
 
-# Enable the example app to send push notifications
+## Enable the example app to send push notifications
 
 You can use a Firebase Cloud Messaging server and an example push notification server to enable the `xmtp-react-native` example app to send push notifications.
 
 Perform this setup to understand how you might want to enable push notifications for your own app built with the `xmtp-react-native` SDK.
 
-## Set up a Firebase Cloud Messaging server
+### Set up a Firebase Cloud Messaging server
 
 For this tutorial, we'll use [Firebase Cloud Messaging](https://console.firebase.google.com/) (FCM) as a convenient way to set up a messaging server.
 
@@ -87,7 +87,7 @@ For this tutorial, we'll use [Firebase Cloud Messaging](https://console.firebase
 
 4. Generate FCM credentials, which you need to run the example notification server. To do this, from the FCM dashboard, click the gear icon next to **Project Overview** and select **Project settings**. Select **Service accounts**. Select **Go** and click **Generate new private key**. 
 
-## Run an example notification server
+### Run an example notification server
 
 Now that you have an FCM server set up, take a look at the [export-kotlin-proto-code](https://github.com/xmtp/example-notification-server-go/tree/np/export-kotlin-proto-code) branch in the `example-notifications-server-go` repo. 
 
@@ -119,9 +119,9 @@ This example branch can serve as the basis for what you might want to provide fo
 
 4. You should now be able to see push notifications coming across the local network.
 
-## Update the Android example app to send push notifications
+### Update the Android example app to send push notifications
 
-1. Add your `google-services.json` file to the `example/android/app` folder, if you haven't already done it as a part of the FCM project creation process.
+1. Add your `google-services.json` file to the `example/android/app` folder if you haven't already done it as a part of the FCM project creation process.
 
 2. Uncomment `apply plugin: 'com.google.gms.google-services'` in the example app's `build.gradle` file.
 
@@ -129,9 +129,12 @@ This example branch can serve as the basis for what you might want to provide fo
 
 4. Sync the gradle project.
 
-5. Replace `YOUR_SERVER_ADDRESS` in the `PullController.ts` file (if you're using the example notification server it should be something like `YOURIPADDRESS:8080` since the Android emulator takes over localhost.)
+5. Replace `YOUR_SERVER_ADDRESS` in the `PullController.ts` file. If you're using the example notification server, it should be something like `YOURIPADDRESS:8080` since the Android emulator takes over localhost.
 
 6. Change the example app's environment to `production` in both places in `AuthView.tsx`.
 
-7. Replace `YOUR_FIREBASE_SENDER_ID` in the `PullController.ts` with your sender id from firebase
+7. Replace `YOUR_FIREBASE_SENDER_ID` in the `PullController.ts` with your sender ID from Firebase.
 
+### Update the iOS example app to send push notifications
+
+Coming soon.
