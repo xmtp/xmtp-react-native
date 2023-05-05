@@ -123,9 +123,15 @@ This example branch can serve as the basis for what you might want to provide fo
 
 1. Add your `google-services.json` file to the `example/android/app` folder, if you haven't already done it as a part of the FCM project creation process.
 
-2. Replace `YOUR_SERVER_ADDRESS` in the `PullController.ts` file (if you're using the example notification server it should be something like `YOURIPADDRESS:8080` since the Android emulator takes over localhost.)
+2. Uncomment `apply plugin: 'com.google.gms.google-services'` in the example app's `build.gradle` file.
 
-3. Change the example app's environment to `production` in both places in `AuthView.tsx`.
+3. Uncomment `classpath('com.google.gms:google-services:4.3.15')` in the top level of the example app's `build.gradle` file.
 
-4. Replace `YOUR_FIREBASE_SENDER_ID` in the `PullController.ts` with your sender id from firebase
+4. Sync the gradle project.
+
+5. Replace `YOUR_SERVER_ADDRESS` in the `PullController.ts` file (if you're using the example notification server it should be something like `YOURIPADDRESS:8080` since the Android emulator takes over localhost.)
+
+6. Change the example app's environment to `production` in both places in `AuthView.tsx`.
+
+7. Replace `YOUR_FIREBASE_SENDER_ID` in the `PullController.ts` with your sender id from firebase
 

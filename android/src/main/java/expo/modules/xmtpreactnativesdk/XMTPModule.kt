@@ -95,7 +95,7 @@ class XMTPModule : Module() {
         Name("XMTP")
         Events("sign", "authed", "conversation", "message")
 
-        Function("address") {
+        Function("address") { clientAddress: String ->
             if (client != null) {
                 client!!.address
             } else {
@@ -132,7 +132,7 @@ class XMTPModule : Module() {
         
         //
         // Client API
-        AsyncFunction("listConversations") { ->
+        AsyncFunction("listConversations") { clientAddress: String ->
             if (client == null) {
                 throw XMTPException("No client")
             }
@@ -143,7 +143,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadMessages") { conversationTopic: String, conversationID: String?, limit: Int?, before: Long?, after: Long? ->
+        AsyncFunction("loadMessages") { clientAddress: String, conversationTopic: String, conversationID: String?, limit: Int?, before: Long?, after: Long? ->
             if (client == null) {
                 throw XMTPException("No client")
             }
@@ -158,7 +158,7 @@ class XMTPModule : Module() {
         }
         
         // TODO: Support content types
-        AsyncFunction("sendMessage") { conversationTopic: String, conversationID: String?, content: String ->
+        AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, conversationID: String?, content: String ->
             if (client == null) {
                 throw XMTPException("No client")
             }
@@ -171,7 +171,7 @@ class XMTPModule : Module() {
             DecodedMessageWrapper.encode(decodedMessage)
         }
         
-        AsyncFunction("createConversation") { peerAddress: String, conversationID: String? ->
+        AsyncFunction("createConversation") { clientAddress: String, peerAddress: String, conversationID: String? ->
             if (client == null) {
                 throw XMTPException("No client")
             }
@@ -184,13 +184,15 @@ class XMTPModule : Module() {
             ConversationWrapper.encode(conversation)
         }
 
-        Function("subscribeToConversations") { subscribeToConversations() }
+        Function("subscribeToConversations") { clientAddress: String ->
+            subscribeToConversations()
+        }
         
-        AsyncFunction("subscribeToMessages") { topic: String, conversationID: String? ->
+        AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String, conversationID: String? ->
             subscribeToMessages(topic = topic, conversationId = conversationID)
         }
         
-        AsyncFunction("unsubscribeFromMessages") { topic: String, conversationID: String? ->
+        AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String, conversationID: String? ->
             unsubscribeFromMessages(topic = topic, conversationId = conversationID)
         }
 
