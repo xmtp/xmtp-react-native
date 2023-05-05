@@ -216,10 +216,11 @@ class XMTPModule : Module() {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
         val cacheKey: String = if (!conversationId.isNullOrBlank()) {
-            "${topic}:${conversationId}"
+            "${clientAddress}:${topic}:${conversationId}"
         } else {
-            topic
+            "${clientAddress}:${topic}"
         }
+
         val cacheConversation = conversations[cacheKey]
         if (cacheConversation != null) {
             return cacheConversation
