@@ -1,5 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin: "com.facebook.react"
+apply plugin: 'kotlin-android'
 // apply plugin: 'com.google.gms.google-services'
 
 import com.android.build.OutputFile
@@ -121,6 +122,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
+        // For Espresso
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
     splits {
@@ -141,6 +144,8 @@ android {
     }
     buildTypes {
         debug {
+            testCoverageEnabled = true
+            debuggable = true
             signingConfig signingConfigs.debug
         }
         release {
@@ -233,6 +238,11 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // For Espresso
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.10"
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test:rules:1.5.0'
 }
 
 apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json')"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
