@@ -26,6 +26,7 @@ class ConversationWrapper {
         fun encode(model: ConversationWithClientAddress): String {
             val gson = GsonBuilder().create()
             val conversation = mapOf(
+                "clientAddress" to model.clientAddress,
                 "topic" to model.topic,
                 "peerAddress" to model.peerAddress,
                 "version" to model.version,
