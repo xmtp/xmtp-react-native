@@ -207,11 +207,12 @@ The expo-module.config.json contains:
 
 Each of those platform-specific module repos contain a platform-specific build manifest (podspec or build.gradle).
 These files (build.gradle, XMTPReactNative.podspec) reference the XMTP Android and iOS SDKs respectively:
+NOTE: this just provides an example, the versions should be autopopulated by the `npm install` of the react native SDK
 ```
 # Android
-  implementation "org.xmtp:android:0.1.1"
+  implementation "org.xmtp:android:0.1.3-EXAMPLE_VERSION"
 # iOS
-  s.dependency "XMTP", "= 0.1.3-beta0"
+  s.dependency "XMTP", "= 0.1.3-beta0-EXAMPLE_VERSION"
 ```
 These SDKs are wrapped by the Kotlin/Swift files in the xmtp-react-native repository, and surfaced into JS land. Our example project just consumes the Typescript API provided by xmtp/xmtp-react-native/src
 ```
