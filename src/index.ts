@@ -127,12 +127,13 @@ export function subscribePushTopics(topics: string[]) {
 }
 
 export async function decodeMessage(
+  clientAddress: string,
   topic: string,
   encryptedMessage: string,
   conversationID?: string | undefined
 ): Promise<DecodedMessage> {
   return JSON.parse(
-    await XMTPModule.decodeMessage(topic, encryptedMessage, conversationID)
+    await XMTPModule.decodeMessage(clientAddress, topic, encryptedMessage, conversationID)
   );
 }
 

@@ -1,5 +1,5 @@
-import { Conversation } from "./Conversation";
 import { Client } from "./Client";
+import { Conversation } from "./Conversation";
 import * as XMTPModule from "../index";
 
 type Context = {

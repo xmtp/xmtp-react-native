@@ -71,6 +71,8 @@ function TestView({
       {result == "failure" && (
         <Text
           testID="FAIL"
+          accessible
+          accessibilityLabel="FAIL"
           style={{ paddingHorizontal: 12, paddingBottom: 12 }}
         >
           {test.name} failed
@@ -78,7 +80,12 @@ function TestView({
       )}
       {errorMessage && (
         <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
-          <Text testID="FAIL" style={{ color: "#721c24" }}>
+          <Text
+            testID="FAIL"
+            accessible
+            accessibilityLabel="FAIL"
+            style={{ color: "#721c24" }}
+          >
             Error: {errorMessage}
           </Text>
         </View>
@@ -94,7 +101,9 @@ export default function TestsView(): JSX.Element {
     <ScrollView>
       <View>
         <View style={{ padding: 12 }}>
-          <Text testID="Test View">Unit Tests</Text>
+          <Text testID="Test View" accessible accessibilityLabel="Test View">
+            Unit Tests
+          </Text>
           <View
             style={{ flexDirection: "row", justifyContent: "space-between" }}
           >
@@ -103,11 +112,22 @@ export default function TestsView(): JSX.Element {
             </Text>
 
             {completedTests == tests.length && (
-              <Text testID="tests-complete">Done</Text>
+              <Text
+                testID="tests-complete"
+                accessible
+                accessibilityLabel="tests-complete"
+              >
+                Done
+              </Text>
             )}
           </View>
         </View>
-        <View testID="tests" style={{ paddingHorizontal: 12 }}>
+        <View
+          testID="tests"
+          accessible
+          accessibilityLabel="tests-complete"
+          style={{ paddingHorizontal: 12 }}
+        >
           {tests.map((test: Test, i) => {
             return (
               <TestView

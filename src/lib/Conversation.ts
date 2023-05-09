@@ -1,6 +1,5 @@
 import { DecodedMessage } from "./DecodedMessage";
 import * as XMTP from "../index";
-import { Client } from "./Client";
 
 export class Conversation {
   clientAddress: string;
@@ -62,6 +61,7 @@ export class Conversation {
   async decodeMessage(encryptedMessage: string): Promise<DecodedMessage> {
     try {
       return await XMTP.decodeMessage(
+        this.clientAddress,
         this.topic,
         encryptedMessage,
         this.conversationID
