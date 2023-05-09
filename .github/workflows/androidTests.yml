@@ -47,6 +47,7 @@ jobs:
       - name: Gradle Run Integration Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
+          working-directory: ./example/android
           api-level: 29
           script: ./gradlew connectedCheck
       - name: Stop local test server
