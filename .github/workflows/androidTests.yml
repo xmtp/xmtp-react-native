@@ -47,7 +47,7 @@ jobs:
       - name: Gradle Run Integration Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: 29
           script: ./gradlew connectedCheck
       - name: Stop local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
