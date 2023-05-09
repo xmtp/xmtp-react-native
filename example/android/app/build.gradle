@@ -124,6 +124,24 @@ android {
         versionName "1.0.0"
         // For Espresso
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        testInstrumentationRunnerArguments useTestStorageService: 'true'
+    }
+
+    testOptions {
+        managedDevices {
+            devices {
+                // run with ../gradlew  nexusOneApi30DebugAndroidTest
+                nexusOneApi30(com.android.build.api.dsl.ManagedVirtualDevice) {
+                    // A lower resolution device is used here for better emulator performance
+                    device = "Nexus One"
+                    apiLevel = 30
+                    // Also use the AOSP ATD image for better emulator performance
+                    // The androidx.test screenshot APIs will automatically enable hardware rendering
+                    // to take a screenshot
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
     }
 
     splits {
@@ -241,8 +259,11 @@ dependencies {
 
     // For Espresso
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.10"
+    implementation "androidx.tracing:tracing:1.1.0"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     androidTestImplementation 'androidx.test:rules:1.5.0'
+    androidTestImplementation "androidx.test.ext:junit-ktx:1.1.5"
+    androidTestUtil "androidx.test.services:test-services:1.4.2"
 }
 
 apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json')"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
