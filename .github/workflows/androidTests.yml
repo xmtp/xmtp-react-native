@@ -52,11 +52,12 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           working-directory: ./example/android
-          api-level: 33
-          target: google_apis
-          arch: x86_64
-          ram-size: 1024M
-          disk-size: 2048M
+          api-level: 30
+          target: default
+          arch: x86
+          profile: Nexus 6
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: ./gradlew connectedCheck
       - name: Stop local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
