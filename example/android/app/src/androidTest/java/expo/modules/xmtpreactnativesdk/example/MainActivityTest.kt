@@ -27,6 +27,12 @@ class MainActivityTest {
 
     @Test
     fun testRunTests() {
+        try {
+            Thread.sleep(5000)
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+        }
+
         waitForDisplayed(withContentDescription("Unit-tests")) { button ->
             // Go to unit tests page
             onView(button).perform(click())
