@@ -53,6 +53,7 @@ jobs:
         with:
           working-directory: ./example/android
           api-level: 29
+          disable-animations: true
           script: ./gradlew connectedCheck
       - name: Stop local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
