@@ -52,8 +52,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           working-directory: ./example/android
-          api-level: 33
-          target: google_apis
+          api-level: 29
           arch: x86_64
           ram-size: 1024M
           disk-size: 2048M
