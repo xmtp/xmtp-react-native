@@ -54,6 +54,10 @@ jobs:
           working-directory: ./example/android
           api-level: 29
           disable-animations: true
+          force-avd-creation: false
+          ram-size: 4096M
+          emulator-boot-timeout: 12000
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save
           script: ./gradlew connectedCheck
       - name: Stop local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
