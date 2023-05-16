@@ -17,7 +17,14 @@ export default function ConversationListView({
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
   async function refreshConversations() {
+    // Write code to time this function and divide by number of conversations
+    // to get an idea of how long it takes to load a conversation.
+    let start = Date.now();
     const conversations = await client.conversations.list();
+    let end = Date.now();
+    console.log(
+      `Loaded ${conversations.length} conversations in ${end - start}ms`
+    );
     setConversations(conversations);
   }
 
