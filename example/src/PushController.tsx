@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { PushNotificationIOS } from "react-native/Libraries/PushNotificationIOS/PushNotificationIOS";
+import PushNotificationIOS from "@react-native-community/push-notification-ios";
 import PushNotification, { Importance } from "react-native-push-notification";
 import { XMTPPush, Client } from "xmtp-react-native-sdk";
 
