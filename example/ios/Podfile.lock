@@ -45,9 +45,9 @@ PODS:
   - hermes-engine/Pre-built (0.71.7)
   - libevent (2.1.12)
   - Logging (1.0.0)
-  - MMKV (1.2.15):
-    - MMKVCore (~> 1.2.15)
-  - MMKVCore (1.2.15)
+  - MMKV (1.2.16):
+    - MMKVCore (~> 1.2.16)
+  - MMKVCore (1.2.16)
   - RCT-Folly (2021.07.22.00):
     - boost
     - DoubleConversion
@@ -408,15 +408,15 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.1.3-beta0):
+  - XMTP (0.2.1-alpha0):
     - Connect-Swift
     - GzipSwift
     - web3.swift
-    - XMTPRust (= 0.1.2-beta0)
+    - XMTPRust (= 0.2.2-beta0)
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
-    - XMTP (= 0.1.3-beta0)
-  - XMTPRust (0.1.2-beta0)
+    - XMTP (= 0.2.1-alpha0)
+  - XMTPRust (0.2.2-beta0)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -618,8 +618,8 @@ SPEC CHECKSUMS:
   hermes-engine: 4438d2b8bf8bebaba1b1ac0451160bab59e491f8
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
   Logging: 9ef4ecb546ad3169398d5a723bc9bea1c46bef26
-  MMKV: 7f34558bbb5a33b0eaefae2de4b6a20a2ffdad6f
-  MMKVCore: ddf41b9d9262f058419f9ba7598719af56c02cd3
+  MMKV: 784471ce430a2e2d16afef9053d63fab1b357d9e
+  MMKVCore: 9cfef4c48c6c46f66226fc2e4634d78490206a48
   RCT-Folly: 424b8c9a7a0b9ab2886ffe9c3b041ef628fd4fb1
   RCTRequired: 5a4a30ac20c86eeadd6844a9328f78d4168cf9b2
   RCTTypeSafety: 279fc5861a89f0f37db3a585f27f971485b4b734
@@ -656,9 +656,9 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: afced68785854575756db965e9da52bbf3dc45e7
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: b2286639f0cff509e909eed5b0ce2aed7eea3e77
-  XMTPReactNative: bdd05452ff13f1276f13ca3d1034535c40bf5970
-  XMTPRust: 2c356f57f034d771717933a6127a7d51667f9843
+  XMTP: f24cff57493f70e27eb91e10fbe5608960d41503
+  XMTPReactNative: 58df550b5ea6df1ca574b3d9c3aa14f3b845703f
+  XMTPRust: 10f79ec17747b15d3c626984f433b4f5ce948fff
   Yoga: d56980c8914db0b51692f55533409e844b66133c
 
 PODFILE CHECKSUM: 522d88edc2d5fac4825e60a121c24abc18983367
