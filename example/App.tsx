@@ -1,11 +1,12 @@
 import { ThirdwebProvider } from "@thirdweb-dev/react-native";
 import React, { useState } from "react";
-import { Button, SafeAreaView, StyleSheet, View } from "react-native";
+import { Button, SafeAreaView, View } from "react-native";
 import * as XMTP from "xmtp-react-native-sdk";
 
 import AuthView from "./src/AuthView";
 import HomeView from "./src/HomeView";
 import TestsView from "./src/TestsView";
+import { XMTPProvider } from "@xmtp/react-sdk";
 
 export default function App() {
   const [client, setClient] = useState<XMTP.Client | null>(null);
@@ -17,29 +18,22 @@ export default function App() {
     </SafeAreaView>
   ) : (
     <ThirdwebProvider activeChain="mainnet">
-      <SafeAreaView style={{ flexGrow: 1 }}>
-        {client != null ? (
-          <HomeView client={client} />
-        ) : (
-          <View>
-            <AuthView setClient={setClient} />
-            <Button
-              onPress={() => setIsTesting(true)}
-              title="Unit tests"
-              accessibilityLabel="Unit-tests"
-            />
-          </View>
-        )}
-      </SafeAreaView>
+      <XMTPProvider>
+        <SafeAreaView style={{ flexGrow: 1 }}>
+          {client != null ? (
+            <HomeView client={client} />
+          ) : (
+            <View>
+              <AuthView setClient={setClient} />
+              <Button
+                onPress={() => setIsTesting(true)}
+                title="Unit tests"
+                accessibilityLabel="Unit-tests"
+              />
+            </View>
+          )}
+        </SafeAreaView>
+      </XMTPProvider>
     </ThirdwebProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
