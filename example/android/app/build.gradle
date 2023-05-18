@@ -1,7 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin: "com.facebook.react"
 apply plugin: 'kotlin-android'
-// apply plugin: 'com.google.gms.google-services'
 
 import com.android.build.OutputFile
 
@@ -216,7 +215,6 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-    implementation platform('com.google.firebase:firebase-bom:31.5.0')
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
