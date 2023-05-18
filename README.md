@@ -9,15 +9,7 @@ This repo provides a package you can use to build with XMTP in a React Native or
 >
 > However, we do **not** recommend using Pre-Preview software in production apps. Software in this status will change as we add features and iterate based on feedback.
 
-Currently, these are the features supported by this SDK:
-
-- Create a `Client` from an ethers `Signer`
-- List conversations
-- List messages (unpaginated for now) in a conversation
-- Start a conversation
-- The SDK connects to the `dev` environment only. We are working on support for connecting to `production` and `local` environments. You can follow the work in [this issue](https://github.com/xmtp/xmtp-react-native/issues/4).
-
-We're still working on adding several features to bring this SDK to parity with the [XMTP client SDK for JavaScript](https://github.com/xmtp/xmtp-js) (`xmtp-js`). Here's a [list of features and issues](https://github.com/xmtp/xmtp-react-native/issues) we're working on.
+We're still working on adding several features to bring this SDK to parity with the [XMTP client SDK for JavaScript](https://github.com/xmtp/xmtp-js) (`xmtp-js`). Here's a [list of features and issues](https://github.com/xmtp/xmtp-react-native/issues/14) we're working on.
 
 Is there a feature you need that's not on the list? Please [open an issue](https://github.com/xmtp/xmtp-react-native/issues).
 
@@ -30,6 +22,8 @@ To learn more about XMTP and get answers to frequently asked questions, see [FAQ
 ## Example app
 
 This repo provides an [example app](example) that you can use to experiment and explore implementation details.
+
+Follow the [React Native guide](https://reactnative.dev/docs/environment-setup) to set up a CLI environment.
 
 To use the example app, run:
 
