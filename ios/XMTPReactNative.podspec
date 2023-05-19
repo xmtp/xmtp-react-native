@@ -24,5 +24,5 @@ Pod::Spec.new do |s|
   }
   
   s.source_files = "**/*.{h,m,swift}"
-  s.dependency "XMTP", "= 0.1.3-beta0"
+  s.dependency "XMTP", "= 0.2.2-alpha0"
 end
