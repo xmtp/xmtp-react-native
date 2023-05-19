@@ -124,8 +124,12 @@ public class XMTPModule: Module {
 
 		// Generate a random wallet and set the client to that
 		AsyncFunction("createRandom") { (environment: String) -> String in
-			let privateKey = try PrivateKey.generate()
-			let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["dev"]!)
+			// Data from hex: 0836200ffafa17a3cb8b54f22d6afa60b13da48726543241adc5c250dbb0e0cd
+			// aka 2k many convo test wallet
+			let privateKeyData = Data([8,54,32,15,250,250,23,163,203,139,84,242,45,106,250,96,177,61,164,135,38,84,50,65,173,197,194,80,219,176,224,205])
+			let privateKey = try PrivateKey(privateKeyData)
+			// Use hardcoded privateKey for testing
+	  		let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["dev"]!)
 			let client = try await Client.create(account: privateKey, options: options)
 
 			self.clients[client.address] = client
