@@ -124,10 +124,18 @@ class XMTPModule : Module() {
         // Generate a random wallet and set the client to that
         AsyncFunction("createRandom") { environment: String ->
             logV("createRandom")
-            val privateKey = PrivateKeyBuilder()
-            val options =
-                ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
-            val randomClient = Client().create(account = privateKey, options = options)
+            // Build from [8,54,32,15,250,250,23,163,203,139,84,242,45,106,250,96,177,61,164,135,38,84,50,65,173,197,194,80,219,176,224,205]
+            // or in hex 0836200ffafa17a3cb8b54f22d6afa60b13da48726543241adc5c250dbb0e0cd
+            // aka 2k many convos test wallet
+            // Create a ByteArray with the 32 bytes above
+            val privateKeyData = listOf(0x08, 0x36, 0x20, 0x0f, 0xfa, 0xfa, 0x17, 0xa3, 0xcb, 0x8b, 0x54, 0xf2, 0x2d, 0x6a, 0xfa, 0x60, 0xb1, 0x3d, 0xa4, 0x87, 0x26, 0x54, 0x32, 0x41, 0xad, 0xc5, 0xc2, 0x50, 0xdb, 0xb0, 0xe0, 0xcd)
+                .map { it.toByte() }
+                .toByteArray()
+            // Use hardcoded privateKey
+            val privateKey = PrivateKeyBuilder.buildFromPrivateKeyData(privateKeyData)
+						val privateKeyBuilder = PrivateKeyBuilder(privateKey)
+            val options = ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
+            val randomClient = Client().create(account = privateKeyBuilder, options = options)
             clients[randomClient.address] = randomClient
             randomClient.address
         }
