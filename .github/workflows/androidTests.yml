@@ -36,11 +36,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
 
-      - name: Install React Native CLI
-        run: npm i -g react-native-cli --force
-
       - name: Install dependencies
         run: npm i --force
+
+      - name: Install React Native CLI
+        run: npm i -g react-native-cli --force
 
       # - name: Install docker
       #   run: |
@@ -64,10 +64,10 @@ jobs:
       - name: Gradle Run Integration Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
+          working-directory: ./example
           api-level: 29
           script: |
-            cd example
-            npx react-native run-android --variant=release
+            react-native run-android --variant=release
             sleep 15
             cd android
             ./gradlew connectedCheck
