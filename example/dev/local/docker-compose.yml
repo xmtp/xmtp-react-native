@@ -36,3 +36,4 @@ services:
       wakunode:
         condition: service_healthy
     build: ./test
+    

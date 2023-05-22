@@ -1,5 +1,5 @@
-import { Client } from "@xmtp/xmtp-js";
-import { Wallet } from "ethers";
+let Client = require("@xmtp/xmtp-js").Client;
+let Wallet = require("ethers").Wallet;
 
 console.log("NODE VERSION", process.version);
 
