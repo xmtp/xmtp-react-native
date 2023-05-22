@@ -36,10 +36,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
 
+      - name: Install React Native CLI
+        run: npm install react-native-cli
+
       - name: Install dependencies
-        run: |
-          npm cache clean --force
-          npm i --force
+        run: npm install --force
 
       - name: Install docker
         run: |
@@ -65,7 +66,10 @@ jobs:
         with:
           working-directory: ./example/android
           api-level: 29
-          script: ./gradlew connectedCheck
+          script: |
+            npm run android
+            sleep 15
+            ./gradlew connectedCheck
 
       - name: Stop local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
