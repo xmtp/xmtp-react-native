@@ -36,11 +36,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
 
-      - name: Install React Native CLI
-        run: npm install react-native-cli --force
-
       - name: Install dependencies
         run: npm install --force
+
+      - name: Install React Native CLI
+        run: npm install react-native-cli
 
       # - name: Install docker
       #   run: |
