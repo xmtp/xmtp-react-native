@@ -64,12 +64,12 @@ jobs:
       - name: Gradle Run Integration Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          working-directory: ./example/android
+          working-directory: ./example
           api-level: 29
           script: |
-            react-native run-android
+            react-native run-android --variant=release
             sleep 15
-            ./gradlew connectedCheck
+            ./android/gradlew connectedCheck
 
       # - name: Stop local test server
       #   run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
