@@ -24,19 +24,28 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '11'
+      
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
+      
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v1
-      - name: Setup Node.js
+      
+      - name: Setup Node.js environment
         uses: actions/setup-node@v3
+
+      - name: Install React Native CLI
+        run: npm install react-native-cli
+
       - name: Install dependencies
         run: npm i --force
+
       - name: Install docker
         run: |
           mkdir -p ~/.docker/machine/cache
           curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.12/boot2docker.iso
           brew install docker docker-compose
+
       - name: Start colima
         run: |
           # Docker engine is no longer available because of licensing
@@ -46,13 +55,19 @@ jobs:
           echo "DOCKER_HOST=unix://$HOME/.colima/default/docker.sock" >> $GITHUB_ENV
           # Verify Docker
           docker ps
+
       - name: Start local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
+
       - name: Gradle Run Integration Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           working-directory: ./example/android
           api-level: 29
-          script: ./gradlew connectedCheck
+          script: |
+            npm run android
+            sleep 15
+            ./gradlew connectedCheck
+
       - name: Stop local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
