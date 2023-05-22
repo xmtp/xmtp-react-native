@@ -2,7 +2,7 @@ name: Android Tests
 on:
   push:
     branches:
-      - main
+      - ea/testing-ci-2
   pull_request:
 
 env:
