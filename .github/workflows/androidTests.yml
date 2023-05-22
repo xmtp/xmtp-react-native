@@ -69,7 +69,7 @@ jobs:
           script: |
             react-native run-android --variant=release
             sleep 15
-            ./android/gradlew connectedCheck
+            cd android && ./gradlew connectedCheck
 
       # - name: Stop local test server
       #   run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
