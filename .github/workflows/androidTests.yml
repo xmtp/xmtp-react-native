@@ -67,7 +67,7 @@ jobs:
           working-directory: ./example
           api-level: 29
           script: |
-            react-native run-android --variant=release
+            react-native run-android
             sleep 15
             cd android && ./gradlew connectedCheck
 
