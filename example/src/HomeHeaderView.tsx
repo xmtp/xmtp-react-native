@@ -24,6 +24,12 @@ function NewConversationView({
   async function startConverstation() {
     setIsCreating(true);
     try {
+      const canMessage = await client.canMessage(address);
+      if (!canMessage) {
+        setIsCreating(false);
+        setErr(`${address} is not on the XMTP network yet`);
+        return;
+      }
       const conversation = await client.conversations.newConversation(address);
       setIsCreating(false);
       onSuccess();
