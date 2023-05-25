@@ -27,7 +27,7 @@ function NewConversationView({
       const canMessage = await client.canMessage(address);
       if (!canMessage) {
         setIsCreating(false);
-        setErr(`${address} is not on the XMTP Network yet`);
+        setErr(`${address} is not on the XMTP network yet`);
         return;
       }
       const conversation = await client.conversations.newConversation(address);
