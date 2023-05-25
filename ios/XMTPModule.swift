@@ -134,6 +134,14 @@ public class XMTPModule: Module {
 
 		//
 		// Client API
+		AsyncFunction("canMessage") { (clientAddress: String, peerAddress: String) -> Bool in
+			guard let client = clients[clientAddress] else {
+				throw Error.noClient
+			}
+
+			return try await client.canMessage(peerAddress)
+		}
+
 		AsyncFunction("listConversations") { (clientAddress: String) -> [String] in
 			guard let client = clients[clientAddress] else {
 				throw Error.noClient

@@ -49,6 +49,12 @@ export class Client {
     return new Client(address);
   }
 
+  async canMessage(
+    peerAddress: string
+  ): Promise<boolean> {
+    return await XMTPModule.canMessage(this.address, peerAddress);
+  }
+
   constructor(address: string) {
     this.address = address;
     this.conversations = new Conversations(this);

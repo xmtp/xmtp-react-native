@@ -129,6 +129,12 @@ class XMTPModule : Module() {
 
         //
         // Client API
+        AsyncFunction("canMessage") { clientAddress: String, peerAddress: String ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+            client.canMessage(peerAddress)
+        }
+
         AsyncFunction("listConversations") { clientAddress: String ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val conversationList = client.conversations.list()

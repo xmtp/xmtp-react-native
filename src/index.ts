@@ -25,6 +25,10 @@ export async function createRandom(
   return await XMTPModule.createRandom(environment);
 }
 
+export async function canMessage(clientAddress: string, peerAddress: string): Promise<boolean> {
+  return await XMTPModule.canMessage(clientAddress, peerAddress)
+}
+
 export async function listConversations(
   clientAddress: string
 ): Promise<Conversation[]> {
