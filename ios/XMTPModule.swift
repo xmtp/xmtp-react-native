@@ -156,18 +156,25 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("loadMessages") { (clientAddress: String, conversationTopic: String, conversationID: String?, limit: Int?, before: Double?, after: Double?) -> [String] in
-
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
-				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
-			}
+		AsyncFunction("loadMessages") { (clientAddress: String, topics: [String], conversationIDs: [String?], limit: Int?, before: Double?, after: Double?) -> [String] in
             let beforeDate = before != nil ? Date(timeIntervalSince1970: before!) : nil
             let afterDate = after != nil ? Date(timeIntervalSince1970: after!) : nil
-
-			let messages = try await conversation.messages(limit: limit, before: beforeDate, after: afterDate).map { try DecodedMessageWrapper.encode($0) }
-
-			let client = clients[clientAddress]!
-
+            var messages:[String] = []
+            // TODO: use batchQuery instead of one-at-a-time (once iOS and libxmtp support it).
+            for (topic, conversationID) in zip(topics, conversationIDs) {
+                guard let conversation = try await findConversation(
+                    clientAddress: clientAddress,
+                    topic: topic,
+                    conversationID: conversationID) else {
+                    throw Error.conversationNotFound("no conversation found for \(topic)")
+                }
+                messages += try await conversation.messages(
+                    limit: limit,
+                    before: beforeDate,
+                    after: afterDate)
+                    .map { (msg) in try DecodedMessageWrapper.encode(msg) }
+            }
+            // print("found \(messages.count) messages from \(topics.count) conversations");
 			return messages
 		}
 

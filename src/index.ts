@@ -50,8 +50,30 @@ export async function listMessages(
   return (
     await XMTPModule.loadMessages(
       clientAddress,
-      conversationTopic,
-      conversationID,
+      [conversationTopic],
+      [conversationID],
+      limit,
+      before?.getTime,
+      after?.getTime
+    )
+  ).map((json: string) => {
+    return JSON.parse(json);
+  });
+}
+
+export async function listBatchMessages(
+  clientAddress: string,
+  conversationTopics: string[],
+  conversationIDs: (string | undefined)[],
+  limit?: number | undefined,
+  before?: Date | undefined,
+  after?: Date | undefined
+): Promise<DecodedMessage[]> {
+  return (
+    await XMTPModule.loadMessages(
+      clientAddress,
+      conversationTopics,
+      conversationIDs,
       limit,
       before?.getTime,
       after?.getTime

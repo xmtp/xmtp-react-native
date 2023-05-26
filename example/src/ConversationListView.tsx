@@ -15,10 +15,16 @@ export default function ConversationListView({
   const client = route.params.client;
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messageCount, setMessageCount] = useState<number>(0);
 
   async function refreshConversations() {
     const conversations = await client.conversations.list();
+    const allMessages = await client.listBatchMessages(
+        conversations.map((conversation) => conversation.topic),
+        conversations.map((conversation) => conversation.conversationID)
+    );
     setConversations(conversations);
+    setMessageCount(allMessages.length);
   }
 
   useEffect(() => {
@@ -55,6 +61,7 @@ export default function ConversationListView({
       }
     >
       <HomeHeaderView client={client} navigation={navigation} />
+      <Text style={{marginLeft: 12}}>{messageCount} messages in {conversations.length} conversations</Text>
 
       {conversations.map((conversation) => {
         return (

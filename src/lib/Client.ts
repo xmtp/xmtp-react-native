@@ -36,7 +36,6 @@ export class Client {
           const address = await signer.getAddress();
           resolve(new Client(address));
         });
-
         XMTPModule.auth(await signer.getAddress(), environment);
       })();
     });
@@ -58,5 +57,27 @@ export class Client {
   constructor(address: string) {
     this.address = address;
     this.conversations = new Conversations(this);
+  }
+
+  async listBatchMessages(
+    topics: string[],
+    conversationIDs: (string | undefined)[],
+    limit?: number | undefined,
+    before?: Date | undefined,
+    after?: Date | undefined
+  ): Promise<XMTPModule.DecodedMessage[]> {
+      try {
+          return await XMTPModule.listBatchMessages(
+              this.address,
+              topics,
+              conversationIDs,
+              limit,
+              before,
+              after
+          );
+      } catch (e) {
+          console.info("ERROR in listBatchMessages", e);
+          return [];
+      }
   }
 }

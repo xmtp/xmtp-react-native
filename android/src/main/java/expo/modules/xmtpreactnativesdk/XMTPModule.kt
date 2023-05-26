@@ -88,6 +88,7 @@ class XMTPModule : Module() {
     private var clients: MutableMap<String, Client> = mutableMapOf()
     private var xmtpPush: XMTPPush? = null
     private var signer: ReactNativeSigner? = null
+    private val isDebugEnabled = BuildConfig.DEBUG; // TODO: consider making this configurable
     private val conversations: MutableMap<String, Conversation> = mutableMapOf()
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
 
@@ -96,6 +97,7 @@ class XMTPModule : Module() {
         Events("sign", "authed", "conversation", "message")
 
         Function("address") { clientAddress: String ->
+            logV( "address");
             val client = clients[clientAddress]
             client?.address ?: "No Client."
         }
@@ -104,6 +106,7 @@ class XMTPModule : Module() {
         // Auth functions
         //
         AsyncFunction("auth") { address: String, environment: String ->
+            logV( "auth");
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
             val options =
@@ -114,11 +117,13 @@ class XMTPModule : Module() {
         }
 
         Function("receiveSignature") { requestID: String, signature: String ->
+            logV( "receiveSignature");
             signer?.handle(id = requestID, signature = signature)
         }
 
         // Generate a random wallet and set the client to that
         AsyncFunction("createRandom") { environment: String ->
+            logV( "createRandom");
             val privateKey = PrivateKeyBuilder()
             val options =
                 ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
@@ -130,12 +135,14 @@ class XMTPModule : Module() {
         //
         // Client API
         AsyncFunction("canMessage") { clientAddress: String, peerAddress: String ->
+            logV( "canMessage");
             val client = clients[clientAddress] ?: throw XMTPException("No client")
 
             client.canMessage(peerAddress)
         }
 
         AsyncFunction("listConversations") { clientAddress: String ->
+            logV( "listConversations");
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val conversationList = client.conversations.list()
             conversationList.map { conversation ->
@@ -144,23 +151,29 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadMessages") { clientAddress: String, conversationTopic: String, conversationID: String?, limit: Int?, before: Long?, after: Long? ->
-            val conversation =
-                findConversation(
-                    clientAddress = clientAddress,
-                    topic = conversationTopic,
-                    conversationId = conversationID
-                )
-                    ?: throw XMTPException("no conversation found for $conversationTopic")
+        AsyncFunction("loadMessages") { clientAddress: String, topics: List<String>, conversationIDs: List<String?>, limit: Int?, before: Long?, after: Long? ->
+            logV( "loadMessages");
+            // TODO: use batchQuery instead of one-at-a-time (once Android SDK supports it).
             val beforeDate = if (before != null) Date(before) else null
             val afterDate = if (after != null) Date(after) else null
-
-            conversation.messages(limit = limit, before = beforeDate, after = afterDate)
-                .map { DecodedMessageWrapper.encode(it) }
+            topics.zip(conversationIDs) { topic, conversationID ->
+                findConversation(
+                    clientAddress = clientAddress,
+                    topic = topic,
+                    conversationId = conversationID
+                )
+                    ?: throw XMTPException("no conversation found for $topic")
+            }
+                .map {
+                    it.messages(limit = limit, before = beforeDate, after = afterDate)
+                        .map { DecodedMessageWrapper.encode(it) }
+                }
+                .flatten()
         }
 
         // TODO: Support content types
         AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, conversationID: String?, content: String ->
+            logV( "sendMessage");
             val conversation =
                 findConversation(
                     clientAddress = clientAddress,
@@ -175,6 +188,7 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("createConversation") { clientAddress: String, peerAddress: String, conversationID: String? ->
+            logV( "createConversation");
             val client = clients[clientAddress] ?: throw XMTPException("No client")
 
             val conversation = client.conversations.newConversation(
@@ -187,10 +201,12 @@ class XMTPModule : Module() {
         }
 
         Function("subscribeToConversations") { clientAddress: String ->
+            logV( "subscribeToConversations");
             subscribeToConversations(clientAddress = clientAddress)
         }
 
         AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String, conversationID: String? ->
+            logV( "subscribeToMessages");
             subscribeToMessages(
                 clientAddress = clientAddress,
                 topic = topic,
@@ -199,6 +215,7 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String, conversationID: String? ->
+            logV( "unsubscribeFromMessages");
             unsubscribeFromMessages(
                 clientAddress = clientAddress,
                 topic = topic,
@@ -207,11 +224,13 @@ class XMTPModule : Module() {
         }
 
         Function("registerPushToken") { pushServer: String, token: String ->
+            logV( "registerPushToken");
             xmtpPush = XMTPPush(appContext.reactContext!!, pushServer)
             xmtpPush?.register(token)
         }
 
         Function("subscribePushTopics") { topics: List<String> ->
+            logV( "subscribePushTopics");
             if (topics.isNotEmpty()) {
                 if (xmtpPush == null) {
                     throw XMTPException("Push server not registered")
@@ -221,6 +240,7 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("decodeMessage") { clientAddress: String, topic: String, encryptedMessage: String, conversationID: String? ->
+            logV( "decodeMessage");
             val encryptedMessageData = Base64.decode(encryptedMessage, Base64.NO_WRAP)
             val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
             val conversation =
@@ -327,6 +347,12 @@ class XMTPModule : Module() {
                 conversationId = conversationId
             ) ?: return
         subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+    }
+
+    private fun logV(msg: String) {
+        if (isDebugEnabled) {
+            Log.v("XMTPModule", msg);
+        }
     }
 }
 
