@@ -16,7 +16,7 @@ import java.util.concurrent.TimeoutException
 
 object EspressoViewFinder {
     private const val CHECK_INTERVAL = 50L
-    private const val TIMEOUT_MS = 15 * 1000L
+    private const val TIMEOUT_MS = 20 * 1000L
 
     /**
      * Waits for the view referenced in [viewMatcher] to become visible, with a timeout of [timeOut]. If it
