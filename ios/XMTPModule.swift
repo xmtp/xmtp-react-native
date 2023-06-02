@@ -226,15 +226,36 @@ public class XMTPModule: Module {
 		}
 
 		Function("registerPushToken") { (pushServer: String, token: String) in
-            // TODO
+            XMTPPush.shared.setPushServer(pushServer)
+			do {
+            	try await XMTPPush.shared.register(token: deviceTokenString)
+			} catch {
+				print("Error registering: \(error)")
+			}
         }
 
         Function("subscribePushTopics") { (topics: [String]) in
-            // TODO
+            do {
+				try await XMTPPush.shared.subscribe(topics: topics)
+			} catch {
+				print("Error subscribing: \(error)")
+			}
         }
 
         AsyncFunction("decodeMessage") { (clientAddress: String, topic: String, encryptedMessage: String, conversationID: String?) in
-            // TODO
+            let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8))
+      
+	  		let envelope = XMTP.Envelope.with { envelope in
+				envelope.message = encryptedMessageData
+				envelope.contentTopic = topic
+			}
+
+			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic, conversationID: conversationID) else {
+				throw Error.conversationNotFound("no conversation found for \(topic)")
+			}
+
+            let decodedMessage = conversation.decode(envelope)
+			return try DecodedMessageWrapper.encode(decodedMessage)
         }
   }
 
