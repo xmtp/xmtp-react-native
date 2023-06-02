@@ -157,9 +157,8 @@ class XMTPModule : Module() {
             val beforeDate = if (before != null) Date(before) else null
             val afterDate = if (after != null) Date(after) else null
 
-            client.conversations.listBatchMessages(topics, limit, beforeDate, afterDate).flatMap {
-                it.messages(limit = limit, before = beforeDate, after = afterDate)
-                    .map { DecodedMessageWrapper.encode(it) }
+            client.conversations.listBatchMessages(topics, limit, beforeDate, afterDate).map {
+                DecodedMessageWrapper.encode(it)
             }
         }
 
