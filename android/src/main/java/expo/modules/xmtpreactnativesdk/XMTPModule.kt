@@ -151,7 +151,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadMessages") { clientAddress: String, topics: List<String>, limit: Int?, before: Long?, after: Long? ->
+        AsyncFunction("loadMessages") { clientAddress: String, topics: List<String>, conversationIDs: List<String?>, limit: Int?, before: Long?, after: Long? ->
             logV("loadMessages")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val beforeDate = if (before != null) Date(before) else null
