@@ -90,7 +90,7 @@ public class XMTPModule: Module {
 	var subscriptions: [String: Task<Void, Never>] = [:]
 
 	enum Error: Swift.Error {
-		case noClient, conversationNotFound(String)
+		case noClient, conversationNotFound(String), noMessage
 	}
 
 	public func definition() -> ModuleDefinition {
@@ -224,18 +224,40 @@ public class XMTPModule: Module {
 		AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String, conversationID: String?) in
 			try await unsubscribeFromMessages(clientAddress: clientAddress, topic: topic, conversationID: conversationID)
 		}
+		
+		AsyncFunction("registerPushToken") { (pushServer: String, token: String) in
+			XMTPPush.shared.setPushServer(pushServer)
+			do {
+				try await XMTPPush.shared.register(token: token)
+			} catch {
+				print("Error registering: \(error)")
+			}
+		}
 
-		Function("registerPushToken") { (pushServer: String, token: String) in
-            // TODO
-        }
+		AsyncFunction("subscribePushTopics") { (topics: [String]) in
+			do {
+				try await XMTPPush.shared.subscribe(topics: topics)
+			} catch {
+				print("Error subscribing: \(error)")
+			}
+		}
 
-        Function("subscribePushTopics") { (topics: [String]) in
-            // TODO
-        }
+		AsyncFunction("decodeMessage") { (clientAddress: String, topic: String, encryptedMessage: String, conversationID: String?) -> String in
+			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8))else {
+				throw Error.noMessage
+			}
 
-        AsyncFunction("decodeMessage") { (clientAddress: String, topic: String, encryptedMessage: String, conversationID: String?) in
-            // TODO
-        }
+			let envelope = XMTP.Envelope.with { envelope in
+				envelope.message = encryptedMessageData
+				envelope.contentTopic = topic
+			}
+
+			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic, conversationID: conversationID) else {
+				throw Error.conversationNotFound("no conversation found for \(topic)")
+			}
+			let decodedMessage = try conversation.decode(envelope)
+			return try DecodedMessageWrapper.encode(decodedMessage)
+		}
   }
 
 	//
