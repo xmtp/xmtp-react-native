@@ -90,7 +90,7 @@ public class XMTPModule: Module {
 	var subscriptions: [String: Task<Void, Never>] = [:]
 
 	enum Error: Swift.Error {
-		case noClient, conversationNotFound(String)
+		case noClient, conversationNotFound(String), noMessage
 	}
 
 	public func definition() -> ModuleDefinition {
