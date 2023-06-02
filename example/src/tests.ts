@@ -48,10 +48,18 @@ test("can message a client", async () => {
   const messages = await aliceConversation.messages();
 
   if (messages.length !== 1) {
-    throw "No message";
+    throw Error("No message");
   }
 
   const message = messages[0];
 
   return message.content === "hello world";
+});
+
+test("canMessage", async () => {
+  const bob = await XMTP.Client.createRandom("local");
+  const alice = await XMTP.Client.createRandom("local");
+
+  const canMessage = await bob.canMessage(alice.address);
+  return canMessage;
 });
