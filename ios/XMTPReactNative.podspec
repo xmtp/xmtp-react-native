@@ -22,7 +22,7 @@ Pod::Spec.new do |s|
     'DEFINES_MODULE' => 'YES',
     'SWIFT_COMPILATION_MODE' => 'wholemodule'
   }
-  
+
   s.source_files = "**/*.{h,m,swift}"
-  s.dependency "XMTP", "= 0.2.2-alpha0"
+  s.dependency "XMTP", "= 0.3.0-alpha0"
 end
