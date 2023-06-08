@@ -18,20 +18,11 @@ export default function ConversationListView({
   const [messageCount, setMessageCount] = useState<number>(0);
 
   async function refreshConversations() {
-    // Write code to time this function and divide by number of conversations
-    // to get an idea of how long it takes to load a conversation.
-    let start = Date.now();
     const conversations = await client.conversations.list();
-      let end = Date.now();
-    console.log(
-      `Loaded ${conversations.length} conversations in ${end - start}ms`
-    );
-    
     const allMessages = await client.listBatchMessages(
         conversations.map((conversation) => conversation.topic),
         conversations.map((conversation) => conversation.conversationID)
     );
-
     setConversations(conversations);
     setMessageCount(allMessages.length);
   }
