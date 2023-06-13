@@ -70,7 +70,6 @@ test("can register, encode, and decode a number codec", async () => {
   const registry = new CodecRegistry();
   registry.register(numberCodec);
 
-  // Could just pull directly from numberCodec, but pulling from registry for this test so its extraction is part of this test.
   const id = numberCodec.contentType.id();
   const codec = registry.codecs[id];
   const encodedContent = codec.encode(3.14);
