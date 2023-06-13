@@ -1,6 +1,6 @@
-import { Wallet } from "ethers";
-import { Client } from "xmtp-react-native-sdk";
 import * as XMTP from "../../src/index";
+import { CodecRegistry } from "../../src/lib/Client";
+import { NumberCodec } from "./test_utils";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -62,4 +62,19 @@ test("canMessage", async () => {
 
   const canMessage = await bob.canMessage(alice.address);
   return canMessage;
+});
+
+test("can register, encode, and decode a number codec", async () => {
+  const numberCodec = new NumberCodec();
+
+  const registry = new CodecRegistry();
+  registry.register(numberCodec);
+
+  // Could just pull directly from numberCodec, but pulling from registry for this test so its extraction is part of this test.
+  const id = numberCodec.contentType.id();
+  const codec = registry.codecs[id];
+  const encodedContent = codec.encode(3.14);
+
+  const decodedContent = encodedContent.decoded(registry);
+  return decodedContent === 3.14;
 });
