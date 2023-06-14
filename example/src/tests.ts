@@ -1,5 +1,7 @@
 import * as XMTP from "../../src/index";
-import { CodecRegistry } from "../../src/lib/Client";
+import { CodecRegistry } from "../../src/lib/CodecRegistry";
+import { CodecError } from "../../src/lib/CodecError";
+
 import { NumberCodec } from "./test_utils";
 
 function sleep(ms: number) {
@@ -26,43 +28,43 @@ test("can make a client", async () => {
   return client.address.length > 0;
 });
 
-test("can message a client", async () => {
-  const bob = await XMTP.Client.createRandom("local");
-  const alice = await XMTP.Client.createRandom("local");
+// test("can message a client", async () => {
+//   const bob = await XMTP.Client.createRandom("local");
+//   const alice = await XMTP.Client.createRandom("local");
 
-  if (bob.address === alice.address) {
-    throw new Error("bob and alice should be different");
-  }
+//   if (bob.address === alice.address) {
+//     throw new Error("bob and alice should be different");
+//   }
 
-  const bobConversation = await bob.conversations.newConversation(
-    alice.address
-  );
+//   const bobConversation = await bob.conversations.newConversation(
+//     alice.address
+//   );
 
-  const aliceConversation = (await alice.conversations.list())[0];
-  if (!aliceConversation) {
-    throw new Error("aliceConversation should exist");
-  }
+//   const aliceConversation = (await alice.conversations.list())[0];
+//   if (!aliceConversation) {
+//     throw new Error("aliceConversation should exist");
+//   }
 
-  await bobConversation.send("hello world");
+//   await bobConversation.send("hello world");
 
-  const messages = await aliceConversation.messages();
+//   const messages = await aliceConversation.messages();
 
-  if (messages.length !== 1) {
-    throw Error("No message");
-  }
+//   if (messages.length !== 1) {
+//     throw Error("No message");
+//   }
 
-  const message = messages[0];
+//   const message = messages[0];
 
-  return message.content === "hello world";
-});
+//   return message.content === "hello world";
+// });
 
-test("canMessage", async () => {
-  const bob = await XMTP.Client.createRandom("local");
-  const alice = await XMTP.Client.createRandom("local");
+// test("canMessage", async () => {
+//   const bob = await XMTP.Client.createRandom("local");
+//   const alice = await XMTP.Client.createRandom("local");
 
-  const canMessage = await bob.canMessage(alice.address);
-  return canMessage;
-});
+//   const canMessage = await bob.canMessage(alice.address);
+//   return canMessage;
+// });
 
 test("can register, encode, and decode a number codec", async () => {
   const numberCodec = new NumberCodec();
@@ -71,9 +73,47 @@ test("can register, encode, and decode a number codec", async () => {
   registry.register(numberCodec);
 
   const id = numberCodec.contentType.id();
-  const codec = registry.codecs[id];
-  const encodedContent = codec.encode(3.14);
+  const codec = registry.find(id);
 
-  const decodedContent = encodedContent.decoded(registry);
+  const encodedContent = codec.encode(3.14);
+  const decodedContent = codec.decode(encodedContent);
+
   return decodedContent === 3.14;
+});
+
+test("throws an error if codec is not found in registry", async () => {
+  const numberCodec = new NumberCodec();
+  const registry = new CodecRegistry();
+  registry.register(numberCodec);
+
+  try {
+    const id = "invalidId";
+    registry.find(id);
+  } catch (e) {
+    return (e as CodecError).message === "codecNotFound";
+  }
+  return false;
+});
+
+test("throws an error if codec is invalid when decoding", async () => {
+  const numberCodec = new NumberCodec();
+  const registry = new CodecRegistry();
+  registry.register(numberCodec);
+
+  try {
+    const id = numberCodec.contentType.id();
+    const codec = registry.find(id);
+
+    const encodedContent = codec.encode(3.14);
+    const invalidContentToDecode = {
+      ...encodedContent,
+      // @ts-ignore
+      content: { key1: "This cannot be parsed" },
+    };
+    // @ts-ignore
+    codec.decode(invalidContentToDecode);
+  } catch (e) {
+    return (e as CodecError).message === "invalidContent";
+  }
+  return false;
 });

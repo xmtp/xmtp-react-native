@@ -1,4 +1,7 @@
-import { ContentTypeID, EncodedContent } from "../../src/lib/Client";
+import { EncodedContent } from "../../src/XMTP.types";
+import { CodecError } from "../../src/lib/CodecError";
+import { ContentTypeID } from "../../src/lib/ContentTypeID";
+import { Compression } from "../../src/XMTP.enums";
 
 export class NumberCodec {
   contentType: {
@@ -19,14 +22,22 @@ export class NumberCodec {
   }
 
   encode<T>(content: T) {
-    let encodedContent = new EncodedContent();
-    encodedContent.type = this.contentType;
-    encodedContent.version = this.contentType.versionMajor;
-    encodedContent.content = JSON.stringify(content);
+    const encodedContent = {
+      type: this.contentType,
+      content: JSON.stringify(content),
+      compression: Compression.COMPRESSION_DEFLATE,
+      fallback: "fallbackText",
+    };
+
     return encodedContent;
   }
 
   decode(encodedContent: EncodedContent) {
-    return JSON.parse(encodedContent.content);
+    try {
+      const decodedContent = JSON.parse(encodedContent.content);
+      return decodedContent;
+    } catch {
+      throw new CodecError("invalidContent");
+    }
   }
 }
