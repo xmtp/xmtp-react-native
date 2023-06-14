@@ -48,7 +48,9 @@ export class Client {
     return new Client(address);
   }
 
-  async canMessage(peerAddress: string): Promise<boolean> {
+  async canMessage(
+    peerAddress: string
+  ): Promise<boolean> {
     return await XMTPModule.canMessage(this.address, peerAddress);
   }
 
@@ -64,18 +66,18 @@ export class Client {
     before?: Date | undefined,
     after?: Date | undefined
   ): Promise<XMTPModule.DecodedMessage[]> {
-    try {
-      return await XMTPModule.listBatchMessages(
-        this.address,
-        topics,
-        conversationIDs,
-        limit,
-        before,
-        after
-      );
-    } catch (e) {
-      console.info("ERROR in listBatchMessages", e);
-      return [];
-    }
+      try {
+          return await XMTPModule.listBatchMessages(
+              this.address,
+              topics,
+              conversationIDs,
+              limit,
+              before,
+              after
+          );
+      } catch (e) {
+          console.info("ERROR in listBatchMessages", e);
+          return [];
+      }
   }
 }
