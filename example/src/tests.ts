@@ -1,5 +1,8 @@
 import * as XMTP from "../../src/index";
-import { CodecRegistry } from "../../src/lib/CodecRegistry";
+import {
+  CodecRegistry,
+  ContentCodecInterface,
+} from "../../src/lib/CodecRegistry";
 import { CodecError } from "../../src/lib/CodecError";
 
 import { NumberCodec } from "./test_utils";
@@ -70,7 +73,7 @@ test("can register, encode, and decode a number codec", async () => {
   const numberCodec = new NumberCodec();
 
   const registry = new CodecRegistry();
-  registry.register(numberCodec);
+  registry.register(numberCodec as ContentCodecInterface);
 
   const id = numberCodec.contentType.id();
   const codec = registry.find(id);
@@ -84,7 +87,7 @@ test("can register, encode, and decode a number codec", async () => {
 test("throws an error if codec is not found in registry", async () => {
   const numberCodec = new NumberCodec();
   const registry = new CodecRegistry();
-  registry.register(numberCodec);
+  registry.register(numberCodec as ContentCodecInterface);
 
   try {
     const id = "invalidId";
@@ -98,7 +101,7 @@ test("throws an error if codec is not found in registry", async () => {
 test("throws an error if codec is invalid when decoding", async () => {
   const numberCodec = new NumberCodec();
   const registry = new CodecRegistry();
-  registry.register(numberCodec);
+  registry.register(numberCodec as ContentCodecInterface);
 
   try {
     const id = numberCodec.contentType.id();
@@ -107,7 +110,6 @@ test("throws an error if codec is invalid when decoding", async () => {
     const encodedContent = codec.encode(3.14);
     const invalidContentToDecode = {
       ...encodedContent,
-      // @ts-ignore
       content: { key1: "This cannot be parsed" },
     };
     // @ts-ignore
