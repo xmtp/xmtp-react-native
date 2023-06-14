@@ -28,43 +28,43 @@ test("can make a client", async () => {
   return client.address.length > 0;
 });
 
-// test("can message a client", async () => {
-//   const bob = await XMTP.Client.createRandom("local");
-//   const alice = await XMTP.Client.createRandom("local");
+test("can message a client", async () => {
+  const bob = await XMTP.Client.createRandom("local");
+  const alice = await XMTP.Client.createRandom("local");
 
-//   if (bob.address === alice.address) {
-//     throw new Error("bob and alice should be different");
-//   }
+  if (bob.address === alice.address) {
+    throw new Error("bob and alice should be different");
+  }
 
-//   const bobConversation = await bob.conversations.newConversation(
-//     alice.address
-//   );
+  const bobConversation = await bob.conversations.newConversation(
+    alice.address
+  );
 
-//   const aliceConversation = (await alice.conversations.list())[0];
-//   if (!aliceConversation) {
-//     throw new Error("aliceConversation should exist");
-//   }
+  const aliceConversation = (await alice.conversations.list())[0];
+  if (!aliceConversation) {
+    throw new Error("aliceConversation should exist");
+  }
 
-//   await bobConversation.send("hello world");
+  await bobConversation.send("hello world");
 
-//   const messages = await aliceConversation.messages();
+  const messages = await aliceConversation.messages();
 
-//   if (messages.length !== 1) {
-//     throw Error("No message");
-//   }
+  if (messages.length !== 1) {
+    throw Error("No message");
+  }
 
-//   const message = messages[0];
+  const message = messages[0];
 
-//   return message.content === "hello world";
-// });
+  return message.content === "hello world";
+});
 
-// test("canMessage", async () => {
-//   const bob = await XMTP.Client.createRandom("local");
-//   const alice = await XMTP.Client.createRandom("local");
+test("canMessage", async () => {
+  const bob = await XMTP.Client.createRandom("local");
+  const alice = await XMTP.Client.createRandom("local");
 
-//   const canMessage = await bob.canMessage(alice.address);
-//   return canMessage;
-// });
+  const canMessage = await bob.canMessage(alice.address);
+  return canMessage;
+});
 
 test("can register, encode, and decode a number codec", async () => {
   const numberCodec = new NumberCodec();
