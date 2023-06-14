@@ -13,7 +13,7 @@ export type XMTPViewProps = {
  * Represents encoded content and its metadata.
  *
  * @param {ContentTypeID} type - The content type ID for this content.
- * @param {string} content - The encoded content data.
+ * @param {Uint8Array} content - The encoded content data.
  * @param {string} fallback - A fallback representation of the content, if any.
  */
 
