@@ -1,6 +1,11 @@
-import { Wallet } from "ethers";
-import { Client } from "xmtp-react-native-sdk";
 import * as XMTP from "../../src/index";
+import {
+  CodecRegistry,
+  ContentCodecInterface,
+} from "../../src/lib/CodecRegistry";
+import { CodecError } from "../../src/lib/CodecError";
+
+import { NumberCodec } from "./test_utils";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -62,4 +67,55 @@ test("canMessage", async () => {
 
   const canMessage = await bob.canMessage(alice.address);
   return canMessage;
+});
+
+test("can register, encode, and decode a number codec", async () => {
+  const numberCodec = new NumberCodec();
+
+  const registry = new CodecRegistry();
+  registry.register(numberCodec as ContentCodecInterface);
+
+  const id = numberCodec.contentType.id();
+  const codec = registry.find(id);
+
+  const encodedContent = codec.encode(3.14);
+  const decodedContent = codec.decode(encodedContent);
+
+  return decodedContent === 3.14;
+});
+
+test("throws an error if codec is not found in registry", async () => {
+  const numberCodec = new NumberCodec();
+  const registry = new CodecRegistry();
+  registry.register(numberCodec as ContentCodecInterface);
+
+  try {
+    const id = "invalidId";
+    registry.find(id);
+  } catch (e) {
+    return (e as CodecError).message === "codecNotFound";
+  }
+  return false;
+});
+
+test("throws an error if codec is invalid when decoding", async () => {
+  const numberCodec = new NumberCodec();
+  const registry = new CodecRegistry();
+  registry.register(numberCodec as ContentCodecInterface);
+
+  try {
+    const id = numberCodec.contentType.id();
+    const codec = registry.find(id);
+
+    const encodedContent = codec.encode(3.14);
+    const invalidContentToDecode = {
+      ...encodedContent,
+      content: { key1: "This cannot be parsed" },
+    };
+    // @ts-ignore
+    codec.decode(invalidContentToDecode);
+  } catch (e) {
+    return (e as CodecError).message === "invalidContent";
+  }
+  return false;
 });
