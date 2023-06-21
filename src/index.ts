@@ -25,6 +25,17 @@ export async function createRandom(
   return await XMTPModule.createRandom(environment);
 }
 
+export async function createFromKeyBundle(
+  keyBundle: string,
+  environment: "local" | "dev" | "production"
+): Promise<string> {
+  return await XMTPModule.createFromKeyBundle(keyBundle, environment);
+}
+
+export async function exportKeyBundle(clientAddress: string): Promise<string> {
+  return await XMTPModule.exportKeyBundle(clientAddress);
+}
+
 export async function canMessage(clientAddress: string, peerAddress: string): Promise<boolean> {
   return await XMTPModule.canMessage(clientAddress, peerAddress);
 }
