@@ -48,6 +48,14 @@ export class Client {
     return new Client(address);
   }
 
+  static async createFromKeyBundle(
+    keyBundle: string,
+    environment: "local" | "dev" | "production"
+  ): Promise<Client> {
+    const address = await XMTPModule.createFromKeyBundle(keyBundle, environment);
+    return new Client(address);
+  }
+
   async canMessage(
     peerAddress: string
   ): Promise<boolean> {
@@ -58,6 +66,14 @@ export class Client {
     this.address = address;
     this.conversations = new Conversations(this);
   }
+
+  async exportKeyBundle(): Promise<string> {
+    return XMTPModule.exportKeyBundle(this.address);
+  }
+
+// TODO: support persisting conversations for quick lookup
+// async importConversation(exported: string): Promise<Conversation> { ... }
+// async exportConversation(topic: string): Promise<string> { ... }
 
   async listBatchMessages(
     topics: string[],

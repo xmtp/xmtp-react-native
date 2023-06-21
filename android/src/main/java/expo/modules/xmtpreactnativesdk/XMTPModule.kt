@@ -26,6 +26,7 @@ import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.message.contents.SignatureOuterClass
+import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
@@ -130,6 +131,22 @@ class XMTPModule : Module() {
             val randomClient = Client().create(account = privateKey, options = options)
             clients[randomClient.address] = randomClient
             randomClient.address
+        }
+
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String ->
+            logV("createFromKeyBundle")
+            val options =
+                ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
+            val bundle = PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(Base64.decode(keyBundle, NO_WRAP))
+            val client = Client().buildFromBundle(bundle = bundle, options = options)
+            clients[client.address] = client
+            client.address
+        }
+
+        AsyncFunction("exportKeyBundle") { clientAddress: String ->
+            logV("exportKeyBundle")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            Base64.encodeToString(client.privateKeyBundle.toByteArray(), NO_WRAP)
         }
 
         //
