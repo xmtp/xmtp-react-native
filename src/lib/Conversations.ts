@@ -1,6 +1,6 @@
 import { Client } from "./Client";
 import { Conversation } from "./Conversation";
-import { DecodedMessage } from "./DecodedMessage";
+import type { DecodedMessage } from "./DecodedMessage";
 import * as XMTPModule from "../index";
 
 type Context = {
@@ -64,7 +64,7 @@ export default class Conversations {
         }
 
         this.known[message.id] = true;
-        await callback(new DecodedMessage(message));
+        await callback(message as DecodedMessage);
       }
     );
   }
