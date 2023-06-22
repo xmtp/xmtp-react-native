@@ -137,7 +137,8 @@ class XMTPModule : Module() {
             logV("createFromKeyBundle")
             val options =
                 ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
-            val bundle = PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(Base64.decode(keyBundle, NO_WRAP))
+            val bundle =
+                PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(Base64.decode(keyBundle, NO_WRAP))
             val client = Client().buildFromBundle(bundle = bundle, options = options)
             clients[client.address] = client
             client.address
@@ -211,6 +212,11 @@ class XMTPModule : Module() {
         Function("subscribeToConversations") { clientAddress: String ->
             logV("subscribeToConversations")
             subscribeToConversations(clientAddress = clientAddress)
+        }
+
+        Function("subscribeToAllMessages") { clientAddress: String ->
+            logV("subscribeToAllMessages")
+            subscribeToAllMessages(clientAddress = clientAddress)
         }
 
         AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String, conversationID: String? ->
@@ -312,6 +318,29 @@ class XMTPModule : Module() {
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in conversations subscription: $e")
                 subscriptions["conversations"]?.cancel()
+            }
+        }
+    }
+
+    private fun subscribeToAllMessages(clientAddress: String) {
+        val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+        subscriptions["messages"] = CoroutineScope(Dispatchers.IO).launch {
+            try {
+                client!!.conversations.streamAllMessages().collect { message ->
+                    sendEvent(
+                        "message",
+                        mapOf(
+                            "id" to message.id,
+                            "content" to message.body,
+                            "senderAddress" to message.senderAddress,
+                            "sent" to message.sent
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("XMTPModule", "Error in all messages subscription: $e")
+                subscriptions["messages"]?.cancel()
             }
         }
     }
