@@ -131,6 +131,10 @@ export function subscribeToConversations(clientAddress: string) {
   return XMTPModule.subscribeToConversations(clientAddress);
 }
 
+export function subscribeToAllMessages(clientAddress: string) {
+  return XMTPModule.subscribeToAllMessages(clientAddress);
+}
+
 export async function subscribeToMessages(
   clientAddress: string,
   topic: string,

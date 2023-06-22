@@ -54,6 +54,12 @@ export default function ConversationListView({
     });
   }, [client]);
 
+  useEffect(() => {
+    client.conversations.streamAllMessages(async (message) => {
+      console.log(message.content);
+    });
+  }, [client]);
+
   return (
     <ScrollView
       refreshControl={

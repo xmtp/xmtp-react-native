@@ -223,6 +223,10 @@ public class XMTPModule: Module {
             subscribeToConversations(clientAddress: clientAddress)
         }
 
+        Function("subscribeToAllMessages") { (clientAddress: String) in
+            subscribeToAllMessages(clientAddress: clientAddress)
+        }
+
         AsyncFunction("subscribeToMessages") { (clientAddress: String, topic: String, conversationID: String?) in
             try await subscribeToMessages(clientAddress: clientAddress, topic: topic, conversationID: conversationID)
         }
@@ -311,6 +315,28 @@ public class XMTPModule: Module {
             } catch {
                 print("Error in conversations subscription: \(error)")
                 subscriptions["conversations"]?.cancel()
+            }
+        }
+    }
+
+    func subscribeToAllMessages(clientAddress: String) {
+        guard let client = clients[clientAddress] else {
+            return
+        }
+
+        subscriptions["messages"] = Task {
+            do {
+                for try await message in try await client.conversations.streamAllMessages() {
+                    sendEvent("message", [
+                        "id": message.id,
+                        "content": (try? message.content()) ?? message.fallbackContent,
+                        "senderAddress": message.senderAddress,
+                        "sent": message.sent
+                    ])
+                }
+            } catch {
+                print("Error in all messages subscription: \(error)")
+                subscriptions["messages"]?.cancel()
             }
         }
     }
