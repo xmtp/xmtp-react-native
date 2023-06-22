@@ -188,12 +188,13 @@ public class XMTPModule: Module {
                     .map { (msg) in try DecodedMessageWrapper.encode(msg) }
             }
 
-			AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: Any) -> String in
+			AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: [UInt8]) -> String in
 					guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
 							throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 					}
 
-					let encodedContent = try EncodedContent(serializedData: content)
+					let contentData = Data(content)
+					let encodedContent = try EncodedContent(serializedData: contentData)
 					let messageID = try await conversation.send(encodedContent: encodedContent)
 					return messageID
         }
