@@ -7,7 +7,6 @@ import { CodecError } from "../../src/lib/CodecError";
 
 import { NumberCodec } from "./test_utils";
 import { content } from "@xmtp/proto";
-import { EncodedContent } from "@xmtp/xmtp-js";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -75,7 +74,7 @@ test("can register, encode, and decode a number codec", async () => {
   const numberCodec = new NumberCodec();
 
   const registry = new CodecRegistry();
-  registry.register(numberCodec as ContentCodecInterface);
+  registry.register(numberCodec);
 
   const id = numberCodec.contentType.id();
   const codec = registry.find(id);
@@ -89,7 +88,7 @@ test("can register, encode, and decode a number codec", async () => {
 test("throws an error if codec is not found in registry", async () => {
   const numberCodec = new NumberCodec();
   const registry = new CodecRegistry();
-  registry.register(numberCodec as ContentCodecInterface);
+  registry.register(numberCodec);
 
   try {
     const id = "invalidId";
@@ -103,7 +102,7 @@ test("throws an error if codec is not found in registry", async () => {
 test("throws an error if codec is invalid when decoding", async () => {
   const numberCodec = new NumberCodec();
   const registry = new CodecRegistry();
-  registry.register(numberCodec as ContentCodecInterface);
+  registry.register(numberCodec);
 
   try {
     const id = numberCodec.contentType.id();
@@ -125,17 +124,15 @@ test("throws an error if codec is invalid when decoding", async () => {
 test("can send a number codec", async () => {
   const numberCodec = new NumberCodec();
   const registry = new CodecRegistry();
-  registry.register(numberCodec as unknown as ContentCodecInterface);
+  registry.register(numberCodec);
 
   try {
     const id = numberCodec.contentType.id();
     const codec = registry.find(id);
 
     const encodedContent = codec.encode(3.14);
-    const stringifiedContent = JSON.stringify(encodedContent);
 
-    // throws JS error, see catch block below for where this gets logged
-    // const data = content.EncodedContent.encode(encodedContent);
+    const data = content.EncodedContent.encode(encodedContent);
 
     const bob = await XMTP.Client.createRandom("local");
     const alice = await XMTP.Client.createRandom("local");
@@ -153,7 +150,7 @@ test("can send a number codec", async () => {
     //   throw new Error("aliceConversation should exist");
     // }
 
-    await bobConversation.send(stringifiedContent);
+    await bobConversation.send(data);
     return true;
   } catch (e) {
     console.log("WHATS THE ERROR HERE??", e);

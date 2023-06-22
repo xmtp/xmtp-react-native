@@ -118,26 +118,14 @@ export async function sendMessage(
   clientAddress: string,
   conversationTopic: string,
   conversationID: string | undefined,
-  content: any
-): Promise<DecodedMessage> {
-  const parsedContent = JSON.parse(content);
-  return typeof parsedContent !== "string"
-    ? JSON.parse(
-        await XMTPModule.sendEncodedContent(
-          clientAddress,
-          conversationTopic,
-          conversationID,
-          content
-        )
-      )
-    : JSON.parse(
-        await XMTPModule.sendMessage(
-          clientAddress,
-          conversationTopic,
-          conversationID,
-          content
-        )
-      );
+  encodedContentData: Uint8Array
+): Promise<string> {
+  return await XMTPModule.sendEncodedContentData(
+    clientAddress,
+    conversationTopic,
+    conversationID,
+    encodedContentData
+  );
 }
 
 export function subscribeToConversations(clientAddress: string) {

@@ -11,10 +11,10 @@ import { ContentTypeID } from "./ContentTypeID";
  * @param {<T>} decode(content) - Decodes the given EncodedContent and returns the original content.
  */
 
-export interface ContentCodecInterface {
+export interface ContentCodecInterface<T> {
   contentType: ContentTypeID;
-  encode<T>(content: T): EncodedContent;
-  decode<T>(content: EncodedContent): T;
+  encode(content: T): EncodedContent;
+  decode(content: EncodedContent): T;
 }
 
 /*

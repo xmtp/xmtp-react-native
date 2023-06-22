@@ -1,8 +1,9 @@
+import { ContentCodecInterface } from "xmtp-react-native-sdk/lib/CodecRegistry";
 import { EncodedContent } from "../../src/XMTP.types";
 import { CodecError } from "../../src/lib/CodecError";
 import { ContentTypeID } from "../../src/lib/ContentTypeID";
 
-export class NumberCodec {
+export class NumberCodec implements ContentCodecInterface<number> {
   contentType: {
     id(): string;
     authorityId: string;
@@ -20,17 +21,18 @@ export class NumberCodec {
     });
   }
 
-  encode(content: Uint8Array) {
+  encode(content: number) {
     const encodedContent = {
       type: this.contentType,
       content: Buffer.from(JSON.stringify(content)),
       fallback: "fallbackText",
+      parameters: {},
     };
 
     return encodedContent;
   }
 
-  decode(encodedContent: EncodedContent) {
+  decode(encodedContent: EncodedContent): number {
     try {
       const contentToDecode = encodedContent.content.toString();
       const decodedContent = JSON.parse(contentToDecode);
