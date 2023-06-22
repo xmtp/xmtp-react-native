@@ -326,7 +326,7 @@ public class XMTPModule: Module {
 
         subscriptions["messages"] = Task {
             do {
-                for try await message in client.conversations.streamAllMessages() {
+                for try await message in try await client.conversations.streamAllMessages() {
                     sendEvent("message", [
                         "id": message.id,
                         "content": (try? message.content()) ?? message.fallbackContent,
