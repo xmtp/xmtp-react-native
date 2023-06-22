@@ -1,5 +1,6 @@
 import { Client } from "./Client";
 import { Conversation } from "./Conversation";
+import { DecodedMessage } from "./DecodedMessage";
 import * as XMTPModule from "../index";
 
 type Context = {
@@ -47,6 +48,23 @@ export default class Conversations {
 
         this.known[conversation.topic] = true;
         await callback(new Conversation(conversation));
+      }
+    );
+  }
+
+  async streamAllMessages(
+    callback: (message: DecodedMessage) => Promise<void>
+  ) {
+    XMTPModule.subscribeToAllMessages(this.client.address);
+    XMTPModule.emitter.addListener(
+      "message",
+      async (message: DecodedMessage) => {
+        if (this.known[message.id]) {
+          return;
+        }
+
+        this.known[message.id] = true;
+        await callback(new DecodedMessage(message));
       }
     );
   }
