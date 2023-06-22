@@ -12,6 +12,7 @@
     "@react-navigation/native-stack": "^6.9.12",
     "@thirdweb-dev/react-native": "^0.2.8",
     "@thirdweb-dev/react-native-compat": "^0.2.8",
+    "@xmtp/xmtp-js": "^9.1.7",
     "ethers": "^5.7.2",
     "expo": "~48.0.11",
     "node-libs-browser": "^2.2.1",

@@ -188,6 +188,19 @@ public class XMTPModule: Module {
                     .map { (msg) in try DecodedMessageWrapper.encode(msg) }
             }
 
+		// Add the correct type for data
+        AsyncFunction("sendEncodedContent") { (clientAddress: String?, conversationTopic: String?, conversationID: String?, content: Data) -> String in
+//            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
+//                throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
+//            }
+////
+//			let encodedContent = try EncodedContent(serializedData: data)
+//			return try await conversation.send(encodedContent: encodedContent)
+            return "";
+        }
+
+
+
         // TODO: Support content types
         AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: String) -> String in
             guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {

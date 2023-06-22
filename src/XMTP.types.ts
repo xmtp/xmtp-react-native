@@ -19,7 +19,7 @@ export type XMTPViewProps = {
 
 export type EncodedContent = {
   type: ContentTypeID;
-  parameters: { [key: string]: [value: string] }? ,
+  parameters: { [key: string]: string };
   content: Uint8Array;
   fallback?: string;
 };

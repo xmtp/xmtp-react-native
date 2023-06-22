@@ -36,7 +36,10 @@ export async function exportKeyBundle(clientAddress: string): Promise<string> {
   return await XMTPModule.exportKeyBundle(clientAddress);
 }
 
-export async function canMessage(clientAddress: string, peerAddress: string): Promise<boolean> {
+export async function canMessage(
+  clientAddress: string,
+  peerAddress: string
+): Promise<boolean> {
   return await XMTPModule.canMessage(clientAddress, peerAddress);
 }
 
@@ -117,14 +120,24 @@ export async function sendMessage(
   conversationID: string | undefined,
   content: any
 ): Promise<DecodedMessage> {
-  return JSON.parse(
-    await XMTPModule.sendMessage(
-      clientAddress,
-      conversationTopic,
-      conversationID,
-      content
-    )
-  );
+  const parsedContent = JSON.parse(content);
+  return typeof parsedContent !== "string"
+    ? JSON.parse(
+        await XMTPModule.sendEncodedContent(
+          clientAddress,
+          conversationTopic,
+          conversationID,
+          content
+        )
+      )
+    : JSON.parse(
+        await XMTPModule.sendMessage(
+          clientAddress,
+          conversationTopic,
+          conversationID,
+          content
+        )
+      );
 }
 
 export function subscribeToConversations(clientAddress: string) {
@@ -170,7 +183,12 @@ export async function decodeMessage(
   conversationID?: string | undefined
 ): Promise<DecodedMessage> {
   return JSON.parse(
-    await XMTPModule.decodeMessage(clientAddress, topic, encryptedMessage, conversationID)
+    await XMTPModule.decodeMessage(
+      clientAddress,
+      topic,
+      encryptedMessage,
+      conversationID
+    )
   );
 }
 

@@ -5,16 +5,16 @@ import { ContentTypeID } from "../../src/lib/ContentTypeID";
 export class NumberCodec {
   contentType: {
     id(): string;
-    authorityID: string;
-    typeID: string;
+    authorityId: string;
+    typeId: string;
     versionMajor: number;
     versionMinor: number;
   };
 
   constructor() {
     this.contentType = new ContentTypeID({
-      authorityID: "example.com",
-      typeID: "number",
+      authorityId: "example.com",
+      typeId: "number",
       versionMajor: 1,
       versionMinor: 1,
     });
