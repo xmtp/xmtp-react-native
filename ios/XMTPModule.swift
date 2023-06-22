@@ -188,18 +188,7 @@ public class XMTPModule: Module {
                     .map { (msg) in try DecodedMessageWrapper.encode(msg) }
             }
 
-		// Add the correct type for data
-        AsyncFunction("sendEncodedContent") { (clientAddress: String?, conversationTopic: String?, conversationID: String?, content: Data) -> String in
-//            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
-//                throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
-//            }
-////
-//			let encodedContent = try EncodedContent(serializedData: data)
-//			return try await conversation.send(encodedContent: encodedContent)
-            return "";
-        }
-
-			AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: Data) -> String in
+			AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: Any) -> String in
 					guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
 							throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 					}
@@ -209,19 +198,19 @@ public class XMTPModule: Module {
 					return messageID
         }
 
-        // TODO: Support content types
-        AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: String) -> String in
-            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
-                throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
-            }
+        // // TODO: Support content types
+        // AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: String) -> String in
+        //     guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
+        //         throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
+        //     }
 
-            let preparedMessage = try await conversation.prepareMessage(content: content)
-            let decodedMessage = try preparedMessage.decodedMessage()
+        //     let preparedMessage = try await conversation.prepareMessage(content: content)
+        //     let decodedMessage = try preparedMessage.decodedMessage()
 
-            try await preparedMessage.send()
+        //     try await preparedMessage.send()
 
-            return try DecodedMessageWrapper.encode(decodedMessage)
-        }
+        //     return try DecodedMessageWrapper.encode(decodedMessage)
+        // }
 
         AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, conversationID: String?) -> String in
             guard let client = clients[clientAddress] else {
