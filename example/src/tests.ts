@@ -32,35 +32,52 @@ test("can make a client", async () => {
   return client.address.length > 0;
 });
 
-// test("can message a client", async () => {
-//   const bob = await XMTP.Client.createRandom("local");
-//   const alice = await XMTP.Client.createRandom("local");
+test("can message a client via a text codec", async () => {
+  const numberCodec = new NumberCodec();
+  const registry = new CodecRegistry();
+  registry.register(numberCodec);
 
-//   if (bob.address === alice.address) {
-//     throw new Error("bob and alice should be different");
-//   }
+  try {
+    const id = numberCodec.contentType.id();
+    const codec = registry.find(id);
 
-//   const bobConversation = await bob.conversations.newConversation(
-//     alice.address
-//   );
+    const encodedContent = codec.encode("Hello world");
 
-//   const aliceConversation = (await alice.conversations.list())[0];
-//   // if (!aliceConversation) {
-//   //   throw new Error("aliceConversation should exist");
-//   // }
+    const data = content.EncodedContent.encode(encodedContent);
 
-//   await bobConversation.send("hello world");
+    const bob = await XMTP.Client.createRandom("local");
+    const alice = await XMTP.Client.createRandom("local");
 
-//   const messages = await aliceConversation.messages();
+    if (bob.address === alice.address) {
+      throw new Error("bob and alice should be different");
+    }
 
-//   if (messages.length !== 1) {
-//     throw Error("No message");
-//   }
+    const bobConversation = await bob.conversations.newConversation(
+      alice.address
+    );
 
-//   const message = messages[0];
+    const aliceConversation = (await alice.conversations.list())[0];
+    if (!aliceConversation) {
+      throw new Error("aliceConversation should exist");
+    }
 
-//   return message.content === "hello world";
-// });
+    await bobConversation.send(data);
+
+    return true;
+    // To-do: Add back when logic around decoding messages is ready
+    // const messages = await aliceConversation.messages();
+
+    // if (messages.length !== 1) {
+    //   throw Error("No message");
+    // }
+
+    // const message = messages[0];
+
+    // return message.content === "hello world";
+  } catch (e) {
+    return false;
+  }
+});
 
 test("canMessage", async () => {
   const bob = await XMTP.Client.createRandom("local");
@@ -146,15 +163,13 @@ test("can send a number codec", async () => {
     );
 
     const aliceConversation = (await alice.conversations.list())[0];
-    // if (!aliceConversation) {
-    //   throw new Error("aliceConversation should exist");
-    // }
+    if (!aliceConversation) {
+      throw new Error("aliceConversation should exist");
+    }
 
     await bobConversation.send(data);
     return true;
   } catch (e) {
-    console.log("WHATS THE ERROR HERE??", e);
-    return (e as CodecError).message === "invalidContent";
+    return false;
   }
-  return false;
 });

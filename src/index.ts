@@ -124,7 +124,7 @@ export async function sendMessage(
     clientAddress,
     conversationTopic,
     conversationID,
-    encodedContentData
+    Array.from(encodedContentData)
   );
 }
 
