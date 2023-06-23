@@ -1,12 +1,10 @@
-import * as XMTP from "../../src/index";
-import {
-  CodecRegistry,
-  ContentCodecInterface,
-} from "../../src/lib/CodecRegistry";
-import { CodecError } from "../../src/lib/CodecError";
+import { content } from "@xmtp/proto";
 
 import { NumberCodec, TextCodec } from "./test_utils";
-import { content } from "@xmtp/proto";
+import * as XMTP from "../../src/index";
+import { DecodedMessage } from "../../src/index";
+import { CodecError } from "../../src/lib/CodecError";
+import { CodecRegistry } from "../../src/lib/CodecRegistry";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -32,7 +30,7 @@ test("can make a client", async () => {
   return client.address.length > 0;
 });
 
-test("can message a client via a text codec", async () => {
+test("can send and receive a text codec", async () => {
   const textCodec = new TextCodec();
   const registry = new CodecRegistry();
   registry.register(textCodec);
@@ -63,17 +61,15 @@ test("can message a client via a text codec", async () => {
 
     await bobConversation.send(data);
 
-    return true;
-    // To-do: Add back when logic around decoding messages is ready
-    // const messages = await aliceConversation.messages();
+    const messages: DecodedMessage[] = await aliceConversation.messages();
 
-    // if (messages.length !== 1) {
-    //   throw Error("No message");
-    // }
+    if (messages.length !== 1) {
+      throw Error("No message");
+    }
 
-    // const message = messages[0];
-
-    // return message.content === "hello world";
+    const encodedData = messages?.[0]?.content;
+    const decodedMessage = codec.decode(encodedData);
+    return decodedMessage === "Hello world";
   } catch (e) {
     return false;
   }
@@ -138,7 +134,7 @@ test("throws an error if codec is invalid when decoding", async () => {
   return false;
 });
 
-test("can send a number codec", async () => {
+test("can send and receive number codec", async () => {
   const numberCodec = new NumberCodec();
   const registry = new CodecRegistry();
   registry.register(numberCodec);
@@ -168,7 +164,16 @@ test("can send a number codec", async () => {
     }
 
     await bobConversation.send(data);
-    return true;
+
+    const messages: DecodedMessage[] = await aliceConversation.messages();
+
+    if (messages.length !== 1) {
+      throw Error("No message");
+    }
+
+    const encodedData = messages?.[0]?.content;
+    const decodedMessage = codec.decode(encodedData);
+    return decodedMessage === 3.14;
   } catch (e) {
     return false;
   }

@@ -99,7 +99,7 @@ export default function ConversationView({ route }: Props): JSX.Element {
         {messages.map((message) => {
           return (
             <Text style={{ marginTop: 12, padding: 12 }} key={message.id}>
-              {message.senderAddress}: {message.content}
+              {message.senderAddress}: {message.content?.content}
             </Text>
           );
         })}
