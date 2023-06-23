@@ -115,15 +115,13 @@ export async function sendMessage(
   clientAddress: string,
   conversationTopic: string,
   conversationID: string | undefined,
-  content: any
-): Promise<DecodedMessage> {
-  return JSON.parse(
-    await XMTPModule.sendMessage(
-      clientAddress,
-      conversationTopic,
-      conversationID,
-      content
-    )
+  encodedContentData: Uint8Array
+): Promise<string> {
+  return await XMTPModule.sendEncodedContentData(
+    clientAddress,
+    conversationTopic,
+    conversationID,
+    Array.from(encodedContentData)
   );
 }
 
@@ -174,7 +172,12 @@ export async function decodeMessage(
   conversationID?: string | undefined
 ): Promise<DecodedMessage> {
   return JSON.parse(
-    await XMTPModule.decodeMessage(clientAddress, topic, encryptedMessage, conversationID)
+    await XMTPModule.decodeMessage(
+      clientAddress,
+      topic,
+      encryptedMessage,
+      conversationID
+    )
   );
 }
 

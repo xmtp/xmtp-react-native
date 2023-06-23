@@ -43,8 +43,8 @@ export class Conversation {
     }
   }
 
-  // TODO: support content types and conversation ID
-  async send(content: any): Promise<DecodedMessage> {
+  // TODO: support conversation ID
+  async send(content: any): Promise<string> {
     try {
       return await XMTP.sendMessage(
         this.clientAddress,
