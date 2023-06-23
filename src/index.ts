@@ -36,7 +36,10 @@ export async function exportKeyBundle(clientAddress: string): Promise<string> {
   return await XMTPModule.exportKeyBundle(clientAddress);
 }
 
-export async function canMessage(clientAddress: string, peerAddress: string): Promise<boolean> {
+export async function canMessage(
+  clientAddress: string,
+  peerAddress: string
+): Promise<boolean> {
   return await XMTPModule.canMessage(clientAddress, peerAddress);
 }
 
@@ -58,18 +61,14 @@ export async function listMessages(
   before?: Date | undefined,
   after?: Date | undefined
 ): Promise<DecodedMessage[]> {
-  return (
-    await XMTPModule.loadMessages(
-      clientAddress,
-      [conversationTopic],
-      [conversationID],
-      limit,
-      before?.getTime,
-      after?.getTime
-    )
-  ).map((json: string) => {
-    return JSON.parse(json);
-  });
+  return await XMTPModule.loadMessages(
+    clientAddress,
+    [conversationTopic],
+    [conversationID],
+    limit,
+    before?.getTime,
+    after?.getTime
+  );
 }
 
 export async function listBatchMessages(
