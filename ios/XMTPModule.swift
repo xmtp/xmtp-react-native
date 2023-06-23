@@ -180,13 +180,11 @@ public class XMTPModule: Module {
             guard let client = clients[clientAddress] else {
                 throw Error.noClient
             }
-            let messages = try await client.conversations.listBatchMessages(
+            return try await client.conversations.listBatchMessages(
                 topics: topics,
                     limit: limit,
                     before: beforeDate,
                     after: afterDate)
-
-            return messages
 
         }
 
