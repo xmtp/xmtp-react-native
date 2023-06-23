@@ -25,6 +25,7 @@ import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.XMTPPush
+import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.contents.SignatureOuterClass
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import java.util.Date
@@ -72,11 +73,7 @@ data class SignatureRequest(
 )
 
 fun Conversation.cacheKey(clientAddress: String): String {
-    return if (conversationId != "") {
-        "${clientAddress}:${topic}:${conversationId}"
-    } else {
-        "${clientAddress}:${topic}"
-    }
+    return "${clientAddress}:${topic}"
 }
 
 class XMTPModule : Module() {
@@ -150,6 +147,25 @@ class XMTPModule : Module() {
             Base64.encodeToString(client.privateKeyBundle.toByteArray(), NO_WRAP)
         }
 
+        // Export the conversation's serialized topic data.
+        AsyncFunction("exportConversationTopicData") { clientAddress: String, topic: String ->
+            logV("exportConversationTopicData")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val conversation = findConversation(clientAddress, topic)
+                ?: throw XMTPException("no conversation found for $topic")
+            Base64.encodeToString(conversation.toTopicData().toByteArray(), NO_WRAP)
+        }
+
+        // Import a conversation from its serialized topic data.
+        AsyncFunction("importConversationTopicData") { clientAddress: String, topicData: String ->
+            logV("importConversationTopicData")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val data = TopicData.parseFrom(Base64.decode(topicData, NO_WRAP))
+            val conversation = client.conversations.importTopicData(data)
+            conversations[conversation.cacheKey(clientAddress)] = conversation
+            ConversationWrapper.encode(ConversationWithClientAddress(client, conversation))
+        }
+
         //
         // Client API
         AsyncFunction("canMessage") { clientAddress: String, peerAddress: String ->
@@ -186,8 +202,7 @@ class XMTPModule : Module() {
             val conversation =
                 findConversation(
                     clientAddress = clientAddress,
-                    topic = conversationTopic,
-                    conversationId = conversationID
+                    topic = conversationTopic
                 )
                     ?: throw XMTPException("no conversation found for $conversationTopic")
             val preparedMessage = conversation.prepareMessage(content = content)
@@ -260,8 +275,7 @@ class XMTPModule : Module() {
             val conversation =
                 findConversation(
                     clientAddress = clientAddress,
-                    topic = topic,
-                    conversationId = conversationID
+                    topic = topic
                 )
                     ?: throw XMTPException("no conversation found for $topic")
             val decodedMessage = conversation.decode(envelope)
@@ -275,22 +289,16 @@ class XMTPModule : Module() {
     private fun findConversation(
         clientAddress: String,
         topic: String,
-        conversationId: String?,
     ): Conversation? {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-        val cacheKey: String = if (!conversationId.isNullOrBlank()) {
-            "${clientAddress}:${topic}:${conversationId}"
-        } else {
-            "${clientAddress}:${topic}"
-        }
-
+        val cacheKey = "${clientAddress}:${topic}"
         val cacheConversation = conversations[cacheKey]
         if (cacheConversation != null) {
             return cacheConversation
         } else {
             val conversation = client.conversations.list()
-                .firstOrNull { it.topic == topic && it.conversationId == conversationId }
+                .firstOrNull { it.topic == topic }
             if (conversation != null) {
                 conversations[conversation.cacheKey(clientAddress)] = conversation
                 return conversation
@@ -349,8 +357,7 @@ class XMTPModule : Module() {
         val conversation =
             findConversation(
                 clientAddress = clientAddress,
-                topic = topic,
-                conversationId = conversationId
+                topic = topic
             ) ?: return
         subscriptions[conversation.cacheKey(clientAddress)] =
             CoroutineScope(Dispatchers.IO).launch {
@@ -380,8 +387,7 @@ class XMTPModule : Module() {
         val conversation =
             findConversation(
                 clientAddress = clientAddress,
-                topic = topic,
-                conversationId = conversationId
+                topic = topic
             ) ?: return
         subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
     }
