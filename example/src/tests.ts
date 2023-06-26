@@ -124,7 +124,8 @@ test("throws an error if codec is invalid when decoding", async () => {
     const encodedContent = codec.encode(3.14);
     const invalidContentToDecode = {
       ...encodedContent,
-      content: { key1: "This cannot be parsed" },
+      // Not a UInt8Array
+      content: 3.14,
     };
     // @ts-ignore
     codec.decode(invalidContentToDecode);

@@ -1,9 +1,10 @@
-import { decode } from "@msgpack/msgpack";
 import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 
 import XMTPModule from "./XMTPModule";
 import { Conversation } from "./lib/Conversation";
 import type { DecodedMessage } from "./lib/DecodedMessage";
+
+import * as proto from "@xmtp/proto";
 
 export function address(): string {
   return XMTPModule.address();
@@ -71,7 +72,13 @@ export async function listMessages(
     after?.getTime
   );
 
-  return messages.map((msg: Uint8Array) => decode(msg));
+  for (const message of messages) {
+    const encodedContent = proto.content.EncodedContent.decode(message.content);
+
+    message.content = encodedContent;
+  }
+
+  return messages;
 }
 
 export async function listBatchMessages(
@@ -82,18 +89,21 @@ export async function listBatchMessages(
   before?: Date | undefined,
   after?: Date | undefined
 ): Promise<DecodedMessage[]> {
-  return (
-    await XMTPModule.loadMessages(
-      clientAddress,
-      conversationTopics,
-      conversationIDs,
-      limit,
-      before?.getTime,
-      after?.getTime
-    )
-  ).map((json: string) => {
-    return JSON.parse(json);
-  });
+  const messages = await XMTPModule.loadMessages(
+    clientAddress,
+    conversationTopics,
+    conversationIDs,
+    limit,
+    before?.getTime,
+    after?.getTime
+  );
+
+  for (const message of messages) {
+    const encodedContent = proto.content.EncodedContent.decode(message.content);
+    message.content = encodedContent;
+  }
+
+  return messages;
 }
 
 // TODO: support conversation ID

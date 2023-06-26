@@ -9,16 +9,23 @@ import {
   View,
   Button,
 } from "react-native";
-import { Conversation, DecodedMessage } from "xmtp-react-native-sdk";
+import { Conversation } from "xmtp-react-native-sdk";
 
 import { RootStackParamList } from "./HomeView";
-import { NumberCodec, TextCodec } from "./test_utils";
+import { TextCodec } from "./test_utils";
 import {
   CodecRegistry,
   ContentCodecInterface,
 } from "../../src/lib/CodecRegistry";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Conversation View">;
+
+type DecodedMessage = {
+  content: string;
+  id: string;
+  senderAddress: string;
+  sent: Date;
+};
 
 export default function ConversationView({ route }: Props): JSX.Element {
   const conversation = new Conversation(route.params.conversation);
@@ -31,8 +38,15 @@ export default function ConversationView({ route }: Props): JSX.Element {
   async function loadMessages() {
     try {
       const messages = await conversation.messages();
+      const textCodec = new TextCodec();
+      const mappedMessages = messages.map((msg) => {
+        return {
+          ...msg,
+          content: textCodec.decode(msg.content),
+        };
+      });
       setMessages(
-        messages.sort((a, b) => {
+        mappedMessages.sort((a, b) => {
           return a.sent > b.sent ? 1 : -1;
         })
       );
@@ -56,20 +70,17 @@ export default function ConversationView({ route }: Props): JSX.Element {
   async function sendMessage() {
     setIsSending(true);
     let codec: ContentCodecInterface<string | number> = new TextCodec();
-    if (typeof content === "number") {
-      codec = new NumberCodec();
-    }
 
     const registry = new CodecRegistry();
     registry.register(codec);
 
     const encodedContent = codec.encode(content);
-    const data = protoContent.EncodedContent.encode(encodedContent);
+    const data = protoContent.EncodedContent.encode(encodedContent).finish();
     const message = await conversation.send(data);
 
     const uniqueMessages = [
       ...new Map(
-        [message, ...messages].map((item: DecodedMessage) => [item.id, item])
+        [message, ...messages].map((item) => [item.id, item])
       ).values(),
     ].sort((a, b) => {
       return a.sent > b.sent ? 1 : -1;
@@ -99,7 +110,7 @@ export default function ConversationView({ route }: Props): JSX.Element {
         {messages.map((message) => {
           return (
             <Text style={{ marginTop: 12, padding: 12 }} key={message.id}>
-              {message.senderAddress}: {message.content?.content}
+              {message.senderAddress}: {message.content}
             </Text>
           );
         })}
