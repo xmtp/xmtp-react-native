@@ -1,9 +1,11 @@
-import { decode } from "@msgpack/msgpack";
+import { decode, encode } from "@msgpack/msgpack";
 import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 
 import XMTPModule from "./XMTPModule";
 import { Conversation } from "./lib/Conversation";
 import type { DecodedMessage } from "./lib/DecodedMessage";
+
+import * as proto from "@xmtp/proto";
 
 export function address(): string {
   return XMTPModule.address();
@@ -76,6 +78,13 @@ export async function listMessages(
   });
 
   console.log("MAPPED MESSAGES", mappedMessages);
+
+  for (const message of mappedMessages) {
+    const encodedContent = proto.content.EncodedContent.decode(message.content);
+
+    //decode with codec
+    message.content = decodeContent(encodedContent);
+  }
 
   return mappedMessages;
 }

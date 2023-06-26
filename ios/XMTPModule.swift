@@ -181,11 +181,13 @@ public class XMTPModule: Module {
                 throw Error.noClient
             }
             
-            let messages = try await client.conversations.listBatchMessages(
+            let decodedMessages = try await client.conversations.listBatchMessages(
                 topics: topics,
                     limit: limit,
                     before: beforeDate,
-                after: afterDate).map { (msg) in try EncodedMessageWrapper.encode(msg) }
+                after: afterDate)
+
+						let messages = try decodedMessages.map { (msg) in try EncodedMessageWrapper.encode(msg) }
 
             return messages
         }

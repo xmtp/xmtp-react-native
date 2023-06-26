@@ -41,7 +41,9 @@ test("can send and receive a text codec", async () => {
 
     const encodedContent = codec.encode("Hello world");
 
-    const data = content.EncodedContent.encode(encodedContent);
+    const data = content.EncodedContent.encode(encodedContent).finish();
+
+    console.log("DATA IS", data);
 
     const bob = await XMTP.Client.createRandom("local");
     const alice = await XMTP.Client.createRandom("local");
