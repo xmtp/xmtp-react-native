@@ -49,6 +49,7 @@ target 'xmtpreactnativesdkexample' do
   flags = get_default_flags()
 
   pod 'secp256k1.swift', :modular_headers => true
+  pod 'MessagePack.swift', '~> 4.0'
 
   use_react_native!(
     :path => config[:reactNativePath],
@@ -84,10 +85,12 @@ target 'xmtpreactnativesdkexample' do
     installer.generated_projects.each do |project|
         project.targets.each do |target|
             target.build_configurations.each do |config|
+                pod 'MessagePack.swift', '~> 4.0'
                 config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
             end
         end
         project.build_configurations.each do |config|
+             pod 'MessagePack.swift', '~> 4.0'  
             config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         end
     end

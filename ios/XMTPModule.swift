@@ -174,18 +174,20 @@ public class XMTPModule: Module {
             }
         }
 
-        AsyncFunction("loadMessages") { (clientAddress: String, topics: [String], conversationIDs: [String?], limit: Int?, before: Double?, after: Double?) -> [DecodedMessage] in
+        AsyncFunction("loadMessages") { (clientAddress: String, topics: [String], conversationIDs: [String?], limit: Int?, before: Double?, after: Double?) -> [String] in
             let beforeDate = before != nil ? Date(timeIntervalSince1970: before!) : nil
-            let afterDate = after != nil ? Date(timeIntervalSince1970: after!) : nil
+            let afterDate = after != nil ? Date(timeIntervalSince1970: after!) : nil     
             guard let client = clients[clientAddress] else {
                 throw Error.noClient
             }
-            return try await client.conversations.listBatchMessages(
+            
+            let messages = try await client.conversations.listBatchMessages(
                 topics: topics,
                     limit: limit,
                     before: beforeDate,
-                    after: afterDate)
-
+                after: afterDate).map { (msg) in try DecodedMessageWrapper.encode(msg) }
+            
+            return messages
         }
 
 		AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: Array<UInt8>) -> String in
