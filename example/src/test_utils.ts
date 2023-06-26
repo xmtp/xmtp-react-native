@@ -1,4 +1,5 @@
 import { ContentCodecInterface } from "xmtp-react-native-sdk/lib/CodecRegistry";
+
 import { EncodedContent } from "../../src/XMTP.types";
 import { CodecError } from "../../src/lib/CodecError";
 import { ContentTypeID } from "../../src/lib/ContentTypeID";
@@ -34,10 +35,11 @@ export class NumberCodec implements ContentCodecInterface<number> {
 
   decode(encodedContent: EncodedContent): number {
     try {
-      const contentToDecode = encodedContent.content.toString();
-      const decodedContent = JSON.parse(contentToDecode);
-      return decodedContent;
-    } catch {
+      const contentToDecode = new TextDecoder().decode(encodedContent);
+      const splitContent = contentToDecode.split("\u0004");
+      const stringifiedNum = splitContent[splitContent.length - 1];
+      return Number(stringifiedNum);
+    } catch (e) {
       throw new CodecError("invalidContent");
     }
   }
@@ -74,10 +76,10 @@ export class TextCodec implements ContentCodecInterface<string> {
 
   decode(encodedContent: EncodedContent): string {
     try {
-      const contentToDecode = encodedContent.content.toString();
-      const decodedContent = JSON.parse(contentToDecode);
-      return decodedContent;
-    } catch {
+      const contentToDecode = new TextDecoder().decode(encodedContent);
+      const splitContent = contentToDecode.split('"');
+      return splitContent[2];
+    } catch (e) {
       throw new CodecError("invalidContent");
     }
   }

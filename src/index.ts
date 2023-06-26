@@ -71,13 +71,7 @@ export async function listMessages(
     after?.getTime
   );
 
-  const mappedMessages = messages.map((message) => {
-    return decode(message);
-  });
-
-  console.log("MAPPED MESSAGES", mappedMessages);
-
-  return mappedMessages;
+  return messages.map((msg: Uint8Array) => decode(msg));
 }
 
 export async function listBatchMessages(

@@ -185,7 +185,8 @@ public class XMTPModule: Module {
                 topics: topics,
                     limit: limit,
                     before: beforeDate,
-                after: afterDate).map { (msg) in try EncodedMessageWrapper.encode(msg) }
+                after: afterDate)
+                .map { (msg) in try EncodedMessageWrapper.encode(msg) }
 
             return messages
         }

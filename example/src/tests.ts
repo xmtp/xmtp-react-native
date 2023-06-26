@@ -41,7 +41,7 @@ test("can send and receive a text codec", async () => {
 
     const encodedContent = codec.encode("Hello world");
 
-    const data = content.EncodedContent.encode(encodedContent);
+    const data = content.EncodedContent.encode(encodedContent).finish();
 
     const bob = await XMTP.Client.createRandom("local");
     const alice = await XMTP.Client.createRandom("local");
@@ -67,8 +67,8 @@ test("can send and receive a text codec", async () => {
       throw Error("No message");
     }
 
-    const encodedData = messages?.[0]?.content;
-    const decodedMessage = codec.decode(encodedData);
+    const firstMessage = messages?.[0];
+    const decodedMessage = codec.decode(firstMessage.content);
     return decodedMessage === "Hello world";
   } catch (e) {
     return false;
@@ -145,7 +145,7 @@ test("can send and receive number codec", async () => {
 
     const encodedContent = codec.encode(3.14);
 
-    const data = content.EncodedContent.encode(encodedContent);
+    const data = content.EncodedContent.encode(encodedContent).finish();
 
     const bob = await XMTP.Client.createRandom("local");
     const alice = await XMTP.Client.createRandom("local");
@@ -171,8 +171,8 @@ test("can send and receive number codec", async () => {
       throw Error("No message");
     }
 
-    const encodedData = messages?.[0]?.content;
-    const decodedMessage = codec.decode(encodedData);
+    const firstMessage = messages?.[0];
+    const decodedMessage = codec.decode(firstMessage.content);
     return decodedMessage === 3.14;
   } catch (e) {
     return false;
