@@ -1,3 +1,4 @@
+import { decode } from "@msgpack/msgpack";
 import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 
 import XMTPModule from "./XMTPModule";
@@ -72,13 +73,17 @@ export async function listMessages(
     after?.getTime
   );
 
-  for (const message of messages) {
+  const mappedMessages = messages.map((message) => {
+    return decode(message);
+  });
+
+  for (const message of mappedMessages) {
     const encodedContent = proto.content.EncodedContent.decode(message.content);
 
     message.content = encodedContent;
   }
 
-  return messages;
+  return mappedMessages;
 }
 
 export async function listBatchMessages(
@@ -98,12 +103,16 @@ export async function listBatchMessages(
     after?.getTime
   );
 
-  for (const message of messages) {
+  const mappedMessages = messages.map((message) => {
+    return decode(message);
+  });
+
+  for (const message of mappedMessages) {
     const encodedContent = proto.content.EncodedContent.decode(message.content);
     message.content = encodedContent;
   }
 
-  return messages;
+  return mappedMessages;
 }
 
 // TODO: support conversation ID
