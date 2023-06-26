@@ -80,7 +80,7 @@ export default function ConversationView({ route }: Props): JSX.Element {
 
     const uniqueMessages = [
       ...new Map(
-        [message, ...messages].map((item) => [item.id, item])
+        [message, ...messages].map((item: DecodedMessage) => [item.id, item])
       ).values(),
     ].sort((a, b) => {
       return a.sent > b.sent ? 1 : -1;
