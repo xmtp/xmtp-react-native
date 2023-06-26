@@ -17,7 +17,7 @@ protocol Wrapper: Codable {
 }
 
 extension Wrapper {
-	static func encode(_ model: T) throws -> String {
+    static func encode(_ model: T) throws -> String {
 		let wrapper = wrap(model: model)
 		let data = try JSONEncoder().encode(wrapper)
 
@@ -25,8 +25,6 @@ extension Wrapper {
 			throw WrapperError.encodeError("could not encode \(model)")
 		}
 
-		let msgpackData = try MessagePackEncoder().encode(wrapper)
-		print("MSG PACK DATA", msgpackData)
 		return result
 	}
 }

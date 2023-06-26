@@ -438,7 +438,6 @@ DEPENDENCIES:
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - libevent (~> 2.1.12)
-  - MessagePack.swift (~> 4.0)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTRequired (from `../node_modules/react-native/Libraries/RCTRequired`)
   - RCTTypeSafety (from `../node_modules/react-native/Libraries/TypeSafety`)
@@ -666,6 +665,6 @@ SPEC CHECKSUMS:
   XMTPRust: 233518ed46fbe3ea9e3bc3035de9a620dba09ce5
   Yoga: ba09b6b11e6139e3df8229238aa794205ca6a02a
 
-PODFILE CHECKSUM: bc80441fc51370d051699ad57e4494e9320aa928
+PODFILE CHECKSUM: 522d88edc2d5fac4825e60a121c24abc18983367
 
 COCOAPODS: 1.12.1

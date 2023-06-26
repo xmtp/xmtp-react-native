@@ -1,3 +1,4 @@
+import { decode } from "@msgpack/msgpack";
 import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 
 import XMTPModule from "./XMTPModule";
@@ -61,7 +62,7 @@ export async function listMessages(
   before?: Date | undefined,
   after?: Date | undefined
 ): Promise<DecodedMessage[]> {
-  return await XMTPModule.loadMessages(
+  const messages = await XMTPModule.loadMessages(
     clientAddress,
     [conversationTopic],
     [conversationID],
@@ -69,6 +70,14 @@ export async function listMessages(
     before?.getTime,
     after?.getTime
   );
+
+  const mappedMessages = messages.map((message) => {
+    return decode(message);
+  });
+
+  console.log("MAPPED MESSAGES", mappedMessages);
+
+  return mappedMessages;
 }
 
 export async function listBatchMessages(
