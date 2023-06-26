@@ -25,6 +25,15 @@ export default class Conversations {
     return result;
   }
 
+  async importTopicData(topicData: string): Promise<Conversation> {
+    const conversation = await XMTPModule.importConversationTopicData(
+        this.client.address,
+        topicData
+    );
+    this.known[conversation.topic] = true;
+    return conversation;
+  }
+
   // TODO: support conversation ID
   async newConversation(
     peerAddress: string,
