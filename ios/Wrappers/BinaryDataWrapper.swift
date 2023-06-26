@@ -12,12 +12,12 @@ enum BinaryDataWrapperError: Swift.Error {
 
 protocol BinaryDataWrapper: Codable {
 	associatedtype T
-	static func wrap(model: T) -> Self
+	static func wrap(model: T) throws -> Self
 }
 
 extension BinaryDataWrapper {
   static func encode(_ model: T) throws -> [UInt8] {
-    let wrapper = wrap(model: model)
+    let wrapper = try wrap(model: model)
 	let encodedData = try MessagePackEncoder().encode(wrapper)
     return [UInt8](encodedData)
   }
