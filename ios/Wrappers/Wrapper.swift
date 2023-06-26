@@ -5,7 +5,7 @@
 //
 
 import Foundation
-import MessagePack
+import MessagePacker
 
 enum WrapperError: Swift.Error {
 	case encodeError(String)
@@ -25,7 +25,7 @@ extension Wrapper {
 			throw WrapperError.encodeError("could not encode \(model)")
 		}
 
-        let msgpackData = try MessagePackEncoder().encode(wrapper)
+		let msgpackData = try MessagePackEncoder().encode(wrapper)
 		print("MSG PACK DATA", msgpackData)
 		return result
 	}

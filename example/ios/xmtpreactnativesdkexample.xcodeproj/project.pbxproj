@@ -41,6 +41,7 @@
 		80323D3D45487AD85F64F249 /* Pods-xmtpreactnativesdkexample.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-xmtpreactnativesdkexample.debug.xcconfig"; path = "Target Support Files/Pods-xmtpreactnativesdkexample/Pods-xmtpreactnativesdkexample.debug.xcconfig"; sourceTree = "<group>"; };
 		A6A5DB852A00551E001DF8C2 /* xmtpreactnativesdkexampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = xmtpreactnativesdkexampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A6A5DB872A00551E001DF8C2 /* xmtpreactnativesdkexampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = xmtpreactnativesdkexampleUITests.swift; sourceTree = "<group>"; };
+		A6AE8C832A49F1F300BD4E8B /* libMessagePack.swift.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libMessagePack.swift.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = xmtpreactnativesdkexample/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -86,6 +87,7 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A6AE8C832A49F1F300BD4E8B /* libMessagePack.swift.a */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				78B76F8B6347E6AE6088DF9B /* libPods-xmtpreactnativesdkexample.a */,
 			);
