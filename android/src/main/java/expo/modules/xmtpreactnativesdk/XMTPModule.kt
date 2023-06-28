@@ -181,7 +181,7 @@ class XMTPModule : Module() {
         }
 
         // TODO: Support content types
-        AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, conversationID: String?, content: String ->
+        AsyncFunction("sendEncodedContentData") { clientAddress: String, conversationTopic: String, conversationID: String?, content: String ->
             logV("sendMessage")
             val conversation =
                 findConversation(

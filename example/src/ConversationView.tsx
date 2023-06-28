@@ -21,7 +21,7 @@ import {
 type Props = NativeStackScreenProps<RootStackParamList, "Conversation View">;
 
 type DecodedMessage = {
-  content: string;
+  content: any;
   id: string;
   senderAddress: string;
   sent: Date;

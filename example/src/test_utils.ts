@@ -26,7 +26,7 @@ export class NumberCodec implements ContentCodecInterface<number> {
     const encodedContent = {
       type: this.contentType,
       content: Buffer.from(JSON.stringify(content)),
-      fallback: "fallbackText",
+      fallback: content.toString(),
       parameters: {},
     };
 
@@ -68,7 +68,7 @@ export class TextCodec implements ContentCodecInterface<string> {
     const encodedContent = {
       type: this.contentType,
       content: Buffer.from(JSON.stringify(content)),
-      fallback: "fallbackText",
+      fallback: content,
       parameters: {},
     };
 
