@@ -5,7 +5,6 @@
 //
 
 import Foundation
-import MessagePacker
 
 enum WrapperError: Swift.Error {
 	case encodeError(String)
@@ -17,7 +16,7 @@ protocol Wrapper: Codable {
 }
 
 extension Wrapper {
-    static func encode(_ model: T) throws -> String {
+	static func encode(_ model: T) throws -> String {
 		let wrapper = wrap(model: model)
 		let data = try JSONEncoder().encode(wrapper)
 

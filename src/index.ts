@@ -1,11 +1,11 @@
 import { decode } from "@msgpack/msgpack";
+import * as proto from "@xmtp/proto";
+import { EncodedContent } from "@xmtp/proto/ts/dist/types/message_contents/content.pb";
 import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 
 import XMTPModule from "./XMTPModule";
 import { Conversation } from "./lib/Conversation";
 import type { DecodedMessage } from "./lib/DecodedMessage";
-
-import * as proto from "@xmtp/proto";
 
 export function address(): string {
   return XMTPModule.address();
@@ -73,17 +73,16 @@ export async function listMessages(
     after?.getTime
   );
 
-  const mappedMessages = messages.map((message) => {
-    return decode(message);
-  });
-
-  for (const message of mappedMessages) {
-    const encodedContent = proto.content.EncodedContent.decode(message.content);
+  for (const message of messages) {
+    const decodedMessage = decode(message);
+    const encodedContent = proto.content.EncodedContent.decode(
+      (decodedMessage as EncodedContent).content
+    );
 
     message.content = encodedContent;
   }
 
-  return mappedMessages;
+  return messages;
 }
 
 export async function listBatchMessages(
@@ -103,16 +102,16 @@ export async function listBatchMessages(
     after?.getTime
   );
 
-  const mappedMessages = messages.map((message) => {
-    return decode(message);
-  });
+  for (const message of messages) {
+    const decodedMessage = decode(message);
+    const encodedContent = proto.content.EncodedContent.decode(
+      (decodedMessage as EncodedContent).content
+    );
 
-  for (const message of mappedMessages) {
-    const encodedContent = proto.content.EncodedContent.decode(message.content);
     message.content = encodedContent;
   }
 
-  return mappedMessages;
+  return messages;
 }
 
 // TODO: support conversation ID

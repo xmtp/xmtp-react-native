@@ -17,8 +17,8 @@ protocol BinaryDataWrapper: Codable {
 
 extension BinaryDataWrapper {
   static func encode(_ model: T) throws -> [UInt8] {
-    let wrapper = try wrap(model: model)
+	let wrapper = try wrap(model: model)
 	let encodedData = try MessagePackEncoder().encode(wrapper)
-    return [UInt8](encodedData)
+	return [UInt8](encodedData)
   }
 }

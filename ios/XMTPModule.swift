@@ -187,20 +187,21 @@ public class XMTPModule: Module {
                     before: beforeDate,
                 after: afterDate)
 
-			let messages = try decodedMessages.map { (msg) in try EncodedMessageWrapper.encode(msg) }
+            let messages = try decodedMessages.map { (msg) in try EncodedMessageWrapper.encode(msg) }
 
             return messages
         }
 
-		AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: Array<UInt8>) -> String in
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
-				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
-			}
+        AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: Array<UInt8>) -> String in
+            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
+                throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
+            }
+            
+            let contentData = Data(content)
+            let encodedContent = try EncodedContent(serializedData: contentData)
 
-			let contentData = Data(content)
-			let encodedContent = try EncodedContent(serializedData: contentData)
-			let messageID = try await conversation.send(encodedContent: encodedContent)
-			return messageID
+            let messageID = try await conversation.send(encodedContent: encodedContent)
+            return messageID
         }
 
         AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, conversationID: String?) -> String in
