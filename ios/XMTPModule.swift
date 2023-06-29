@@ -59,12 +59,13 @@ struct SignatureRequest: Codable {
 }
 
 extension Conversation {
-    func cacheKey(_ clientAddress: String) -> String {
-        if let conversationID, conversationID != "" {
-            return "\(clientAddress):\(topic):\(conversationID)"
-        } else {
+
+    static func cacheKeyForTopic(clientAddress: String, topic: String) -> String {
             return "\(clientAddress):\(topic)"
         }
+
+    func cacheKey(_ clientAddress: String) -> String {
+        return Conversation.cacheKeyForTopic(clientAddress: clientAddress, topic: topic)
     }
 }
 
@@ -150,6 +151,30 @@ public class XMTPModule: Module {
             return bundle
         }
 
+        // Export the conversation's serialized topic data.
+        AsyncFunction("exportConversationTopicData") { (clientAddress: String, topic: String) -> String in
+            guard let client = clients[clientAddress] else {
+                throw Error.noClient
+            }
+            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+                throw Error.conversationNotFound(topic)
+            }
+            return try conversation.toTopicData().serializedData().base64EncodedString()
+        }
+
+        // Import a conversation from its serialized topic data.
+        AsyncFunction("importConversationTopicData") { (clientAddress: String, topicData: String) -> String in
+            guard let client = clients[clientAddress] else {
+                throw Error.noClient
+            }
+            let data = try Xmtp_KeystoreApi_V1_TopicMap.TopicData(
+                serializedData: Data(base64Encoded: Data(topicData.utf8))!
+            )
+            let conversation = client.conversations.importTopicData(data: data)
+            conversations[conversation.cacheKey(clientAddress)] = conversation
+            return try ConversationWrapper.encode(ConversationWithClientAddress(client: client, conversation: conversation))
+        }
+
         //
         // Client API
         AsyncFunction("canMessage") { (clientAddress: String, peerAddress: String) -> Bool in
@@ -193,7 +218,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: Array<UInt8>) -> String in
-            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic, conversationID: conversationID) else {
+            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
                 throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
             }
             
@@ -264,7 +289,7 @@ public class XMTPModule: Module {
                 envelope.contentTopic = topic
             }
 
-            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic, conversationID: conversationID) else {
+            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
                 throw Error.conversationNotFound("no conversation found for \(topic)")
             }
             let decodedMessage = try conversation.decode(envelope)
@@ -276,23 +301,16 @@ public class XMTPModule: Module {
     // Helpers
     //
 
-    func findConversation(clientAddress: String, topic: String, conversationID: String?) async throws -> Conversation? {
+    func findConversation(clientAddress: String, topic: String) async throws -> Conversation? {
         guard let client = clients[clientAddress] else {
             throw Error.noClient
         }
 
-        let cacheKey: String
-
-        if let conversationID, conversationID != "" {
-            cacheKey = "\(clientAddress):\(topic):\(conversationID)"
-        } else {
-            cacheKey = "\(clientAddress):\(topic)"
-        }
-
+        let cacheKey = Conversation.cacheKeyForTopic(clientAddress: clientAddress, topic: topic)
         if let conversation = conversations[cacheKey] {
             return conversation
-        } else if let conversation = try await client.conversations.list().first(where: { $0.topic == topic && $0.conversationID == conversationID }) {
-            conversations[conversation.cacheKey(clientAddress)] = conversation
+        } else if let conversation = try await client.conversations.list().first(where: { $0.topic == topic }) {
+            conversations[cacheKey] = conversation
             return conversation
         }
 
@@ -344,7 +362,7 @@ public class XMTPModule: Module {
     }
 
     func subscribeToMessages(clientAddress: String, topic: String, conversationID: String?) async throws {
-        guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic, conversationID: conversationID) else {
+        guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
             return
         }
 
@@ -365,7 +383,7 @@ public class XMTPModule: Module {
     }
 
     func unsubscribeFromMessages(clientAddress: String, topic: String, conversationID: String?) async throws {
-        guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic, conversationID: conversationID) else {
+        guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
             return
         }
 

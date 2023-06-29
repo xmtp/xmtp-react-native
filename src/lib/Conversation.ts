@@ -22,6 +22,10 @@ export class Conversation {
     this.conversationID = params.conversationID;
   }
 
+  async exportTopicData(): Promise<string> {
+    return await XMTP.exportConversationTopicData(this.clientAddress, this.topic);
+  }
+
   // TODO: Support pagination and conversation ID here
   async messages(
     limit?: number | undefined,

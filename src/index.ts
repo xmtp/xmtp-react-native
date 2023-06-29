@@ -39,6 +39,27 @@ export async function exportKeyBundle(clientAddress: string): Promise<string> {
   return await XMTPModule.exportKeyBundle(clientAddress);
 }
 
+export async function exportConversationTopicData(
+  clientAddress: string,
+  conversationTopic: string
+): Promise<string> {
+  return await XMTPModule.exportConversationTopicData(
+    clientAddress,
+    conversationTopic
+  );
+}
+
+export async function importConversationTopicData(
+  clientAddress: string,
+  topicData: string
+): Promise<Conversation> {
+  let json = await XMTPModule.importConversationTopicData(
+    clientAddress,
+    topicData
+  );
+  return new Conversation(JSON.parse(json));
+}
+
 export async function canMessage(
   clientAddress: string,
   peerAddress: string
