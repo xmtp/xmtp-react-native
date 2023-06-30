@@ -9,6 +9,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWithClientAddress
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.EncodedMessageWrapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,8 +27,9 @@ import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
-import org.xmtp.proto.message.contents.SignatureOuterClass
+import org.xmtp.proto.message.contents.Content.EncodedContent
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
+import org.xmtp.proto.message.contents.SignatureOuterClass
 import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
@@ -192,12 +194,11 @@ class XMTPModule : Module() {
             val afterDate = if (after != null) Date(after) else null
 
             client.conversations.listBatchMessages(topics, limit, beforeDate, afterDate).map {
-                DecodedMessageWrapper.encode(it)
+                EncodedMessageWrapper.encode(it)
             }
         }
 
-        // TODO: Support content types
-        AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, conversationID: String?, content: String ->
+        AsyncFunction("sendEncodedContentData") { clientAddress: String, conversationTopic: String, conversationID: String?, content: List<Int> ->
             logV("sendMessage")
             val conversation =
                 findConversation(
@@ -205,10 +206,17 @@ class XMTPModule : Module() {
                     topic = conversationTopic
                 )
                     ?: throw XMTPException("no conversation found for $conversationTopic")
-            val preparedMessage = conversation.prepareMessage(content = content)
-            val decodedMessage = preparedMessage.decodedMessage()
-            preparedMessage.send()
-            DecodedMessageWrapper.encode(decodedMessage)
+
+            val contentData = content.foldIndexed(ByteArray(content.size)) { i, a, v ->
+                a.apply {
+                    set(
+                        i,
+                        v.toByte()
+                    )
+                }
+            }
+            val encodedContent = EncodedContent.parseFrom(contentData)
+            conversation.send(encodedContent = encodedContent)
         }
 
         AsyncFunction("createConversation") { clientAddress: String, peerAddress: String, conversationID: String? ->

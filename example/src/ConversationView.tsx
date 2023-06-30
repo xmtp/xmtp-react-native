@@ -1,4 +1,5 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { content as protoContent } from "@xmtp/proto";
 import React, { useEffect, useState } from "react";
 import {
   Text,
@@ -8,25 +9,44 @@ import {
   View,
   Button,
 } from "react-native";
-import { Conversation, DecodedMessage } from "xmtp-react-native-sdk";
+import { Conversation } from "xmtp-react-native-sdk";
 
 import { RootStackParamList } from "./HomeView";
+import { TextCodec } from "./test_utils";
+import {
+  CodecRegistry,
+  ContentCodecInterface,
+} from "../../src/lib/CodecRegistry";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Conversation View">;
+
+type DecodedMessage = {
+  content: any;
+  id: string;
+  senderAddress: string;
+  sent: Date;
+};
 
 export default function ConversationView({ route }: Props): JSX.Element {
   const conversation = new Conversation(route.params.conversation);
 
   const [messages, setMessages] = useState<DecodedMessage[]>([]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [text, onChangeText] = useState<string>("");
+  const [content, onChangeContent] = useState<string>("");
   const [isSending, setIsSending] = useState<boolean>(false);
 
   async function loadMessages() {
     try {
       const messages = await conversation.messages();
+      const textCodec = new TextCodec();
+      const mappedMessages = messages.map((msg) => {
+        return {
+          ...msg,
+          content: textCodec.decode(msg.content),
+        };
+      });
       setMessages(
-        messages.sort((a, b) => {
+        mappedMessages.sort((a, b) => {
           return a.sent > b.sent ? 1 : -1;
         })
       );
@@ -49,7 +69,14 @@ export default function ConversationView({ route }: Props): JSX.Element {
 
   async function sendMessage() {
     setIsSending(true);
-    const message = await conversation.send(text);
+    let codec: ContentCodecInterface<string | number> = new TextCodec();
+
+    const registry = new CodecRegistry();
+    registry.register(codec);
+
+    const encodedContent = codec.encode(content);
+    const data = protoContent.EncodedContent.encode(encodedContent).finish();
+    const message = await conversation.send(data);
 
     const uniqueMessages = [
       ...new Map(
@@ -62,7 +89,7 @@ export default function ConversationView({ route }: Props): JSX.Element {
     setMessages(uniqueMessages);
 
     setIsSending(false);
-    onChangeText("");
+    onChangeContent("");
   }
 
   useEffect(() => {
@@ -96,8 +123,8 @@ export default function ConversationView({ route }: Props): JSX.Element {
         <TextInput
           onSubmitEditing={sendMessage}
           editable={!isSending}
-          value={text}
-          onChangeText={onChangeText}
+          value={content}
+          onChangeText={onChangeContent}
           style={{
             height: 40,
             margin: 12,

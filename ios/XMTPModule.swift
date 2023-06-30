@@ -199,32 +199,34 @@ public class XMTPModule: Module {
             }
         }
 
-        AsyncFunction("loadMessages") { (clientAddress: String, topics: [String], conversationIDs: [String?], limit: Int?, before: Double?, after: Double?) -> [String] in
+        AsyncFunction("loadMessages") { (clientAddress: String, topics: [String], conversationIDs: [String?], limit: Int?, before: Double?, after: Double?) -> [[UInt8]] in
             let beforeDate = before != nil ? Date(timeIntervalSince1970: before!) : nil
-            let afterDate = after != nil ? Date(timeIntervalSince1970: after!) : nil
+            let afterDate = after != nil ? Date(timeIntervalSince1970: after!) : nil     
             guard let client = clients[clientAddress] else {
                 throw Error.noClient
             }
-            return try await client.conversations.listBatchMessages(
+            
+            let decodedMessages = try await client.conversations.listBatchMessages(
                 topics: topics,
                     limit: limit,
                     before: beforeDate,
-                    after: afterDate)
-                    .map { (msg) in try DecodedMessageWrapper.encode(msg) }
-            }
+                after: afterDate)
 
-        // TODO: Support content types
-        AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: String) -> String in
+            let messages = try decodedMessages.map { (msg) in try EncodedMessageWrapper.encode(msg) }
+
+            return messages
+        }
+
+        AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: Array<UInt8>) -> String in
             guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
                 throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
             }
+            
+            let contentData = Data(content)
+            let encodedContent = try EncodedContent(serializedData: contentData)
 
-            let preparedMessage = try await conversation.prepareMessage(content: content)
-            let decodedMessage = try preparedMessage.decodedMessage()
-
-            try await preparedMessage.send()
-
-            return try DecodedMessageWrapper.encode(decodedMessage)
+            let messageID = try await conversation.send(encodedContent: encodedContent)
+            return messageID
         }
 
         AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, conversationID: String?) -> String in

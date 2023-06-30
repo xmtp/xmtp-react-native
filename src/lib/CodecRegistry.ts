@@ -7,14 +7,14 @@ import { ContentTypeID } from "./ContentTypeID";
  * Codecs encode and decode content, and this is the interface for ContentCodecs within this app.
  *
  * @param {ContentTypeID} contentType - The content type this codec handles.
- * @param {<T>} encode(content) - Encodes the given content and returns an EncodedContent.
- * @param {<T>} decode(content) - Decodes the given EncodedContent and returns the original content.
+ * @param encode(content) - Encodes the given content and returns an EncodedContent.
+ * @param decode(content) - Decodes the given EncodedContent and returns the original content.
  */
 
-export interface ContentCodecInterface {
+export interface ContentCodecInterface<T> {
   contentType: ContentTypeID;
-  encode<T>(content: T): EncodedContent;
-  decode<T>(content: EncodedContent): T;
+  encode(content: T): EncodedContent;
+  decode(content: EncodedContent): T;
 }
 
 /*
@@ -25,7 +25,7 @@ export interface ContentCodecInterface {
  *
  */
 export class CodecRegistry {
-  codecs: { [key: string]: ContentCodecInterface };
+  codecs: { [key: string]: ContentCodecInterface<any> };
 
   constructor() {
     /*
@@ -40,7 +40,7 @@ export class CodecRegistry {
    *
    * @param {ContentCodecInterface} codec - This is the codec instance to register.
    */
-  register(codec: ContentCodecInterface) {
+  register(codec: ContentCodecInterface<any>) {
     const contentType = codec.contentType.id();
     this.codecs[contentType] = codec;
   }

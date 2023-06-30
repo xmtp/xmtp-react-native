@@ -1,3 +1,6 @@
+import { decode } from "@msgpack/msgpack";
+import * as proto from "@xmtp/proto";
+import { EncodedContent } from "@xmtp/proto/ts/dist/types/message_contents/content.pb";
 import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 
 import XMTPModule from "./XMTPModule";
@@ -37,21 +40,30 @@ export async function exportKeyBundle(clientAddress: string): Promise<string> {
 }
 
 export async function exportConversationTopicData(
-    clientAddress: string,
-    conversationTopic: string
+  clientAddress: string,
+  conversationTopic: string
 ): Promise<string> {
-  return await XMTPModule.exportConversationTopicData(clientAddress, conversationTopic);
+  return await XMTPModule.exportConversationTopicData(
+    clientAddress,
+    conversationTopic
+  );
 }
 
 export async function importConversationTopicData(
-    clientAddress: string,
-    topicData: string
+  clientAddress: string,
+  topicData: string
 ): Promise<Conversation> {
-  let json = await XMTPModule.importConversationTopicData(clientAddress, topicData);
+  let json = await XMTPModule.importConversationTopicData(
+    clientAddress,
+    topicData
+  );
   return new Conversation(JSON.parse(json));
 }
 
-export async function canMessage(clientAddress: string, peerAddress: string): Promise<boolean> {
+export async function canMessage(
+  clientAddress: string,
+  peerAddress: string
+): Promise<boolean> {
   return await XMTPModule.canMessage(clientAddress, peerAddress);
 }
 
@@ -73,17 +85,25 @@ export async function listMessages(
   before?: Date | undefined,
   after?: Date | undefined
 ): Promise<DecodedMessage[]> {
-  return (
-    await XMTPModule.loadMessages(
-      clientAddress,
-      [conversationTopic],
-      [conversationID],
-      limit,
-      before?.getTime,
-      after?.getTime
-    )
-  ).map((json: string) => {
-    return JSON.parse(json);
+  const messages = await XMTPModule.loadMessages(
+    clientAddress,
+    [conversationTopic],
+    [conversationID],
+    limit,
+    before?.getTime,
+    after?.getTime
+  );
+
+  return messages.map((message) => {
+    let decodedMessage = decode(message);
+    message = decodedMessage;
+
+    const encodedContent = proto.content.EncodedContent.decode(
+      (decodedMessage as EncodedContent).content
+    );
+    message.content = encodedContent;
+
+    return message;
   });
 }
 
@@ -95,17 +115,25 @@ export async function listBatchMessages(
   before?: Date | undefined,
   after?: Date | undefined
 ): Promise<DecodedMessage[]> {
-  return (
-    await XMTPModule.loadMessages(
-      clientAddress,
-      conversationTopics,
-      conversationIDs,
-      limit,
-      before?.getTime,
-      after?.getTime
-    )
-  ).map((json: string) => {
-    return JSON.parse(json);
+  const messages = await XMTPModule.loadMessages(
+    clientAddress,
+    conversationTopics,
+    conversationIDs,
+    limit,
+    before?.getTime,
+    after?.getTime
+  );
+
+  return messages.map((message) => {
+    let decodedMessage = decode(message);
+    message = decodedMessage;
+
+    const encodedContent = proto.content.EncodedContent.decode(
+      (decodedMessage as EncodedContent).content
+    );
+    message.content = encodedContent;
+
+    return message;
   });
 }
 
@@ -130,15 +158,13 @@ export async function sendMessage(
   clientAddress: string,
   conversationTopic: string,
   conversationID: string | undefined,
-  content: any
-): Promise<DecodedMessage> {
-  return JSON.parse(
-    await XMTPModule.sendMessage(
-      clientAddress,
-      conversationTopic,
-      conversationID,
-      content
-    )
+  encodedContentData: Uint8Array
+): Promise<string> {
+  return await XMTPModule.sendEncodedContentData(
+    clientAddress,
+    conversationTopic,
+    conversationID,
+    Array.from(encodedContentData)
   );
 }
 
@@ -189,7 +215,12 @@ export async function decodeMessage(
   conversationID?: string | undefined
 ): Promise<DecodedMessage> {
   return JSON.parse(
-    await XMTPModule.decodeMessage(clientAddress, topic, encryptedMessage, conversationID)
+    await XMTPModule.decodeMessage(
+      clientAddress,
+      topic,
+      encryptedMessage,
+      conversationID
+    )
   );
 }
 
