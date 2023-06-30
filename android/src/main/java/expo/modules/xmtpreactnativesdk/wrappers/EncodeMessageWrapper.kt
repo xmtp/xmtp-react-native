@@ -1,9 +1,7 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
-import android.util.Log
 import com.daveanthonythomas.moshipack.MoshiPack
 import com.facebook.react.bridge.ReadableArray
-import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableNativeArray
 import org.xmtp.android.library.DecodedMessage
 

@@ -3,7 +3,6 @@ package expo.modules.xmtpreactnativesdk
 import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
-import com.facebook.react.bridge.ReadableArray
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -28,10 +27,9 @@ import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
-import org.xmtp.proto.message.contents.Content
 import org.xmtp.proto.message.contents.Content.EncodedContent
-import org.xmtp.proto.message.contents.SignatureOuterClass
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
+import org.xmtp.proto.message.contents.SignatureOuterClass
 import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
@@ -209,7 +207,14 @@ class XMTPModule : Module() {
                 )
                     ?: throw XMTPException("no conversation found for $conversationTopic")
 
-            val contentData = content.foldIndexed(ByteArray(content.size)) { i, a, v -> a.apply { set(i, v.toByte()) } }
+            val contentData = content.foldIndexed(ByteArray(content.size)) { i, a, v ->
+                a.apply {
+                    set(
+                        i,
+                        v.toByte()
+                    )
+                }
+            }
             val encodedContent = EncodedContent.parseFrom(contentData)
             conversation.send(encodedContent = encodedContent)
         }
