@@ -94,16 +94,17 @@ export async function listMessages(
     after?.getTime
   );
 
-  for (const message of messages) {
-    const decodedMessage = decode(message);
+  return messages.map((message) => {
+    let decodedMessage = decode(message);
+    message = decodedMessage;
+
     const encodedContent = proto.content.EncodedContent.decode(
       (decodedMessage as EncodedContent).content
     );
-
     message.content = encodedContent;
-  }
 
-  return messages;
+    return message;
+  });
 }
 
 export async function listBatchMessages(
@@ -123,16 +124,17 @@ export async function listBatchMessages(
     after?.getTime
   );
 
-  for (const message of messages) {
-    const decodedMessage = decode(message);
+  return messages.map((message) => {
+    let decodedMessage = decode(message);
+    message = decodedMessage;
+
     const encodedContent = proto.content.EncodedContent.decode(
       (decodedMessage as EncodedContent).content
     );
-
     message.content = encodedContent;
-  }
 
-  return messages;
+    return message;
+  });
 }
 
 // TODO: support conversation ID
