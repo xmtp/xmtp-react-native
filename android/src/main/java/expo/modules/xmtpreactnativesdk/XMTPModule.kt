@@ -143,8 +143,7 @@ class XMTPModule : Module() {
             clients[client.address] = client
             client.address
         } catch (e: Exception) {
-            Log.e("createFromKeyBundle", "Failed to create client: $e")
-            ""
+            throw XMTPException("Failed to create client: $e")
             }
         }
 
