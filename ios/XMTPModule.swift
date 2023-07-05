@@ -147,7 +147,6 @@ public class XMTPModule: Module {
                 self.clients[client.address] = client
                 return client.address
             } catch {
-                throw error
                 print("ERRO! Failed to create client: \(error)")
                 return ""
             }
