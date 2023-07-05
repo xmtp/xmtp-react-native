@@ -178,3 +178,19 @@ test("can send and receive number codec", async () => {
     return false;
   }
 });
+
+test("should return a Client even when passing weird keyBundle to createFromKeyBundle and not crash", async () => {
+  const fakeKeyBundle = {
+    array: [10, 20, 30, 40, 50],
+  };
+
+  try {
+    const c = await XMTP.Client.createFromKeyBundle(
+      JSON.stringify(fakeKeyBundle),
+      "local"
+    );
+    return !!c;
+  } catch (e) {
+    return false;
+  }
+});
