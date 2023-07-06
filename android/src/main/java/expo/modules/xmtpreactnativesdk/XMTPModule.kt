@@ -133,6 +133,7 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String ->
+        try {
             logV("createFromKeyBundle")
             val options =
                 ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
@@ -141,6 +142,9 @@ class XMTPModule : Module() {
             val client = Client().buildFromBundle(bundle = bundle, options = options)
             clients[client.address] = client
             client.address
+        } catch (e: Exception) {
+            throw XMTPException("Failed to create client: $e")
+            }
         }
 
         AsyncFunction("exportKeyBundle") { clientAddress: String ->

@@ -91,7 +91,8 @@ public class XMTPModule: Module {
     var subscriptions: [String: Task<Void, Never>] = [:]
 
     enum Error: Swift.Error {
-        case noClient, conversationNotFound(String), noMessage
+        case noClient, conversationNotFound(String), noMessage, invalidKeyBundle
+        
     }
 
     public func definition() -> ModuleDefinition {
@@ -135,11 +136,20 @@ public class XMTPModule: Module {
 
         // Create a client using its serialized key bundle.
         AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String) -> String in
-            let bundle = try PrivateKeyBundle(serializedData: Data(base64Encoded: Data(keyBundle.utf8))!)
-            let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["dev"]!)
-            let client = try await Client.from(bundle: bundle, options: options)
-            self.clients[client.address] = client
-            return client.address
+            do {
+                guard let keyBundleData = Data(base64Encoded: keyBundle),
+                    let bundle = try? PrivateKeyBundle(serializedData: keyBundleData) else {
+                    throw Error.invalidKeyBundle
+                }
+                
+                let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["dev"]!)
+                let client = try await Client.from(bundle: bundle, options: options)
+                self.clients[client.address] = client
+                return client.address
+            } catch {
+                print("ERRO! Failed to create client: \(error)")
+                throw error
+            }
         }
 
         // Export the client's serialized key bundle.

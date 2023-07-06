@@ -5,6 +5,7 @@ import * as XMTP from "../../src/index";
 import { DecodedMessage } from "../../src/index";
 import { CodecError } from "../../src/lib/CodecError";
 import { CodecRegistry } from "../../src/lib/CodecRegistry";
+import { randomBytes } from "crypto";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -177,4 +178,14 @@ test("can send and receive number codec", async () => {
   } catch (e) {
     return false;
   }
+});
+
+test("createFromKeyBundle throws error for non string value", async () => {
+  try {
+    const bytes = randomBytes(32);
+    await XMTP.Client.createFromKeyBundle(JSON.stringify(bytes), "local");
+  } catch (e) {
+    return true;
+  }
+  return false;
 });
