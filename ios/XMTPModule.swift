@@ -210,8 +210,9 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("loadMessages") { (clientAddress: String, topics: [String], conversationIDs: [String?], limit: Int?, before: Double?, after: Double?) -> [[UInt8]] in
-            let beforeDate = before != nil ? Date(timeIntervalSince1970: before!) : nil
-            let afterDate = after != nil ? Date(timeIntervalSince1970: after!) : nil     
+            let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!)/1000) : nil
+            let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!)/1000) : nil
+
             guard let client = clients[clientAddress] else {
                 throw Error.noClient
             }

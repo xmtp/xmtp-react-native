@@ -109,9 +109,17 @@ export default function ConversationView({ route }: Props): JSX.Element {
       >
         {messages.map((message) => {
           return (
-            <Text style={{ marginTop: 12, padding: 12 }} key={message.id}>
-              {message.senderAddress}: {message.content}
-            </Text>
+            <>
+              <Text style={{ marginTop: 12, padding: 12 }} key={message.id}>
+                {message.senderAddress}: {message.content}
+              </Text>
+              <Text style={{ textAlign: "right", padding: 12 }}>
+                {new Date(message.sent).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </Text>
+            </>
           );
         })}
 

@@ -90,8 +90,8 @@ export async function listMessages(
     [conversationTopic],
     [conversationID],
     limit,
-    before?.getTime,
-    after?.getTime
+    before?.getTime(),
+    after?.getTime()
   );
 
   return messages.map((message) => {
@@ -101,6 +101,9 @@ export async function listMessages(
     const encodedContent = proto.content.EncodedContent.decode(
       (decodedMessage as EncodedContent).content
     );
+    if (Number(message.sent)) {
+      message.sent = new Date(Number(message.sent));
+    }
     message.content = encodedContent;
 
     return message;
@@ -120,8 +123,8 @@ export async function listBatchMessages(
     conversationTopics,
     conversationIDs,
     limit,
-    before?.getTime,
-    after?.getTime
+    before?.getTime(),
+    after?.getTime()
   );
 
   return messages.map((message) => {
@@ -131,6 +134,9 @@ export async function listBatchMessages(
     const encodedContent = proto.content.EncodedContent.decode(
       (decodedMessage as EncodedContent).content
     );
+    if (Number(message.sent)) {
+      message.sent = new Date(Number(message.sent));
+    }
     message.content = encodedContent;
 
     return message;
