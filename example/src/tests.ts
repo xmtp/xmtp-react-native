@@ -75,6 +75,58 @@ test("can send and receive a text codec", async () => {
   }
 });
 
+test("can pass a custom filter date and receive message objects with expected dates", async () => {
+  const textCodec = new TextCodec();
+  const registry = new CodecRegistry();
+  registry.register(textCodec);
+
+  try {
+    const id = textCodec.contentType.id();
+    const codec = registry.find(id);
+
+    const encodedContent = codec.encode("Hello world");
+
+    const data = content.EncodedContent.encode(encodedContent).finish();
+
+    const bob = await XMTP.Client.createRandom("local");
+    const alice = await XMTP.Client.createRandom("local");
+
+    if (bob.address === alice.address) {
+      throw new Error("bob and alice should be different");
+    }
+
+    const bobConversation = await bob.conversations.newConversation(
+      alice.address
+    );
+
+    const aliceConversation = (await alice.conversations.list())[0];
+    if (!aliceConversation) {
+      throw new Error("aliceConversation should exist");
+    }
+
+    await bobConversation.send(data);
+
+    // Show all messages before date in the past
+    const messages1: DecodedMessage[] = await aliceConversation.messages(
+      undefined,
+      new Date("2023-01-01")
+    );
+
+    // Show all messages before date in the future
+    const messages2: DecodedMessage[] = await aliceConversation.messages(
+      undefined,
+      new Date("2025-01-01")
+    );
+
+    const hasCorrectSentDate =
+      messages2[0].sent.toDateString() === new Date().toDateString();
+
+    return !messages1.length && messages2.length === 1 && hasCorrectSentDate;
+  } catch (e) {
+    return false;
+  }
+});
+
 test("canMessage", async () => {
   const bob = await XMTP.Client.createRandom("local");
   const alice = await XMTP.Client.createRandom("local");
