@@ -7,8 +7,8 @@ PODS:
   - CoinbaseWalletSDKExpo (1.0.6):
     - CoinbaseWalletSDK/CrossPlatform (= 1.0.4)
     - ExpoModulesCore
-  - Connect-Swift (0.5.0):
-    - SwiftProtobuf (~> 1.21.0)
+  - Connect-Swift (0.6.0):
+    - SwiftProtobuf (~> 1.22.0)
   - DoubleConversion (1.1.6)
   - EXApplication (5.1.1):
     - ExpoModulesCore
@@ -403,13 +403,13 @@ PODS:
   - RNSVG (13.9.0):
     - React-Core
   - secp256k1.swift (0.1.4)
-  - SwiftProtobuf (1.21.0)
+  - SwiftProtobuf (1.22.0)
   - web3.swift (1.6.0):
     - BigInt (~> 5.0.0)
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.3.4-alpha0):
+  - XMTP (0.3.6-alpha0):
     - Connect-Swift
     - GzipSwift
     - web3.swift
@@ -417,7 +417,7 @@ PODS:
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
     - MessagePacker
-    - XMTP (= 0.3.4-alpha0)
+    - XMTP (= 0.3.6-alpha0)
   - XMTPRust (0.3.0-beta0)
   - Yoga (1.14.0)
 
@@ -602,7 +602,7 @@ SPEC CHECKSUMS:
   boost: 57d2868c099736d80fcd648bf211b4431e51a558
   CoinbaseWalletSDK: ea1f37512bbc69ebe07416e3b29bf840f5cc3152
   CoinbaseWalletSDKExpo: bb952ead802dc20e7214e5a2bdf35f8584f02441
-  Connect-Swift: a75380c30c1341e483012444044105ff49b6093a
+  Connect-Swift: ba76bc64b2153cacce4f7985a21d4d81473dac90
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
   EXApplication: d8f53a7eee90a870a75656280e8d4b85726ea903
   EXConstants: f348da07e21b23d2b085e270d7b74f282df1a7d9
@@ -658,13 +658,13 @@ SPEC CHECKSUMS:
   RNScreens: 218801c16a2782546d30bd2026bb625c0302d70f
   RNSVG: 53c661b76829783cdaf9b7a57258f3d3b4c28315
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
-  SwiftProtobuf: afced68785854575756db965e9da52bbf3dc45e7
+  SwiftProtobuf: 40bd808372cb8706108f22d28f8ab4a6b9bc6989
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 0678e0b6c2e66f197db098106bec2fe35f7295fb
-  XMTPReactNative: d07b571ec0909762589aeafdfc1ac1ecff495b96
+  XMTP: 4d8249fdf9d7f1aa34c87b8197bd9f8d5e998084
+  XMTPReactNative: ca04ab05ac0b7ce96861bfe1f6701c8c0899c918
   XMTPRust: 233518ed46fbe3ea9e3bc3035de9a620dba09ce5
   Yoga: ba09b6b11e6139e3df8229238aa794205ca6a02a
 
 PODFILE CHECKSUM: 522d88edc2d5fac4825e60a121c24abc18983367
 
-COCOAPODS: 1.12.1
+COCOAPODS: 1.11.3
