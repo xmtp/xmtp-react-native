@@ -25,7 +25,7 @@ You can use the `xmtp-js` client SDK [reference documentation](https://xmtp-js.p
 
 ## Example app
 
-Use the [XMTP React Native exampl app](example) as a tool to start building an app with XMTP. This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with.
+Use the [XMTP React Native example app](example) as a tool to start building an app with XMTP. This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with.
 
 Follow the [React Native guide](https://reactnative.dev/docs/environment-setup) to set up a CLI environment.
 
@@ -56,8 +56,9 @@ npm i @xmtp/react-native-sdk
 ### Configure for iOS
 
 In the `ios` directory, update your `Podfile` file as follows:
-Set this value: `platform :ios, '16.0'`. This is required by XMTP.
-Add this line: `pod 'secp256k1.swift', :modular_headers => true`. This is required for web3.swift.
+
+- Set this value: `platform :ios, '16.0'`. This is required by XMTP.
+- Add this line: `pod 'secp256k1.swift', :modular_headers => true`. This is required for web3.swift.
 
 ```bash
 npm pod-install
@@ -92,6 +93,13 @@ for await (const message of await conversation.streamMessages()) {
 ```
 
 Currently, network nodes are configured to rate limit high-volume publishing from clients. A rate-limited client can expect to receive a 429 status code response from a node. Rate limits can change at any time in the interest of maintaining network health.
+
+## Use local storage
+
+> **Important**  
+> If you are building a production-grade app, be sure to use an architecture that includes a local cache backed by an XMTP SDK.  
+
+To learn more, see [Use a local cache](https://xmtp.org/docs/tutorials/performance#use-a-local-cache).
 
 ## Create a client
 
@@ -327,8 +335,6 @@ Support for other types of content can be added by registering additional `Conte
 
 For example, see the [Codecs](https://github.com/xmtp/xmtp-react-native/blob/main/src/lib/CodecRegistry.ts) available in `xmtp-react-native`.
 
-If there is a concern that the recipient may not be able to handle a non-standard content type, the sender can use the `contentFallback` option to provide a string that describes the content being sent. If the recipient fails to decode the original content, the fallback will replace it and can be used to inform the recipient what the original content was.
-
 ```tsx
 // Assuming we've loaded a fictional NumberCodec that can be used to encode numbers,
 // and is identified with ContentTypeNumber, we can use it as follows.
@@ -339,6 +345,11 @@ conversation.send(3.14, {
   contentFallback: 'sending you a pie'
 })
 ```
+
+As shown in the example above, you must provide a `contentFallback` value. Use it to provide an alt text-like description of the original content. Providing a `contentFallback` value enables clients that don't support the content type to still display something meaningful.
+
+> **Caution**  
+> If you don't provide a `contentFallback` value, clients that don't support the content type will display an empty message. This results in a poor user experience and breaks interoperability.
 
 Additional codecs can be configured through the `ClientOptions` parameter of `Client.create`. The `codecs` option is a list of codec instances that should be added to the default set of codecs (currently only the `TextCodec`). If a codec is added for a content type that is already in the default set, it will replace the original codec.
 
@@ -368,9 +379,9 @@ const client = await Client.createFromKeyBundle(keys, "dev")
 
 The keys returned by `exportKeyBundle` should be treated with the utmost care as compromise of these keys will allow an attacker to impersonate the user on the XMTP network. Ensure these keys are stored somewhere secure and encrypted.
 
-## Enable the quickstart app to send push notifications
+## Enable the example app to send push notifications
 
-You can use a Firebase Cloud Messaging server and an example push notification server to enable the `xmtp-react-native` quickstart app to send push notifications.
+You can use a Firebase Cloud Messaging server and an example push notification server to enable the `xmtp-react-native` example app to send push notifications.
 
 Perform this setup to understand how you might want to enable push notifications for your own app built with the `xmtp-react-native` SDK.
 
@@ -380,9 +391,9 @@ For this tutorial, we'll use [Firebase Cloud Messaging](https://console.firebase
 
 1. Create an FCM project.
 
-2. Add the quickstart app to the FCM project. This generates a `google-services.json` file that you need in subsequent steps.
+2. Add the example app to the FCM project. This generates a `google-services.json` file that you need in subsequent steps.
 
-3. Add the `google-services.json` file to the quickstart app's project as described in the FCM project creation process.
+3. Add the `google-services.json` file to the example app's project as described in the FCM project creation process.
 
 4. Generate FCM credentials, which you need to run the example notification server. To do this, from the FCM dashboard, click the gear icon next to **Project Overview** and select **Project settings**. Select **Service accounts**. Select **Go** and click **Generate new private key**. 
 
@@ -390,7 +401,7 @@ For this tutorial, we'll use [Firebase Cloud Messaging](https://console.firebase
 
 Now that you have an FCM server set up, take a look at the [export-kotlin-proto-code](https://github.com/xmtp/example-notification-server-go/tree/np/export-kotlin-proto-code) branch in the `example-notifications-server-go` repo. 
 
-This example branch can serve as the basis for what you might want to provide for your own notification server. The branch also demonstrates how to generate the proto code if you decide to perform these tasks for your own app. This proto code from the example notification server has already been generated in the `xmtp-android` quickstart app.
+This example branch can serve as the basis for what you might want to provide for your own notification server. The branch also demonstrates how to generate the proto code if you decide to perform these tasks for your own app. This proto code from the example notification server has already been generated in the `xmtp-android` example app.
 
 **To run a notification server based on the example branch:**
 
@@ -418,21 +429,21 @@ This example branch can serve as the basis for what you might want to provide fo
 
 4. You should now be able to see push notifications coming across the local network.
 
-### Update the Android quickstart app to send push notifications
+### Update the Android example app to send push notifications
 
 1. Checkout the `push-notifications-example` branch
 
 2. Add your `google-services.json` file to the `example/android/app` folder if you haven't already done it as a part of the FCM project creation process.
 
-3. Uncomment `apply plugin: 'com.google.gms.google-services'` in the quickstart app's `build.gradle` file.
+3. Uncomment `apply plugin: 'com.google.gms.google-services'` in the example app's `build.gradle` file.
 
-4. Uncomment `classpath('com.google.gms:google-services:4.3.15')` in the top level of the quickstart app's `build.gradle` file.
+4. Uncomment `classpath('com.google.gms:google-services:4.3.15')` in the top level of the example app's `build.gradle` file.
 
 5. Sync the gradle project.
 
 6. Replace `YOUR_SERVER_ADDRESS` in the `PullController.ts` file. If you're using the example notification server, it should be something like `YOURIPADDRESS:8080` since the Android emulator takes over localhost.
 
-7. Change the quickstart app's environment to `production` in both places in `AuthView.tsx`.
+7. Change the example app's environment to `production` in both places in `AuthView.tsx`.
 
 8. Replace `YOUR_FIREBASE_SENDER_ID` in the `PullController.ts` with your sender ID from Firebase.
 
