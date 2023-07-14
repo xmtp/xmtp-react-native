@@ -196,13 +196,7 @@ You can receive the complete message history in a conversation by calling `conve
 
 ```tsx
 for (const conversation of await xmtp.conversations.list()) {
-  // All parameters are optional and can be omitted
-  const opts = {
-    // Only show messages from last 24 hours
-    startTime: new Date(new Date().setDate(new Date().getDate() - 1)),
-    endTime: new Date(),
-  }
-  const messagesInConversation = await conversation.messages(opts)
+  const messagesInConversation = await conversation.messages(before: new Date(new Date().setDate(new Date().getDate() - 1)), after: new Date())
 }
 ```
 
@@ -215,7 +209,7 @@ const conversation = await xmtp.conversations.newConversation(
   '0x3F11b27F323b62B159D2642964fa27C46C841897'
 )
 
-for await (const page of conversation.messages({ limit: 25 })) {
+for await (const page of conversation.messages(limit: 25)) {
   for (const msg of page) {
     // Breaking from the outer loop will stop the client from requesting any further pages
     if (msg.content === 'gm') {
@@ -273,10 +267,6 @@ import { Client } from '@xmtp/xmtp-react-native'
 
 const isOnDevNetwork = await Client.canMessage(
   '0x3F11b27F323b62B159D2642964fa27C46C841897'
-)
-const isOnProdNetwork = await Client.canMessage(
-  '0x3F11b27F323b62B159D2642964fa27C46C841897',
-  { env: 'production' }
 )
 ```
 
@@ -339,25 +329,23 @@ For example, see the [Codecs](https://github.com/xmtp/xmtp-react-native/blob/mai
 // Assuming we've loaded a fictional NumberCodec that can be used to encode numbers,
 // and is identified with ContentTypeNumber, we can use it as follows.
 
-xmtp.registerCodec:(new NumberCodec())
-conversation.send(3.14, {
-  contentType: ContentTypeNumber,
-  contentFallback: 'sending you a pie'
-})
+  const numberCodec = new NumberCodec();
+  const registry = new CodecRegistry();
+  registry.register(numberCodec);
+
+  const id = numberCodec.contentType.id();
+  const codec = registry.find(id);
+
+  const encodedContent = codec.encode(3.14);
+  const data = content.EncodedContent.encode(encodedContent).finish();
+
+  await conversation.send(data);
 ```
 
 As shown in the example above, you must provide a `contentFallback` value. Use it to provide an alt text-like description of the original content. Providing a `contentFallback` value enables clients that don't support the content type to still display something meaningful.
 
 > **Caution**  
 > If you don't provide a `contentFallback` value, clients that don't support the content type will display an empty message. This results in a poor user experience and breaks interoperability.
-
-Additional codecs can be configured through the `ClientOptions` parameter of `Client.create`. The `codecs` option is a list of codec instances that should be added to the default set of codecs (currently only the `TextCodec`). If a codec is added for a content type that is already in the default set, it will replace the original codec.
-
-```tsx
-// Adding support for `xmtp.org/composite` content type
-import { CompositeCodec } from '@xmtp/xmtp-react-native'
-const xmtp = Client.create(wallet, { codecs: [new CompositeCodec()] })
-```
 
 To learn more about how to build a custom content type, see [Build a custom content type](https://xmtp.org/docs/concepts/content-types#build-a-custom-content-type).
 
