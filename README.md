@@ -103,12 +103,12 @@ To learn more, see [Use a local cache](https://xmtp.org/docs/tutorials/performan
 
 ## Create a client
 
-A client is created with `Client.create(wallet: Signer): Promise<Client>` that requires passing in a connected wallet that implements the [Signer](src/types/Signer.ts) interface. The client will request a wallet signature in two cases:
+A client is created with `Client.create(wallet: Signer): Promise<Client>` that requires passing in a connected wallet that implements the Signer interface. The client will request a wallet signature in two cases:
 
 1. To sign the newly generated key bundle. This happens only the very first time when key bundle is not found in storage.
 2. To sign a random salt used to encrypt the key bundle in storage. This happens every time the client is started (including the very first time).
 
-> **Important**
+> **Important**  
 > The client connects to the XMTP `dev` environment by default. [Use `ClientOptions`](#configure-the-client) to change this and other parameters of the network connection.
 
 ```tsx
@@ -156,7 +156,8 @@ These conversations include all conversations for a user **regardless of which a
 
 You can also listen for new conversations being started in real-time. This will allow applications to display incoming messages from new contacts.
 
-**Warning**: This stream will continue infinitely. To end the stream you can either break from the loop, or call `await stream.return()`.
+> **Warning**  
+> This stream will continue infinitely. To end the stream you can either break from the loop, or call `await stream.return()`.
 
 ```tsx
 const stream = await xmtp.conversations.stream()
@@ -181,7 +182,7 @@ const newConversation = await xmtp.conversations.newConversation(
 
 ## Handle messages
 
-To be able to send a message, the recipient must have already started their client at least once and consequently advertised their key bundle on the network. Messages are addressed using wallet addresses. The message payload can be a plain string, but other types of content can be supported through the use of `SendOptions` (see [Different types of content](#different-types-of-content) for more details)
+To be able to send a message, the recipient must have already started their client at least once and consequently advertised their key bundle on the network. Messages are addressed using wallet addresses. The message payload can be a plain string, but other types of content can be supported through the use of `SendOptions`. See [Handle different types of content](#handle-different-types-of-content) for more details.
 
 ```tsx
 const conversation = await xmtp.conversations.newConversation(
@@ -245,7 +246,7 @@ for await (const message of await conversation.streamMessages()) {
 
 To listen for any new messages from _all_ conversations, use `conversations.streamAllMessages()`.
 
-> **Note**
+> **Note**  
 > There is a chance this stream can miss messages if multiple new conversations are received in the time it takes to update the stream to include a new conversation.
 
 ```tsx
@@ -274,8 +275,7 @@ const isOnDevNetwork = await Client.canMessage(
 
 You can send a broadcast message (1:many message or announcement) with XMTP. The recipient sees the message as a DM from the sending wallet address.
 
-> **Note**  
-> If your app stores a signature to read and send XMTP messages on behalf of a user, be sure to let users know. As a best practice, your app should also provide a way for a user to delete their signature. For example disclosure text and UI patterns, see [Disclose signature storage](https://xmtp.org/docs/tutorials/broadcast#disclose-signature-storage).
+For important information about sending broadcast messages, see [Best practices for broadcast messages](https://xmtp.org/docs/tutorials/broadcast#best-practices-for-broadcast-messages).
 
 1. Use the bulk query `canMessage` method to identify the wallet addresses that are activated on the XMTP network.
 2. Send the message to all of the activated wallet addresses.
