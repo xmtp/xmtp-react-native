@@ -6,6 +6,7 @@ import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 import XMTPModule from "./XMTPModule";
 import { Conversation } from "./lib/Conversation";
 import type { DecodedMessage } from "./lib/DecodedMessage";
+import type { Query } from "./lib/Query";
 
 export function address(): string {
   return XMTPModule.address();
@@ -53,7 +54,7 @@ export async function importConversationTopicData(
   clientAddress: string,
   topicData: string
 ): Promise<Conversation> {
-  let json = await XMTPModule.importConversationTopicData(
+  const json = await XMTPModule.importConversationTopicData(
     clientAddress,
     topicData
   );
@@ -95,7 +96,7 @@ export async function listMessages(
   );
 
   return messages.map((message) => {
-    let decodedMessage = decode(message);
+    const decodedMessage = decode(message);
     message = decodedMessage;
 
     const encodedContent = proto.content.EncodedContent.decode(
@@ -112,23 +113,15 @@ export async function listMessages(
 
 export async function listBatchMessages(
   clientAddress: string,
-  conversationTopics: string[],
-  conversationIDs: (string | undefined)[],
-  limit?: number | undefined,
-  before?: Date | undefined,
-  after?: Date | undefined
+  queries: Query[]
 ): Promise<DecodedMessage[]> {
   const messages = await XMTPModule.loadMessages(
     clientAddress,
-    conversationTopics,
-    conversationIDs,
-    limit,
-    before?.getTime(),
-    after?.getTime()
+    JSON.stringify(queries)
   );
 
   return messages.map((message) => {
-    let decodedMessage = decode(message);
+    const decodedMessage = decode(message);
     message = decodedMessage;
 
     const encodedContent = proto.content.EncodedContent.decode(
@@ -235,4 +228,5 @@ export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);
 export { Client } from "./lib/Client";
 export { Conversation } from "./lib/Conversation";
 export { DecodedMessage } from "./lib/DecodedMessage";
+export { Query } from "./lib/Query";
 export { XMTPPush } from "./lib/XMTPPush";

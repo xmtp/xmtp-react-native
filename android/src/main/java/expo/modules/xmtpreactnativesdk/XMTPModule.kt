@@ -3,6 +3,7 @@ package expo.modules.xmtpreactnativesdk
 import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
+import com.google.gson.GsonBuilder
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -15,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.Conversation
@@ -25,6 +27,7 @@ import org.xmtp.android.library.messages.EnvelopeBuilder
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
+import org.xmtp.android.library.messages.Pagination
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.contents.Content.EncodedContent
@@ -196,13 +199,29 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadMessages") { clientAddress: String, topics: List<String>, conversationIDs: List<String?>, limit: Int?, before: Long?, after: Long? ->
+        AsyncFunction("loadMessages") { clientAddress: String, topics: List<String> ->
             logV("loadMessages")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val beforeDate = if (before != null) Date(before) else null
-            val afterDate = if (after != null) Date(after) else null
+            val topicsList = mutableListOf<Pair<String, Pagination>>()
+            topics.forEach {
+                val jsonObj = JSONObject(it)
+                val topic = jsonObj.get("topic").toString()
+                var limit: Int? = null
+                var before: Long? = null
+                var after: Long? = null
 
-            client.conversations.listBatchMessages(topics, limit, beforeDate, afterDate).map {
+                try { limit = jsonObj.get("limit").toString().toInt() } catch (e: Exception) {}
+                try { before = jsonObj.get("before").toString().toLong() } catch (e: Exception) {}
+                try { after = jsonObj.get("after").toString().toLong() } catch (e: Exception) {}
+
+                val beforeDate = if (before != null) Date(before) else null
+                val afterDate = if (after != null) Date(after) else null
+                val page = Pagination(limit = limit, before = beforeDate, after = afterDate)
+
+                topicsList.add(Pair(topic, page))
+            }
+
+            client.conversations.listBatchMessages(topicsList).map {
                 EncodedMessageWrapper.encode(it)
             }
         }

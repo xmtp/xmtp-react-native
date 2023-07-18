@@ -1,7 +1,10 @@
 import { Signer, utils } from "ethers";
+
 import Conversations from "./Conversations";
+import { Query } from "./Query";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
+
 declare const Buffer;
 export class Client {
   address: string;
@@ -52,13 +55,14 @@ export class Client {
     keyBundle: string,
     environment: "local" | "dev" | "production"
   ): Promise<Client> {
-    const address = await XMTPModule.createFromKeyBundle(keyBundle, environment);
+    const address = await XMTPModule.createFromKeyBundle(
+      keyBundle,
+      environment
+    );
     return new Client(address);
   }
 
-  async canMessage(
-    peerAddress: string
-  ): Promise<boolean> {
+  async canMessage(peerAddress: string): Promise<boolean> {
     return await XMTPModule.canMessage(this.address, peerAddress);
   }
 
@@ -71,29 +75,18 @@ export class Client {
     return XMTPModule.exportKeyBundle(this.address);
   }
 
-// TODO: support persisting conversations for quick lookup
-// async importConversation(exported: string): Promise<Conversation> { ... }
-// async exportConversation(topic: string): Promise<string> { ... }
+  // TODO: support persisting conversations for quick lookup
+  // async importConversation(exported: string): Promise<Conversation> { ... }
+  // async exportConversation(topic: string): Promise<string> { ... }
 
   async listBatchMessages(
-    topics: string[],
-    conversationIDs: (string | undefined)[],
-    limit?: number | undefined,
-    before?: Date | undefined,
-    after?: Date | undefined
+    queries: Query[]
   ): Promise<XMTPModule.DecodedMessage[]> {
-      try {
-          return await XMTPModule.listBatchMessages(
-              this.address,
-              topics,
-              conversationIDs,
-              limit,
-              before,
-              after
-          );
-      } catch (e) {
-          console.info("ERROR in listBatchMessages", e);
-          return [];
-      }
+    try {
+      return await XMTPModule.listBatchMessages(this.address, queries);
+    } catch (e) {
+      console.info("ERROR in listBatchMessages", e);
+      return [];
+    }
   }
 }
