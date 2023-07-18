@@ -2,7 +2,7 @@ import { content } from "@xmtp/proto";
 
 import { NumberCodec, TextCodec } from "./test_utils";
 import * as XMTP from "../../src/index";
-import { DecodedMessage } from "../../src/index";
+import { DecodedMessage, Query } from "../../src/index";
 import { CodecError } from "../../src/lib/CodecError";
 import { CodecRegistry } from "../../src/lib/CodecRegistry";
 import { randomBytes } from "crypto";
@@ -240,4 +240,58 @@ test("createFromKeyBundle throws error for non string value", async () => {
     return true;
   }
   return false;
+});
+
+test("can list batch messages", async () => {
+  const textCodec = new TextCodec();
+  const registry = new CodecRegistry();
+  registry.register(textCodec);
+
+  try {
+    const id = textCodec.contentType.id();
+    const codec = registry.find(id);
+
+    const encodedContent = codec.encode("Hello world");
+
+    const data = content.EncodedContent.encode(encodedContent).finish();
+
+    const bob = await XMTP.Client.createRandom("local");
+    const alice = await XMTP.Client.createRandom("local");
+
+    if (bob.address === alice.address) {
+      throw new Error("bob and alice should be different");
+    }
+
+    const bobConversation = await bob.conversations.newConversation(
+      alice.address
+    );
+
+    const aliceConversation = (await alice.conversations.list())[0];
+    if (!aliceConversation) {
+      throw new Error("aliceConversation should exist");
+    }
+
+    await bobConversation.send(data);
+
+    const messages: DecodedMessage[] = await alice.listBatchMessages([
+      {
+        contentTopic: bobConversation.topic,
+      } as Query,
+      {
+        contentTopic: aliceConversation.topic,
+      } as Query,
+    ]);
+
+    if (messages.length < 1) {
+      throw Error("No message");
+    }
+
+    const firstMessage = messages?.[0];
+
+    const decodedMessage = codec.decode(firstMessage.content);
+
+    return decodedMessage === "Hello world";
+  } catch (e) {
+    return false;
+  }
 });

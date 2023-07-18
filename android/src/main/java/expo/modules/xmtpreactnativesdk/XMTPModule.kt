@@ -3,7 +3,6 @@ package expo.modules.xmtpreactnativesdk
 import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
-import com.google.gson.GsonBuilder
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -25,9 +24,9 @@ import org.xmtp.android.library.XMTPEnvironment
 import org.xmtp.android.library.XMTPException
 import org.xmtp.android.library.messages.EnvelopeBuilder
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
+import org.xmtp.android.library.messages.Pagination
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
-import org.xmtp.android.library.messages.Pagination
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.contents.Content.EncodedContent
@@ -198,9 +197,24 @@ class XMTPModule : Module() {
                 ConversationWrapper.encode(ConversationWithClientAddress(client, conversation))
             }
         }
-
-        AsyncFunction("loadMessages") { clientAddress: String, topics: List<String> ->
+        AsyncFunction("loadMessages") { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long? ->
             logV("loadMessages")
+            val conversation =
+                findConversation(
+                    clientAddress = clientAddress,
+                    topic = topic,
+                ) ?: throw XMTPException("no conversation found for $topic")
+            val beforeDate = if (before != null) Date(before) else null
+            val afterDate = if (after != null) Date(after) else null
+
+            conversation.messages(limit = limit, before = beforeDate, after = afterDate)
+                .map {
+                    EncodedMessageWrapper.encode(it)
+                }
+        }
+
+        AsyncFunction("loadBatchMessages") { clientAddress: String, topics: List<String> ->
+            logV("loadBatchMessages")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val topicsList = mutableListOf<Pair<String, Pagination>>()
             topics.forEach {
@@ -210,13 +224,22 @@ class XMTPModule : Module() {
                 var before: Long? = null
                 var after: Long? = null
 
-                try { limit = jsonObj.get("limit").toString().toInt() } catch (e: Exception) {}
-                try { before = jsonObj.get("before").toString().toLong() } catch (e: Exception) {}
-                try { after = jsonObj.get("after").toString().toLong() } catch (e: Exception) {}
+                try {
+                    limit = jsonObj.get("limit").toString().toInt()
+                    before = jsonObj.get("before").toString().toLong()
+                    after = jsonObj.get("after").toString().toLong()
+                } catch (e: Exception) {
+                    Log.e(
+                        "XMTPModule",
+                        "Pagination given incorrect information ${e.message}"
+                    )
+                }
 
-                val beforeDate = if (before != null) Date(before) else null
-                val afterDate = if (after != null) Date(after) else null
-                val page = Pagination(limit = limit, before = beforeDate, after = afterDate)
+                val page = Pagination(
+                    limit = if (limit != null && limit > 0) limit else null,
+                    before = if (before != null && before > 0) Date(before) else null,
+                    after = if (after != null && after > 0) Date(after) else null
+                )
 
                 topicsList.add(Pair(topic, page))
             }

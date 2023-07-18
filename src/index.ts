@@ -88,8 +88,7 @@ export async function listMessages(
 ): Promise<DecodedMessage[]> {
   const messages = await XMTPModule.loadMessages(
     clientAddress,
-    [conversationTopic],
-    [conversationID],
+    conversationTopic,
     limit,
     before?.getTime(),
     after?.getTime()
@@ -115,10 +114,16 @@ export async function listBatchMessages(
   clientAddress: string,
   queries: Query[]
 ): Promise<DecodedMessage[]> {
-  const messages = await XMTPModule.loadMessages(
-    clientAddress,
-    JSON.stringify(queries)
-  );
+  const topics = queries.map((item) => {
+    return JSON.stringify({
+      limit: item.pageSize || 0,
+      topic: item.contentTopic,
+      after: item.startTime?.getTime() || 0,
+      before: item.endTime?.getTime() || 0,
+    });
+  });
+
+  const messages = await XMTPModule.loadBatchMessages(clientAddress, topics);
 
   return messages.map((message) => {
     const decodedMessage = decode(message);

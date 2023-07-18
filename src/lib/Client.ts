@@ -4,6 +4,7 @@ import Conversations from "./Conversations";
 import { Query } from "./Query";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
+import { DecodedMessage } from "./DecodedMessage";
 
 declare const Buffer;
 export class Client {
@@ -79,9 +80,7 @@ export class Client {
   // async importConversation(exported: string): Promise<Conversation> { ... }
   // async exportConversation(topic: string): Promise<string> { ... }
 
-  async listBatchMessages(
-    queries: Query[]
-  ): Promise<XMTPModule.DecodedMessage[]> {
+  async listBatchMessages(queries: Query[]): Promise<DecodedMessage[]> {
     try {
       return await XMTPModule.listBatchMessages(this.address, queries);
     } catch (e) {
