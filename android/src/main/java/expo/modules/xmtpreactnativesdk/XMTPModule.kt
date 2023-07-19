@@ -197,6 +197,7 @@ class XMTPModule : Module() {
                 ConversationWrapper.encode(ConversationWithClientAddress(client, conversation))
             }
         }
+
         AsyncFunction("loadMessages") { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long? ->
             logV("loadMessages")
             val conversation =

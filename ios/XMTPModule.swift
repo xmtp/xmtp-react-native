@@ -209,7 +209,7 @@ public class XMTPModule: Module {
             }
         }
 
-        AsyncFunction("loadMessages") { (clientAddress: String, topics: [String], conversationIDs: [String?], limit: Int?, before: Double?, after: Double?) -> [[UInt8]] in
+        AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?) -> [[UInt8]] in
             let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!)/1000) : nil
             let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!)/1000) : nil
 
@@ -217,11 +217,51 @@ public class XMTPModule: Module {
                 throw Error.noClient
             }
             
-            let decodedMessages = try await client.conversations.listBatchMessages(
-                topics: topics,
-                    limit: limit,
-                    before: beforeDate,
+            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+                throw Error.conversationNotFound("no conversation found for \(topic)")
+            }
+            
+            let decodedMessages = try await conversation.conversations.messages(
+                topic: topic,
+                limit: limit,
+                before: beforeDate,
                 after: afterDate)
+
+            let messages = try decodedMessages.map { (msg) in try EncodedMessageWrapper.encode(msg) }
+
+            return messages
+        }
+
+
+        AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [[UInt8]] in
+
+            guard let client = clients[clientAddress] else {
+                throw Error.noClient
+            }
+
+            var topicsList: [String: Pagination] = [:]
+            for topic in topics {
+                let jsonData = topic.data(using: .utf8)!
+                let jsonObj = try JSONDecoder().decode([String : String].self, from: jsonData)
+                let topic = jsonObj["topic"]!
+                var limit: Int? = nil
+                var before: Double? = nil
+                var after: Double? = nil
+                
+                limit = Int(jsonObj["limit"] ?? "0")
+                before = Double(jsonObj["before"] ?? "0")
+                after = Double(jsonObj["after"] ?? "0")
+
+                let page = Pagination(
+                    limit:  (limit != nil && limit! > 0) ? limit : nil,
+                    before: (before != nil && before! > 0) ? Date(timeIntervalSince1970: TimeInterval(before!)/1000) : nil,
+                    after: (after != nil && after! > 0) ? Date(timeIntervalSince1970: TimeInterval(after!)/1000) : nil
+                )
+                
+                topicsList[topic] = page
+            }
+            
+            let decodedMessages = try await client.conversations.listBatchMessages(topics: topicsList)
 
             let messages = try decodedMessages.map { (msg) in try EncodedMessageWrapper.encode(msg) }
 
