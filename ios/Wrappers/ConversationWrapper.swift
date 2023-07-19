@@ -15,11 +15,11 @@ struct ConversationWithClientAddress {
 	var conversationID: String?
 
 	init(client: Client, conversation: XMTP.Conversation) {
-		self.clientAddress = client.address
-		self.topic = conversation.topic
-		self.peerAddress = conversation.peerAddress
-		self.version = conversation.version == .v1 ? "v1" : "v2"
-		self.conversationID = conversation.conversationID
+		clientAddress = client.address
+		topic = conversation.topic
+		peerAddress = conversation.peerAddress
+		version = conversation.version == .v1 ? "v1" : "v2"
+		conversationID = conversation.conversationID
 	}
 }
 
