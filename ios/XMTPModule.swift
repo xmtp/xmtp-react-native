@@ -221,8 +221,7 @@ public class XMTPModule: Module {
                 throw Error.conversationNotFound("no conversation found for \(topic)")
             }
             
-            let decodedMessages = try await conversation.conversations.messages(
-                topic: topic,
+            let decodedMessages = try await conversation.messages(
                 limit: limit,
                 before: beforeDate,
                 after: afterDate)
@@ -239,7 +238,7 @@ public class XMTPModule: Module {
                 throw Error.noClient
             }
 
-            var topicsList: [String: Pagination] = [:]
+            var topicsList: [String: Pagination?] = [:]
             for topic in topics {
                 let jsonData = topic.data(using: .utf8)!
                 let jsonObj = try JSONDecoder().decode([String : String].self, from: jsonData)
@@ -257,7 +256,6 @@ public class XMTPModule: Module {
                     before: (before != nil && before! > 0) ? Date(timeIntervalSince1970: TimeInterval(before!)/1000) : nil,
                     after: (after != nil && after! > 0) ? Date(timeIntervalSince1970: TimeInterval(after!)/1000) : nil
                 )
-                
                 topicsList[topic] = page
             }
             
