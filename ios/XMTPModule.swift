@@ -232,6 +232,10 @@ public class XMTPModule: Module {
         }
 
 		AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [[UInt8]] in
+            guard let client = clients[clientAddress] else {
+                throw Error.noClient
+            }
+            
             var topicsList: [String: Pagination?] = [:]
             topics.forEach { topicJSON in
                 let jsonData = topicJSON.data(using: .utf8)!
