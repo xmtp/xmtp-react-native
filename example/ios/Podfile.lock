@@ -409,7 +409,7 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.3.6-alpha0):
+  - XMTP (0.4.0-alpha0):
     - Connect-Swift
     - GzipSwift
     - web3.swift
@@ -417,7 +417,7 @@ PODS:
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
     - MessagePacker
-    - XMTP (= 0.3.6-alpha0)
+    - XMTP (= 0.4.0-alpha0)
   - XMTPRust (0.3.0-beta0)
   - Yoga (1.14.0)
 
@@ -660,11 +660,11 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: 40bd808372cb8706108f22d28f8ab4a6b9bc6989
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 4d8249fdf9d7f1aa34c87b8197bd9f8d5e998084
-  XMTPReactNative: ca04ab05ac0b7ce96861bfe1f6701c8c0899c918
+  XMTP: 8bb7ef01ba2ed0db8bbf699164d2da22dd989a25
+  XMTPReactNative: c8f5e3f2d2f1e9102b9fd888047b34919be057d4
   XMTPRust: 233518ed46fbe3ea9e3bc3035de9a620dba09ce5
   Yoga: ba09b6b11e6139e3df8229238aa794205ca6a02a
 
 PODFILE CHECKSUM: 522d88edc2d5fac4825e60a121c24abc18983367
 
-COCOAPODS: 1.11.3
+COCOAPODS: 1.12.1

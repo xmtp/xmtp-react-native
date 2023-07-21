@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import React, { useEffect, useState } from "react";
 import { Text, ScrollView, RefreshControl } from "react-native";
-import { Conversation } from "xmtp-react-native-sdk";
+import { Conversation, Query } from "xmtp-react-native-sdk";
 
 import HomeHeaderView from "./HomeHeaderView";
 import { RootStackParamList } from "./HomeView";
@@ -20,9 +20,14 @@ export default function ConversationListView({
   async function refreshConversations() {
     const conversations = await client.conversations.list();
     const allMessages = await client.listBatchMessages(
-        conversations.map((conversation) => conversation.topic),
-        conversations.map((conversation) => conversation.conversationID)
+      conversations.map(
+        (conversation) =>
+          ({
+            contentTopic: conversation.topic,
+          } as Query)
+      )
     );
+
     setConversations(conversations);
     setMessageCount(allMessages.length);
   }
@@ -67,7 +72,9 @@ export default function ConversationListView({
       }
     >
       <HomeHeaderView client={client} navigation={navigation} />
-      <Text style={{marginLeft: 12}}>{messageCount} messages in {conversations.length} conversations</Text>
+      <Text style={{ marginLeft: 12 }}>
+        {messageCount} messages in {conversations.length} conversations
+      </Text>
 
       {conversations.map((conversation) => {
         return (
