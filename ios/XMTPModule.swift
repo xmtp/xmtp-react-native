@@ -232,31 +232,45 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [[UInt8]] in
+            guard let client = clients[clientAddress] else {
+                throw Error.noClient
+            }
 
-			guard let client = clients[clientAddress] else {
-				throw Error.noClient
-			}
-
-			var topicsList: [String: Pagination?] = [:]
-			for topic in topics {
-				let jsonData = topic.data(using: .utf8)!
-				let jsonObj = try JSONDecoder().decode([String: String].self, from: jsonData)
-				let topic = jsonObj["topic"]!
-				var limit: Int? = nil
-				var before: Double? = nil
-				var after: Double? = nil
-
-				limit = Int(jsonObj["limit"] ?? "0")
-				before = Double(jsonObj["before"] ?? "0")
-				after = Double(jsonObj["after"] ?? "0")
-
-				let page = Pagination(
-					limit: (limit != nil && limit! > 0) ? limit : nil,
-					before: (before != nil && before! > 0) ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil,
-					after: (after != nil && after! > 0) ? Date(timeIntervalSince1970: TimeInterval(after!) / 1000) : nil
-				)
-				topicsList[topic] = page
-			}
+            var topicsList: [String: Pagination?] = [:]
+            topics.forEach { topicJSON in
+                let jsonData = topicJSON.data(using: .utf8)!
+                guard let jsonObj = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                      let topic = jsonObj["topic"] as? String else {
+                    return // Skip this topic if it doesn't have valid JSON data or missing "topic" field
+                }
+                
+                var limit: Int?
+                var before: Double?
+                var after: Double?
+                
+                if let limitStr = jsonObj["limit"] as? String,
+                   let limitInt = Int(limitStr) {
+                    limit = limitInt
+                }
+                
+                if let beforeStr = jsonObj["before"] as? String,
+                   let beforeLong = TimeInterval(beforeStr) {
+                    before = beforeLong
+                }
+                
+                if let afterStr = jsonObj["after"] as? String,
+                   let afterLong = TimeInterval(afterStr) {
+                    after = afterLong
+                }
+                
+                let page = Pagination(
+                    limit: limit ?? nil,
+                    before: before != nil && before! > 0 ? Date(timeIntervalSince1970: before!) : nil,
+                    after: after != nil && after! > 0 ? Date(timeIntervalSince1970: after!) : nil
+                )
+                
+                topicsList[topic] = page
+            }
 
 			let decodedMessages = try await client.conversations.listBatchMessages(topics: topicsList)
 
