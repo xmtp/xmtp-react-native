@@ -9,9 +9,9 @@ import XMTP
 // into react native.
 struct EncodedMessageWrapper: BinaryDataWrapper {
 	static func wrap(model: XMTP.DecodedMessage) throws -> EncodedMessageWrapper {
-		return try EncodedMessageWrapper(
+		return EncodedMessageWrapper(
 			id: model.id,
-			content: [UInt8](model.encodedContent.serializedData()),
+			content: [UInt8](try model.encodedContent.serializedData()),
 			senderAddress: model.senderAddress,
 			sent: model.sent
 		)
