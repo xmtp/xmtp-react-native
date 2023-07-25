@@ -6,12 +6,6 @@ import { Query } from "./Query";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
 
-export const ApiUrls = {
-  local: "http://localhost:5555",
-  dev: "https://dev.xmtp.network",
-  production: "https://production.xmtp.network",
-} as const;
-
 declare const Buffer;
 export class Client {
   address: string;
@@ -47,14 +41,21 @@ export class Client {
           const address = await signer.getAddress();
           resolve(new Client(address));
         });
-        XMTPModule.auth(await signer.getAddress(), options.env);
+        XMTPModule.auth(
+          await signer.getAddress(),
+          options.env,
+          options.appVersion
+        );
       })();
     });
   }
 
   static async createRandom(opts?: Partial<ClientOptions>): Promise<Client> {
     const options = defaultOptions(opts);
-    const address = await XMTPModule.createRandom(options.env);
+    const address = await XMTPModule.createRandom(
+      options.env,
+      options.appVersion
+    );
     return new Client(address);
   }
 
@@ -65,7 +66,8 @@ export class Client {
     const options = defaultOptions(opts);
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
-      options.env
+      options.env,
+      options.appVersion
     );
     return new Client(address);
   }
@@ -98,12 +100,11 @@ export class Client {
 }
 
 export type ClientOptions = NetworkOptions;
-export type XmtpEnv = keyof typeof ApiUrls;
 export type NetworkOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
    */
-  env: XmtpEnv;
+  env: "local" | "dev" | "production";
   /**
    * identifier that's included with API requests.
    *

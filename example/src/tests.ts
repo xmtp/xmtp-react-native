@@ -27,7 +27,7 @@ function test(name: string, perform: () => Promise<boolean>) {
 // });
 
 test("can make a client", async () => {
-  const client = await XMTP.Client.createRandom("local");
+  const client = await XMTP.Client.createRandom({ env: "local" });
   return client.address.length > 0;
 });
 
@@ -44,8 +44,8 @@ test("can send and receive a text codec", async () => {
 
     const data = content.EncodedContent.encode(encodedContent).finish();
 
-    const bob = await XMTP.Client.createRandom("local");
-    const alice = await XMTP.Client.createRandom("local");
+    const bob = await XMTP.Client.createRandom({ env: "local" });
+    const alice = await XMTP.Client.createRandom({ env: "local" });
 
     if (bob.address === alice.address) {
       throw new Error("bob and alice should be different");
@@ -89,8 +89,8 @@ test("can pass a custom filter date and receive message objects with expected da
 
     const data = content.EncodedContent.encode(encodedContent).finish();
 
-    const bob = await XMTP.Client.createRandom("local");
-    const alice = await XMTP.Client.createRandom("local");
+    const bob = await XMTP.Client.createRandom({ env: "local" });
+    const alice = await XMTP.Client.createRandom({ env: "local" });
 
     if (bob.address === alice.address) {
       throw new Error("bob and alice should be different");
@@ -129,8 +129,8 @@ test("can pass a custom filter date and receive message objects with expected da
 });
 
 test("canMessage", async () => {
-  const bob = await XMTP.Client.createRandom("local");
-  const alice = await XMTP.Client.createRandom("local");
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  const alice = await XMTP.Client.createRandom({ env: "local" });
 
   const canMessage = await bob.canMessage(alice.address);
   return canMessage;
@@ -201,8 +201,8 @@ test("can send and receive number codec", async () => {
 
     const data = content.EncodedContent.encode(encodedContent).finish();
 
-    const bob = await XMTP.Client.createRandom("local");
-    const alice = await XMTP.Client.createRandom("local");
+    const bob = await XMTP.Client.createRandom({ env: "local" });
+    const alice = await XMTP.Client.createRandom({ env: "local" });
 
     if (bob.address === alice.address) {
       throw new Error("bob and alice should be different");
@@ -235,7 +235,9 @@ test("can send and receive number codec", async () => {
 test("createFromKeyBundle throws error for non string value", async () => {
   try {
     const bytes = randomBytes(32);
-    await XMTP.Client.createFromKeyBundle(JSON.stringify(bytes), "local");
+    await XMTP.Client.createFromKeyBundle(JSON.stringify(bytes), {
+      env: "local",
+    });
   } catch (e) {
     return true;
   }
@@ -255,8 +257,8 @@ test("can list batch messages", async () => {
 
     const data = content.EncodedContent.encode(encodedContent).finish();
 
-    const bob = await XMTP.Client.createRandom("local");
-    const alice = await XMTP.Client.createRandom("local");
+    const bob = await XMTP.Client.createRandom({ env: "local" });
+    const alice = await XMTP.Client.createRandom({ env: "local" });
 
     if (bob.address === alice.address) {
       throw new Error("bob and alice should be different");

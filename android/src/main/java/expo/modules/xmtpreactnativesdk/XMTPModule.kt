@@ -123,7 +123,7 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String? ->
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
@@ -139,16 +139,20 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String? ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
             val options = ClientOptions(api = apiEnvironments(environment, appVersion))
-            val randomClient = Client().create(account = privateKey, options = options)
-            clients[randomClient.address] = randomClient
-            randomClient.address
+            try {
+                val randomClient = Client().create(account = privateKey, options = options)
+                clients[randomClient.address] = randomClient
+                randomClient.address
+            } catch (e: Exception) {
+                Log.d("LOPI", e.message.toString())
+            }
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String? ->
             try {
                 logV("createFromKeyBundle")
                 val options = ClientOptions(api = apiEnvironments(environment, appVersion))
