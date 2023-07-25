@@ -143,13 +143,9 @@ class XMTPModule : Module() {
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
             val options = ClientOptions(api = apiEnvironments(environment, appVersion))
-            try {
-                val randomClient = Client().create(account = privateKey, options = options)
-                clients[randomClient.address] = randomClient
-                randomClient.address
-            } catch (e: Exception) {
-                Log.d("LOPI", e.message.toString())
-            }
+            val randomClient = Client().create(account = privateKey, options = options)
+            clients[randomClient.address] = randomClient
+            randomClient.address
         }
 
         AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String? ->

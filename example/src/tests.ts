@@ -27,7 +27,10 @@ function test(name: string, perform: () => Promise<boolean>) {
 // });
 
 test("can make a client", async () => {
-  const client = await XMTP.Client.createRandom({ env: "local" });
+  const client = await XMTP.Client.createRandom({
+    env: "local",
+    appVersion: "Testing/0.0.0",
+  });
   return client.address.length > 0;
 });
 
