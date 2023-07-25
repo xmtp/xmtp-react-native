@@ -1,15 +1,11 @@
 import { content } from "@xmtp/proto";
+import { randomBytes } from "crypto";
 
 import { NumberCodec, TextCodec } from "./test_utils";
 import * as XMTP from "../../src/index";
 import { DecodedMessage, Query } from "../../src/index";
 import { CodecError } from "../../src/lib/CodecError";
 import { CodecRegistry } from "../../src/lib/CodecRegistry";
-import { randomBytes } from "crypto";
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export type Test = {
   name: string;
