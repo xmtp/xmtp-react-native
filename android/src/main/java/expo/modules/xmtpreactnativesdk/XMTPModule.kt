@@ -81,11 +81,27 @@ fun Conversation.cacheKey(clientAddress: String): String {
 }
 
 class XMTPModule : Module() {
-    private val apiEnvironments = mapOf(
-        "local" to ClientOptions.Api(env = XMTPEnvironment.LOCAL, isSecure = false),
-        "dev" to ClientOptions.Api(env = XMTPEnvironment.DEV, isSecure = true),
-        "production" to ClientOptions.Api(env = XMTPEnvironment.PRODUCTION, isSecure = true)
-    )
+    private fun apiEnvironments(env: String, appVersion: String?): ClientOptions.Api {
+        return when (env) {
+            "local" -> ClientOptions.Api(
+                env = XMTPEnvironment.LOCAL,
+                isSecure = false,
+                appVersion = appVersion
+            )
+
+            "production" -> ClientOptions.Api(
+                env = XMTPEnvironment.PRODUCTION,
+                isSecure = true,
+                appVersion = appVersion
+            )
+
+            else -> ClientOptions.Api(
+                env = XMTPEnvironment.DEV,
+                isSecure = true,
+                appVersion = appVersion
+            )
+        }
+    }
 
     private var clients: MutableMap<String, Client> = mutableMapOf()
     private var xmtpPush: XMTPPush? = null
@@ -107,12 +123,11 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String? ->
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
-            val options =
-                ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
+            val options = ClientOptions(api = apiEnvironments(environment, appVersion))
             clients[address] = Client().create(account = reactSigner, options = options)
             signer = null
             sendEvent("authed")
@@ -124,21 +139,19 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String? ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
-            val options =
-                ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
+            val options = ClientOptions(api = apiEnvironments(environment, appVersion))
             val randomClient = Client().create(account = privateKey, options = options)
             clients[randomClient.address] = randomClient
             randomClient.address
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String? ->
             try {
                 logV("createFromKeyBundle")
-                val options =
-                    ClientOptions(api = apiEnvironments[environment] ?: apiEnvironments["dev"]!!)
+                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
                         Base64.decode(

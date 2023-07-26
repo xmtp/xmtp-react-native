@@ -289,7 +289,7 @@ const { Client } = require('@xmtp/xmtp-react-native')
 async function main() {
   //Create a random wallet for example purposes. On the frontend you should replace it with the user's wallet (metamask, rainbow, etc)
   //Initialize the xmtp client
-  const xmtp = await XMTP.Client.createRandom("dev");
+  const xmtp = await XMTP.Client.createRandom({ env: "dev" });
 
   //In this example we are going to broadcast to the GM_BOT wallet (already activated) and a random wallet (not activated)
   const GM_BOT = '0x937C0d4a6294cdfa575de17382c7076b579DC176'
@@ -362,7 +362,7 @@ import { Client } from '@xmtp/xmtp-react-native'
 // Get the keys using a valid Signer. Save them somewhere secure.
 const keys = await Client.exportKeyBundle()
 // Create a client using keys returned from getKeys
-const client = await Client.createFromKeyBundle(keys, "dev")
+const client = await Client.createFromKeyBundle(keys, { env: "dev" })
 ```
 
 The keys returned by `exportKeyBundle` should be treated with the utmost care as compromise of these keys will allow an attacker to impersonate the user on the XMTP network. Ensure these keys are stored somewhere secure and encrypted.

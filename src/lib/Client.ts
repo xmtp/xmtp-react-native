@@ -1,10 +1,10 @@
 import { Signer, utils } from "ethers";
 
 import Conversations from "./Conversations";
+import { DecodedMessage } from "./DecodedMessage";
 import { Query } from "./Query";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
-import { DecodedMessage } from "./DecodedMessage";
 
 declare const Buffer;
 export class Client {
@@ -13,8 +13,9 @@ export class Client {
 
   static async create(
     signer: Signer,
-    environment: "local" | "dev" | "production"
+    opts?: Partial<ClientOptions>
   ): Promise<Client> {
+    const options = defaultOptions(opts);
     return new Promise<Client>((resolve, reject) => {
       (async () => {
         XMTPModule.emitter.addListener(
@@ -40,25 +41,33 @@ export class Client {
           const address = await signer.getAddress();
           resolve(new Client(address));
         });
-        XMTPModule.auth(await signer.getAddress(), environment);
+        XMTPModule.auth(
+          await signer.getAddress(),
+          options.env,
+          options.appVersion
+        );
       })();
     });
   }
 
-  static async createRandom(
-    environment: "local" | "dev" | "production"
-  ): Promise<Client> {
-    const address = await XMTPModule.createRandom(environment);
+  static async createRandom(opts?: Partial<ClientOptions>): Promise<Client> {
+    const options = defaultOptions(opts);
+    const address = await XMTPModule.createRandom(
+      options.env,
+      options.appVersion
+    );
     return new Client(address);
   }
 
   static async createFromKeyBundle(
     keyBundle: string,
-    environment: "local" | "dev" | "production"
+    opts?: Partial<ClientOptions>
   ): Promise<Client> {
+    const options = defaultOptions(opts);
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
-      environment
+      options.env,
+      options.appVersion
     );
     return new Client(address);
   }
@@ -88,4 +97,36 @@ export class Client {
       return [];
     }
   }
+}
+
+export type ClientOptions = NetworkOptions;
+export type NetworkOptions = {
+  /**
+   * Specify which XMTP environment to connect to. (default: `dev`)
+   */
+  env: "local" | "dev" | "production";
+  /**
+   * identifier that's included with API requests.
+   *
+   * For example, you can use the following format:
+   * `appVersion: APP_NAME + '/' + APP_VERSION`.
+   * Setting this value provides telemetry that shows which apps are
+   * using the XMTP client SDK. This information can help XMTP developers
+   * provide app support, especially around communicating important
+   * SDK updates, including deprecations and required upgrades.
+   */
+  appVersion?: string;
+};
+
+/**
+ * Provide a default client configuration. These settings can be used on their own, or as a starting point for custom configurations
+ *
+ * @param opts additional options to override the default settings
+ */
+export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
+  const _defaultOptions: ClientOptions = {
+    env: "dev",
+  };
+
+  return { ..._defaultOptions, ...opts } as ClientOptions;
 }

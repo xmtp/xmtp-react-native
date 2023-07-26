@@ -70,20 +70,28 @@ extension Conversation {
 }
 
 public class XMTPModule: Module {
-    var apiEnvironments = [
-        "local": XMTP.ClientOptions.Api(
-            env: XMTP.XMTPEnvironment.local,
-            isSecure: false
-        ),
-        "dev": XMTP.ClientOptions.Api(
-            env: XMTP.XMTPEnvironment.dev,
-            isSecure: true
-        ),
-        "production": XMTP.ClientOptions.Api(
-            env: XMTP.XMTPEnvironment.production,
-            isSecure: true
-        ),
-    ]
+    private func apiEnvironments(env: String, appVersion: String?) -> XMTP.ClientOptions.Api {
+        switch env {
+            case "local":
+                return XMTP.ClientOptions.Api(
+                        env: XMTP.XMTPEnvironment.local,
+                        isSecure: false,
+                        appVersion: appVersion
+                    )
+            case "production":
+                return XMTP.ClientOptions.Api(
+                        env: XMTP.XMTPEnvironment.production,
+                        isSecure: true,
+                        appVersion: appVersion
+                    )
+            default:
+                return XMTP.ClientOptions.Api(
+                        env: XMTP.XMTPEnvironment.dev,
+                        isSecure: true,
+                        appVersion: appVersion
+                    )
+        }
+    }
 
     var clients: [String: XMTP.Client] = [:]
     var signer: ReactNativeSigner?
@@ -111,10 +119,10 @@ public class XMTPModule: Module {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { (address: String, environment: String) in
+        AsyncFunction("auth") { (address: String, environment: String, appVersion: String?) in
                 let signer = ReactNativeSigner(module: self, address: address)
                 self.signer = signer
-                let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["local"]!)
+            let options = XMTP.ClientOptions(api: apiEnvironments(env: environment, appVersion: appVersion))
                 self.clients[address] = try await XMTP.Client.create(account: signer, options: options)
                 self.signer = nil
                 sendEvent("authed")
@@ -125,9 +133,9 @@ public class XMTPModule: Module {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { (environment: String) -> String in
+        AsyncFunction("createRandom") { (environment: String, appVersion: String?) -> String in
             let privateKey = try PrivateKey.generate()
-            let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["dev"]!)
+            let options = XMTP.ClientOptions(api: apiEnvironments(env: environment, appVersion: appVersion))
             let client = try await Client.create(account: privateKey, options: options)
 
             self.clients[client.address] = client
@@ -135,14 +143,14 @@ public class XMTPModule: Module {
         }
 
         // Create a client using its serialized key bundle.
-        AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String) -> String in
+        AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?) -> String in
             do {
                 guard let keyBundleData = Data(base64Encoded: keyBundle),
                     let bundle = try? PrivateKeyBundle(serializedData: keyBundleData) else {
                     throw Error.invalidKeyBundle
                 }
                 
-                let options = XMTP.ClientOptions(api: apiEnvironments[environment] ?? apiEnvironments["dev"]!)
+                let options = XMTP.ClientOptions(api: apiEnvironments(env: environment, appVersion: appVersion))
                 let client = try await Client.from(bundle: bundle, options: options)
                 self.clients[client.address] = client
                 return client.address

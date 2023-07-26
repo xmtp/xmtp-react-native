@@ -14,9 +14,10 @@ export function address(): string {
 
 export async function auth(
   address: string,
-  environment: "local" | "dev" | "production"
+  environment: "local" | "dev" | "production",
+  appVersion?: string | undefined
 ) {
-  return await XMTPModule.auth(address, environment);
+  return await XMTPModule.auth(address, environment, appVersion);
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
@@ -24,16 +25,22 @@ export async function receiveSignature(requestID: string, signature: string) {
 }
 
 export async function createRandom(
-  environment: "local" | "dev" | "production"
+  environment: "local" | "dev" | "production",
+  appVersion?: string | undefined
 ): Promise<string> {
-  return await XMTPModule.createRandom(environment);
+  return await XMTPModule.createRandom(environment, appVersion);
 }
 
 export async function createFromKeyBundle(
   keyBundle: string,
-  environment: "local" | "dev" | "production"
+  environment: "local" | "dev" | "production",
+  appVersion?: string | undefined
 ): Promise<string> {
-  return await XMTPModule.createFromKeyBundle(keyBundle, environment);
+  return await XMTPModule.createFromKeyBundle(
+    keyBundle,
+    environment,
+    appVersion
+  );
 }
 
 export async function exportKeyBundle(clientAddress: string): Promise<string> {
