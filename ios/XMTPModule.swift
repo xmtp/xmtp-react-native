@@ -77,19 +77,19 @@ public class XMTPModule: Module {
                         env: XMTP.XMTPEnvironment.local,
                         isSecure: false,
                         appVersion: appVersion
-                    ),
+                    )
             case "production":
                 return XMTP.ClientOptions.Api(
                         env: XMTP.XMTPEnvironment.production,
                         isSecure: false,
                         appVersion: appVersion
                     )
-            case default:
+            default:
                 return XMTP.ClientOptions.Api(
                         env: XMTP.XMTPEnvironment.dev,
                         isSecure: false,
                         appVersion: appVersion
-                    ),
+                    )
         }
     }
 
