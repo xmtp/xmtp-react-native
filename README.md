@@ -362,7 +362,7 @@ import { Client } from '@xmtp/xmtp-react-native'
 // Get the keys using a valid Signer. Save them somewhere secure.
 const keys = await Client.exportKeyBundle()
 // Create a client using keys returned from getKeys
-const client = await Client.createFromKeyBundle(keys, "dev")
+const client = await Client.createFromKeyBundle(keys, { env: "dev" })
 ```
 
 The keys returned by `exportKeyBundle` should be treated with the utmost care as compromise of these keys will allow an attacker to impersonate the user on the XMTP network. Ensure these keys are stored somewhere secure and encrypted.
