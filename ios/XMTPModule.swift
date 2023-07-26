@@ -81,13 +81,13 @@ public class XMTPModule: Module {
             case "production":
                 return XMTP.ClientOptions.Api(
                         env: XMTP.XMTPEnvironment.production,
-                        isSecure: false,
+                        isSecure: true,
                         appVersion: appVersion
                     )
             default:
                 return XMTP.ClientOptions.Api(
                         env: XMTP.XMTPEnvironment.dev,
-                        isSecure: false,
+                        isSecure: true,
                         appVersion: appVersion
                     )
         }
