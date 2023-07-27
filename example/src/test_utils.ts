@@ -67,7 +67,7 @@ export class TextCodec implements ContentCodecInterface<string> {
   encode(content: string) {
     const encodedContent = {
       type: this.contentType,
-      content: Buffer.from(JSON.stringify(content)),
+      content: new TextEncoder().encode(content),
       fallback: content,
       parameters: {},
     };
@@ -77,8 +77,7 @@ export class TextCodec implements ContentCodecInterface<string> {
 
   decode(encodedContent: EncodedContent): string {
     try {
-      const contentToDecode = new TextDecoder().decode(encodedContent.content);
-      return JSON.parse(contentToDecode);
+      return new TextDecoder().decode(encodedContent.content);
     } catch (e) {
       throw new CodecError("invalidContent");
     }
