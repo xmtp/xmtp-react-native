@@ -58,7 +58,7 @@ export class TextCodec implements ContentCodecInterface<string> {
   constructor() {
     this.contentType = new ContentTypeID({
       authorityId: "example.com",
-      typeId: "number",
+      typeId: "string",
       versionMajor: 1,
       versionMinor: 1,
     });
