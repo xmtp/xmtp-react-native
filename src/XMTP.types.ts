@@ -1,25 +1,54 @@
-import { ContentTypeID } from "./lib/ContentTypeID";
+import { ContentTypeID } from "../build/lib/ContentTypeID";
 
-export type ChangeEventPayload = {
-  value: string;
+export type UnknownContent = {
+  contentTypeId: string;
 };
 
-export type XMTPViewProps = {
-  name: string;
+export type ReplyContent = {
+  reference: string;
+  content: MessageContent;
 };
 
-/*
- *
- * Represents encoded content and its metadata.
- *
- * @param {ContentTypeID} type - The content type ID for this content.
- * @param {Uint8Array} content - The encoded content data.
- * @param {string} fallback - A fallback representation of the content, if any.
- */
+export type ReactionContent = {
+  reference: string;
+  action: "added" | "removed";
+  schema: "unicode" | "shortcode" | "custom";
+  content: string;
+};
 
-export type EncodedContent = {
-  type: ContentTypeID;
-  parameters: { [key: string]: string };
-  content: Uint8Array;
-  fallback?: string;
+export type AttachmentContent = {
+  filename: string;
+  mimeType: string;
+  data: string;
+};
+
+export type RemoteAttachmentContent = {
+  filename: string;
+  secret: string;
+  salt: string;
+  nonce: string;
+  contentDigest: string;
+  contentLength: string;
+  scheme: string;
+  url: string;
+};
+
+// This contains the contents of a message.
+// Each of these corresponds to a codec supported by the native libraries.
+// This is a one-of or union type: only one of these fields will be present.
+export type MessageContent = {
+  text?: string;
+  unknown?: UnknownContent;
+  reply?: ReplyContent;
+  reaction?: ReactionContent;
+  attachment?: AttachmentContent;
+  remoteAttachment?: RemoteAttachmentContent;
+};
+
+export type DecodedMessage = {
+  id: string;
+  topic: string;
+  content: MessageContent;
+  senderAddress: string;
+  sent: number; // timestamp in milliseconds
 };
