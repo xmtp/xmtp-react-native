@@ -1,45 +1,80 @@
 import { ThirdwebProvider } from "@thirdweb-dev/react-native";
-import React, { useState } from "react";
-import { Button, SafeAreaView, StyleSheet, View } from "react-native";
-import * as XMTP from "xmtp-react-native-sdk";
+import React from "react";
 
-import AuthView from "./src/AuthView";
-import HomeView from "./src/HomeView";
-import TestsView from "./src/TestsView";
+import LaunchScreen from "./src/LaunchScreen";
+import TestScreen from "./src/TestScreen";
+import HomeScreen from "./src/HomeScreen";
+import ConversationScreen from "./src/ConversationScreen";
+import ConversationCreateScreen from "./src/ConversationCreateScreen";
+import { NavigationContainer } from "@react-navigation/native";
+import { XmtpContextProvider } from "./src/XmtpContext";
+import { Navigator } from "./src/Navigation";
+import { QueryClient, QueryClientProvider } from "react-query";
+import { Button } from "react-native";
 
+const queryClient = new QueryClient();
 export default function App() {
-  const [client, setClient] = useState<XMTP.Client | null>(null);
-  const [isTesting, setIsTesting] = useState<boolean>(false);
-
-  return isTesting ? (
-    <SafeAreaView style={{ flexGrow: 1 }}>
-      <TestsView />
-    </SafeAreaView>
-  ) : (
+  return (
     <ThirdwebProvider activeChain="mainnet">
-      <SafeAreaView style={{ flexGrow: 1 }}>
-        {client != null ? (
-          <HomeView client={client} />
-        ) : (
-          <View>
-            <AuthView setClient={setClient} />
-            <Button
-              onPress={() => setIsTesting(true)}
-              title="Unit tests"
-              accessibilityLabel="Unit-tests"
-            />
-          </View>
-        )}
-      </SafeAreaView>
+      <QueryClientProvider client={queryClient}>
+        <XmtpContextProvider>
+          <NavigationContainer>
+            <Navigator.Navigator>
+              <Navigator.Screen
+                name="launch"
+                component={LaunchScreen}
+                options={{
+                  title: "XMTP RN Example",
+                  headerStyle: {
+                    backgroundColor: "rgb(49 0 110)",
+                  },
+                  headerTintColor: "#fff",
+                  headerTitleStyle: {
+                    fontWeight: "bold",
+                  },
+                }}
+              />
+              <Navigator.Screen
+                name="test"
+                component={TestScreen}
+                options={{ title: "Unit Tests" }}
+              />
+              <Navigator.Screen
+                name="home"
+                component={HomeScreen}
+                options={({ navigation }) => ({
+                  title: "My Conversations",
+                  headerStyle: {
+                    backgroundColor: "rgb(49 0 110)",
+                  },
+                  headerTintColor: "#fff",
+                  headerTitleStyle: {
+                    fontWeight: "bold",
+                  },
+                  headerRight: () => (
+                    <Button
+                      onPress={() => navigation.navigate("conversationCreate")}
+                      title="New"
+                      color="#fff"
+                    />
+                  ),
+                })}
+              />
+              <Navigator.Screen
+                name="conversation"
+                component={ConversationScreen}
+                options={{ title: "Conversation" }}
+                initialParams={{ topic: "" }}
+              />
+              <Navigator.Screen
+                name="conversationCreate"
+                component={ConversationCreateScreen}
+                options={{ title: "New Conversation" }}
+              />
+            </Navigator.Navigator>
+          </NavigationContainer>
+        </XmtpContextProvider>
+      </QueryClientProvider>
     </ThirdwebProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

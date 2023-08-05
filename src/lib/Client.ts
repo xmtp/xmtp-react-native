@@ -13,7 +13,7 @@ export class Client {
 
   static async create(
     signer: Signer,
-    opts?: Partial<ClientOptions>
+    opts?: Partial<ClientOptions>,
   ): Promise<Client> {
     const options = defaultOptions(opts);
     return new Promise<Client>((resolve, reject) => {
@@ -34,7 +34,7 @@ export class Client {
             const signature = Buffer.from(sigBytes).toString("base64");
 
             XMTPModule.receiveSignature(request.id, signature);
-          }
+          },
         );
 
         XMTPModule.emitter.addListener("authed", async () => {
@@ -44,7 +44,7 @@ export class Client {
         XMTPModule.auth(
           await signer.getAddress(),
           options.env,
-          options.appVersion
+          options.appVersion,
         );
       })();
     });
@@ -54,20 +54,20 @@ export class Client {
     const options = defaultOptions(opts);
     const address = await XMTPModule.createRandom(
       options.env,
-      options.appVersion
+      options.appVersion,
     );
     return new Client(address);
   }
 
   static async createFromKeyBundle(
     keyBundle: string,
-    opts?: Partial<ClientOptions>
+    opts?: Partial<ClientOptions>,
   ): Promise<Client> {
     const options = defaultOptions(opts);
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
-      options.appVersion
+      options.appVersion,
     );
     return new Client(address);
   }

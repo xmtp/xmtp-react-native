@@ -8,8 +8,8 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWithClientAddress
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.EncodedMessageWrapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -19,6 +19,7 @@ import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.Conversation
+import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
 import org.xmtp.android.library.XMTPEnvironment
 import org.xmtp.android.library.XMTPException
@@ -222,9 +223,7 @@ class XMTPModule : Module() {
             val afterDate = if (after != null) Date(after) else null
 
             conversation.messages(limit = limit, before = beforeDate, after = afterDate)
-                .map {
-                    EncodedMessageWrapper.encode(it)
-                }
+                .map { DecodedMessageWrapper.encode(it) }
         }
 
         AsyncFunction("loadBatchMessages") { clientAddress: String, topics: List<String> ->
@@ -258,12 +257,11 @@ class XMTPModule : Module() {
                 topicsList.add(Pair(topic, page))
             }
 
-            client.conversations.listBatchMessages(topicsList).map {
-                EncodedMessageWrapper.encode(it)
-            }
+            client.conversations.listBatchMessages(topicsList)
+                .map { DecodedMessageWrapper.encode(it) }
         }
 
-        AsyncFunction("sendEncodedContentData") { clientAddress: String, conversationTopic: String, conversationID: String?, content: List<Int> ->
+        AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, conversationID: String?, contentJson: String ->
             logV("sendMessage")
             val conversation =
                 findConversation(
@@ -271,17 +269,11 @@ class XMTPModule : Module() {
                     topic = conversationTopic
                 )
                     ?: throw XMTPException("no conversation found for $conversationTopic")
-
-            val contentData = content.foldIndexed(ByteArray(content.size)) { i, a, v ->
-                a.apply {
-                    set(
-                        i,
-                        v.toByte()
-                    )
-                }
-            }
-            val encodedContent = EncodedContent.parseFrom(contentData)
-            conversation.send(encodedContent = encodedContent)
+            val sending = ContentJson.fromJson(contentJson)
+            conversation.send(
+                content = sending.content,
+                options = SendOptions(contentType = sending.type)
+            )
         }
 
         AsyncFunction("createConversation") { clientAddress: String, peerAddress: String, conversationID: String? ->

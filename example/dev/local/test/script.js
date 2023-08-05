@@ -23,7 +23,9 @@ async function checkAll() {
         continue;
       }
 
-      await message.conversation.send("HI " + message.senderAddress);
+      await message.conversation.send({
+        text: "HI " + message.senderAddress,
+      });
       console.log(`Replied to ${message.senderAddress}`);
     }
   } catch (e) {

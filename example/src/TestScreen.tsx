@@ -31,7 +31,8 @@ function TestView({
         setErrorMessage(JSON.stringify(err));
       }
     }
-
+    // delay a moment to avoid clobbering
+    await new Promise((r) => setTimeout(r, 300));
     if (!markedComplete) {
       onComplete();
       setMarkedComplete(true);
@@ -94,7 +95,7 @@ function TestView({
   );
 }
 
-export default function TestsView(): JSX.Element {
+export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0);
 
   return (
@@ -128,7 +129,7 @@ export default function TestsView(): JSX.Element {
           accessibilityLabel="tests-complete"
           style={{ paddingHorizontal: 12 }}
         >
-          {tests.map((test: Test, i) => {
+          {tests.slice(0, completedTests + 1).map((test: Test, i) => {
             return (
               <TestView
                 test={test}

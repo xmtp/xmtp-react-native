@@ -7,6 +7,7 @@ import XMTPModule from "./XMTPModule";
 import { Conversation } from "./lib/Conversation";
 import type { DecodedMessage } from "./lib/DecodedMessage";
 import type { Query } from "./lib/Query";
+import { MessageContent } from "./XMTP.types";
 
 export function address(): string {
   return XMTPModule.address();
@@ -15,7 +16,7 @@ export function address(): string {
 export async function auth(
   address: string,
   environment: "local" | "dev" | "production",
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
 ) {
   return await XMTPModule.auth(address, environment, appVersion);
 }
@@ -26,7 +27,7 @@ export async function receiveSignature(requestID: string, signature: string) {
 
 export async function createRandom(
   environment: "local" | "dev" | "production",
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
 ): Promise<string> {
   return await XMTPModule.createRandom(environment, appVersion);
 }
@@ -34,12 +35,12 @@ export async function createRandom(
 export async function createFromKeyBundle(
   keyBundle: string,
   environment: "local" | "dev" | "production",
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
 ): Promise<string> {
   return await XMTPModule.createFromKeyBundle(
     keyBundle,
     environment,
-    appVersion
+    appVersion,
   );
 }
 
@@ -49,39 +50,39 @@ export async function exportKeyBundle(clientAddress: string): Promise<string> {
 
 export async function exportConversationTopicData(
   clientAddress: string,
-  conversationTopic: string
+  conversationTopic: string,
 ): Promise<string> {
   return await XMTPModule.exportConversationTopicData(
     clientAddress,
-    conversationTopic
+    conversationTopic,
   );
 }
 
 export async function importConversationTopicData(
   clientAddress: string,
-  topicData: string
+  topicData: string,
 ): Promise<Conversation> {
   const json = await XMTPModule.importConversationTopicData(
     clientAddress,
-    topicData
+    topicData,
   );
   return new Conversation(JSON.parse(json));
 }
 
 export async function canMessage(
   clientAddress: string,
-  peerAddress: string
+  peerAddress: string,
 ): Promise<boolean> {
   return await XMTPModule.canMessage(clientAddress, peerAddress);
 }
 
 export async function listConversations(
-  clientAddress: string
+  clientAddress: string,
 ): Promise<Conversation[]> {
   return (await XMTPModule.listConversations(clientAddress)).map(
     (json: string) => {
       return new Conversation(JSON.parse(json));
-    }
+    },
   );
 }
 
@@ -91,35 +92,23 @@ export async function listMessages(
   conversationID: string | undefined,
   limit?: number | undefined,
   before?: Date | undefined,
-  after?: Date | undefined
+  after?: Date | undefined,
 ): Promise<DecodedMessage[]> {
   const messages = await XMTPModule.loadMessages(
     clientAddress,
     conversationTopic,
     limit,
     before?.getTime(),
-    after?.getTime()
+    after?.getTime(),
   );
-
-  return messages.map((message) => {
-    const decodedMessage = decode(message);
-    message = decodedMessage;
-
-    const encodedContent = proto.content.EncodedContent.decode(
-      (decodedMessage as EncodedContent).content
-    );
-    if (Number(message.sent)) {
-      message.sent = new Date(Number(message.sent));
-    }
-    message.content = encodedContent;
-
-    return message;
+  return messages.map((json: string) => {
+    return JSON.parse(json);
   });
 }
 
 export async function listBatchMessages(
   clientAddress: string,
-  queries: Query[]
+  queries: Query[],
 ): Promise<DecodedMessage[]> {
   const topics = queries.map((item) => {
     return JSON.stringify({
@@ -129,22 +118,10 @@ export async function listBatchMessages(
       before: item.endTime?.getTime() || 0,
     });
   });
-
   const messages = await XMTPModule.loadBatchMessages(clientAddress, topics);
 
-  return messages.map((message) => {
-    const decodedMessage = decode(message);
-    message = decodedMessage;
-
-    const encodedContent = proto.content.EncodedContent.decode(
-      (decodedMessage as EncodedContent).content
-    );
-    if (Number(message.sent)) {
-      message.sent = new Date(Number(message.sent));
-    }
-    message.content = encodedContent;
-
-    return message;
+  return messages.map((json: string) => {
+    return JSON.parse(json);
   });
 }
 
@@ -152,16 +129,16 @@ export async function listBatchMessages(
 export async function createConversation(
   clientAddress: string,
   peerAddress: string,
-  conversationID: string | undefined
+  conversationID: string | undefined,
 ): Promise<Conversation> {
   return new Conversation(
     JSON.parse(
       await XMTPModule.createConversation(
         clientAddress,
         peerAddress,
-        conversationID
-      )
-    )
+        conversationID,
+      ),
+    ),
   );
 }
 
@@ -169,13 +146,16 @@ export async function sendMessage(
   clientAddress: string,
   conversationTopic: string,
   conversationID: string | undefined,
-  encodedContentData: Uint8Array
+  content: MessageContent,
 ): Promise<string> {
-  return await XMTPModule.sendEncodedContentData(
+  // TODO: consider eager validating of `MessageContent` here
+  //       instead of waiting for native code to validate
+  let contentJson = JSON.stringify(content);
+  return await XMTPModule.sendMessage(
     clientAddress,
     conversationTopic,
     conversationID,
-    Array.from(encodedContentData)
+    contentJson,
   );
 }
 
@@ -190,24 +170,24 @@ export function subscribeToAllMessages(clientAddress: string) {
 export async function subscribeToMessages(
   clientAddress: string,
   topic: string,
-  conversationID?: string | undefined
+  conversationID?: string | undefined,
 ) {
   return await XMTPModule.subscribeToMessages(
     clientAddress,
     topic,
-    conversationID
+    conversationID,
   );
 }
 
 export async function unsubscribeFromMessages(
   clientAddress: string,
   topic: string,
-  conversationID?: string | undefined
+  conversationID?: string | undefined,
 ) {
   return await XMTPModule.unsubscribeFromMessages(
     clientAddress,
     topic,
-    conversationID
+    conversationID,
   );
 }
 
@@ -223,15 +203,15 @@ export async function decodeMessage(
   clientAddress: string,
   topic: string,
   encryptedMessage: string,
-  conversationID?: string | undefined
+  conversationID?: string | undefined,
 ): Promise<DecodedMessage> {
   return JSON.parse(
     await XMTPModule.decodeMessage(
       clientAddress,
       topic,
       encryptedMessage,
-      conversationID
-    )
+      conversationID,
+    ),
   );
 }
 
@@ -239,6 +219,6 @@ export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);
 
 export { Client } from "./lib/Client";
 export { Conversation } from "./lib/Conversation";
-export { DecodedMessage } from "./lib/DecodedMessage";
+export * from "./XMTP.types";
 export { Query } from "./lib/Query";
 export { XMTPPush } from "./lib/XMTPPush";

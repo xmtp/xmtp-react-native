@@ -14,7 +14,7 @@ module.exports = function (api) {
               __dirname,
               "..",
               "src",
-              "index.ts"
+              "index.ts",
             ),
           },
         },

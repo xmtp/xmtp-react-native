@@ -70,29 +70,6 @@ extension Conversation {
 }
 
 public class XMTPModule: Module {
-    private func apiEnvironments(env: String, appVersion: String?) -> XMTP.ClientOptions.Api {
-        switch env {
-            case "local":
-                return XMTP.ClientOptions.Api(
-                        env: XMTP.XMTPEnvironment.local,
-                        isSecure: false,
-                        appVersion: appVersion
-                    )
-            case "production":
-                return XMTP.ClientOptions.Api(
-                        env: XMTP.XMTPEnvironment.production,
-                        isSecure: true,
-                        appVersion: appVersion
-                    )
-            default:
-                return XMTP.ClientOptions.Api(
-                        env: XMTP.XMTPEnvironment.dev,
-                        isSecure: true,
-                        appVersion: appVersion
-                    )
-        }
-    }
-
     var clients: [String: XMTP.Client] = [:]
     var signer: ReactNativeSigner?
     var conversations: [String: Conversation] = [:]
@@ -100,7 +77,7 @@ public class XMTPModule: Module {
 
     enum Error: Swift.Error {
         case noClient, conversationNotFound(String), noMessage, invalidKeyBundle
-        
+
     }
 
     public func definition() -> ModuleDefinition {
@@ -122,7 +99,7 @@ public class XMTPModule: Module {
         AsyncFunction("auth") { (address: String, environment: String, appVersion: String?) in
                 let signer = ReactNativeSigner(module: self, address: address)
                 self.signer = signer
-            let options = XMTP.ClientOptions(api: apiEnvironments(env: environment, appVersion: appVersion))
+                let options = createClientConfig(env: environment, appVersion: appVersion)
                 self.clients[address] = try await XMTP.Client.create(account: signer, options: options)
                 self.signer = nil
                 sendEvent("authed")
@@ -135,7 +112,7 @@ public class XMTPModule: Module {
         // Generate a random wallet and set the client to that
         AsyncFunction("createRandom") { (environment: String, appVersion: String?) -> String in
             let privateKey = try PrivateKey.generate()
-            let options = XMTP.ClientOptions(api: apiEnvironments(env: environment, appVersion: appVersion))
+            let options = createClientConfig(env: environment, appVersion: appVersion)
             let client = try await Client.create(account: privateKey, options: options)
 
             self.clients[client.address] = client
@@ -149,8 +126,8 @@ public class XMTPModule: Module {
                     let bundle = try? PrivateKeyBundle(serializedData: keyBundleData) else {
                     throw Error.invalidKeyBundle
                 }
-                
-                let options = XMTP.ClientOptions(api: apiEnvironments(env: environment, appVersion: appVersion))
+
+                let options = createClientConfig(env: environment, appVersion: appVersion)
                 let client = try await Client.from(bundle: bundle, options: options)
                 self.clients[client.address] = client
                 return client.address
@@ -171,9 +148,6 @@ public class XMTPModule: Module {
 
         // Export the conversation's serialized topic data.
         AsyncFunction("exportConversationTopicData") { (clientAddress: String, topic: String) -> String in
-            guard let client = clients[clientAddress] else {
-                throw Error.noClient
-            }
             guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
                 throw Error.conversationNotFound(topic)
             }
@@ -217,33 +191,29 @@ public class XMTPModule: Module {
             }
         }
 
-        AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?) -> [[UInt8]] in
+        AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?) -> [String] in
             let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!)/1000) : nil
             let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!)/1000) : nil
 
-            guard let client = clients[clientAddress] else {
-                throw Error.noClient
-            }
-            
             guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
                 throw Error.conversationNotFound("no conversation found for \(topic)")
             }
-            
+
             let decodedMessages = try await conversation.messages(
                 limit: limit,
                 before: beforeDate,
                 after: afterDate)
 
-            let messages = try decodedMessages.map { (msg) in try EncodedMessageWrapper.encode(msg) }
+            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg) }
 
             return messages
         }
 
-		AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [[UInt8]] in
+		AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [String] in
             guard let client = clients[clientAddress] else {
                 throw Error.noClient
             }
-            
+
             var topicsList: [String: Pagination?] = [:]
             topics.forEach { topicJSON in
                 let jsonData = topicJSON.data(using: .utf8)!
@@ -251,52 +221,52 @@ public class XMTPModule: Module {
                       let topic = jsonObj["topic"] as? String else {
                     return // Skip this topic if it doesn't have valid JSON data or missing "topic" field
                 }
-                
+
                 var limit: Int?
                 var before: Double?
                 var after: Double?
-                
+
                 if let limitStr = jsonObj["limit"] as? String,
                    let limitInt = Int(limitStr) {
                     limit = limitInt
                 }
-                
+
                 if let beforeStr = jsonObj["before"] as? String,
                    let beforeLong = TimeInterval(beforeStr) {
                     before = beforeLong
                 }
-                
+
                 if let afterStr = jsonObj["after"] as? String,
                    let afterLong = TimeInterval(afterStr) {
                     after = afterLong
                 }
-                
+
                 let page = Pagination(
                     limit: limit ?? nil,
                     before: before != nil && before! > 0 ? Date(timeIntervalSince1970: before!) : nil,
                     after: after != nil && after! > 0 ? Date(timeIntervalSince1970: after!) : nil
                 )
-                
+
                 topicsList[topic] = page
             }
-            
+
             let decodedMessages = try await client.conversations.listBatchMessages(topics: topicsList)
 
-            let messages = try decodedMessages.map { (msg) in try EncodedMessageWrapper.encode(msg) }
+            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg) }
 
             return messages
         }
 
-        AsyncFunction("sendEncodedContentData") { (clientAddress: String, conversationTopic: String, conversationID: String?, content: Array<UInt8>) -> String in
+        AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, conversationID: String?, contentJson: String) -> String in
             guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
                 throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
             }
-            
-            let contentData = Data(content)
-            let encodedContent = try EncodedContent(serializedData: contentData)
 
-            let messageID = try await conversation.send(encodedContent: encodedContent)
-            return messageID
+            let sending = try ContentJson.fromJson(contentJson)
+            return try await conversation.send(
+                content: sending.content,
+                options: SendOptions(contentType: sending.type)
+            )
         }
 
         AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, conversationID: String?) -> String in
@@ -370,6 +340,31 @@ public class XMTPModule: Module {
     //
     // Helpers
     //
+
+    func createClientConfig(env: String, appVersion: String?) -> XMTP.ClientOptions {
+        // Ensure that all codecs have been registered.
+        ContentJson.initCodecs();
+        switch env {
+            case "local":
+                return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
+                        env: XMTP.XMTPEnvironment.local,
+                        isSecure: false,
+                        appVersion: appVersion
+                    ))
+            case "production":
+                return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
+                        env: XMTP.XMTPEnvironment.production,
+                        isSecure: true,
+                        appVersion: appVersion
+                    ))
+            default:
+                return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
+                        env: XMTP.XMTPEnvironment.dev,
+                        isSecure: true,
+                        appVersion: appVersion
+                    ))
+        }
+    }
 
     func findConversation(clientAddress: String, topic: String) async throws -> Conversation? {
         guard let client = clients[clientAddress] else {

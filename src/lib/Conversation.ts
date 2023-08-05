@@ -1,5 +1,5 @@
-import { DecodedMessage } from "./DecodedMessage";
 import * as XMTP from "../index";
+import { MessageContent, DecodedMessage } from "../XMTP.types";
 
 export class Conversation {
   clientAddress: string;
@@ -23,14 +23,17 @@ export class Conversation {
   }
 
   async exportTopicData(): Promise<string> {
-    return await XMTP.exportConversationTopicData(this.clientAddress, this.topic);
+    return await XMTP.exportConversationTopicData(
+      this.clientAddress,
+      this.topic,
+    );
   }
 
   // TODO: Support pagination and conversation ID here
   async messages(
     limit?: number | undefined,
     before?: Date | undefined,
-    after?: Date | undefined
+    after?: Date | undefined,
   ): Promise<DecodedMessage[]> {
     try {
       return await XMTP.listMessages(
@@ -39,7 +42,7 @@ export class Conversation {
         this.conversationID,
         limit,
         before,
-        after
+        after,
       );
     } catch (e) {
       console.info("ERROR in listMessages", e);
@@ -48,13 +51,16 @@ export class Conversation {
   }
 
   // TODO: support conversation ID
-  async send(content: any): Promise<string> {
+  async send(content: string | MessageContent): Promise<string> {
     try {
+      if (typeof content === "string") {
+        content = { text: content };
+      }
       return await XMTP.sendMessage(
         this.clientAddress,
         this.topic,
         this.conversationID,
-        content
+        content,
       );
     } catch (e) {
       console.info("ERROR in send()", e);
@@ -68,7 +74,7 @@ export class Conversation {
         this.clientAddress,
         this.topic,
         encryptedMessage,
-        this.conversationID
+        this.conversationID,
       );
     } catch (e) {
       console.info("ERROR in decodeMessage()", e);
@@ -77,12 +83,12 @@ export class Conversation {
   }
 
   streamMessages(
-    callback: (message: DecodedMessage) => Promise<void>
+    callback: (message: DecodedMessage) => Promise<void>,
   ): () => void {
     XMTP.subscribeToMessages(
       this.clientAddress,
       this.topic,
-      this.conversationID
+      this.conversationID,
     );
 
     XMTP.emitter.addListener(
@@ -98,14 +104,14 @@ export class Conversation {
         ) {
           await callback(JSON.parse(message.messageJSON));
         }
-      }
+      },
     );
 
     return () => {
       XMTP.unsubscribeFromMessages(
         this.clientAddress,
         this.topic,
-        this.conversationID
+        this.conversationID,
       );
     };
   }
