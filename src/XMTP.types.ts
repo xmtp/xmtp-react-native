@@ -1,5 +1,3 @@
-import { ContentTypeID } from "../build/lib/ContentTypeID";
-
 export type UnknownContent = {
   contentTypeId: string;
 };

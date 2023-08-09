@@ -5,9 +5,8 @@ import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 
 import XMTPModule from "./XMTPModule";
 import { Conversation } from "./lib/Conversation";
-import type { DecodedMessage } from "./lib/DecodedMessage";
 import type { Query } from "./lib/Query";
-import { MessageContent } from "./XMTP.types";
+import type { MessageContent, DecodedMessage } from "./XMTP.types";
 
 export function address(): string {
   return XMTPModule.address();

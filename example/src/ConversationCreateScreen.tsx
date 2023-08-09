@@ -1,11 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { NavigationParamList } from "./Navigation";
-import {
-  Button,
-  ScrollView,
-  Text,
-  TextInput,
-} from "react-native";
+import { Button, ScrollView, Text, TextInput } from "react-native";
 import React, { useState } from "react";
 import { useXmtp } from "./XmtpContext";
 
