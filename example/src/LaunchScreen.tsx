@@ -4,7 +4,6 @@ import { Button, ScrollView, StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { useXmtp } from "./XmtpContext";
 import * as XMTP from "xmtp-react-native-sdk";
-import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native";
 import { useSavedKeys } from "./hooks";
 
 const appVersion = "XMTP_RN_EX/0.0.1";
@@ -14,18 +13,24 @@ export default function LaunchScreen({
   navigation,
 }: NativeStackScreenProps<NavigationParamList, "launch">) {
   let { setClient } = useXmtp();
-  let signer = useSigner();
   let savedKeys = useSavedKeys();
-  const configureWallet = (configuring: Promise<XMTP.Client>) => {
+  const configureWallet = (
+    label: string,
+    configuring: Promise<XMTP.Client>,
+  ) => {
+    console.log("Connecting XMTP client", label);
     configuring
       .then(async (client) => {
-        console.log("configured", { address: client.address });
+        console.log("Connected XMTP client", label, {
+          address: client.address,
+        });
         setClient(client);
         navigation.navigate("home");
+        // Save the configured client keys for use in later sessions.
         let keyBundle = await client.exportKeyBundle();
         await savedKeys.save(keyBundle);
       })
-      .catch((err) => console.log("Error creating client", err));
+      .catch((err) => console.log("Unable to connect XMTP client", label, err));
   };
   return (
     <ScrollView>
@@ -68,7 +73,10 @@ export default function LaunchScreen({
             title={`Use Generated Wallet (${env})`}
             color={env === "dev" ? "green" : "purple"}
             onPress={() => {
-              configureWallet(XMTP.Client.createRandom({ env, appVersion }));
+              configureWallet(
+                env,
+                XMTP.Client.createRandom({ env, appVersion }),
+              );
             }}
           />
         </View>
@@ -95,6 +103,7 @@ export default function LaunchScreen({
                 color={env === "dev" ? "green" : "purple"}
                 onPress={() => {
                   configureWallet(
+                    env,
                     XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
                       env,
                       appVersion,
@@ -112,37 +121,6 @@ export default function LaunchScreen({
             />
           </View>
         </>
-      )}
-      <Divider key="divider-connected" />
-      <Text
-        style={{
-          fontSize: 16,
-          textAlign: "right",
-          textTransform: "uppercase",
-          color: "#333",
-          paddingHorizontal: 16,
-          marginHorizontal: 16,
-        }}
-      >
-        Real Wallet
-      </Text>
-      <View key="connect-wallet" style={{ margin: 16 }}>
-        <ConnectWallet />
-      </View>
-      {["dev", "local"].map(
-        (env) =>
-          signer && (
-            <View key={`connected-${env}`} style={{ margin: 16 }}>
-              <Button
-                title={`Use Connected Wallet (${env})`}
-                onPress={() => {
-                  configureWallet(
-                    XMTP.Client.create(signer!, { env, appVersion }),
-                  );
-                }}
-              />
-            </View>
-          ),
       )}
     </ScrollView>
   );

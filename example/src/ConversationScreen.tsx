@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { Buffer } from "buffer";
 import React, { useRef, useState } from "react";
 import {
   useConversation,
