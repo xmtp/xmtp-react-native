@@ -423,7 +423,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = expo.modules.xmtpreactnativesdk.example;
-				PRODUCT_NAME = xmtpreactnativesdkexample;
+				PRODUCT_NAME = "xmtpreactnativesdkexample";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -451,7 +451,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = expo.modules.xmtpreactnativesdk.example;
-				PRODUCT_NAME = xmtpreactnativesdkexample;
+				PRODUCT_NAME = "xmtpreactnativesdkexample";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
