@@ -1,7 +1,7 @@
 import { Signer, utils } from "ethers";
 
 import Conversations from "./Conversations";
-import { DecodedMessage } from "./DecodedMessage";
+import type { DecodedMessage } from "../XMTP.types";
 import { Query } from "./Query";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
