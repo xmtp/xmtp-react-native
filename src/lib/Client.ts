@@ -1,10 +1,19 @@
 import { Signer, utils } from "ethers";
 
 import Conversations from "./Conversations";
-import type { DecodedMessage } from "../XMTP.types";
+import type {
+  DecodedMessage,
+  EncryptedLocalAttachment,
+  RemoteAttachmentMetadata,
+} from "../XMTP.types";
 import { Query } from "./Query";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
+import {
+  AttachmentFile,
+  DecryptedLocalAttachment,
+  LocalAttachment,
+} from "../XMTP.types";
 
 declare const Buffer;
 export class Client {
@@ -96,6 +105,23 @@ export class Client {
       console.info("ERROR in listBatchMessages", e);
       return [];
     }
+  }
+
+  async encryptAttachment(
+    file: DecryptedLocalAttachment,
+  ): Promise<EncryptedLocalAttachment> {
+    if (!file.fileUri?.startsWith("file://")) {
+      throw new Error("the attachment must be a local file:// uri");
+    }
+    return await XMTPModule.encryptAttachment(this.address, file);
+  }
+  async decryptAttachment(
+    encryptedFile: EncryptedLocalAttachment,
+  ): Promise<DecryptedLocalAttachment> {
+    if (!encryptedFile.encryptedLocalFileUri?.startsWith("file://")) {
+      throw new Error("the attachment must be a local file:// uri");
+    }
+    return await XMTPModule.decryptAttachment(this.address, encryptedFile);
   }
 }
 

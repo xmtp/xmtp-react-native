@@ -1,8 +1,7 @@
-import { content } from "@xmtp/proto";
-import { randomBytes } from "crypto";
-
+import ReactNativeBlobUtil from "react-native-blob-util";
 import * as XMTP from "../../src/index";
-import { Conversation, DecodedMessage, Query } from "../../src/index";
+
+const { fs } = ReactNativeBlobUtil;
 
 export type Test = {
   name: string;
@@ -279,6 +278,79 @@ test("can stream messages", async () => {
     // if (convoMessages[i].topic !== bobConvo.topic) {
     //     throw Error("Unexpected convo message topic " + convoMessages[i].topic);
     // }
+  }
+  return true;
+});
+
+test("remote attachments should work", async () => {
+  const alice = await XMTP.Client.createRandom({ env: "local" });
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  const convo = await alice.conversations.newConversation(bob.address);
+
+  // Alice is sending Bob a file from her phone.
+  const filename = `${Date.now()}.txt`;
+  const file = `${fs.dirs.CacheDir}/${filename}`;
+  await fs.writeFile(file, "hello world", "utf8");
+  const { encryptedLocalFileUri, metadata } = await alice.encryptAttachment({
+    fileUri: `file://${file}`,
+    mimeType: "text/plain",
+  });
+
+  let encryptedFile = encryptedLocalFileUri.slice("file://".length);
+  let originalContent = await fs.readFile(file, "base64");
+  let encryptedContent = await fs.readFile(encryptedFile, "base64");
+  if (encryptedContent === originalContent) {
+    throw new Error("encrypted file should not match original");
+  }
+
+  // This is where the app will upload the encrypted file to a remote server and generate a URL.
+  //   let url = await uploadFile(encryptedLocalFileUri);
+  let url = "https://example.com/123";
+
+  // Together with the metadata, we send the URL as a remoteAttachment message to the conversation.
+  await convo.send({
+    remoteAttachment: {
+      ...metadata,
+      scheme: "https://",
+      url,
+    },
+  });
+  await delayToPropogate();
+
+  // Now we should see the remote attachment message.
+  const messages = await convo.messages();
+  if (messages.length !== 1) {
+    throw new Error("Expected 1 message");
+  }
+  const message = messages[0];
+  if (!message.content.remoteAttachment) {
+    throw new Error("Expected remoteAttachment");
+  }
+  if (message.content.remoteAttachment.url !== "https://example.com/123") {
+    throw new Error("Expected url to match");
+  }
+
+  // This is where the app prompts the user to download the encrypted file from `url`.
+  // TODO: let downloadedFile = await downloadFile(url);
+  // But to simplify this test, we're just going to copy
+  // the previously encrypted file and pretend that we just downloaded it.
+  let downloadedFileUri = `file://${fs.dirs.CacheDir}/${Date.now()}.bin`;
+  await fs.cp(
+    new URL(encryptedLocalFileUri).pathname,
+    new URL(downloadedFileUri).pathname,
+  );
+
+  // Now we can decrypt the downloaded file using the message metadata.
+  const attached = await alice.decryptAttachment({
+    encryptedLocalFileUri: downloadedFileUri,
+    metadata: message.content.remoteAttachment,
+  });
+  if (attached.mimeType !== "text/plain") {
+    throw new Error("Expected mimeType to match");
+  }
+  const text = await fs.readFile(new URL(attached.fileUri).pathname, "utf8");
+  if (text !== "hello world") {
+    throw new Error("Expected text to match");
   }
   return true;
 });

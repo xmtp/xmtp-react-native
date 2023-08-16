@@ -1,12 +1,10 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import android.util.Base64
-import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.protobuf.ByteString
 import org.xmtp.android.library.Client
-import org.xmtp.android.library.DecodedMessage
 import org.xmtp.proto.message.contents.Content.EncodedContent
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.codecs.ContentTypeAttachment
@@ -15,17 +13,21 @@ import org.xmtp.android.library.codecs.ContentTypeReaction
 import org.xmtp.android.library.codecs.ContentTypeText
 import org.xmtp.android.library.codecs.AttachmentCodec
 import org.xmtp.android.library.codecs.Attachment
+import org.xmtp.android.library.codecs.ContentTypeRemoteAttachment
 import org.xmtp.android.library.codecs.ContentTypeReply
 import org.xmtp.android.library.codecs.ReactionAction
 import org.xmtp.android.library.codecs.ReactionSchema
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.Reaction
+import org.xmtp.android.library.codecs.RemoteAttachment
+import org.xmtp.android.library.codecs.RemoteAttachmentCodec
 import org.xmtp.android.library.codecs.Reply
 import org.xmtp.android.library.codecs.ReplyCodec
 import org.xmtp.android.library.codecs.TextCodec
 import org.xmtp.android.library.codecs.id
 
 import java.lang.Exception
+import java.net.URL
 
 class ContentJson(
     val type: ContentTypeId,
@@ -41,12 +43,13 @@ class ContentJson(
             Client.register(TextCodec())
             Client.register(AttachmentCodec())
             Client.register(ReactionCodec())
+            Client.register(RemoteAttachmentCodec())
             Client.register(ReplyCodec())
             // TODO:
             //Client.register(CompositeCodec())
             //Client.register(GroupChatMemberAddedCodec())
             //Client.register(GroupChatTitleChangedCodec())
-            //Client.register(RemoteAttachmentCodec())
+
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -59,6 +62,22 @@ class ContentJson(
                     mimeType = attachment.get("mimeType").asString,
                     data = ByteString.copyFrom(bytesFrom64(attachment.get("data").asString)),
                 ))
+            } else if (obj.has("remoteAttachment")) {
+                val remoteAttachment = obj.get("remoteAttachment").asJsonObject
+                val metadata = EncryptedAttachmentMetadata.fromJsonObj(remoteAttachment)
+                val url = URL(remoteAttachment.get("url").asString)
+                return ContentJson(
+                    ContentTypeRemoteAttachment, RemoteAttachment(
+                        url = url,
+                        contentDigest = metadata.contentDigest,
+                        secret = metadata.secret,
+                        salt = metadata.salt,
+                        nonce = metadata.nonce,
+                        scheme = "https://",
+                        contentLength = metadata.contentLength,
+                        filename = metadata.filename,
+                    )
+                )
             } else if (obj.has("reaction")) {
                 val reaction = obj.get("reaction").asJsonObject
                 return ContentJson(ContentTypeReaction, Reaction(
@@ -107,6 +126,15 @@ class ContentJson(
                     "mimeType" to content.mimeType,
                     "data" to bytesTo64(content.data.toByteArray()),
                 )
+            )
+
+            ContentTypeRemoteAttachment.id -> mapOf(
+                "remoteAttachment" to mapOf(
+                    "scheme" to "https://",
+                    "url" to (content as RemoteAttachment).url.toString(),
+                ) + EncryptedAttachmentMetadata
+                    .fromRemoteAttachment(content)
+                    .toJsonMap()
             )
 
             ContentTypeReaction.id -> mapOf(

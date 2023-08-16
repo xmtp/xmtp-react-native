@@ -14,20 +14,33 @@ export type ReactionContent = {
   content: string;
 };
 
-export type AttachmentContent = {
+export type StaticAttachmentContent = {
   filename: string;
   mimeType: string;
   data: string;
 };
 
-export type RemoteAttachmentContent = {
-  filename: string;
+export type DecryptedLocalAttachment = {
+  fileUri: string;
+  mimeType?: string;
+};
+
+export type RemoteAttachmentMetadata = {
+  filename?: string;
   secret: string;
   salt: string;
   nonce: string;
   contentDigest: string;
-  contentLength: string;
-  scheme: string;
+  contentLength?: string;
+};
+
+export type EncryptedLocalAttachment = {
+  encryptedLocalFileUri: `file://${string}`;
+  metadata: RemoteAttachmentMetadata;
+};
+
+export type RemoteAttachmentContent = RemoteAttachmentMetadata & {
+  scheme: "https://";
   url: string;
 };
 
@@ -39,7 +52,7 @@ export type MessageContent = {
   unknown?: UnknownContent;
   reply?: ReplyContent;
   reaction?: ReactionContent;
-  attachment?: AttachmentContent;
+  attachment?: StaticAttachmentContent;
   remoteAttachment?: RemoteAttachmentContent;
 };
 
