@@ -6,7 +6,11 @@ import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
 import XMTPModule from "./XMTPModule";
 import { Conversation } from "./lib/Conversation";
 import type { Query } from "./lib/Query";
-import type { MessageContent, DecodedMessage } from "./XMTP.types";
+import type {
+  ConversationContext,
+  MessageContent,
+  DecodedMessage,
+} from "./XMTP.types";
 
 export function address(): string {
   return XMTPModule.address();
@@ -88,7 +92,6 @@ export async function listConversations(
 export async function listMessages(
   clientAddress: string,
   conversationTopic: string,
-  conversationID: string | undefined,
   limit?: number | undefined,
   before?: Date | undefined,
   after?: Date | undefined,
@@ -128,14 +131,14 @@ export async function listBatchMessages(
 export async function createConversation(
   clientAddress: string,
   peerAddress: string,
-  conversationID: string | undefined,
+  context?: ConversationContext,
 ): Promise<Conversation> {
   return new Conversation(
     JSON.parse(
       await XMTPModule.createConversation(
         clientAddress,
         peerAddress,
-        conversationID,
+        JSON.stringify(context || {}),
       ),
     ),
   );
@@ -144,7 +147,6 @@ export async function createConversation(
 export async function sendMessage(
   clientAddress: string,
   conversationTopic: string,
-  conversationID: string | undefined,
   content: MessageContent,
 ): Promise<string> {
   // TODO: consider eager validating of `MessageContent` here
@@ -153,7 +155,6 @@ export async function sendMessage(
   return await XMTPModule.sendMessage(
     clientAddress,
     conversationTopic,
-    conversationID,
     contentJson,
   );
 }
@@ -169,25 +170,15 @@ export function subscribeToAllMessages(clientAddress: string) {
 export async function subscribeToMessages(
   clientAddress: string,
   topic: string,
-  conversationID?: string | undefined,
 ) {
-  return await XMTPModule.subscribeToMessages(
-    clientAddress,
-    topic,
-    conversationID,
-  );
+  return await XMTPModule.subscribeToMessages(clientAddress, topic);
 }
 
 export async function unsubscribeFromMessages(
   clientAddress: string,
   topic: string,
-  conversationID?: string | undefined,
 ) {
-  return await XMTPModule.unsubscribeFromMessages(
-    clientAddress,
-    topic,
-    conversationID,
-  );
+  return await XMTPModule.unsubscribeFromMessages(clientAddress, topic);
 }
 
 export function registerPushToken(pushServer: string, token: string) {
@@ -202,15 +193,9 @@ export async function decodeMessage(
   clientAddress: string,
   topic: string,
   encryptedMessage: string,
-  conversationID?: string | undefined,
 ): Promise<DecodedMessage> {
   return JSON.parse(
-    await XMTPModule.decodeMessage(
-      clientAddress,
-      topic,
-      encryptedMessage,
-      conversationID,
-    ),
+    await XMTPModule.decodeMessage(clientAddress, topic, encryptedMessage),
   );
 }
 

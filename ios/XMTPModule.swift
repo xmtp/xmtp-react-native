@@ -164,7 +164,7 @@ public class XMTPModule: Module {
             )
             let conversation = client.conversations.importTopicData(data: data)
             conversations[conversation.cacheKey(clientAddress)] = conversation
-            return try ConversationWrapper.encode(ConversationWithClientAddress(client: client, conversation: conversation))
+            return try ConversationWrapper.encode(conversation, client: client)
         }
 
         //
@@ -187,7 +187,7 @@ public class XMTPModule: Module {
             return try conversations.map { conversation in
                 self.conversations[conversation.cacheKey(clientAddress)] = conversation
 
-                return try ConversationWrapper.encode(ConversationWithClientAddress(client: client, conversation: conversation))
+                return try ConversationWrapper.encode(conversation, client: client)
             }
         }
 
@@ -204,7 +204,7 @@ public class XMTPModule: Module {
                 before: beforeDate,
                 after: afterDate)
 
-            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg) }
+            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg, topic: topic) }
 
             return messages
         }
@@ -226,8 +226,7 @@ public class XMTPModule: Module {
                 var before: Double?
                 var after: Double?
 
-                if let limitStr = jsonObj["limit"] as? String,
-                   let limitInt = Int(limitStr) {
+                if let limitInt = jsonObj["limit"] as? Int {
                     limit = limitInt
                 }
 
@@ -252,12 +251,13 @@ public class XMTPModule: Module {
 
             let decodedMessages = try await client.conversations.listBatchMessages(topics: topicsList)
 
-            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg) }
+            // TODO: change xmtp-ios `listBatchMessages` to include `topic`
+            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg, topic: "") }
 
             return messages
         }
 
-        AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, conversationID: String?, contentJson: String) -> String in
+        AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, contentJson: String) -> String in
             guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
                 throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
             }
@@ -269,17 +269,20 @@ public class XMTPModule: Module {
             )
         }
 
-        AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, conversationID: String?) -> String in
+        AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, contextJson: String) -> String in
             guard let client = clients[clientAddress] else {
                 throw Error.noClient
             }
 
             do {
+                let contextData = contextJson.data(using: .utf8)!
+                let contextObj = (try? JSONSerialization.jsonObject(with: contextData) as? [String: Any]) ?? [:]
                 let conversation = try await client.conversations.newConversation(with: peerAddress, context: .init(
-                    conversationID: conversationID ?? ""
+                    conversationID: contextObj["conversationID"] as? String ?? "",
+                    metadata: contextObj["metadata"] as? [String: String] ?? [:] as [String: String]
                 ))
 
-                return try ConversationWrapper.encode(ConversationWithClientAddress(client: client, conversation: conversation))
+                return try ConversationWrapper.encode(conversation, client: client)
             } catch {
                 print("ERRRO!: \(error.localizedDescription)")
                 throw error
@@ -294,12 +297,12 @@ public class XMTPModule: Module {
             subscribeToAllMessages(clientAddress: clientAddress)
         }
 
-        AsyncFunction("subscribeToMessages") { (clientAddress: String, topic: String, conversationID: String?) in
-            try await subscribeToMessages(clientAddress: clientAddress, topic: topic, conversationID: conversationID)
+        AsyncFunction("subscribeToMessages") { (clientAddress: String, topic: String) in
+            try await subscribeToMessages(clientAddress: clientAddress, topic: topic)
         }
 
-        AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String, conversationID: String?) in
-            try await unsubscribeFromMessages(clientAddress: clientAddress, topic: topic, conversationID: conversationID)
+        AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String) in
+            try await unsubscribeFromMessages(clientAddress: clientAddress, topic: topic)
         }
 
         AsyncFunction("registerPushToken") { (pushServer: String, token: String) in
@@ -319,7 +322,7 @@ public class XMTPModule: Module {
             }
         }
 
-        AsyncFunction("decodeMessage") { (clientAddress: String, topic: String, encryptedMessage: String, conversationID: String?) -> String in
+        AsyncFunction("decodeMessage") { (clientAddress: String, topic: String, encryptedMessage: String) -> String in
             guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8))else {
                 throw Error.noMessage
             }
@@ -333,7 +336,7 @@ public class XMTPModule: Module {
                 throw Error.conversationNotFound("no conversation found for \(topic)")
             }
             let decodedMessage = try conversation.decode(envelope)
-            return try DecodedMessageWrapper.encode(decodedMessage)
+            return try DecodedMessageWrapper.encode(decodedMessage, topic: topic)
         }
   }
 
@@ -387,14 +390,13 @@ public class XMTPModule: Module {
             return
         }
 
+        subscriptions["conversations"]?.cancel()
         subscriptions["conversations"] = Task {
             do {
                 for try await conversation in client.conversations.stream() {
                     sendEvent("conversation", [
-                        "topic": conversation.topic,
-                        "peerAddress": conversation.peerAddress,
-                        "version": conversation.version == .v1 ? "v1" : "v2",
-                        "conversationID": conversation.conversationID
+                        "clientAddress": clientAddress,
+                        "conversation": try ConversationWrapper.encodeToObj(conversation, client: client)
                     ])
                 }
             } catch {
@@ -409,14 +411,14 @@ public class XMTPModule: Module {
             return
         }
 
+        subscriptions["messages"]?.cancel()
         subscriptions["messages"] = Task {
             do {
                 for try await message in try await client.conversations.streamAllMessages() {
                     sendEvent("message", [
-                        "id": message.id,
-                        "content": (try? message.content()) ?? message.fallbackContent,
-                        "senderAddress": message.senderAddress,
-                        "sent": message.sent
+                        "clientAddress": clientAddress,
+                        // TODO: change xmtp-ios `streamAllMessages` to include `topic`
+                        "message": try DecodedMessageWrapper.encodeToObj(message, topic: "")
                     ])
                 }
             } catch {
@@ -426,18 +428,18 @@ public class XMTPModule: Module {
         }
     }
 
-    func subscribeToMessages(clientAddress: String, topic: String, conversationID: String?) async throws {
+    func subscribeToMessages(clientAddress: String, topic: String) async throws {
         guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
             return
         }
 
+        subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
         subscriptions[conversation.cacheKey(clientAddress)] = Task {
             do {
                 for try await message in conversation.streamMessages() {
                     sendEvent("message", [
-                        "topic": conversation.topic,
-                        "conversationID": conversation.conversationID,
-                        "messageJSON": try DecodedMessageWrapper.encode(message)
+                        "clientAddress": clientAddress,
+                        "message": try DecodedMessageWrapper.encodeToObj(message, topic: conversation.topic)
                     ])
                 }
             } catch {
@@ -447,7 +449,7 @@ public class XMTPModule: Module {
         }
     }
 
-    func unsubscribeFromMessages(clientAddress: String, topic: String, conversationID: String?) async throws {
+    func unsubscribeFromMessages(clientAddress: String, topic: String) async throws {
         guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
             return
         }

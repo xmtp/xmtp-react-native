@@ -129,7 +129,7 @@ export default function TestScreen(): JSX.Element {
           accessibilityLabel="tests-complete"
           style={{ paddingHorizontal: 12 }}
         >
-          {tests.slice(0, completedTests + 1).map((test: Test, i) => {
+          {(tests || []).slice(0, completedTests + 1).map((test: Test, i) => {
             return (
               <TestView
                 test={test}

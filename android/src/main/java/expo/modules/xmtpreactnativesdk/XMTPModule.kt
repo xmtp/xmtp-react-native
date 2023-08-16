@@ -3,12 +3,12 @@ package expo.modules.xmtpreactnativesdk
 import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
+import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import expo.modules.xmtpreactnativesdk.wrappers.ConversationWithClientAddress
-import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,9 +30,7 @@ import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
-import org.xmtp.proto.message.contents.Content.EncodedContent
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
-import org.xmtp.proto.message.contents.SignatureOuterClass
 import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
@@ -50,7 +48,7 @@ class ReactNativeSigner(var module: XMTPModule, override var address: String) : 
             continuations.remove(id)
             return
         }
-        val sig = SignatureOuterClass.Signature.newBuilder().also {
+        val sig = Signature.newBuilder().also {
             it.ecdsaCompact = it.ecdsaCompact.toBuilder().also { builder ->
                 builder.bytes = signatureData.take(64).toByteArray().toByteString()
                 builder.recovery = signatureData[64].toInt()
@@ -107,7 +105,7 @@ class XMTPModule : Module() {
     private var clients: MutableMap<String, Client> = mutableMapOf()
     private var xmtpPush: XMTPPush? = null
     private var signer: ReactNativeSigner? = null
-    private val isDebugEnabled = BuildConfig.DEBUG; // TODO: consider making this configurable
+    private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
     private val conversations: MutableMap<String, Conversation> = mutableMapOf()
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
 
@@ -177,7 +175,6 @@ class XMTPModule : Module() {
         // Export the conversation's serialized topic data.
         AsyncFunction("exportConversationTopicData") { clientAddress: String, topic: String ->
             logV("exportConversationTopicData")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
             val conversation = findConversation(clientAddress, topic)
                 ?: throw XMTPException("no conversation found for $topic")
             Base64.encodeToString(conversation.toTopicData().toByteArray(), NO_WRAP)
@@ -190,7 +187,7 @@ class XMTPModule : Module() {
             val data = TopicData.parseFrom(Base64.decode(topicData, NO_WRAP))
             val conversation = client.conversations.importTopicData(data)
             conversations[conversation.cacheKey(clientAddress)] = conversation
-            ConversationWrapper.encode(ConversationWithClientAddress(client, conversation))
+            ConversationWrapper.encode(client, conversation)
         }
 
         //
@@ -208,7 +205,7 @@ class XMTPModule : Module() {
             val conversationList = client.conversations.list()
             conversationList.map { conversation ->
                 conversations[conversation.cacheKey(clientAddress)] = conversation
-                ConversationWrapper.encode(ConversationWithClientAddress(client, conversation))
+                ConversationWrapper.encode(client, conversation)
             }
         }
 
@@ -223,7 +220,7 @@ class XMTPModule : Module() {
             val afterDate = if (after != null) Date(after) else null
 
             conversation.messages(limit = limit, before = beforeDate, after = afterDate)
-                .map { DecodedMessageWrapper.encode(it) }
+                .map { DecodedMessageWrapper.encode(it, topic) }
         }
 
         AsyncFunction("loadBatchMessages") { clientAddress: String, topics: List<String> ->
@@ -258,10 +255,11 @@ class XMTPModule : Module() {
             }
 
             client.conversations.listBatchMessages(topicsList)
-                .map { DecodedMessageWrapper.encode(it) }
+                // TODO: change xmtp-android `listBatchMessages` to include `topic`
+                .map { DecodedMessageWrapper.encode(it, "") }
         }
 
-        AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, conversationID: String?, contentJson: String ->
+        AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, contentJson: String ->
             logV("sendMessage")
             val conversation =
                 findConversation(
@@ -276,17 +274,28 @@ class XMTPModule : Module() {
             )
         }
 
-        AsyncFunction("createConversation") { clientAddress: String, peerAddress: String, conversationID: String? ->
-            logV("createConversation")
+        AsyncFunction("createConversation") { clientAddress: String, peerAddress: String, contextJson: String ->
+            logV("createConversation: $contextJson")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-
+            val context = JsonParser.parseString(contextJson).asJsonObject
             val conversation = client.conversations.newConversation(
                 peerAddress,
                 context = InvitationV1ContextBuilder.buildFromConversation(
-                    conversationId = conversationID ?: "", metadata = mapOf()
+                    conversationId = when {
+                        context.has("conversationID") -> context.get("conversationID").asString
+                        else -> ""
+                    },
+                    metadata = when {
+                        context.has("metadata") -> {
+                            val metadata = context.get("metadata").asJsonObject
+                            metadata.entrySet().associate { (key, value) -> key to value.asString }
+                        }
+
+                        else -> mapOf()
+                    },
                 )
             )
-            ConversationWrapper.encode(ConversationWithClientAddress(client, conversation))
+            ConversationWrapper.encode(client, conversation)
         }
 
         Function("subscribeToConversations") { clientAddress: String ->
@@ -299,21 +308,19 @@ class XMTPModule : Module() {
             subscribeToAllMessages(clientAddress = clientAddress)
         }
 
-        AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String, conversationID: String? ->
+        AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String ->
             logV("subscribeToMessages")
             subscribeToMessages(
                 clientAddress = clientAddress,
-                topic = topic,
-                conversationId = conversationID
+                topic = topic
             )
         }
 
-        AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String, conversationID: String? ->
+        AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String ->
             logV("unsubscribeFromMessages")
             unsubscribeFromMessages(
                 clientAddress = clientAddress,
-                topic = topic,
-                conversationId = conversationID
+                topic = topic
             )
         }
 
@@ -333,9 +340,9 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("decodeMessage") { clientAddress: String, topic: String, encryptedMessage: String, conversationID: String? ->
+        AsyncFunction("decodeMessage") { clientAddress: String, topic: String, encryptedMessage: String ->
             logV("decodeMessage")
-            val encryptedMessageData = Base64.decode(encryptedMessage, Base64.NO_WRAP)
+            val encryptedMessageData = Base64.decode(encryptedMessage, NO_WRAP)
             val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
             val conversation =
                 findConversation(
@@ -344,7 +351,7 @@ class XMTPModule : Module() {
                 )
                     ?: throw XMTPException("no conversation found for $topic")
             val decodedMessage = conversation.decode(envelope)
-            DecodedMessageWrapper.encode(decodedMessage)
+            DecodedMessageWrapper.encode(decodedMessage, topic)
         }
     }
 
@@ -375,16 +382,15 @@ class XMTPModule : Module() {
     private fun subscribeToConversations(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
+        subscriptions["conversations"]?.cancel()
         subscriptions["conversations"] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client!!.conversations.stream().collect { conversation ->
+                client.conversations.stream().collect { conversation ->
                     sendEvent(
                         "conversation",
                         mapOf(
-                            "topic" to conversation.topic,
-                            "peerAddress" to conversation.peerAddress,
-                            "version" to if (conversation.version == Conversation.Version.V1) "v1" else "v2",
-                            "conversationID" to conversation.conversationId
+                            "clientAddress" to clientAddress,
+                            "conversation" to ConversationWrapper.encodeToObj(client, conversation)
                         )
                     )
                 }
@@ -398,16 +404,16 @@ class XMTPModule : Module() {
     private fun subscribeToAllMessages(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
+        subscriptions["messages"]?.cancel()
         subscriptions["messages"] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client!!.conversations.streamAllMessages().collect { message ->
+                client.conversations.streamAllMessages().collect { message ->
                     sendEvent(
                         "message",
                         mapOf(
-                            "id" to message.id,
-                            "content" to message.body,
-                            "senderAddress" to message.senderAddress,
-                            "sent" to message.sent
+                            "clientAddress" to clientAddress,
+                            // TODO: change xmtp-android `streamAllMessages` to include `topic`
+                            "message" to DecodedMessageWrapper.encodeMap(message, ""),
                         )
                     )
                 }
@@ -418,12 +424,13 @@ class XMTPModule : Module() {
         }
     }
 
-    private fun subscribeToMessages(clientAddress: String, topic: String, conversationId: String?) {
+    private fun subscribeToMessages(clientAddress: String, topic: String) {
         val conversation =
             findConversation(
                 clientAddress = clientAddress,
                 topic = topic
             ) ?: return
+        subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
         subscriptions[conversation.cacheKey(clientAddress)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
@@ -431,9 +438,8 @@ class XMTPModule : Module() {
                         sendEvent(
                             "message",
                             mapOf(
-                                "topic" to conversation.topic,
-                                "conversationID" to conversation.conversationId,
-                                "messageJSON" to DecodedMessageWrapper.encode(message)
+                                "clientAddress" to clientAddress,
+                                "message" to DecodedMessageWrapper.encodeMap(message, topic),
                             )
                         )
                     }
@@ -447,7 +453,6 @@ class XMTPModule : Module() {
     private fun unsubscribeFromMessages(
         clientAddress: String,
         topic: String,
-        conversationId: String?,
     ) {
         val conversation =
             findConversation(
@@ -459,7 +464,7 @@ class XMTPModule : Module() {
 
     private fun logV(msg: String) {
         if (isDebugEnabled) {
-            Log.v("XMTPModule", msg);
+            Log.v("XMTPModule", msg)
         }
     }
 }
