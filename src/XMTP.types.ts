@@ -46,7 +46,13 @@ export type MessageContent = {
 export type DecodedMessage = {
   id: string;
   topic: string;
+  contentTypeId: string;
   content: MessageContent;
   senderAddress: string;
   sent: number; // timestamp in milliseconds
+};
+
+export type ConversationContext = {
+  conversationID: string;
+  metadata: { [key: string]: string };
 };

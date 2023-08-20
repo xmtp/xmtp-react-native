@@ -1,12 +1,8 @@
 import { Client } from "./Client";
 import { Conversation } from "./Conversation";
-import type { DecodedMessage } from "../XMTP.types";
+import type { ConversationContext, DecodedMessage } from "../XMTP.types";
 import * as XMTPModule from "../index";
 
-type Context = {
-  conversationID: string;
-  metadata: { [key: string]: string };
-};
 export default class Conversations {
   client: Client;
   private known = {} as { [topic: string]: boolean };
@@ -34,15 +30,14 @@ export default class Conversations {
     return conversation;
   }
 
-  // TODO: support conversation ID
   async newConversation(
     peerAddress: string,
-    context?: Context,
+    context?: ConversationContext,
   ): Promise<Conversation> {
     return await XMTPModule.createConversation(
       this.client.address,
       peerAddress,
-      context?.conversationID,
+      context,
     );
   }
 
@@ -50,7 +45,16 @@ export default class Conversations {
     XMTPModule.subscribeToConversations(this.client.address);
     XMTPModule.emitter.addListener(
       "conversation",
-      async (conversation: Conversation) => {
+      async ({
+        clientAddress,
+        conversation,
+      }: {
+        clientAddress: string;
+        conversation: Conversation;
+      }) => {
+        if (clientAddress !== this.client.address) {
+          return;
+        }
         if (this.known[conversation.topic]) {
           return;
         }
@@ -67,7 +71,16 @@ export default class Conversations {
     XMTPModule.subscribeToAllMessages(this.client.address);
     XMTPModule.emitter.addListener(
       "message",
-      async (message: DecodedMessage) => {
+      async ({
+        clientAddress,
+        message,
+      }: {
+        clientAddress: string;
+        message: DecodedMessage;
+      }) => {
+        if (clientAddress !== this.client.address) {
+          return;
+        }
         if (this.known[message.id]) {
           return;
         }

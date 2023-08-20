@@ -7,38 +7,33 @@
 import Foundation
 import XMTP
 
-struct ConversationWithClientAddress {
-	var clientAddress: String
-	var topic: String
-	var peerAddress: String
-	var version: String
-	var conversationID: String?
-
-	init(client: Client, conversation: XMTP.Conversation) {
-		self.clientAddress = client.address
-		self.topic = conversation.topic
-		self.peerAddress = conversation.peerAddress
-		self.version = conversation.version == .v1 ? "v1" : "v2"
-		self.conversationID = conversation.conversationID
+// Wrapper around XMTP.Conversation to allow passing these objects back into react native.
+struct ConversationWrapper {
+    static func encodeToObj(_ conversation: XMTP.Conversation, client: XMTP.Client) throws -> [String: Any] {
+        var context = [:] as [String: Any]
+        if case let .v2(cv2) = conversation {
+            context = [
+                "conversationID": cv2.context.conversationID,
+                "metadata": cv2.context.metadata,
+            ]
+        }
+        return [
+            "clientAddress": client.address,
+            "topic": conversation.topic,
+            "createdAt": UInt64(conversation.createdAt.timeIntervalSince1970 * 1000),
+            "context": context,
+            "peerAddress": conversation.peerAddress,
+            "version": conversation.version == .v1 ? "v1" : "v2",
+            "conversationID": conversation.conversationID ?? ""
+        ]
 	}
-}
-
-// Wrapper around XMTP.Conversation to allow passing these objects back
-// into react native.
-struct ConversationWrapper: Wrapper {
-	static func wrap(model: ConversationWithClientAddress) -> ConversationWrapper {
-		ConversationWrapper(
-			clientAddress: model.clientAddress,
-			topic: model.topic,
-			peerAddress: model.peerAddress,
-			version: model.version,
-			conversationID: model.conversationID
-		)
-	}
-
-	var clientAddress: String
-	var topic: String
-	var peerAddress: String
-	var version: String
-	var conversationID: String?
+    
+    static func encode(_ conversation: XMTP.Conversation, client: XMTP.Client) throws -> String {
+        let obj = try encodeToObj(conversation, client: client)
+        let data = try JSONSerialization.data(withJSONObject: obj)
+        guard let result = String(data: data, encoding: .utf8) else {
+            throw WrapperError.encodeError("could not encode conversation")
+        }
+        return result
+    }
 }

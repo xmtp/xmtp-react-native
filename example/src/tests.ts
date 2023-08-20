@@ -2,7 +2,7 @@ import { content } from "@xmtp/proto";
 import { randomBytes } from "crypto";
 
 import * as XMTP from "../../src/index";
-import { DecodedMessage, Query } from "../../src/index";
+import { Conversation, DecodedMessage, Query } from "../../src/index";
 
 export type Test = {
   name: string;
@@ -134,4 +134,151 @@ test("can list batch messages", async () => {
   } catch (e) {
     return false;
   }
+});
+
+test("can paginate batch messages", async () => {
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+  const alice = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+  if (bob.address === alice.address) {
+    throw new Error("bob and alice should be different");
+  }
+
+  const bobConversation = await bob.conversations.newConversation(
+    alice.address,
+  );
+  await delayToPropogate();
+
+  const aliceConversation = (await alice.conversations.list())[0];
+  if (!aliceConversation) {
+    throw new Error("aliceConversation should exist");
+  }
+
+  for (let i = 0; i < 5; i++) {
+    await bobConversation.send({ text: `Message ${i}` });
+    await delayToPropogate();
+  }
+  const messages: DecodedMessage[] = await alice.listBatchMessages([
+    {
+      contentTopic: bobConversation.topic,
+      pageSize: 2,
+    } as Query,
+  ]);
+
+  if (messages.length !== 2) {
+    throw Error("Unexpected message count " + messages.length);
+  }
+  if (messages[0].content.text !== "Message 4") {
+    throw Error("Unexpected message content " + messages[0].content.text);
+  }
+  if (messages[1].content.text !== "Message 3") {
+    throw Error("Unexpected message content " + messages[1].content.text);
+  }
+  return true;
+});
+
+test("can stream messages", async () => {
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+  const alice = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+
+  // Record new conversation stream
+  const allConversations: Conversation[] = [];
+  await alice.conversations.stream(async (conversation) => {
+    allConversations.push(conversation);
+  });
+
+  // Record message stream across all conversations
+  const allMessages: DecodedMessage[] = [];
+  await alice.conversations.streamAllMessages(async (message) => {
+    allMessages.push(message);
+  });
+
+  // Start Bob starts a new conversation.
+  const bobConvo = await bob.conversations.newConversation(alice.address, {
+    conversationID: "https://example.com/alice-and-bob",
+    metadata: {
+      title: "Alice and Bob",
+    },
+  });
+  await delayToPropogate();
+
+  if (bobConvo.clientAddress !== bob.address) {
+    throw Error("Unexpected client address " + bobConvo.clientAddress);
+  }
+  if (!bobConvo.topic) {
+    throw Error("Missing topic " + bobConvo.topic);
+  }
+  if (
+    bobConvo.context?.conversationID !== "https://example.com/alice-and-bob"
+  ) {
+    throw Error(
+      "Unexpected conversationID " + bobConvo.context?.conversationID,
+    );
+  }
+  if (bobConvo.context?.metadata?.title !== "Alice and Bob") {
+    throw Error(
+      "Unexpected metadata title " + bobConvo.context?.metadata?.title,
+    );
+  }
+  if (!bobConvo.createdAt) {
+    console.log("bobConvo", bobConvo);
+    throw Error("Missing createdAt " + bobConvo.createdAt);
+  }
+
+  if (allConversations.length !== 1) {
+    throw Error(
+      "Unexpected all conversations count " + allConversations.length,
+    );
+  }
+  if (allConversations[0].topic !== bobConvo.topic) {
+    throw Error(
+      "Unexpected all conversations topic " + allConversations[0].topic,
+    );
+  }
+
+  const aliceConvo = (await alice.conversations.list())[0];
+  if (!aliceConvo) {
+    throw new Error("missing conversation");
+  }
+
+  // Record message stream for this conversation
+  const convoMessages: DecodedMessage[] = [];
+  await aliceConvo.streamMessages(async (message) => {
+    convoMessages.push(message);
+  });
+
+  for (let i = 0; i < 5; i++) {
+    await bobConvo.send({ text: `Message ${i}` });
+    await delayToPropogate();
+  }
+  if (allMessages.length !== 5) {
+    throw Error("Unexpected all messages count " + allMessages.length);
+  }
+  if (convoMessages.length !== 5) {
+    throw Error("Unexpected convo messages count " + convoMessages.length);
+  }
+  for (let i = 0; i < 5; i++) {
+    if (allMessages[i].content.text !== `Message ${i}`) {
+      throw Error(
+        "Unexpected all message content " + allMessages[i].content.text,
+      );
+    }
+    // TODO: support this
+    // if (allMessages[i].topic !== bobConvo.topic) {
+    //     throw Error("Unexpected all message topic " + allMessages[i].topic);
+    // }
+    if (convoMessages[i].content.text !== `Message ${i}`) {
+      throw Error(
+        "Unexpected convo message content " + convoMessages[i].content.text,
+      );
+    }
+    // TODO: support this
+    // if (convoMessages[i].topic !== bobConvo.topic) {
+    //     throw Error("Unexpected convo message topic " + convoMessages[i].topic);
+    // }
+  }
+  return true;
 });

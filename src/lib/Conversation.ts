@@ -1,8 +1,11 @@
 import * as XMTP from "../index";
 import { MessageContent, DecodedMessage } from "../XMTP.types";
+import { ConversationContext } from "../index";
 
 export class Conversation {
   clientAddress: string;
+  createdAt: number;
+  context?: ConversationContext;
   topic: string;
   peerAddress: string;
   version: string;
@@ -10,12 +13,16 @@ export class Conversation {
 
   constructor(params: {
     clientAddress: string;
+    createdAt: number;
+    context?: ConversationContext;
     topic: string;
     peerAddress: string;
     version: string;
     conversationID?: string | undefined;
   }) {
     this.clientAddress = params.clientAddress;
+    this.createdAt = params.createdAt;
+    this.context = params.context;
     this.topic = params.topic;
     this.peerAddress = params.peerAddress;
     this.version = params.version;
@@ -39,7 +46,6 @@ export class Conversation {
       return await XMTP.listMessages(
         this.clientAddress,
         this.topic,
-        this.conversationID,
         limit,
         before,
         after,
@@ -56,12 +62,7 @@ export class Conversation {
       if (typeof content === "string") {
         content = { text: content };
       }
-      return await XMTP.sendMessage(
-        this.clientAddress,
-        this.topic,
-        this.conversationID,
-        content,
-      );
+      return await XMTP.sendMessage(this.clientAddress, this.topic, content);
     } catch (e) {
       console.info("ERROR in send()", e);
       throw e;
@@ -74,7 +75,6 @@ export class Conversation {
         this.clientAddress,
         this.topic,
         encryptedMessage,
-        this.conversationID,
       );
     } catch (e) {
       console.info("ERROR in decodeMessage()", e);
@@ -85,34 +85,31 @@ export class Conversation {
   streamMessages(
     callback: (message: DecodedMessage) => Promise<void>,
   ): () => void {
-    XMTP.subscribeToMessages(
-      this.clientAddress,
-      this.topic,
-      this.conversationID,
-    );
-
+    XMTP.subscribeToMessages(this.clientAddress, this.topic);
+    const hasSeen = {};
     XMTP.emitter.addListener(
       "message",
-      async (message: {
-        topic: string;
-        conversationID: string | undefined;
-        messageJSON: string;
+      async ({
+        clientAddress,
+        message,
+      }: {
+        clientAddress: string;
+        message: DecodedMessage;
       }) => {
-        if (
-          message.topic === this.topic &&
-          message.conversationID === this.conversationID
-        ) {
-          await callback(JSON.parse(message.messageJSON));
+        if (clientAddress !== this.clientAddress) {
+          return;
         }
+        if (hasSeen[message.id]) {
+          return;
+        }
+
+        hasSeen[message.id] = true;
+        await callback(message as DecodedMessage);
       },
     );
 
     return () => {
-      XMTP.unsubscribeFromMessages(
-        this.clientAddress,
-        this.topic,
-        this.conversationID,
-      );
+      XMTP.unsubscribeFromMessages(this.clientAddress, this.topic);
     };
   }
 }
