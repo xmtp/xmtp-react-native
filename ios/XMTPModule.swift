@@ -178,7 +178,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("encryptAttachment") { (clientAddress: String, fileJson: String) -> String in
-            guard let client = clients[clientAddress] else {
+            if clients[clientAddress] == nil {
                 throw Error.noClient
             }
             let file = try DecryptedLocalAttachment.fromJson(fileJson)
@@ -204,7 +204,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("decryptAttachment") { (clientAddress: String, encryptedFileJson: String) -> String in
-            guard let client = clients[clientAddress] else {
+            if clients[clientAddress] == nil {
                 throw Error.noClient
             }
             let encryptedFile = try EncryptedLocalAttachment.fromJson(encryptedFileJson)
