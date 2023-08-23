@@ -204,7 +204,7 @@ public class XMTPModule: Module {
                 before: beforeDate,
                 after: afterDate)
 
-            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg, topic: topic) }
+            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg) }
 
             return messages
         }
@@ -251,8 +251,7 @@ public class XMTPModule: Module {
 
             let decodedMessages = try await client.conversations.listBatchMessages(topics: topicsList)
 
-            // TODO: change xmtp-ios `listBatchMessages` to include `topic`
-            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg, topic: "") }
+            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg) }
 
             return messages
         }
@@ -336,7 +335,7 @@ public class XMTPModule: Module {
                 throw Error.conversationNotFound("no conversation found for \(topic)")
             }
             let decodedMessage = try conversation.decode(envelope)
-            return try DecodedMessageWrapper.encode(decodedMessage, topic: topic)
+            return try DecodedMessageWrapper.encode(decodedMessage)
         }
   }
 
@@ -417,8 +416,7 @@ public class XMTPModule: Module {
                 for try await message in try await client.conversations.streamAllMessages() {
                     sendEvent("message", [
                         "clientAddress": clientAddress,
-                        // TODO: change xmtp-ios `streamAllMessages` to include `topic`
-                        "message": try DecodedMessageWrapper.encodeToObj(message, topic: "")
+                        "message": try DecodedMessageWrapper.encodeToObj(message)
                     ])
                 }
             } catch {
@@ -439,7 +437,7 @@ public class XMTPModule: Module {
                 for try await message in conversation.streamMessages() {
                     sendEvent("message", [
                         "clientAddress": clientAddress,
-                        "message": try DecodedMessageWrapper.encodeToObj(message, topic: conversation.topic)
+                        "message": try DecodedMessageWrapper.encodeToObj(message)
                     ])
                 }
             } catch {

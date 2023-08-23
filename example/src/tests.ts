@@ -266,19 +266,17 @@ test("can stream messages", async () => {
         "Unexpected all message content " + allMessages[i].content.text,
       );
     }
-    // TODO: support this
-    // if (allMessages[i].topic !== bobConvo.topic) {
-    //     throw Error("Unexpected all message topic " + allMessages[i].topic);
-    // }
+    if (allMessages[i].topic !== bobConvo.topic) {
+        throw Error("Unexpected all message topic " + allMessages[i].topic);
+    }
     if (convoMessages[i].content.text !== `Message ${i}`) {
       throw Error(
         "Unexpected convo message content " + convoMessages[i].content.text,
       );
     }
-    // TODO: support this
-    // if (convoMessages[i].topic !== bobConvo.topic) {
-    //     throw Error("Unexpected convo message topic " + convoMessages[i].topic);
-    // }
+    if (convoMessages[i].topic !== bobConvo.topic) {
+        throw Error("Unexpected convo message topic " + convoMessages[i].topic);
+    }
   }
   return true;
 });

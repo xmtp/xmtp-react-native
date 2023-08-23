@@ -220,7 +220,7 @@ class XMTPModule : Module() {
             val afterDate = if (after != null) Date(after) else null
 
             conversation.messages(limit = limit, before = beforeDate, after = afterDate)
-                .map { DecodedMessageWrapper.encode(it, topic) }
+                .map { DecodedMessageWrapper.encode(it) }
         }
 
         AsyncFunction("loadBatchMessages") { clientAddress: String, topics: List<String> ->
@@ -255,8 +255,7 @@ class XMTPModule : Module() {
             }
 
             client.conversations.listBatchMessages(topicsList)
-                // TODO: change xmtp-android `listBatchMessages` to include `topic`
-                .map { DecodedMessageWrapper.encode(it, "") }
+                .map { DecodedMessageWrapper.encode(it) }
         }
 
         AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, contentJson: String ->
@@ -351,7 +350,7 @@ class XMTPModule : Module() {
                 )
                     ?: throw XMTPException("no conversation found for $topic")
             val decodedMessage = conversation.decode(envelope)
-            DecodedMessageWrapper.encode(decodedMessage, topic)
+            DecodedMessageWrapper.encode(decodedMessage)
         }
     }
 
@@ -412,8 +411,7 @@ class XMTPModule : Module() {
                         "message",
                         mapOf(
                             "clientAddress" to clientAddress,
-                            // TODO: change xmtp-android `streamAllMessages` to include `topic`
-                            "message" to DecodedMessageWrapper.encodeMap(message, ""),
+                            "message" to DecodedMessageWrapper.encodeMap(message),
                         )
                     )
                 }
@@ -439,7 +437,7 @@ class XMTPModule : Module() {
                             "message",
                             mapOf(
                                 "clientAddress" to clientAddress,
-                                "message" to DecodedMessageWrapper.encodeMap(message, topic),
+                                "message" to DecodedMessageWrapper.encodeMap(message),
                             )
                         )
                     }
