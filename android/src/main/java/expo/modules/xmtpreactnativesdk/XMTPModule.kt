@@ -1,8 +1,10 @@
 package expo.modules.xmtpreactnativesdk
 
+import android.net.Uri
 import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
+import androidx.core.net.toUri
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.modules.Module
@@ -10,6 +12,8 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -23,6 +27,12 @@ import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
 import org.xmtp.android.library.XMTPEnvironment
 import org.xmtp.android.library.XMTPException
+import org.xmtp.android.library.codecs.Attachment
+import org.xmtp.android.library.codecs.AttachmentCodec
+import org.xmtp.android.library.codecs.EncodedContent
+import org.xmtp.android.library.codecs.EncryptedEncodedContent
+import org.xmtp.android.library.codecs.RemoteAttachment
+import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.messages.EnvelopeBuilder
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.Pagination
@@ -31,6 +41,7 @@ import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
+import java.io.File
 import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
@@ -197,6 +208,59 @@ class XMTPModule : Module() {
             val client = clients[clientAddress] ?: throw XMTPException("No client")
 
             client.canMessage(peerAddress)
+        }
+
+        AsyncFunction("encryptAttachment") { clientAddress: String, fileJson: String ->
+            logV("encryptAttachment")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val file = DecryptedLocalAttachment.fromJson(fileJson)
+            val uri = Uri.parse(file.fileUri)
+            val data = appContext.reactContext?.contentResolver
+                ?.openInputStream(uri)
+                ?.use { it.buffered().readBytes() }!!
+            val attachment = Attachment(
+                filename = uri.lastPathSegment ?: "",
+                mimeType = file.mimeType,
+                data.toByteString(),
+            )
+            val encrypted = RemoteAttachment.encodeEncrypted(
+                attachment,
+                AttachmentCodec()
+            )
+            val encryptedFile = File.createTempFile(UUID.randomUUID().toString(), null)
+            encryptedFile.writeBytes(encrypted.payload.toByteArray())
+
+            EncryptedLocalAttachment.from(
+                attachment,
+                encrypted,
+                encryptedFile.toUri()
+            ).toJson()
+        }
+
+        AsyncFunction("decryptAttachment") { clientAddress: String, encryptedFileJson: String ->
+            logV("decryptAttachment")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val encryptedFile = EncryptedLocalAttachment.fromJson(encryptedFileJson)
+            val encryptedData = appContext.reactContext?.contentResolver
+                ?.openInputStream(Uri.parse(encryptedFile.encryptedLocalFileUri))
+                ?.use { it.buffered().readBytes() }!!
+            val encrypted = EncryptedEncodedContent(
+                encryptedFile.metadata.contentDigest,
+                encryptedFile.metadata.secret,
+                encryptedFile.metadata.salt,
+                encryptedFile.metadata.nonce,
+                encryptedData.toByteString(),
+                encryptedData.size,
+                encryptedFile.metadata.filename,
+            )
+            val encoded: EncodedContent = RemoteAttachment.decryptEncoded(encrypted)
+            val attachment = encoded.decoded<Attachment>()!!
+            val file = File.createTempFile(UUID.randomUUID().toString(), null)
+            file.writeBytes(attachment.data.toByteArray())
+            DecryptedLocalAttachment(
+                fileUri = file.toURI().toString(),
+                mimeType = attachment.mimeType,
+            ).toJson()
         }
 
         AsyncFunction("listConversations") { clientAddress: String ->

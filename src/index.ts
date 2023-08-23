@@ -1,15 +1,14 @@
-import { decode } from "@msgpack/msgpack";
-import * as proto from "@xmtp/proto";
-import { EncodedContent } from "@xmtp/proto/ts/dist/types/message_contents/content.pb";
-import { NativeModulesProxy, EventEmitter } from "expo-modules-core";
+import { EventEmitter, NativeModulesProxy } from "expo-modules-core";
 
 import XMTPModule from "./XMTPModule";
 import { Conversation } from "./lib/Conversation";
 import type { Query } from "./lib/Query";
 import type {
   ConversationContext,
-  MessageContent,
   DecodedMessage,
+  DecryptedLocalAttachment,
+  EncryptedLocalAttachment,
+  MessageContent,
 } from "./XMTP.types";
 
 export function address(): string {
@@ -77,6 +76,30 @@ export async function canMessage(
   peerAddress: string,
 ): Promise<boolean> {
   return await XMTPModule.canMessage(clientAddress, peerAddress);
+}
+
+export async function encryptAttachment(
+  clientAddress: string,
+  file: DecryptedLocalAttachment,
+): Promise<EncryptedLocalAttachment> {
+  let fileJson = JSON.stringify(file);
+  let encryptedFileJson = await XMTPModule.encryptAttachment(
+    clientAddress,
+    fileJson,
+  );
+  return JSON.parse(encryptedFileJson);
+}
+
+export async function decryptAttachment(
+  clientAddress: string,
+  encryptedFile: EncryptedLocalAttachment,
+): Promise<DecryptedLocalAttachment> {
+  let encryptedFileJson = JSON.stringify(encryptedFile);
+  let fileJson = await XMTPModule.decryptAttachment(
+    clientAddress,
+    encryptedFileJson,
+  );
+  return JSON.parse(fileJson);
 }
 
 export async function listConversations(
