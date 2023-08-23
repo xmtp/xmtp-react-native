@@ -76,7 +76,7 @@ public class XMTPModule: Module {
     var subscriptions: [String: Task<Void, Never>] = [:]
 
     enum Error: Swift.Error {
-        case noClient, conversationNotFound(String), noMessage, invalidKeyBundle
+        case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest
 
     }
 
@@ -175,6 +175,56 @@ public class XMTPModule: Module {
             }
 
             return try await client.canMessage(peerAddress)
+        }
+
+        AsyncFunction("encryptAttachment") { (clientAddress: String, fileJson: String) -> String in
+            guard let client = clients[clientAddress] else {
+                throw Error.noClient
+            }
+            let file = try DecryptedLocalAttachment.fromJson(fileJson)
+            let url = URL(string: file.fileUri)
+            let data = try Data(contentsOf: url!)
+            let attachment = Attachment(
+                filename: url!.lastPathComponent,
+                mimeType: file.mimeType,
+                data: data
+            )
+            let encrypted = try RemoteAttachment.encodeEncrypted(
+                content: attachment,
+                codec: AttachmentCodec()
+            )
+            let encryptedFile = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            try encrypted.payload.write(to: encryptedFile)
+
+            return try EncryptedLocalAttachment.from(
+                attachment: attachment,
+                encrypted: encrypted,
+                encryptedFile: encryptedFile
+            ).toJson()
+        }
+
+        AsyncFunction("decryptAttachment") { (clientAddress: String, encryptedFileJson: String) -> String in
+            guard let client = clients[clientAddress] else {
+                throw Error.noClient
+            }
+            let encryptedFile = try EncryptedLocalAttachment.fromJson(encryptedFileJson)
+            let encryptedData = try Data(contentsOf: URL(string: encryptedFile.encryptedLocalFileUri)!)
+
+            let encrypted = EncryptedEncodedContent(
+                secret: encryptedFile.metadata.secret,
+                digest: encryptedFile.metadata.contentDigest,
+                salt: encryptedFile.metadata.salt,
+                nonce: encryptedFile.metadata.nonce,
+                payload: encryptedData
+            )
+            let encoded = try RemoteAttachment.decryptEncoded(encrypted: encrypted)
+            let attachment: Attachment = try encoded.decoded()
+            let file = URL.temporaryDirectory.appendingPathComponent(attachment.filename)
+            try attachment.data.write(to: file)
+            return try DecryptedLocalAttachment(
+                    fileUri: file.absoluteString,
+                    mimeType: attachment.mimeType
+            ).toJson()
         }
 
         AsyncFunction("listConversations") { (clientAddress: String) -> [String] in

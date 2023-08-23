@@ -4,6 +4,7 @@ import {
   Button,
   FlatList,
   KeyboardAvoidingView,
+  Image,
   Modal,
   Platform,
   SafeAreaView,
@@ -11,19 +12,29 @@ import {
   Text,
   TextInput,
   TouchableHighlight,
+  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import "react-native-url-polyfill/auto";
 import { Buffer } from "buffer";
+import { FontAwesome } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import React, { useRef, useState } from "react";
 import {
   useConversation,
   useMessage,
   useMessageReactions,
   useMessages,
+  useLoadRemoteAttachment,
+  usePrepareRemoteAttachment,
 } from "./hooks";
-import { MessageContent } from "xmtp-react-native-sdk";
+import { MessageContent, RemoteAttachmentContent } from "xmtp-react-native-sdk";
 import moment from "moment";
+import { PermissionStatus } from "expo-modules-core";
+import type { DocumentPickerAsset } from "expo-document-picker";
+import type { ImagePickerAsset } from "expo-image-picker";
 
 /// Show the messages in a conversation.
 export default function ConversationScreen({
@@ -40,36 +51,42 @@ export default function ConversationScreen({
   let { data: conversation } = useConversation({ topic });
   let [replyingTo, setReplyingTo] = useState<string | null>(null);
   let [text, setText] = useState("");
+  let [isShowingAttachmentModal, setShowingAttachmentModal] = useState(false);
+  let [attachment, setAttachment] = useState<
+    { image: ImagePickerAsset } | { file: DocumentPickerAsset } | null
+  >(null);
+  let [isAttachmentPreviewing, setAttachmentPreviewing] = useState(false);
   let [isSending, setSending] = useState(false);
-
+  let { remoteAttachment } = usePrepareRemoteAttachment({
+    fileUri: attachment?.image?.uri || attachment?.file?.uri,
+    mimeType: attachment?.file?.mimeType,
+  });
   messages = (messages || []).filter(({ content }) => !content.reaction);
   // console.log("messages", JSON.stringify(messages, null, 2));
   const sendMessage = async (content: MessageContent) => {
     setSending(true);
     console.log("Sending message", content);
     try {
+      content = replyingTo
+        ? {
+            reply: {
+              reference: replyingTo,
+              content,
+            },
+          }
+        : content;
       await conversation!.send(content);
       await refreshMessages();
+      setReplyingTo(null);
     } catch (e) {
       console.log("Error sending message", e);
     } finally {
       setSending(false);
     }
   };
-  const sendTextMessage = () =>
-    sendMessage(
-      replyingTo
-        ? {
-            reply: {
-              reference: replyingTo,
-              content: { text },
-            },
-          }
-        : { text },
-    ).then(() => {
-      setText("");
-      setReplyingTo(null);
-    });
+  const sendRemoteAttachmentMessage = () =>
+    sendMessage({ remoteAttachment }).then(() => setAttachment(null));
+  const sendTextMessage = () => sendMessage({ text }).then(() => setText(""));
   const scrollToMessageId = (messageId: string) => {
     let index = (messages || []).findIndex((m) => m.id === messageId);
     if (index == -1) {
@@ -80,13 +97,6 @@ export default function ConversationScreen({
       animated: true,
     });
   };
-  // const sendAttachment = () => sendMessage({
-  //     attachment: {
-  //         mimeType: "text/plain",
-  //         filename: "hello.txt",
-  //         data: new Buffer("Hello Hello Hello Hello Hello Hello").toString("base64"),
-  //     }
-  // });
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -95,6 +105,22 @@ export default function ConversationScreen({
         style={{ flex: 1, flexDirection: "column" }}
       >
         <View style={{ flex: 1 }}>
+          <AttachmentModal
+            visible={isShowingAttachmentModal}
+            onAttachedImageFromCamera={(image) =>
+              console.log("from camera", image)
+            }
+            onAttachedImageFromLibrary={(image) => {
+              setAttachment({ image });
+              setShowingAttachmentModal(false);
+            }}
+            onAttachedFile={(file) => {
+              console.log("from file", file);
+              setAttachment({ file });
+              setShowingAttachmentModal(false);
+            }}
+            onRequestClose={() => setShowingAttachmentModal(false)}
+          />
           <FlatList
             ref={messageListRef}
             style={{ flexGrow: 1 }}
@@ -124,7 +150,15 @@ export default function ConversationScreen({
             invertStickyHeaders
             stickyHeaderHiddenOnScroll={false}
             ListHeaderComponent={
-              <View style={{ flexDirection: "column" }}>
+              <View
+                style={{
+                  flexDirection: "column",
+                  marginTop: 16,
+                  paddingTop: 8,
+                  borderTopWidth: 2,
+                  borderColor: "#aaa",
+                }}
+              >
                 {replyingTo && (
                   <ReplyInputHeader
                     topic={topic}
@@ -133,28 +167,78 @@ export default function ConversationScreen({
                     onPress={() => scrollToMessageId(replyingTo!)}
                   />
                 )}
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <TextInput
-                    onSubmitEditing={sendTextMessage}
-                    editable={!isSending}
-                    value={text}
-                    onChangeText={setText}
-                    style={{
-                      height: 40,
-                      margin: 12,
-                      marginRight: 0,
-                      borderWidth: 1,
-                      padding: 10,
-                      backgroundColor: "white",
-                      flexGrow: 1,
-                      opacity: isSending ? 0.5 : 1,
-                    }}
+                {attachment && (
+                  <>
+                    <AttachmentInputHeader
+                      topic={topic}
+                      attachment={attachment}
+                      onPress={() => setAttachmentPreviewing(true)}
+                      onRemove={() => setAttachment(null)}
+                    />
+                    <AttachmentPreviewModal
+                      attachment={attachment}
+                      visible={isAttachmentPreviewing}
+                      onRequestClose={() => setAttachmentPreviewing(false)}
+                    />
+                  </>
+                )}
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
+                >
+                  <FontAwesome.Button
+                    name="plus-circle"
+                    backgroundColor="transparent"
+                    color={"#999"}
+                    size={32}
+                    borderRadius={0}
+                    style={{ marginLeft: 10, paddingRight: 0 }}
+                    iconStyle={{ margin: 0 }}
+                    onPress={() => setShowingAttachmentModal(true)}
                   />
-                  <Button
-                    title="Send"
-                    onPress={sendTextMessage}
-                    disabled={isSending || !conversation || !text.length}
-                  />
+                  {attachment ? (
+                    <>
+                      <View
+                        style={{
+                          height: 40,
+                          marginRight: 0,
+                          borderWidth: 1,
+                          padding: 10,
+                          backgroundColor: "white",
+                          flexGrow: 1,
+                        }}
+                      />
+                      <Button
+                        title="Send"
+                        onPress={sendRemoteAttachmentMessage}
+                        disabled={
+                          isSending || !conversation || !remoteAttachment
+                        }
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <TextInput
+                        onSubmitEditing={sendTextMessage}
+                        editable={!isSending}
+                        value={text}
+                        onChangeText={setText}
+                        style={{
+                          height: 40,
+                          marginRight: 0,
+                          borderWidth: 1,
+                          padding: 10,
+                          backgroundColor: "white",
+                          flexGrow: 1,
+                          opacity: isSending ? 0.5 : 1,
+                        }}
+                      />
+                      <Button
+                        title="Send"
+                        onPress={sendTextMessage}
+                        disabled={isSending || !conversation || !text.length}
+                      />
+                    </>
+                  )}
                 </View>
               </View>
             }
@@ -162,6 +246,139 @@ export default function ConversationScreen({
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function AttachmentPreviewModal({
+  attachment,
+  visible,
+  onRequestClose,
+}: {
+  attachment:
+    | { image: ImagePickerAsset }
+    | { file: DocumentPickerAsset }
+    | null;
+  visible: boolean;
+  onRequestClose: () => void;
+}) {
+  let isImage = attachment?.image?.type === "image";
+  return (
+    <CenteredModal visible={visible} onRequestClose={onRequestClose}>
+      {isImage && (
+        <Image
+          source={attachment.image}
+          style={{
+            width: 300,
+            height: 300,
+            borderWidth: 1,
+            borderColor: "#aaa",
+            borderRadius: 4,
+            backgroundColor: "#eee",
+          }}
+          resizeMethod={"auto"}
+          resizeMode={"cover"}
+        />
+      )}
+      {!isImage && (
+        <View
+          style={{
+            width: 300,
+            height: 300,
+            borderWidth: 1,
+            borderColor: "#aaa",
+            borderRadius: 4,
+            backgroundColor: "#eee",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <FontAwesome name={"file"} size={64} color={"#999"} />
+        </View>
+      )}
+    </CenteredModal>
+  );
+}
+
+function AttachmentInputHeader({
+  topic,
+  attachment,
+  onPress,
+  onRemove,
+}: {
+  topic: string;
+  attachment: { file: DocumentPickerAsset } | { image: ImagePickerAsset };
+  onPress: () => void;
+  onRemove: () => void;
+}) {
+  let isImage = attachment.image?.type === "image";
+  return (
+    <View
+      style={{
+        marginTop: 8,
+        marginLeft: 16,
+        marginBottom: 16,
+        width: 110,
+        height: 110,
+        // alignItems: "center",
+      }}
+    >
+      <TouchableOpacity onPress={onPress}>
+        {isImage && (
+          <Image
+            source={attachment.image}
+            style={{
+              marginTop: 16,
+              width: 100,
+              height: 100,
+              borderWidth: 1,
+              borderColor: "#aaa",
+              borderRadius: 4,
+              backgroundColor: "#eee",
+            }}
+            resizeMethod={"auto"}
+            resizeMode={"cover"}
+          />
+        )}
+        {!isImage && (
+          <View
+            style={{
+              marginTop: 16,
+              width: 100,
+              height: 100,
+              borderWidth: 1,
+              borderColor: "#aaa",
+              borderRadius: 4,
+              backgroundColor: "#f4f4f4",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <FontAwesome name={"file"} size={32} color={"#999"} />
+          </View>
+        )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: "#999",
+          position: "absolute",
+          padding: 8,
+          right: 0,
+          top: 0,
+        }}
+        onPress={onRemove}
+      >
+        <FontAwesome
+          name={"close"}
+          size={16}
+          backgroundColor={"transparent"}
+          style={{ alignSelf: "center" }}
+          color={"white"}
+        />
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -263,17 +480,22 @@ function PillButton({
   );
 }
 
-function ReactionModal({
+function AttachmentModal({
   onRequestClose,
-  onReaction,
-  onReply,
+  onAttachedImageFromLibrary,
+  onAttachedImageFromCamera,
+  onAttachedFile,
   visible,
 }: {
-  onRequestClose: () => void;
-  onReaction: (reaction: string) => void;
-  onReply: () => void;
   visible: boolean;
+  onRequestClose: () => void;
+  onAttachedImageFromLibrary: (image: ImagePickerAsset) => void;
+  onAttachedImageFromCamera: (image: ImagePickerAsset) => void;
+  onAttachedFile: (file: DocumentPickerAsset) => void;
 }) {
+  const [cameraPerm, requestCamera] = ImagePicker.useCameraPermissions();
+  const [libraryPerm, requestLibrary] =
+    ImagePicker.useMediaLibraryPermissions();
   return (
     <Modal transparent visible={visible} onRequestClose={onRequestClose}>
       <TouchableWithoutFeedback onPress={onRequestClose}>
@@ -314,30 +536,182 @@ function ReactionModal({
           }}
         >
           <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-around",
-            }}
+            style={{ flexDirection: "row", justifyContent: "space-evenly" }}
           >
-            {["👍", "👋", "❤️", "👎"].map((reaction) => (
-              <PillButton
-                key={`reaction-${reaction}`}
-                style={{
-                  borderWidth: 0,
-                  borderRadius: 8,
-                  backgroundColor: "#fff",
-                }}
-                onPress={() => onReaction(reaction)}
-              >
-                <Text style={{ fontSize: 32, padding: 4 }}>{reaction}</Text>
-              </PillButton>
-            ))}
+            <FontAwesome.Button
+              name="image"
+              backgroundColor={"transparent"}
+              color={"#666"}
+              size={32}
+              style={{ alignSelf: "center" }}
+              iconStyle={{ marginLeft: 8, marginRight: 8 }}
+              onPress={async () => {
+                if (libraryPerm?.status !== PermissionStatus.GRANTED) {
+                  if (!libraryPerm?.canAskAgain) {
+                    return;
+                  }
+                  let updated = await requestLibrary();
+                  if (updated?.status !== PermissionStatus.GRANTED) {
+                    return;
+                  }
+                }
+                let result = await ImagePicker.launchImageLibraryAsync({
+                  // mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  mediaTypes: ImagePicker.MediaTypeOptions.All,
+                  allowsMultipleSelection: false, // TODO
+                  aspect: [4, 3],
+                  quality: 1,
+                });
+                if (result.assets?.length) {
+                  onAttachedImageFromLibrary(result.assets[0]);
+                }
+              }}
+            />
+            <FontAwesome.Button
+              name="camera"
+              backgroundColor={"transparent"}
+              color={"#666"}
+              size={32}
+              style={{ alignSelf: "center" }}
+              iconStyle={{ marginLeft: 8, marginRight: 8 }}
+              onPress={async () => {
+                console.log("cameraPerm", cameraPerm);
+                if (cameraPerm?.status !== PermissionStatus.GRANTED) {
+                  if (!cameraPerm?.canAskAgain) {
+                    return;
+                  }
+                  let updated = await requestCamera();
+                  if (updated?.status !== PermissionStatus.GRANTED) {
+                    return;
+                  }
+                }
+                let result = await ImagePicker.launchCameraAsync({
+                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  allowsMultipleSelection: false, // TODO
+                  aspect: [4, 3],
+                  quality: 1,
+                });
+                if (result.assets?.length) {
+                  onAttachedImageFromCamera(result.assets[0]);
+                }
+              }}
+            />
+            <FontAwesome.Button
+              name="paperclip"
+              backgroundColor={"transparent"}
+              color={"#666"}
+              size={32}
+              style={{ alignSelf: "center" }}
+              iconStyle={{ marginLeft: 8, marginRight: 8 }}
+              onPress={async () => {
+                let result = await DocumentPicker.getDocumentAsync({
+                  type: "*/*",
+                  copyToCacheDirectory: true,
+                  multiple: false,
+                });
+                if (result.type === "success" && result.assets?.length) {
+                  onAttachedFile(result.assets[0]);
+                }
+              }}
+            />
           </View>
-          <Button title={"Reply"} onPress={onReply} />
         </View>
       </View>
     </Modal>
+  );
+}
+
+function CenteredModal({
+  visible,
+  onRequestClose,
+  children,
+}: {
+  visible: boolean;
+  onRequestClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Modal transparent visible={visible} onRequestClose={onRequestClose}>
+      <TouchableWithoutFeedback onPress={onRequestClose}>
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        />
+      </TouchableWithoutFeedback>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          margin: "5%",
+        }}
+      >
+        <View
+          style={{
+            margin: 20,
+            backgroundColor: "#f1f1f1",
+            borderRadius: 4,
+            padding: 24,
+            shadowColor: "#000",
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 5,
+            flexDirection: "column",
+            gap: 16,
+          }}
+        >
+          {children}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function ReactionModal({
+  onRequestClose,
+  onReaction,
+  onReply,
+  visible,
+}: {
+  onRequestClose: () => void;
+  onReaction: (reaction: string) => void;
+  onReply: () => void;
+  visible: boolean;
+}) {
+  return (
+    <CenteredModal visible={visible} onRequestClose={onRequestClose}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-around",
+        }}
+      >
+        {["👍", "👋", "❤️", "👎"].map((reaction) => (
+          <PillButton
+            key={`reaction-${reaction}`}
+            style={{
+              borderWidth: 0,
+              borderRadius: 8,
+              backgroundColor: "#fff",
+            }}
+            onPress={() => onReaction(reaction)}
+          >
+            <Text style={{ fontSize: 32, padding: 4 }}>{reaction}</Text>
+          </PillButton>
+        ))}
+      </View>
+      <Button title={"Reply"} onPress={onReply} />
+    </CenteredModal>
   );
 }
 
@@ -584,6 +958,73 @@ function MessageItem({
   );
 }
 
+function RemoteAttachmentMessageContents({
+  remoteAttachment,
+  onPress,
+}: {
+  remoteAttachment: RemoteAttachmentContent;
+  onPress?: () => void;
+}) {
+  let [isLoading, setIsLoading] = useState(false);
+  let { decrypted } = useLoadRemoteAttachment({
+    remoteAttachment,
+    enabled: isLoading,
+  });
+  if (decrypted) {
+    return (
+      <TouchableOpacity onPress={onPress}>
+        <Image
+          source={{ uri: decrypted.fileUri }}
+          style={{
+            marginTop: 16,
+            width: 100,
+            height: 100,
+            borderWidth: 1,
+            borderColor: "#aaa",
+            borderRadius: 4,
+            backgroundColor: "#eee",
+          }}
+          resizeMethod={"auto"}
+          resizeMode={"cover"}
+        />
+      </TouchableOpacity>
+    );
+  }
+  return (
+    <TouchableOpacity onPress={() => setIsLoading(true)}>
+      <View
+        style={{
+          marginTop: 16,
+          width: 100,
+          height: 100,
+          borderWidth: 1,
+          borderColor: "#aaa",
+          borderRadius: 4,
+          backgroundColor: "#eee",
+          paddingHorizontal: 4,
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <Text
+          numberOfLines={1}
+          ellipsizeMode={"middle"}
+          style={{ marginTop: 8, fontSize: 12 }}
+        >
+          {remoteAttachment.filename}
+        </Text>
+        <Text style={{ marginBottom: 8, fontSize: 10, fontStyle: "italic" }}>
+          {new URL(remoteAttachment.url).host}
+        </Text>
+        <Text style={{ marginBottom: 4, fontSize: 10, textAlign: "center" }}>
+          {Number(remoteAttachment.contentLength).toLocaleString()} bytes
+        </Text>
+        <FontAwesome name={"download"} size={24} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function MessageContents({ content }: { content: MessageContent }) {
   if (content.text) {
     return (
@@ -601,6 +1042,13 @@ function MessageContents({ content }: { content: MessageContent }) {
           {new Buffer(content.attachment.data, "base64").length} bytes)
         </Text>
       </>
+    );
+  }
+  if (content.remoteAttachment) {
+    return (
+      <RemoteAttachmentMessageContents
+        remoteAttachment={content.remoteAttachment}
+      />
     );
   }
   // console.log("unsupported content", content);

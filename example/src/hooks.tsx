@@ -1,7 +1,14 @@
 import { useQuery, UseQueryResult } from "react-query";
-import { Conversation, DecodedMessage } from "xmtp-react-native-sdk";
+import {
+  Conversation,
+  DecodedMessage,
+  DecryptedLocalAttachment,
+  EncryptedLocalAttachment,
+  RemoteAttachmentContent,
+} from "xmtp-react-native-sdk";
 import { useXmtp } from "./XmtpContext";
 import EncryptedStorage from "react-native-encrypted-storage";
+import { downloadFile, uploadFile } from "./storage";
 
 /**
  * List all conversations.
@@ -193,6 +200,90 @@ export function useMessageReactions({ topic, messageId }) {
   }[];
   return {
     reactions,
+  };
+}
+
+export function useLoadRemoteAttachment({
+  remoteAttachment,
+  enabled,
+}: {
+  remoteAttachment?: RemoteAttachmentContent;
+  enabled: boolean;
+}): { decrypted: DecryptedLocalAttachment | undefined } {
+  const { client } = useXmtp();
+  let { data: encryptedLocalFileUri } = useQuery<`file://${string}`>(
+    [
+      "xmtp",
+      "localAttachment",
+      "download",
+      remoteAttachment?.url,
+      remoteAttachment?.contentDigest,
+    ],
+    () => downloadFile(remoteAttachment!.url),
+    {
+      enabled: enabled && !!remoteAttachment?.url,
+    },
+  );
+  let { data: decrypted } = useQuery<DecryptedLocalAttachment>(
+    [
+      "xmtp",
+      "localAttachment",
+      "decrypt",
+      encryptedLocalFileUri,
+      remoteAttachment?.contentDigest,
+    ],
+    () =>
+      client!.decryptAttachment({
+        encryptedLocalFileUri: encryptedLocalFileUri!,
+        metadata: remoteAttachment!,
+      }),
+    {
+      enabled: enabled && !!encryptedLocalFileUri && !!remoteAttachment,
+    },
+  );
+  return { decrypted };
+}
+
+export function usePrepareRemoteAttachment({
+  fileUri,
+  mimeType,
+}: {
+  fileUri?: `file://${string}`;
+  mimeType?: string;
+}): {
+  remoteAttachment: RemoteAttachmentContent | undefined;
+} {
+  const { client } = useXmtp();
+  let { data: encrypted } = useQuery<EncryptedLocalAttachment>(
+    ["xmtp", "remoteAttachment", "local", fileUri, mimeType ?? ""],
+    () =>
+      client!.encryptAttachment({
+        fileUri: fileUri!,
+        mimeType,
+      }),
+    {
+      enabled: !!client && !!fileUri,
+    },
+  );
+  let { data: url } = useQuery<string>(
+    ["xmtp", "remoteAttachment", "upload", encrypted?.metadata?.contentDigest],
+    () =>
+      uploadFile(
+        encrypted!.encryptedLocalFileUri,
+        encrypted?.metadata?.contentDigest,
+      ),
+    {
+      enabled: !!encrypted,
+    },
+  );
+  return {
+    remoteAttachment: url
+      ? {
+          url: url,
+          scheme: "https://",
+          ...encrypted!.metadata,
+        }
+      : undefined,
   };
 }
 
