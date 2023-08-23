@@ -2,18 +2,13 @@ import { Signer, utils } from "ethers";
 
 import Conversations from "./Conversations";
 import type {
+  DecryptedLocalAttachment,
   DecodedMessage,
   EncryptedLocalAttachment,
-  RemoteAttachmentMetadata,
 } from "../XMTP.types";
 import { Query } from "./Query";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
-import {
-  AttachmentFile,
-  DecryptedLocalAttachment,
-  LocalAttachment,
-} from "../XMTP.types";
 
 declare const Buffer;
 export class Client {

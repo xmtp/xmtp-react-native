@@ -1,0 +1,13 @@
+name: Test
+on:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+      # Note: this triggers `prepare` which compiles the types.
+      - run: npm ci
