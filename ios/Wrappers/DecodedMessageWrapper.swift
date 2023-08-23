@@ -4,10 +4,10 @@ import XMTP
 // Wrapper around XMTP.DecodedMessage to allow passing these objects back
 // into react native.
 struct DecodedMessageWrapper {
-    static func encodeToObj(_ model: XMTP.DecodedMessage, topic: String) throws -> [String: Any] {
+    static func encodeToObj(_ model: XMTP.DecodedMessage) throws -> [String: Any] {
         return [
             "id": model.id,
-            "topic": topic,
+            "topic": model.topic,
             "contentTypeId": model.encodedContent.type.id,
             "content": try ContentJson.fromEncoded(model.encodedContent).toJsonMap() as Any,
             "senderAddress": model.senderAddress,
@@ -15,8 +15,8 @@ struct DecodedMessageWrapper {
         ]
     }
 
-    static func encode(_ model: XMTP.DecodedMessage, topic: String) throws -> String {
-        let obj = try encodeToObj(model, topic: topic)
+    static func encode(_ model: XMTP.DecodedMessage) throws -> String {
+        let obj = try encodeToObj(model)
         return try obj.toJson()
     }
 }
