@@ -7,15 +7,15 @@ import org.xmtp.android.library.codecs.id
 class DecodedMessageWrapper {
 
     companion object {
-        fun encode(model: DecodedMessage, topic: String): String {
+        fun encode(model: DecodedMessage): String {
             val gson = GsonBuilder().create()
-            val message = encodeMap(model, topic)
+            val message = encodeMap(model)
             return gson.toJson(message)
         }
 
-        fun encodeMap(model: DecodedMessage, topic: String): Map<String, Any> = mapOf(
+        fun encodeMap(model: DecodedMessage): Map<String, Any> = mapOf(
             "id" to model.id,
-            "topic" to topic,
+            "topic" to model.topic,
             "contentTypeId" to model.encodedContent.type.id,
             "content" to ContentJson(model.encodedContent).toJsonMap(),
             "senderAddress" to model.senderAddress,
