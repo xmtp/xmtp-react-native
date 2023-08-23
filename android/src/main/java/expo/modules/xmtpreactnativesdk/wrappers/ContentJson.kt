@@ -47,9 +47,6 @@ class ContentJson(
             Client.register(ReplyCodec())
             // TODO:
             //Client.register(CompositeCodec())
-            //Client.register(GroupChatMemberAddedCodec())
-            //Client.register(GroupChatTitleChangedCodec())
-
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
