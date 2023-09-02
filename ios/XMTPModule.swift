@@ -280,16 +280,14 @@ public class XMTPModule: Module {
                     limit = limitInt
                 }
 
-                if let beforeStr = jsonObj["before"] as? String,
-                   let beforeLong = TimeInterval(beforeStr) {
-                    before = beforeLong
+                if let beforeInt = jsonObj["before"] as? Double {
+                   before = TimeInterval(beforeInt/1000)
                 }
 
-                if let afterStr = jsonObj["after"] as? String,
-                   let afterLong = TimeInterval(afterStr) {
-                    after = afterLong
+                if let afterInt = jsonObj["after"] as? Double {
+                    after = TimeInterval(afterInt/1000)
                 }
-
+                
                 let page = Pagination(
                     limit: limit ?? nil,
                     before: before != nil && before! > 0 ? Date(timeIntervalSince1970: before!) : nil,

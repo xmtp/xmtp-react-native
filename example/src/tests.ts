@@ -41,7 +41,7 @@ test("can pass a custom filter date and receive message objects with expected da
     }
 
     const bobConversation = await bob.conversations.newConversation(
-      alice.address,
+      alice.address
     );
 
     const aliceConversation = (await alice.conversations.list())[0];
@@ -55,13 +55,13 @@ test("can pass a custom filter date and receive message objects with expected da
     // Show all messages before date in the past
     const messages1: DecodedMessage[] = await aliceConversation.messages(
       undefined,
-      new Date("2023-01-01"),
+      new Date("2023-01-01")
     );
 
     // Show all messages before date in the future
     const messages2: DecodedMessage[] = await aliceConversation.messages(
       undefined,
-      new Date("2025-01-01"),
+      new Date("2025-01-01")
     );
 
     const isAboutRightSendTime = Math.abs(messages2[0].sent - sentAt) < 1000;
@@ -103,7 +103,7 @@ test("can list batch messages", async () => {
     }
 
     const bobConversation = await bob.conversations.newConversation(
-      alice.address,
+      alice.address
     );
     await delayToPropogate();
 
@@ -145,7 +145,7 @@ test("can paginate batch messages", async () => {
   }
 
   const bobConversation = await bob.conversations.newConversation(
-    alice.address,
+    alice.address
   );
   await delayToPropogate();
 
@@ -154,26 +154,71 @@ test("can paginate batch messages", async () => {
     throw new Error("aliceConversation should exist");
   }
 
+  await bobConversation.send({ text: `Initial Message` });
+
+  await delayToPropogate();
+  const testTime = new Date();
+  await delayToPropogate();
+
   for (let i = 0; i < 5; i++) {
     await bobConversation.send({ text: `Message ${i}` });
     await delayToPropogate();
   }
-  const messages: DecodedMessage[] = await alice.listBatchMessages([
+
+  const messagesLimited: DecodedMessage[] = await alice.listBatchMessages([
     {
       contentTopic: bobConversation.topic,
       pageSize: 2,
     } as Query,
   ]);
 
-  if (messages.length !== 2) {
-    throw Error("Unexpected message count " + messages.length);
+  const messagesAfter: DecodedMessage[] = await alice.listBatchMessages([
+    {
+      contentTopic: bobConversation.topic,
+      startTime: testTime,
+      endTime: new Date(),
+    } as Query,
+  ]);
+
+  const messagesBefore: DecodedMessage[] = await alice.listBatchMessages([
+    {
+      contentTopic: bobConversation.topic,
+      endTime: testTime,
+    } as Query,
+  ]);
+
+  if (messagesLimited.length !== 2) {
+    throw Error("Unexpected messagesLimited count " + messagesLimited.length);
   }
-  if (messages[0].content.text !== "Message 4") {
-    throw Error("Unexpected message content " + messages[0].content.text);
+  if (messagesLimited[0].content.text !== "Message 4") {
+    throw Error(
+      "Unexpected messagesLimited content " + messagesLimited[0].content.text
+    );
   }
-  if (messages[1].content.text !== "Message 3") {
-    throw Error("Unexpected message content " + messages[1].content.text);
+  if (messagesLimited[1].content.text !== "Message 3") {
+    throw Error(
+      "Unexpected messagesLimited content " + messagesLimited[1].content.text
+    );
   }
+
+  if (messagesBefore.length !== 1) {
+    throw Error("Unexpected messagesBefore count " + messagesBefore.length);
+  }
+  if (messagesBefore[0].content.text !== "Initial Message") {
+    throw Error(
+      "Unexpected messagesBefore content " + messagesBefore[0].content.text
+    );
+  }
+
+  if (messagesAfter.length !== 5) {
+    throw Error("Unexpected messagesAfter count " + messagesAfter.length);
+  }
+  if (messagesAfter[0].content.text !== "Message 4") {
+    throw Error(
+      "Unexpected messagesAfter content " + messagesAfter[0].content.text
+    );
+  }
+
   return true;
 });
 
@@ -214,12 +259,12 @@ test("can stream messages", async () => {
     bobConvo.context?.conversationID !== "https://example.com/alice-and-bob"
   ) {
     throw Error(
-      "Unexpected conversationID " + bobConvo.context?.conversationID,
+      "Unexpected conversationID " + bobConvo.context?.conversationID
     );
   }
   if (bobConvo.context?.metadata?.title !== "Alice and Bob") {
     throw Error(
-      "Unexpected metadata title " + bobConvo.context?.metadata?.title,
+      "Unexpected metadata title " + bobConvo.context?.metadata?.title
     );
   }
   if (!bobConvo.createdAt) {
@@ -229,12 +274,12 @@ test("can stream messages", async () => {
 
   if (allConversations.length !== 1) {
     throw Error(
-      "Unexpected all conversations count " + allConversations.length,
+      "Unexpected all conversations count " + allConversations.length
     );
   }
   if (allConversations[0].topic !== bobConvo.topic) {
     throw Error(
-      "Unexpected all conversations topic " + allConversations[0].topic,
+      "Unexpected all conversations topic " + allConversations[0].topic
     );
   }
 
@@ -262,19 +307,19 @@ test("can stream messages", async () => {
   for (let i = 0; i < 5; i++) {
     if (allMessages[i].content.text !== `Message ${i}`) {
       throw Error(
-        "Unexpected all message content " + allMessages[i].content.text,
+        "Unexpected all message content " + allMessages[i].content.text
       );
     }
     if (allMessages[i].topic !== bobConvo.topic) {
-        throw Error("Unexpected all message topic " + allMessages[i].topic);
+      throw Error("Unexpected all message topic " + allMessages[i].topic);
     }
     if (convoMessages[i].content.text !== `Message ${i}`) {
       throw Error(
-        "Unexpected convo message content " + convoMessages[i].content.text,
+        "Unexpected convo message content " + convoMessages[i].content.text
       );
     }
     if (convoMessages[i].topic !== bobConvo.topic) {
-        throw Error("Unexpected convo message topic " + convoMessages[i].topic);
+      throw Error("Unexpected convo message topic " + convoMessages[i].topic);
     }
   }
   return true;
@@ -339,7 +384,7 @@ test("remote attachments should work", async () => {
   let downloadedFileUri = `file://${fs.dirs.CacheDir}/${Date.now()}.bin`;
   await fs.cp(
     new URL(encryptedLocalFileUri).pathname,
-    new URL(downloadedFileUri).pathname,
+    new URL(downloadedFileUri).pathname
   );
 
   // Now we can decrypt the downloaded file using the message metadata.
