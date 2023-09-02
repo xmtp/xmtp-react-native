@@ -8,7 +8,7 @@ struct DecodedMessageWrapper {
         return [
             "id": model.id,
             "topic": model.topic,
-            "contentTypeId": model.encodedContent.type.id,
+            "contentTypeId": model.encodedContent.type.description,
             "content": try ContentJson.fromEncoded(model.encodedContent).toJsonMap() as Any,
             "senderAddress": model.senderAddress,
             "sent": UInt64(model.sent.timeIntervalSince1970 * 1000)
@@ -152,7 +152,7 @@ struct ContentJson {
                 "url": remoteAttachment.url
             ]]
         default:
-            return ["unknown": ["contentTypeId": type.id]]
+            return ["unknown": ["contentTypeId": type.description]]
         }
     }
 }

@@ -24,6 +24,7 @@ import org.xmtp.android.library.codecs.RemoteAttachmentCodec
 import org.xmtp.android.library.codecs.Reply
 import org.xmtp.android.library.codecs.ReplyCodec
 import org.xmtp.android.library.codecs.TextCodec
+import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.codecs.id
 
 import java.lang.Exception
@@ -152,7 +153,7 @@ class ContentJson(
 
             else -> mapOf(
                 "unknown" to mapOf(
-                    "contentTypeId" to type.id
+                    "contentTypeId" to type.description
                 )
             )
         }
