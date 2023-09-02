@@ -287,7 +287,7 @@ public class XMTPModule: Module {
                 if let afterInt = jsonObj["after"] as? Double {
                     after = TimeInterval(afterInt/1000)
                 }
-                
+
                 let page = Pagination(
                     limit: limit ?? nil,
                     before: before != nil && before! > 0 ? Date(timeIntervalSince1970: before!) : nil,
