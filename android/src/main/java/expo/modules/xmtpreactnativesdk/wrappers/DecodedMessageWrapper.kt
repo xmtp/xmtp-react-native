@@ -2,6 +2,7 @@ package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.DecodedMessage
+import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.codecs.id
 
 class DecodedMessageWrapper {
@@ -16,7 +17,7 @@ class DecodedMessageWrapper {
         fun encodeMap(model: DecodedMessage): Map<String, Any> = mapOf(
             "id" to model.id,
             "topic" to model.topic,
-            "contentTypeId" to model.encodedContent.type.id,
+            "contentTypeId" to model.encodedContent.type.description,
             "content" to ContentJson(model.encodedContent).toJsonMap(),
             "senderAddress" to model.senderAddress,
             "sent" to model.sent.time,

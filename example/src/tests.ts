@@ -321,6 +321,10 @@ test("remote attachments should work", async () => {
     throw new Error("Expected 1 message");
   }
   const message = messages[0];
+
+  if (message.contentTypeId !== "xmtp.org/remoteStaticAttachment:1.0") {
+    throw new Error("Expected correctly formatted typeId");
+  }
   if (!message.content.remoteAttachment) {
     throw new Error("Expected remoteAttachment");
   }
