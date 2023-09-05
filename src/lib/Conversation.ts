@@ -1,5 +1,6 @@
-import * as XMTP from "../index";
+import { PreparedMessage } from "./PreparedMessage";
 import { MessageContent, DecodedMessage } from "../XMTP.types";
+import * as XMTP from "../index";
 import { ConversationContext } from "../index";
 
 export class Conversation {
@@ -81,6 +82,8 @@ export class Conversation {
       throw e;
     }
   }
+
+  async prepareMessage(content: string | MessageContent): Promise<PreparedMessage> {}
 
   streamMessages(
     callback: (message: DecodedMessage) => Promise<void>,
