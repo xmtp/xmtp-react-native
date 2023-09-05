@@ -115,10 +115,10 @@ test("can list batch messages", async () => {
   const bobMessages = await bobConversation.messages();
   await bobConversation.send({
     reaction: {
-      reference: bobMessages[0].topic,
+      reference: bobMessages[0].id,
       action: "added",
       schema: "unicode",
-      content: "U+1F60A",
+      content: "💖",
     },
   });
 
