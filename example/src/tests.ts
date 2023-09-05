@@ -80,6 +80,25 @@ test("canMessage", async () => {
   return canMessage;
 });
 
+test("canPrepareMessage", async () => {
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  const alice = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+
+  const bobConversation = await bob.conversations.newConversation(
+    alice.address,
+  );
+  await delayToPropogate();
+
+  const preparedMessage = await bobConversation.prepareMessage(content: "hi")
+  const messageId = preparedMessage.messageId
+  await preparedMessage.send()
+  const messages = await bobConversation.messages()
+  const message = messages[0]
+
+  return message.id === messageId;
+});
+
 test("createFromKeyBundle throws error for non string value", async () => {
   try {
     const bytes = randomBytes(32);
