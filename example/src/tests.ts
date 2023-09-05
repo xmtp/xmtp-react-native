@@ -93,46 +93,56 @@ test("createFromKeyBundle throws error for non string value", async () => {
 });
 
 test("can list batch messages", async () => {
-  try {
-    const bob = await XMTP.Client.createRandom({ env: "local" });
-    await delayToPropogate();
-    const alice = await XMTP.Client.createRandom({ env: "local" });
-    await delayToPropogate();
-    if (bob.address === alice.address) {
-      throw new Error("bob and alice should be different");
-    }
-
-    const bobConversation = await bob.conversations.newConversation(
-      alice.address
-    );
-    await delayToPropogate();
-
-    const aliceConversation = (await alice.conversations.list())[0];
-    if (!aliceConversation) {
-      throw new Error("aliceConversation should exist");
-    }
-
-    await bobConversation.send({ text: "Hello world" });
-    await delayToPropogate();
-    const messages: DecodedMessage[] = await alice.listBatchMessages([
-      {
-        contentTopic: bobConversation.topic,
-      } as Query,
-      {
-        contentTopic: aliceConversation.topic,
-      } as Query,
-    ]);
-
-    if (messages.length < 1) {
-      throw Error("No message");
-    }
-
-    const firstMessage = messages?.[0];
-
-    return firstMessage.content.text === "Hello world";
-  } catch (e) {
-    return false;
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+  const alice = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+  if (bob.address === alice.address) {
+    throw new Error("bob and alice should be different");
   }
+
+  const bobConversation = await bob.conversations.newConversation(
+    alice.address
+  );
+  await delayToPropogate();
+
+  const aliceConversation = (await alice.conversations.list())[0];
+  if (!aliceConversation) {
+    throw new Error("aliceConversation should exist");
+  }
+
+  await bobConversation.send({ text: "Hello world" });
+  const bobMessages = await bobConversation.messages();
+  await bobConversation.send({
+    reaction: {
+      reference: bobMessages[0].topic,
+      action: "added",
+      schema: "unicode",
+      content: "U+1F60A",
+    },
+  });
+
+  const bobMessages2 = await bobConversation.messages();
+
+  await delayToPropogate();
+  const messages: DecodedMessage[] = await alice.listBatchMessages([
+    {
+      contentTopic: bobConversation.topic,
+    } as Query,
+    {
+      contentTopic: aliceConversation.topic,
+    } as Query,
+  ]);
+
+  if (messages.length < 1) {
+    throw Error("No message");
+  }
+
+  if (messages[0].contentTypeId !== "xmtp.org/reaction:1.0") {
+    throw Error("Unexpected message content " + messages[0].content);
+  }
+
+  return true;
 });
 
 test("can paginate batch messages", async () => {
