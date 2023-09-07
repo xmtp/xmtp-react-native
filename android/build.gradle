@@ -35,12 +35,8 @@ buildscript {
   }
 }
 
-// Check the Gradle version
-def gradleVersion = GradleVersion.current()
-def requiredGradleVersion = GradleVersion.version('8.0')
-
 // Creating sources with comments
-if (gradleVersion < requiredGradleVersion) {
+if (GradleVersion.current() < GradleVersion.version('8.0')) {
     task androidSourcesJar(type: Jar) {
       classifier  = 'sources'
       from android.sourceSets.main.java.srcDirs
