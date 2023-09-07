@@ -270,6 +270,28 @@ struct DecryptedLocalAttachment {
   }
 }
 
+struct PreparedLocalMessage {
+    var messageId: String
+    var preparedFileUri: String
+
+    static func fromJson(_ json: String) throws -> PreparedLocalMessage {
+        let data = json.data(using: .utf8)!
+        let obj = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        return PreparedLocalMessage(
+          messageId: obj["messageId"] as? String ?? "",
+          preparedFileUri: obj["preparedFileUri"] as? String ?? ""
+        )
+    }
+
+    func toJson() throws -> String {
+      let obj: [String: Any] = [
+        "messageId": messageId,
+        "preparedFileUri": preparedFileUri
+      ]
+      return try obj.toJson()
+    }
+}
+
 extension [String: Any] {
     func toJson() throws -> String {
         let data = try JSONSerialization.data(withJSONObject: self)

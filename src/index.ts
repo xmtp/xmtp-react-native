@@ -9,6 +9,7 @@ import type {
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
   MessageContent,
+  PreparedLocalMessage,
 } from "./XMTP.types";
 
 export function address(): string {
@@ -179,6 +180,33 @@ export async function sendMessage(
     clientAddress,
     conversationTopic,
     contentJson,
+  );
+}
+
+export async function prepareMessage(
+  clientAddress: string,
+  conversationTopic: string,
+  content: MessageContent,
+): Promise<PreparedLocalMessage> {
+  // TODO: consider eager validating of `MessageContent` here
+  //       instead of waiting for native code to validate
+  let contentJson = JSON.stringify(content);
+  let preparedJson = await XMTPModule.prepareMessage(
+    clientAddress,
+    conversationTopic,
+    contentJson,
+  );
+  return JSON.parse(preparedJson);
+}
+
+export async function sendPreparedMessage(
+  clientAddress: string,
+  preparedLocalMessage: PreparedLocalMessage,
+): Promise<string> {
+  let preparedLocalMessageJson = JSON.stringify(preparedLocalMessage);
+  return await XMTPModule.sendPreparedMessage(
+    clientAddress,
+    preparedLocalMessageJson,
   );
 }
 

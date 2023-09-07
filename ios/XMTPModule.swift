@@ -76,7 +76,7 @@ public class XMTPModule: Module {
     var subscriptions: [String: Task<Void, Never>] = [:]
 
     enum Error: Swift.Error {
-        case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest
+        case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String)
 
     }
 
@@ -193,7 +193,7 @@ public class XMTPModule: Module {
                 content: attachment,
                 codec: AttachmentCodec()
             )
-            let encryptedFile = URL.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            let encryptedFile = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try encrypted.payload.write(to: encryptedFile)
 
             return try EncryptedLocalAttachment.from(
@@ -219,7 +219,7 @@ public class XMTPModule: Module {
             )
             let encoded = try RemoteAttachment.decryptEncoded(encrypted: encrypted)
             let attachment: Attachment = try encoded.decoded()
-            let file = URL.temporaryDirectory.appendingPathComponent(attachment.filename)
+            let file = FileManager.default.temporaryDirectory.appendingPathComponent(attachment.filename)
             try attachment.data.write(to: file)
             return try DecryptedLocalAttachment(
                     fileUri: file.absoluteString,
@@ -314,6 +314,51 @@ public class XMTPModule: Module {
                 content: sending.content,
                 options: SendOptions(contentType: sending.type)
             )
+        }
+
+        AsyncFunction("prepareMessage") { (
+            clientAddress: String,
+            conversationTopic: String,
+            contentJson: String
+        ) -> String in
+            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
+                throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
+            }
+            let sending = try ContentJson.fromJson(contentJson)
+            let prepared = try await conversation.prepareMessage(
+                content: sending.content,
+                options: SendOptions(contentType: sending.type)
+            )
+            let preparedData = try prepared.serializedData()
+            let preparedFile = FileManager.default.temporaryDirectory.appendingPathComponent(prepared.messageID)
+            try preparedData.write(to: preparedFile)
+            return try PreparedLocalMessage(
+                messageId: prepared.messageID,
+                preparedFileUri: preparedFile.absoluteString
+            ).toJson()
+        }
+
+        AsyncFunction("sendPreparedMessage") { (clientAddress: String, preparedLocalMessageJson: String) -> String in
+            guard let client = clients[clientAddress] else {
+                throw Error.noClient
+            }
+            guard let local = try? PreparedLocalMessage.fromJson(preparedLocalMessageJson) else {
+                throw Error.badPreparation("bad prepared local message")
+            }
+            guard let preparedFileUrl = URL(string: local.preparedFileUri) else {
+                throw Error.badPreparation("bad prepared local message URI \(local.preparedFileUri)")
+            }
+            guard let preparedData = try? Data(contentsOf: preparedFileUrl) else {
+                throw Error.badPreparation("unable to load local message file")
+            }
+            guard let prepared = try? PreparedMessage.fromSerializedData(preparedData) else {
+                throw Error.badPreparation("unable to deserialized \(local.preparedFileUri)")
+            }
+            try await client.publish(envelopes: prepared.envelopes)
+            do {
+                try FileManager.default.removeItem(at: URL(string: local.preparedFileUri)!)
+            } catch { /* ignore: the sending succeeds even if we fail to rm the tmp file afterward */ }
+            return prepared.messageID
         }
 
         AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, contextJson: String) -> String in
