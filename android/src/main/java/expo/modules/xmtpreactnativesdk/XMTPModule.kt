@@ -14,6 +14,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -23,6 +24,7 @@ import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.Conversation
+import org.xmtp.android.library.PreparedMessage
 import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
 import org.xmtp.android.library.XMTPEnvironment
@@ -335,6 +337,45 @@ class XMTPModule : Module() {
                 content = sending.content,
                 options = SendOptions(contentType = sending.type)
             )
+        }
+
+        AsyncFunction("prepareMessage") { clientAddress: String, conversationTopic: String, contentJson: String ->
+            logV("prepareMessage")
+            val conversation =
+                findConversation(
+                    clientAddress = clientAddress,
+                    topic = conversationTopic
+                )
+                    ?: throw XMTPException("no conversation found for $conversationTopic")
+            val sending = ContentJson.fromJson(contentJson)
+            val prepared = conversation.prepareMessage(
+                content = sending.content,
+                options = SendOptions(contentType = sending.type)
+            )
+            val preparedFile = File.createTempFile(prepared.messageId, null)
+            preparedFile.writeBytes(prepared.toSerializedData())
+            PreparedLocalMessage(
+                messageId = prepared.messageId,
+                preparedFileUri = preparedFile.toURI().toString(),
+            ).toJson()
+        }
+
+        AsyncFunction("sendPreparedMessage") { clientAddress: String, preparedLocalMessageJson: String ->
+            logV("sendPreparedMessage")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val local = PreparedLocalMessage.fromJson(preparedLocalMessageJson)
+            val preparedFileUrl = Uri.parse(local.preparedFileUri)
+            val contentResolver = appContext.reactContext?.contentResolver!!
+            val preparedData = contentResolver.openInputStream(preparedFileUrl)!!
+                .use { it.buffered().readBytes() }
+            val prepared = PreparedMessage.fromSerializedData(preparedData)
+            client.publish(envelopes = prepared.envelopes)
+            try {
+                contentResolver.delete(preparedFileUrl, null, null)
+            } catch (ignore: Exception) {
+                /* ignore: the sending succeeds even if we fail to rm the tmp file afterward */
+            }
+            prepared.messageId
         }
 
         AsyncFunction("createConversation") { clientAddress: String, peerAddress: String, contextJson: String ->

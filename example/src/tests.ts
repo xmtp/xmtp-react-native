@@ -92,6 +92,33 @@ test("createFromKeyBundle throws error for non string value", async () => {
   return false;
 });
 
+test("canPrepareMessage", async () => {
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  const alice = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+
+  const bobConversation = await bob.conversations.newConversation(
+      alice.address,
+  );
+  await delayToPropogate();
+
+  const prepared = await bobConversation.prepareMessage("hi");
+
+  // Either of these should work:
+  await bobConversation.sendPreparedMessage(prepared);
+  // await bob.sendPreparedMessage(prepared);
+
+  await delayToPropogate();
+  const messages = await bobConversation.messages()
+  if (messages.length !== 1) {
+    throw new Error(`expected 1 message: got ${messages.length}`);
+  }
+  const message = messages[0]
+
+  return message?.id === prepared.messageId;
+});
+
+
 test("can list batch messages", async () => {
   const bob = await XMTP.Client.createRandom({ env: "local" });
   await delayToPropogate();

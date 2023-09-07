@@ -1,5 +1,5 @@
 import * as XMTP from "../index";
-import { MessageContent, DecodedMessage } from "../XMTP.types";
+import { DecodedMessage, MessageContent, PreparedLocalMessage } from "../XMTP.types";
 import { ConversationContext } from "../index";
 
 export class Conversation {
@@ -65,6 +65,36 @@ export class Conversation {
       return await XMTP.sendMessage(this.clientAddress, this.topic, content);
     } catch (e) {
       console.info("ERROR in send()", e);
+      throw e;
+    }
+  }
+
+  // Prepare the message to be sent.
+  //
+  // Instead of immediately `.send`ing a message, you can `.prepare` it first.
+  // This yields a `PreparedLocalMessage` object, which you can send later.
+  // This is useful to help construct a robust pending-message queue
+  // that can survive connectivity outages and app restarts.
+  //
+  // Note: the sendPreparedMessage() method is available on both this `Conversation`
+  //       or the top-level `Client` (when you don't have the `Conversation` handy).
+  async prepareMessage(content: string | MessageContent): Promise<PreparedLocalMessage> {
+    try {
+      if (typeof content === "string") {
+        content = { text: content };
+      }
+      return await XMTP.prepareMessage(this.clientAddress, this.topic, content);
+    } catch (e) {
+      console.info("ERROR in prepareMessage()", e);
+      throw e;
+    }
+  }
+
+  async sendPreparedMessage(prepared: PreparedLocalMessage): Promise<string> {
+    try {
+      return await XMTP.sendPreparedMessage(this.clientAddress, prepared);
+    } catch (e) {
+      console.info("ERROR in sendPreparedMessage()", e);
       throw e;
     }
   }

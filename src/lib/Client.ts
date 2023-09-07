@@ -5,6 +5,7 @@ import type {
   DecryptedLocalAttachment,
   DecodedMessage,
   EncryptedLocalAttachment,
+  PreparedLocalMessage,
 } from "../XMTP.types";
 import { Query } from "./Query";
 import { hexToBytes } from "./util";
@@ -117,6 +118,15 @@ export class Client {
       throw new Error("the attachment must be a local file:// uri");
     }
     return await XMTPModule.decryptAttachment(this.address, encryptedFile);
+  }
+
+  async sendPreparedMessage(prepared: PreparedLocalMessage): Promise<string> {
+    try {
+      return await XMTPModule.sendPreparedMessage(this.address, prepared);
+    } catch (e) {
+      console.info("ERROR in sendPreparedMessage()", e);
+      throw e;
+    }
   }
 }
 
