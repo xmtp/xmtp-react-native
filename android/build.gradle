@@ -35,10 +35,21 @@ buildscript {
   }
 }
 
+// Check the Gradle version
+def gradleVersion = GradleVersion.current()
+def requiredGradleVersion = GradleVersion.version('8.0')
+
 // Creating sources with comments
-task androidSourcesJar(type: Jar) {
-  archiveClassifier = 'sources'
-  from android.sourceSets.main.java.srcDirs
+if (gradleVersion < requiredGradleVersion) {
+    task androidSourcesJar(type: Jar) {
+      classifier  = 'sources'
+      from android.sourceSets.main.java.srcDirs
+    }
+} else {
+    task androidSourcesJar(type: Jar) {
+      archiveClassifier = 'sources'
+      from android.sourceSets.main.java.srcDirs
+    }
 }
 
 afterEvaluate {
