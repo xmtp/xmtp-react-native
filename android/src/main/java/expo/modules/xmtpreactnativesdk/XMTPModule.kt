@@ -420,17 +420,14 @@ class XMTPModule : Module() {
             )
         }
 
-        Function("stopSubscribeAllMessages") { ->
-            logV("stopSubscribeAllMessages")
-            subscriptions["messages"]?.cancel()
+        Function("unsubscribeFromConversations") {
+            logV("unsubscribeFromConversations")
+            subscriptions["conversations"]?.cancel()
         }
 
-        Function("stopSubscribeToMessages") { clientAddress: String, topic: String ->
-            logV("stopSubscribeToMessages")
-            clients[clientAddress] ?: throw XMTPException("No client")
-            val conversation = findConversation(clientAddress, topic)
-                ?: throw XMTPException("no conversation found for $topic")
-            subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+        Function("unsubscribeFromAllMessages") {
+            logV("unsubscribeFromAllMessages")
+            subscriptions["messages"]?.cancel()
         }
 
         AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String ->
