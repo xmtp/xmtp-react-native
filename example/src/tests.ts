@@ -359,6 +359,9 @@ test("can stream messages", async () => {
       throw Error("Unexpected convo message topic " + convoMessages[i].topic);
     }
   }
+  alice.conversations.cancelStream();
+  alice.conversations.cancelStreamAllMessages();
+
   return true;
 });
 
