@@ -90,4 +90,12 @@ export default class Conversations {
       },
     );
   }
+
+  cancelStream() {
+    XMTPModule.unsubscribeFromConversations();
+  }
+
+  cancelStreamAllMessages() {
+    XMTPModule.unsubscribeFromAllMessages();
+  }
 }
