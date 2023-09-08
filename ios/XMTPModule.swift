@@ -393,6 +393,14 @@ public class XMTPModule: Module {
             try await subscribeToMessages(clientAddress: clientAddress, topic: topic)
         }
 
+        Function("unsubscribeFromConversations") {
+            subscriptions["conversations"]?.cancel()
+        }
+
+        Function("unsubscribeFromAllMessages") {
+            subscriptions["messages"]?.cancel()
+        }
+
         AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String) in
             try await unsubscribeFromMessages(clientAddress: clientAddress, topic: topic)
         }

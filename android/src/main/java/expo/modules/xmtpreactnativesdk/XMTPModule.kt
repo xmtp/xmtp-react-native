@@ -420,6 +420,16 @@ class XMTPModule : Module() {
             )
         }
 
+        Function("unsubscribeFromConversations") {
+            logV("unsubscribeFromConversations")
+            subscriptions["conversations"]?.cancel()
+        }
+
+        Function("unsubscribeFromAllMessages") {
+            logV("unsubscribeFromAllMessages")
+            subscriptions["messages"]?.cancel()
+        }
+
         AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String ->
             logV("unsubscribeFromMessages")
             unsubscribeFromMessages(

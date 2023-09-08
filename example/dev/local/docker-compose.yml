@@ -21,7 +21,7 @@ services:
     depends_on:
       - db
     healthcheck:
-      test: ["CMD", "lsof", "-i", ":5556"]
+      test: [ "CMD", "lsof", "-i", ":5556" ]
       interval: 3s
       timeout: 10s
       retries: 5
@@ -29,23 +29,9 @@ services:
     image: postgres:13
     environment:
       POSTGRES_PASSWORD: xmtp
-
-  upload-service:
-    build: ./upload-service
-    ports:
-      - 4567:4567
-
-  caddy:
-    image: caddy:latest
-    ports:
-      - "443:443"
-    volumes:
-      - ./upload-service/Caddyfile:/etc/caddy/Caddyfile
-      - ./upload-service/data/data:/data
-      - ./upload-service/data/config:/config
-#  js:
-#    restart: always
-#    depends_on:
-#      wakunode:
-#        condition: service_healthy
-#    build: ./test
+  js:
+    restart: always
+    depends_on:
+      wakunode:
+        condition: service_healthy
+    build: ./test
