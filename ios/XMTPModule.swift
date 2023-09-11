@@ -219,7 +219,7 @@ public class XMTPModule: Module {
             )
             let encoded = try RemoteAttachment.decryptEncoded(encrypted: encrypted)
             let attachment: Attachment = try encoded.decoded()
-            let file = FileManager.default.temporaryDirectory.appendingPathComponent(attachment.filename)
+            let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try attachment.data.write(to: file)
             return try DecryptedLocalAttachment(
                     fileUri: file.absoluteString,
@@ -254,9 +254,14 @@ public class XMTPModule: Module {
                 before: beforeDate,
                 after: afterDate)
 
-            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg) }
-
-            return messages
+            return decodedMessages.compactMap { (msg) in
+                do {
+                    return try DecodedMessageWrapper.encode(msg)
+                } catch {
+                    print("discarding message, unable to encode wrapper \(msg.id)")
+                    return nil
+                }
+            }
         }
 
 		AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [String] in
@@ -299,9 +304,14 @@ public class XMTPModule: Module {
 
             let decodedMessages = try await client.conversations.listBatchMessages(topics: topicsList)
 
-            let messages = try decodedMessages.map { (msg) in try DecodedMessageWrapper.encode(msg) }
-
-            return messages
+            return decodedMessages.compactMap { (msg) in
+                do {
+                    return try DecodedMessageWrapper.encode(msg)
+                } catch {
+                    print("discarding message, unable to encode wrapper \(msg.id)")
+                    return nil
+                }
+            }
         }
 
         AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, contentJson: String) -> String in
@@ -329,12 +339,14 @@ public class XMTPModule: Module {
                 content: sending.content,
                 options: SendOptions(contentType: sending.type)
             )
+            let preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
             let preparedData = try prepared.serializedData()
             let preparedFile = FileManager.default.temporaryDirectory.appendingPathComponent(prepared.messageID)
             try preparedData.write(to: preparedFile)
             return try PreparedLocalMessage(
                 messageId: prepared.messageID,
-                preparedFileUri: preparedFile.absoluteString
+                preparedFileUri: preparedFile.absoluteString,
+                preparedAt: preparedAtMillis
             ).toJson()
         }
 
@@ -515,10 +527,14 @@ public class XMTPModule: Module {
         subscriptions["messages"] = Task {
             do {
                 for try await message in try await client.conversations.streamAllMessages() {
-                    sendEvent("message", [
-                        "clientAddress": clientAddress,
-                        "message": try DecodedMessageWrapper.encodeToObj(message)
-                    ])
+                    do {
+                        sendEvent("message", [
+                            "clientAddress": clientAddress,
+                            "message": try DecodedMessageWrapper.encodeToObj(message)
+                        ])
+                    } catch {
+                        print("discarding message, unable to encode wrapper \(message.id)")
+                    }
                 }
             } catch {
                 print("Error in all messages subscription: \(error)")
@@ -536,10 +552,14 @@ public class XMTPModule: Module {
         subscriptions[conversation.cacheKey(clientAddress)] = Task {
             do {
                 for try await message in conversation.streamMessages() {
-                    sendEvent("message", [
-                        "clientAddress": clientAddress,
-                        "message": try DecodedMessageWrapper.encodeToObj(message)
-                    ])
+                    do {
+                        sendEvent("message", [
+                            "clientAddress": clientAddress,
+                            "message": try DecodedMessageWrapper.encodeToObj(message)
+                        ])
+                    } catch {
+                        print("discarding message, unable to encode wrapper \(message.id)")
+                    }
                 }
             } catch {
                 print("Error in messages subscription: \(error)")
