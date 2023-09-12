@@ -352,11 +352,13 @@ class XMTPModule : Module() {
                 content = sending.content,
                 options = SendOptions(contentType = sending.type)
             )
+            val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
             val preparedFile = File.createTempFile(prepared.messageId, null)
             preparedFile.writeBytes(prepared.toSerializedData())
             PreparedLocalMessage(
                 messageId = prepared.messageId,
                 preparedFileUri = preparedFile.toURI().toString(),
+                preparedAt = preparedAtMillis,
             ).toJson()
         }
 

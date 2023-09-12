@@ -103,6 +103,9 @@ test("canPrepareMessage", async () => {
   await delayToPropogate();
 
   const prepared = await bobConversation.prepareMessage("hi");
+  if (!prepared.preparedAt) {
+    throw new Error("missing `preparedAt` on prepared message");
+  }
 
   // Either of these should work:
   await bobConversation.sendPreparedMessage(prepared);

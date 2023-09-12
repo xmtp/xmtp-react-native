@@ -70,6 +70,7 @@ export type RemoteAttachmentContent = RemoteAttachmentMetadata & {
 export type PreparedLocalMessage = {
   messageId: string;
   preparedFileUri: `file://${string}`;
+  preparedAt: number; // timestamp in milliseconds
 }
 
 // This contains the contents of a message.
