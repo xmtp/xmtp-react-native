@@ -41,7 +41,7 @@ export class Conversation {
     limit?: number | undefined,
     before?: Date | undefined,
     after?: Date | undefined,
-    direction?: "ascending" | "descending" | undefined,
+    direction?: "SORT_DIRECTION_ASCENDING" | "SORT_DIRECTION_DESCENDING" | undefined,
   ): Promise<DecodedMessage[]> {
     try {
       return await XMTP.listMessages(

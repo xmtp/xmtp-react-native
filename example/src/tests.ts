@@ -230,7 +230,7 @@ test("can paginate batch messages", async () => {
   const messagesAsc: DecodedMessage[] = await alice.listBatchMessages([
     {
       contentTopic: bobConversation.topic,
-      direction: "ascending",
+      direction: "SORT_DIRECTION_ASCENDING",
     } as Query,
   ]);
 
