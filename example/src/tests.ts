@@ -227,6 +227,13 @@ test("can paginate batch messages", async () => {
     } as Query,
   ]);
 
+  const messagesAsc: DecodedMessage[] = await alice.listBatchMessages([
+    {
+      contentTopic: bobConversation.topic,
+      direction: "ascending",
+    } as Query,
+  ]);
+
   if (messagesLimited.length !== 2) {
     throw Error("Unexpected messagesLimited count " + messagesLimited.length);
   }
@@ -256,6 +263,12 @@ test("can paginate batch messages", async () => {
   if (messagesAfter[0].content.text !== "Message 4") {
     throw Error(
       "Unexpected messagesAfter content " + messagesAfter[0].content.text
+    );
+  }
+
+  if (messagesAsc[0].content.text !== "Message 0") {
+    throw Error(
+      "Unexpected messagesAsc content " + messagesAsc[0].content.text
     );
   }
 

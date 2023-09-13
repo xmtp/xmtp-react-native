@@ -3,4 +3,5 @@ export type Query = {
   endTime?: Date | undefined;
   contentTopic: string;
   pageSize?: number | undefined;
+  direction?: "ascending" | "descending" | undefined;
 };
