@@ -241,7 +241,7 @@ public class XMTPModule: Module {
             }
         }
 
-        AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?) -> [String] in
+        AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
             let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!)/1000) : nil
             let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!)/1000) : nil
 
@@ -252,7 +252,9 @@ public class XMTPModule: Module {
             let decodedMessages = try await conversation.messages(
                 limit: limit,
                 before: beforeDate,
-                after: afterDate)
+                after: afterDate,
+                direction: PagingInfoSortDirection(rawValue: direction ?? "SORT_DIRECTION_DESCENDING")
+            )
 
             return decodedMessages.compactMap { (msg) in
                 do {
@@ -280,6 +282,7 @@ public class XMTPModule: Module {
                 var limit: Int?
                 var before: Double?
                 var after: Double?
+                var direction: PagingInfoSortDirection = .descending
 
                 if let limitInt = jsonObj["limit"] as? Int {
                     limit = limitInt
@@ -292,11 +295,16 @@ public class XMTPModule: Module {
                 if let afterInt = jsonObj["after"] as? Double {
                     after = TimeInterval(afterInt/1000)
                 }
+                
+                if let directionStr = jsonObj["direction"] as? String {
+                    direction = PagingInfoSortDirection(rawValue: direction ?? "SORT_DIRECTION_DESCENDING")
+                }
 
                 let page = Pagination(
                     limit: limit ?? nil,
                     before: before != nil && before! > 0 ? Date(timeIntervalSince1970: before!) : nil,
-                    after: after != nil && after! > 0 ? Date(timeIntervalSince1970: after!) : nil
+                    after: after != nil && after! > 0 ? Date(timeIntervalSince1970: after!) : nil,
+                    direction: direction
                 )
 
                 topicsList[topic] = page

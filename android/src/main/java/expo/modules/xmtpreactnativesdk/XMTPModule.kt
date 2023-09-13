@@ -276,7 +276,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadMessages") { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String ->
+        AsyncFunction("loadMessages") { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
             logV("loadMessages")
             val conversation =
                 findConversation(
@@ -290,7 +290,9 @@ class XMTPModule : Module() {
                 limit = limit,
                 before = beforeDate,
                 after = afterDate,
-                direction = MessageApiOuterClass.SortDirection.valueOf(direction)
+                direction = MessageApiOuterClass.SortDirection.valueOf(
+                    direction ?: "SORT_DIRECTION_DESCENDING"
+                )
             )
                 .map { DecodedMessageWrapper.encode(it) }
         }
@@ -313,7 +315,11 @@ class XMTPModule : Module() {
                     before = jsonObj.get("before").toString().toLong()
                     after = jsonObj.get("after").toString().toLong()
                     direction = MessageApiOuterClass.SortDirection.valueOf(
-                        jsonObj.get("direction").toString()
+                        if (jsonObj.get("direction").toString().isNullOrBlank()) {
+                            "SORT_DIRECTION_DESCENDING"
+                        } else {
+                            jsonObj.get("direction").toString()
+                        }
                     )
                 } catch (e: Exception) {
                     Log.e(
