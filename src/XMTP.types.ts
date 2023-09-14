@@ -9,8 +9,8 @@ export type ReplyContent = {
 
 export type ReactionContent = {
   reference: string;
-  action: "added" | "removed";
-  schema: "unicode" | "shortcode" | "custom";
+  action: "added" | "removed" | "unknown";
+  schema: "unicode" | "shortcode" | "custom" | "unknown";
   content: string;
 };
 

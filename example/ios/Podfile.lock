@@ -1,8 +1,8 @@
 PODS:
   - BigInt (5.0.0)
   - boost (1.76.0)
-  - Connect-Swift (0.6.0):
-    - SwiftProtobuf (~> 1.22.0)
+  - Connect-Swift (0.7.0):
+    - SwiftProtobuf (~> 1.23.0)
   - DoubleConversion (1.1.6)
   - EXApplication (5.1.1):
     - ExpoModulesCore
@@ -409,13 +409,13 @@ PODS:
   - RNSVG (13.9.0):
     - React-Core
   - secp256k1.swift (0.1.4)
-  - SwiftProtobuf (1.22.1)
+  - SwiftProtobuf (1.23.0)
   - web3.swift (1.6.0):
     - BigInt (~> 5.0.0)
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.5.3-alpha0):
+  - XMTP (0.5.4-alpha0):
     - Connect-Swift
     - GzipSwift
     - web3.swift
@@ -423,7 +423,7 @@ PODS:
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
     - MessagePacker
-    - XMTP (= 0.5.3-alpha0)
+    - XMTP (= 0.5.4-alpha0)
   - XMTPRust (0.3.1-beta0)
   - Yoga (1.14.0)
 
@@ -617,7 +617,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   BigInt: 74b4d88367b0e819d9f77393549226d36faeb0d8
   boost: 57d2868c099736d80fcd648bf211b4431e51a558
-  Connect-Swift: ba76bc64b2153cacce4f7985a21d4d81473dac90
+  Connect-Swift: 3b305e8305a8b88a33be087dad207d84aad57dd2
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
   EXApplication: d8f53a7eee90a870a75656280e8d4b85726ea903
   EXConstants: f348da07e21b23d2b085e270d7b74f282df1a7d9
@@ -678,13 +678,13 @@ SPEC CHECKSUMS:
   RNScreens: 218801c16a2782546d30bd2026bb625c0302d70f
   RNSVG: 53c661b76829783cdaf9b7a57258f3d3b4c28315
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
-  SwiftProtobuf: 7773c4e96a99d7b8ab7cda0fc30a883732ff93b1
+  SwiftProtobuf: b70d65f419fbfe61a2d58003456ca5da58e337d6
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 01fd25bc966b9546f1a04210d4162764861b076d
-  XMTPReactNative: 6feac2b747871f469660b43b85576efaa6c558d1
+  XMTP: 8e220d6c064c293911d88adb08087b90d06c22c5
+  XMTPReactNative: cfa66e30fa730f3b5f6cb4fed64eb3d11552e4b6
   XMTPRust: 78f65f77b1454392980da244961777aee955652f
   Yoga: 065f0b74dba4832d6e328238de46eb72c5de9556
 
 PODFILE CHECKSUM: 522d88edc2d5fac4825e60a121c24abc18983367
 
-COCOAPODS: 1.12.1
+COCOAPODS: 1.11.3
