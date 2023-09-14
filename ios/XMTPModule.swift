@@ -250,11 +250,13 @@ public class XMTPModule: Module {
                 throw Error.conversationNotFound("no conversation found for \(topic)")
             }
 
+            let sortDirection: Int = (direction != nil && direction == "SORT_DIRECTION_ASCENDING") ? 1 : 2
+
             let decodedMessages = try await conversation.messages(
                 limit: limit,
                 before: beforeDate,
                 after: afterDate,
-                direction: PagingInfoSortDirection(rawValue: direction ?? "SORT_DIRECTION_DESCENDING")
+                direction: PagingInfoSortDirection(rawValue: sortDirection)
             )
 
             return decodedMessages.compactMap { (msg) in
@@ -298,7 +300,8 @@ public class XMTPModule: Module {
                 }
                 
                 if let directionStr = jsonObj["direction"] as? String {
-                    direction = PagingInfoSortDirection(rawValue: direction ?? "SORT_DIRECTION_DESCENDING")
+                    let sortDirection: Int = (directionStr == "SORT_DIRECTION_ASCENDING") ? 1 : 2
+                    direction = PagingInfoSortDirection(rawValue: sortDirection) ?? .descending
                 }
 
                 let page = Pagination(

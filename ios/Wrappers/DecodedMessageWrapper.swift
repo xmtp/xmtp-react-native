@@ -60,9 +60,9 @@ struct ContentJson {
         } else if let reaction = obj["reaction"] as? [String: Any] {
             return ContentJson(type: ContentTypeReaction, content: Reaction(
                     reference: reaction["reference"] as? String ?? "",
-                    action: ReactionAction(rawValue: reaction["action"] as? String ?? "") ?? .added,
+                    action: ReactionAction(rawValue: reaction["action"] as? String ?? "") ,
                     content: reaction["content"] as? String ?? "",
-                    schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "") ?? .unicode
+                    schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "") 
             ))
         } else if let reply = obj["reply"] as? [String: Any] {
             guard let nestedContent = reply["content"] as? [String: Any] else {
