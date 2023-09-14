@@ -451,6 +451,9 @@ test("remote attachments should work", async () => {
   if (attached.mimeType !== "text/plain") {
     throw new Error("Expected mimeType to match");
   }
+  if (attached.filename !== filename) {
+    throw new Error(`Expected ${attached.filename} to equal ${filename}`);
+  }
   const text = await fs.readFile(new URL(attached.fileUri).pathname, "utf8");
   if (text !== "hello world") {
     throw new Error("Expected text to match");

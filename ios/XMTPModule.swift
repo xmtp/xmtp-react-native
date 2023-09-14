@@ -223,7 +223,8 @@ public class XMTPModule: Module {
             try attachment.data.write(to: file)
             return try DecryptedLocalAttachment(
                     fileUri: file.absoluteString,
-                    mimeType: attachment.mimeType
+                    mimeType: attachment.mimeType,
+                    filename: attachment.filename
             ).toJson()
         }
 

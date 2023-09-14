@@ -25,6 +25,8 @@ import org.xmtp.android.library.codecs.Reply
 import org.xmtp.android.library.codecs.ReplyCodec
 import org.xmtp.android.library.codecs.TextCodec
 import org.xmtp.android.library.codecs.description
+import org.xmtp.android.library.codecs.getReactionAction
+import org.xmtp.android.library.codecs.getReactionSchema
 import org.xmtp.android.library.codecs.id
 
 import java.lang.Exception
@@ -80,8 +82,8 @@ class ContentJson(
                 val reaction = obj.get("reaction").asJsonObject
                 return ContentJson(ContentTypeReaction, Reaction(
                     reference = reaction.get("reference").asString,
-                    action = ReactionAction.valueOf(reaction.get("action").asString),
-                    schema = ReactionSchema.valueOf(reaction.get("schema").asString),
+                    action = getReactionAction(reaction.get("action").asString.lowercase()),
+                    schema = getReactionSchema(reaction.get("schema").asString.lowercase()),
                     content = reaction.get("content").asString,
                 ))
             } else if (obj.has("reply")) {
