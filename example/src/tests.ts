@@ -266,7 +266,7 @@ test("can paginate batch messages", async () => {
     );
   }
 
-  if (messagesAsc[0].content.text !== "Message 0") {
+  if (messagesAsc[0].content.text !== "Initial Message") {
     throw Error(
       "Unexpected messagesAsc content " + messagesAsc[0].content.text
     );
