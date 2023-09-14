@@ -10,11 +10,13 @@ import com.google.gson.JsonParser
 class DecryptedLocalAttachment(
     val fileUri: String,
     val mimeType: String,
+    val filename: String,
 ) {
     companion object {
         fun fromJsonObject(obj: JsonObject) = DecryptedLocalAttachment(
             obj.get("fileUri").asString,
             obj.get("mimeType").asString,
+            obj.get("filename")?.asString ?: "",
         )
 
         fun fromJson(json: String): DecryptedLocalAttachment {
@@ -26,6 +28,7 @@ class DecryptedLocalAttachment(
     fun toJsonMap(): Map<String, Any> = mapOf(
         "fileUri" to fileUri,
         "mimeType" to mimeType,
+        "filename" to filename,
     )
 
     fun toJson(): String = GsonBuilder().create().toJson(toJsonMap())

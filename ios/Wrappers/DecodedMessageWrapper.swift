@@ -251,20 +251,23 @@ struct EncryptedLocalAttachment {
 struct DecryptedLocalAttachment {
   var fileUri: String
   var mimeType: String
+  var filename: String
 
   static func fromJson(_ json: String) throws -> DecryptedLocalAttachment {
     let data = json.data(using: .utf8)!
     let obj = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
     return DecryptedLocalAttachment(
       fileUri: obj["fileUri"] as? String ?? "",
-      mimeType: obj["mimeType"] as? String ?? ""
+      mimeType: obj["mimeType"] as? String ?? "",
+      filename: obj["filename"] as? String ?? ""
     )
   }
 
   func toJson() throws -> String {
     let obj: [String: Any] = [
       "fileUri": fileUri,
-      "mimeType": mimeType
+      "mimeType": mimeType,
+      "filename": filename
     ]
     return try obj.toJson()
   }

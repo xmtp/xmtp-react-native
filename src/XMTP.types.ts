@@ -23,6 +23,7 @@ export type StaticAttachmentContent = {
 export type DecryptedLocalAttachment = {
   fileUri: string;
   mimeType?: string;
+  filename?: string;
 };
 
 export type RemoteAttachmentMetadata = {
