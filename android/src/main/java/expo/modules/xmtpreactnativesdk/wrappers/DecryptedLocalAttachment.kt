@@ -16,7 +16,7 @@ class DecryptedLocalAttachment(
         fun fromJsonObject(obj: JsonObject) = DecryptedLocalAttachment(
             obj.get("fileUri").asString,
             obj.get("mimeType").asString,
-            obj.get("filename").asString,
+            obj.get("filename")?.asString ?: "",
         )
 
         fun fromJson(json: String): DecryptedLocalAttachment {
