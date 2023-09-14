@@ -42,6 +42,7 @@ import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
+import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import java.io.File
 import java.util.Date
@@ -276,7 +277,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadMessages") { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long? ->
+        AsyncFunction("loadMessages") { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
             logV("loadMessages")
             val conversation =
                 findConversation(
@@ -286,7 +287,14 @@ class XMTPModule : Module() {
             val beforeDate = if (before != null) Date(before) else null
             val afterDate = if (after != null) Date(after) else null
 
-            conversation.messages(limit = limit, before = beforeDate, after = afterDate)
+            conversation.messages(
+                limit = limit,
+                before = beforeDate,
+                after = afterDate,
+                direction = MessageApiOuterClass.SortDirection.valueOf(
+                    direction ?: "SORT_DIRECTION_DESCENDING"
+                )
+            )
                 .map { DecodedMessageWrapper.encode(it) }
         }
 
@@ -300,11 +308,20 @@ class XMTPModule : Module() {
                 var limit: Int? = null
                 var before: Long? = null
                 var after: Long? = null
+                var direction: MessageApiOuterClass.SortDirection =
+                    MessageApiOuterClass.SortDirection.SORT_DIRECTION_DESCENDING
 
                 try {
                     limit = jsonObj.get("limit").toString().toInt()
                     before = jsonObj.get("before").toString().toLong()
                     after = jsonObj.get("after").toString().toLong()
+                    direction = MessageApiOuterClass.SortDirection.valueOf(
+                        if (jsonObj.get("direction").toString().isNullOrBlank()) {
+                            "SORT_DIRECTION_DESCENDING"
+                        } else {
+                            jsonObj.get("direction").toString()
+                        }
+                    )
                 } catch (e: Exception) {
                     Log.e(
                         "XMTPModule",
@@ -315,7 +332,8 @@ class XMTPModule : Module() {
                 val page = Pagination(
                     limit = if (limit != null && limit > 0) limit else null,
                     before = if (before != null && before > 0) Date(before) else null,
-                    after = if (after != null && after > 0) Date(after) else null
+                    after = if (after != null && after > 0) Date(after) else null,
+                    direction = direction
                 )
 
                 topicsList.add(Pair(topic, page))
