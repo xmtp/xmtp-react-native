@@ -262,7 +262,7 @@ class XMTPModule : Module() {
             DecryptedLocalAttachment(
                 fileUri = file.toURI().toString(),
                 mimeType = attachment.mimeType,
-                fileName = attachment.filename
+                filename = attachment.filename
             ).toJson()
         }
 
