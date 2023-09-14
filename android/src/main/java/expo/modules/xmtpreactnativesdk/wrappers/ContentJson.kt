@@ -80,8 +80,8 @@ class ContentJson(
                 val reaction = obj.get("reaction").asJsonObject
                 return ContentJson(ContentTypeReaction, Reaction(
                     reference = reaction.get("reference").asString,
-                    action = ReactionAction.valueOf(reaction.get("action").asString.lowercase()),
-                    schema = ReactionSchema.valueOf(reaction.get("schema").asString.lowercase()),
+                    action = getReactionAction(reaction.get("action").asString.lowercase()),
+                    schema = getReactionSchema(reaction.get("schema").asString.lowercase()),
                     content = reaction.get("content").asString,
                 ))
             } else if (obj.has("reply")) {
