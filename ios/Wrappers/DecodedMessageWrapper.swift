@@ -37,7 +37,7 @@ struct ContentJson {
         ReactionCodec(),
         AttachmentCodec(),
         ReplyCodec(),
-        RemoteAttachmentCodec()
+        RemoteAttachmentCodec(),
         ReadReceiptCodec()
         // TODO:
         //CompositeCodec(),
