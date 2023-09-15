@@ -13,12 +13,15 @@ import org.xmtp.android.library.codecs.ContentTypeReaction
 import org.xmtp.android.library.codecs.ContentTypeText
 import org.xmtp.android.library.codecs.AttachmentCodec
 import org.xmtp.android.library.codecs.Attachment
+import org.xmtp.android.library.codecs.ContentTypeReadReceipt
 import org.xmtp.android.library.codecs.ContentTypeRemoteAttachment
 import org.xmtp.android.library.codecs.ContentTypeReply
 import org.xmtp.android.library.codecs.ReactionAction
 import org.xmtp.android.library.codecs.ReactionSchema
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.Reaction
+import org.xmtp.android.library.codecs.ReadReceipt
+import org.xmtp.android.library.codecs.ReadReceiptCodec
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.RemoteAttachmentCodec
 import org.xmtp.android.library.codecs.Reply
@@ -48,6 +51,7 @@ class ContentJson(
             Client.register(ReactionCodec())
             Client.register(RemoteAttachmentCodec())
             Client.register(ReplyCodec())
+            Client.register(ReadReceiptCodec())
             // TODO:
             //Client.register(CompositeCodec())
         }
@@ -100,6 +104,8 @@ class ContentJson(
                     content = nested.content,
                     contentType = nested.type,
                 ))
+            } else if (obj.has("readReceipt")) {
+                return ContentJson(ContentTypeReadReceipt, ReadReceipt)
             } else {
                 throw Exception("Unknown content type")
             }
@@ -151,6 +157,10 @@ class ContentJson(
                     "reference" to (content as Reply).reference,
                     "content" to ContentJson(content.contentType, content.content).toJsonMap(),
                 )
+            )
+
+            ContentTypeReadReceipt.id -> mapOf(
+                "readReceipt" to ""
             )
 
             else -> mapOf(
