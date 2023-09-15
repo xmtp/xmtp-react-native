@@ -105,7 +105,7 @@ class ContentJson(
                     contentType = nested.type,
                 ))
             } else if (obj.has("readReceipt")) {
-                return ContentJson(ContentTypeReadReceipt, ReadReceipt())
+                return ContentJson(ContentTypeReadReceipt, ReadReceipt)
             } else {
                 throw Exception("Unknown content type")
             }
