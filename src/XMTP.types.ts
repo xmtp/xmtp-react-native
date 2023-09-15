@@ -2,9 +2,7 @@ export type UnknownContent = {
   contentTypeId: string;
 };
 
-export type ReadReceiptContent = {
-  content: MessageContent;
-};
+export type ReadReceiptContent = object;
 
 export type ReplyContent = {
   reference: string;
@@ -88,6 +86,7 @@ export type MessageContent = {
   reaction?: ReactionContent;
   attachment?: StaticAttachmentContent;
   remoteAttachment?: RemoteAttachmentContent;
+  readReceipt?: ReadReceiptContent;
 };
 
 export type DecodedMessage = {

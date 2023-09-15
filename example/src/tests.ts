@@ -460,3 +460,38 @@ test("remote attachments should work", async () => {
   }
   return true;
 });
+
+test("can send read receipts", async () => {
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+  const alice = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+  if (bob.address === alice.address) {
+    throw new Error("bob and alice should be different");
+  }
+
+  const bobConversation = await bob.conversations.newConversation(
+    alice.address
+  );
+  await delayToPropogate();
+
+  const aliceConversation = (await alice.conversations.list())[0];
+  if (!aliceConversation) {
+    throw new Error("aliceConversation should exist");
+  }
+
+  await bobConversation.send({ readReceipt: {}});
+
+  const bobMessages = await bobConversation.messages();
+
+  if (bobMessages.length < 1) {
+    throw Error("No message");
+  }
+
+  if (bobMessages[0].contentTypeId !== "xmtp.org/readReceipt:1.0") {
+    throw Error("Unexpected message content " + bobMessages[0].content);
+  }
+
+  return true;
+});
+
