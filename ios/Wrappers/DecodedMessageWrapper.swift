@@ -38,6 +38,7 @@ struct ContentJson {
         AttachmentCodec(),
         ReplyCodec(),
         RemoteAttachmentCodec()
+        ReadReceiptCodec()
         // TODO:
         //CompositeCodec(),
     ]
@@ -102,6 +103,8 @@ struct ContentJson {
             content.filename = metadata.filename
             content.contentLength = metadata.contentLength
             return ContentJson(type: ContentTypeRemoteAttachment, content: content)
+        } else if let readReceipt = obj["readReceipt"] as? [String: Any] {
+            return ContentJson(type: ContentTypeReadReceipt, content: ReadReceipt())
         } else {
             throw Error.unknownContentType
         }
@@ -151,6 +154,8 @@ struct ContentJson {
                 "scheme": "https://",
                 "url": remoteAttachment.url
             ]]
+        case ContentTypeReadReceipt.id where content is XMTP.ReadReceipt:
+            return ["readReceipt": ""]
         default:
             return ["unknown": ["contentTypeId": type.description]]
         }
