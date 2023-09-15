@@ -2,6 +2,10 @@ export type UnknownContent = {
   contentTypeId: string;
 };
 
+export type ReadReceiptContent = {
+  content: MessageContent;
+};
+
 export type ReplyContent = {
   reference: string;
   content: MessageContent;
