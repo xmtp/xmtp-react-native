@@ -131,11 +131,16 @@ export class Client {
 }
 
 export type ClientOptions = NetworkOptions;
+export enum Env {
+  local = 'local',
+  dev = 'dev',
+  production = 'production'
+}
 export type NetworkOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
    */
-  env: "local" | "dev" | "production";
+  env: keyof typeof Env;
   /**
    * identifier that's included with API requests.
    *
