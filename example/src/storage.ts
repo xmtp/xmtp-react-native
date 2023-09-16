@@ -25,7 +25,7 @@ export async function uploadFile(
   return url;
 }
 
-export async function downloadFile(url: string): Promise<`file://${string}`> {
+export async function downloadFile(url: string): Promise<string> {
   console.log("downloading from", url);
   let res = await ReactNativeBlobUtil.config({ fileCache: true }).fetch(
     "GET",
