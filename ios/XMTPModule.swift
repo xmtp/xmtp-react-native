@@ -70,10 +70,10 @@ extension Conversation {
 }
 
 public class XMTPModule: Module {
-    var clients: [String: XMTP.Client] = [:]
+    @MainActor var clients: [String: XMTP.Client] = [:]
     var signer: ReactNativeSigner?
-    var conversations: [String: Conversation] = [:]
-    var subscriptions: [String: Task<Void, Never>] = [:]
+    @MainActor var conversations: [String: Conversation] = [:]
+    @MainActor var subscriptions: [String: Task<Void, Never>] = [:]
 
     enum Error: Swift.Error {
         case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String)
@@ -115,7 +115,7 @@ public class XMTPModule: Module {
             let options = createClientConfig(env: environment, appVersion: appVersion)
             let client = try await Client.create(account: privateKey, options: options)
 
-            self.clients[client.address] = client
+            self.clients[client.address] = try await client
             return client.address
         }
 
@@ -129,7 +129,7 @@ public class XMTPModule: Module {
 
                 let options = createClientConfig(env: environment, appVersion: appVersion)
                 let client = try await Client.from(bundle: bundle, options: options)
-                self.clients[client.address] = client
+                self.clients[client.address] = try await client
                 return client.address
             } catch {
                 print("ERRO! Failed to create client: \(error)")
@@ -163,7 +163,7 @@ public class XMTPModule: Module {
                 serializedData: Data(base64Encoded: Data(topicData.utf8))!
             )
             let conversation = client.conversations.importTopicData(data: data)
-            conversations[conversation.cacheKey(clientAddress)] = conversation
+            conversations[conversation.cacheKey(clientAddress)] = try await conversation
             return try ConversationWrapper.encode(conversation, client: client)
         }
 
@@ -236,7 +236,7 @@ public class XMTPModule: Module {
             let conversations = try await client.conversations.list()
 
             return try conversations.map { conversation in
-                self.conversations[conversation.cacheKey(clientAddress)] = conversation
+                self.conversations[conversation.cacheKey(clientAddress)] = try await conversation
 
                 return try ConversationWrapper.encode(conversation, client: client)
             }
@@ -502,7 +502,7 @@ public class XMTPModule: Module {
         if let conversation = conversations[cacheKey] {
             return conversation
         } else if let conversation = try await client.conversations.list().first(where: { $0.topic == topic }) {
-            conversations[cacheKey] = conversation
+            conversations[cacheKey] = try await conversation
             return conversation
         }
 
