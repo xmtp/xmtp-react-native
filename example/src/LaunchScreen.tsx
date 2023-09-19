@@ -5,7 +5,6 @@ import React from "react";
 import { useXmtp } from "./XmtpContext";
 import * as XMTP from "xmtp-react-native-sdk";
 import { useSavedKeys } from "./hooks";
-import { Env } from "xmtp-react-native-sdk/lib/Client";
 
 const appVersion = "XMTP_RN_EX/0.0.1";
 
