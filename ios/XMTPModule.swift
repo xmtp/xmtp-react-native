@@ -85,8 +85,8 @@ public class XMTPModule: Module {
 
     Events("sign", "authed", "conversation", "message")
 
-        Function("address") { (clientAddress: String) -> String in
-            if let client = clients[clientAddress] {
+        AsyncFunction("address") { (clientAddress: String) -> String in
+            if let client = await clients[clientAddress] {
                     return client.address
                 } else {
                     return "No Client."
@@ -100,7 +100,7 @@ public class XMTPModule: Module {
                 let signer = ReactNativeSigner(module: self, address: address)
                 self.signer = signer
                 let options = createClientConfig(env: environment, appVersion: appVersion)
-                self.clients[address] = try await XMTP.Client.create(account: signer, options: options)
+                await self.clients[address] = try await XMTP.Client.create(account: signer, options: options)
                 self.signer = nil
                 sendEvent("authed")
         }
@@ -115,7 +115,7 @@ public class XMTPModule: Module {
             let options = createClientConfig(env: environment, appVersion: appVersion)
             let client = try await Client.create(account: privateKey, options: options)
 
-            self.clients[client.address] = try await client
+            await self.clients[client.address] = client
             return client.address
         }
 
@@ -129,7 +129,7 @@ public class XMTPModule: Module {
 
                 let options = createClientConfig(env: environment, appVersion: appVersion)
                 let client = try await Client.from(bundle: bundle, options: options)
-                self.clients[client.address] = try await client
+                await self.clients[client.address] = client
                 return client.address
             } catch {
                 print("ERRO! Failed to create client: \(error)")
@@ -139,7 +139,7 @@ public class XMTPModule: Module {
 
         // Export the client's serialized key bundle.
         AsyncFunction("exportKeyBundle") { (clientAddress: String) -> String in
-            guard let client = clients[clientAddress] else {
+            guard let client = await clients[clientAddress] else {
                 throw Error.noClient
             }
             let bundle = try client.privateKeyBundle.serializedData().base64EncodedString()
@@ -156,21 +156,21 @@ public class XMTPModule: Module {
 
         // Import a conversation from its serialized topic data.
         AsyncFunction("importConversationTopicData") { (clientAddress: String, topicData: String) -> String in
-            guard let client = clients[clientAddress] else {
+            guard let client = await clients[clientAddress] else {
                 throw Error.noClient
             }
             let data = try Xmtp_KeystoreApi_V1_TopicMap.TopicData(
                 serializedData: Data(base64Encoded: Data(topicData.utf8))!
             )
             let conversation = client.conversations.importTopicData(data: data)
-            conversations[conversation.cacheKey(clientAddress)] = try await conversation
+            await conversations[conversation.cacheKey(clientAddress)] = conversation
             return try ConversationWrapper.encode(conversation, client: client)
         }
 
         //
         // Client API
         AsyncFunction("canMessage") { (clientAddress: String, peerAddress: String) -> Bool in
-            guard let client = clients[clientAddress] else {
+            guard let client = await clients[clientAddress] else {
                 throw Error.noClient
             }
 
@@ -178,7 +178,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("encryptAttachment") { (clientAddress: String, fileJson: String) -> String in
-            if clients[clientAddress] == nil {
+            if await clients[clientAddress] == nil {
                 throw Error.noClient
             }
             let file = try DecryptedLocalAttachment.fromJson(fileJson)
@@ -204,7 +204,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("decryptAttachment") { (clientAddress: String, encryptedFileJson: String) -> String in
-            if clients[clientAddress] == nil {
+            if await clients[clientAddress] == nil {
                 throw Error.noClient
             }
             let encryptedFile = try EncryptedLocalAttachment.fromJson(encryptedFileJson)
@@ -229,14 +229,14 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("listConversations") { (clientAddress: String) -> [String] in
-            guard let client = clients[clientAddress] else {
+            guard let client = await clients[clientAddress] else {
                 throw Error.noClient
             }
 
             let conversations = try await client.conversations.list()
 
             return try conversations.map { conversation in
-                self.conversations[conversation.cacheKey(clientAddress)] = try await conversation
+                await self.conversations[conversation.cacheKey(clientAddress)] = conversation
 
                 return try ConversationWrapper.encode(conversation, client: client)
             }
@@ -270,7 +270,7 @@ public class XMTPModule: Module {
         }
 
 		AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [String] in
-            guard let client = clients[clientAddress] else {
+            guard let client = await clients[clientAddress] else {
                 throw Error.noClient
             }
 
@@ -363,7 +363,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("sendPreparedMessage") { (clientAddress: String, preparedLocalMessageJson: String) -> String in
-            guard let client = clients[clientAddress] else {
+            guard let client = await clients[clientAddress] else {
                 throw Error.noClient
             }
             guard let local = try? PreparedLocalMessage.fromJson(preparedLocalMessageJson) else {
@@ -386,7 +386,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, contextJson: String) -> String in
-            guard let client = clients[clientAddress] else {
+            guard let client = await clients[clientAddress] else {
                 throw Error.noClient
             }
 
@@ -417,12 +417,12 @@ public class XMTPModule: Module {
             try await subscribeToMessages(clientAddress: clientAddress, topic: topic)
         }
 
-        Function("unsubscribeFromConversations") {
-            subscriptions["conversations"]?.cancel()
+        AsyncFunction("unsubscribeFromConversations") {
+            await subscriptions["conversations"]?.cancel()
         }
 
-        Function("unsubscribeFromAllMessages") {
-            subscriptions["messages"]?.cancel()
+        AsyncFunction("unsubscribeFromAllMessages") {
+            await subscriptions["messages"]?.cancel()
         }
 
         AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String) in
@@ -494,15 +494,15 @@ public class XMTPModule: Module {
     }
 
     func findConversation(clientAddress: String, topic: String) async throws -> Conversation? {
-        guard let client = clients[clientAddress] else {
+        guard let client = await clients[clientAddress] else {
             throw Error.noClient
         }
 
         let cacheKey = Conversation.cacheKeyForTopic(clientAddress: clientAddress, topic: topic)
-        if let conversation = conversations[cacheKey] {
+        if let conversation = await conversations[cacheKey] {
             return conversation
         } else if let conversation = try await client.conversations.list().first(where: { $0.topic == topic }) {
-            conversations[cacheKey] = try await conversation
+            await conversations[cacheKey] = conversation
             return conversation
         }
 
@@ -510,12 +510,12 @@ public class XMTPModule: Module {
     }
 
     func subscribeToConversations(clientAddress: String) {
-        guard let client = clients[clientAddress] else {
+        guard let client = await clients[clientAddress] else {
             return
         }
 
-        subscriptions["conversations"]?.cancel()
-        subscriptions["conversations"] = Task {
+        await subscriptions["conversations"]?.cancel()
+        await subscriptions["conversations"] = Task {
             do {
                 for try await conversation in client.conversations.stream() {
                     sendEvent("conversation", [
@@ -525,18 +525,18 @@ public class XMTPModule: Module {
                 }
             } catch {
                 print("Error in conversations subscription: \(error)")
-                subscriptions["conversations"]?.cancel()
+                await subscriptions["conversations"]?.cancel()
             }
         }
     }
 
     func subscribeToAllMessages(clientAddress: String) {
-        guard let client = clients[clientAddress] else {
+        guard let client = await clients[clientAddress] else {
             return
         }
 
-        subscriptions["messages"]?.cancel()
-        subscriptions["messages"] = Task {
+        await subscriptions["messages"]?.cancel()
+        await subscriptions["messages"] = Task {
             do {
                 for try await message in try await client.conversations.streamAllMessages() {
                     do {
@@ -550,7 +550,7 @@ public class XMTPModule: Module {
                 }
             } catch {
                 print("Error in all messages subscription: \(error)")
-                subscriptions["messages"]?.cancel()
+                await subscriptions["messages"]?.cancel()
             }
         }
     }
@@ -560,8 +560,8 @@ public class XMTPModule: Module {
             return
         }
 
-        subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
-        subscriptions[conversation.cacheKey(clientAddress)] = Task {
+        await subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+        await subscriptions[conversation.cacheKey(clientAddress)] = Task {
             do {
                 for try await message in conversation.streamMessages() {
                     do {
@@ -575,7 +575,7 @@ public class XMTPModule: Module {
                 }
             } catch {
                 print("Error in messages subscription: \(error)")
-                subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+                await subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
             }
         }
     }
@@ -585,6 +585,6 @@ public class XMTPModule: Module {
             return
         }
 
-        subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+        await subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
     }
 }
