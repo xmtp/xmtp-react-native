@@ -67,20 +67,30 @@ export default function LaunchScreen({
       >
         Random Wallet
       </Text>
-      {["dev", "local"].map((env) => (
-        <View key={`generated-${env}`} style={{ margin: 16 }}>
-          <Button
-            title={`Use Generated Wallet (${env})`}
-            color={env === "dev" ? "green" : "purple"}
-            onPress={() => {
-              configureWallet(
-                env,
-                XMTP.Client.createRandom({ env, appVersion }),
-              );
-            }}
-          />
-        </View>
-      ))}
+      <View key={`generated-dev`} style={{ margin: 16 }}>
+        <Button
+          title={`Use Generated Wallet (dev)`}
+          color="green"
+          onPress={() => {
+            configureWallet(
+              'dev',
+              XMTP.Client.createRandom({ env: 'dev', appVersion }),
+            );
+          }}
+        />
+      </View>
+      <View key={`generated-local`} style={{ margin: 16 }}>
+        <Button
+          title={`Use Generated Wallet (local)`}
+          color="purple"
+          onPress={() => {
+            configureWallet(
+              'local',
+              XMTP.Client.createRandom({ env: 'local', appVersion }),
+            );
+          }}
+        />
+      </View>
       {!!savedKeys.keyBundle && (
         <>
           <Divider key="divider-saved" />
@@ -96,26 +106,39 @@ export default function LaunchScreen({
           >
             Saved Wallet
           </Text>
-          {["dev", "local"].map((env) => (
-            <View key={`saved-${env}`} style={{ margin: 16 }}>
-              <Button
-                title={`Use Saved Wallet (${env})`}
-                color={env === "dev" ? "green" : "purple"}
-                onPress={() => {
-                  configureWallet(
-                    env,
-                    XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                      env,
-                      appVersion,
-                    }),
-                  );
-                }}
-              />
-            </View>
-          ))}
-          <View key={`saved-clear`} style={{ margin: 16 }}>
+          <View key="saved-dev" style={{ margin: 16 }}>
             <Button
-              title={`Clear Saved Wallet`}
+              title="Use Saved Wallet (dev)"
+              color="green"
+              onPress={() => {
+                configureWallet(
+                  'dev',
+                  XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
+                    env: 'dev',
+                    appVersion,
+                  }),
+                );
+              }}
+            />
+          </View>
+          <View key="saved-local" style={{ margin: 16 }}>
+            <Button
+              title="Use Saved Wallet (local)"
+              color="purple"
+              onPress={() => {
+                configureWallet(
+                  'local',
+                  XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
+                    env: 'local',
+                    appVersion,
+                  }),
+                );
+              }}
+            />
+          </View>
+          <View key="saved-clear" style={{ margin: 16 }}>
+            <Button
+              title="Clear Saved Wallet"
               // color={"black"}
               onPress={() => savedKeys.clear()}
             />
