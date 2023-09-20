@@ -40,7 +40,7 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 
         module.sendEvent("sign", [
             "id": request.id,
-            "message": request.message
+            "message": request.message,
         ])
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -59,10 +59,9 @@ struct SignatureRequest: Codable {
 }
 
 extension Conversation {
-
     static func cacheKeyForTopic(clientAddress: String, topic: String) -> String {
-            return "\(clientAddress):\(topic)"
-        }
+        return "\(clientAddress):\(topic)"
+    }
 
     func cacheKey(_ clientAddress: String) -> String {
         return Conversation.cacheKeyForTopic(clientAddress: clientAddress, topic: topic)
@@ -74,12 +73,16 @@ public class XMTPModule: Module {
     let clientsManager = ClientsManager()
     let conversationsManager = ConversationsManager()
     let subscriptionsManager = SubscriptionsManager()
-    
+
     actor ClientsManager {
         private var clients: [String: XMTP.Client] = [:]
 
         // A method to update the conversations
         func updateClient(key: String, client: XMTP.Client?) {
+            if clients[key] == nil, let client {
+                ContentJson.initCodecs(client: client)
+            }
+
             clients[key] = client
         }
 
@@ -88,7 +91,7 @@ public class XMTPModule: Module {
             return clients[key]
         }
     }
-    
+
     actor ConversationsManager {
         private var conversations: [String: Conversation] = [:]
 
@@ -102,7 +105,7 @@ public class XMTPModule: Module {
             return conversations[key]
         }
     }
-    
+
     actor SubscriptionsManager {
         private var subscriptions: [String: Task<Void, Never>] = [:]
 
@@ -119,32 +122,31 @@ public class XMTPModule: Module {
 
     enum Error: Swift.Error {
         case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String)
-
     }
 
     public func definition() -> ModuleDefinition {
-    Name("XMTP")
+        Name("XMTP")
 
-    Events("sign", "authed", "conversation", "message")
+        Events("sign", "authed", "conversation", "message")
 
         AsyncFunction("address") { (clientAddress: String) -> String in
             if let client = await clientsManager.getClient(key: clientAddress) {
-                    return client.address
-                } else {
-                    return "No Client."
-                }
+                return client.address
+            } else {
+                return "No Client."
+            }
         }
 
         //
         // Auth functions
         //
         AsyncFunction("auth") { (address: String, environment: String, appVersion: String?) in
-                let signer = ReactNativeSigner(module: self, address: address)
-                self.signer = signer
-                let options = createClientConfig(env: environment, appVersion: appVersion)
-                await clientsManager.updateClient(key: address, client:  try await XMTP.Client.create(account: signer, options: options))
-                self.signer = nil
-                sendEvent("authed")
+            let signer = ReactNativeSigner(module: self, address: address)
+            self.signer = signer
+            let options = createClientConfig(env: environment, appVersion: appVersion)
+            try await clientsManager.updateClient(key: address, client: await XMTP.Client.create(account: signer, options: options))
+            self.signer = nil
+            sendEvent("authed")
         }
 
         Function("receiveSignature") { (requestID: String, signature: String) in
@@ -157,7 +159,7 @@ public class XMTPModule: Module {
             let options = createClientConfig(env: environment, appVersion: appVersion)
             let client = try await Client.create(account: privateKey, options: options)
 
-            await clientsManager.updateClient(key: client.address, client:  client)
+            await clientsManager.updateClient(key: client.address, client: client)
             return client.address
         }
 
@@ -165,13 +167,14 @@ public class XMTPModule: Module {
         AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?) -> String in
             do {
                 guard let keyBundleData = Data(base64Encoded: keyBundle),
-                    let bundle = try? PrivateKeyBundle(serializedData: keyBundleData) else {
+                      let bundle = try? PrivateKeyBundle(serializedData: keyBundleData)
+                else {
                     throw Error.invalidKeyBundle
                 }
 
                 let options = createClientConfig(env: environment, appVersion: appVersion)
                 let client = try await Client.from(bundle: bundle, options: options)
-                await clientsManager.updateClient(key: client.address, client:  client)
+                await clientsManager.updateClient(key: client.address, client: client)
                 return client.address
             } catch {
                 print("ERRO! Failed to create client: \(error)")
@@ -220,7 +223,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("encryptAttachment") { (clientAddress: String, fileJson: String) -> String in
-            if await clientsManager.getClient(key: clientAddress) == nil {
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
             let file = try DecryptedLocalAttachment.fromJson(fileJson)
@@ -233,7 +236,8 @@ public class XMTPModule: Module {
             )
             let encrypted = try RemoteAttachment.encodeEncrypted(
                 content: attachment,
-                codec: AttachmentCodec()
+                codec: AttachmentCodec(),
+                with: client
             )
             let encryptedFile = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try encrypted.payload.write(to: encryptedFile)
@@ -246,7 +250,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("decryptAttachment") { (clientAddress: String, encryptedFileJson: String) -> String in
-            if await clientsManager.getClient(key: clientAddress) == nil {
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
             let encryptedFile = try EncryptedLocalAttachment.fromJson(encryptedFileJson)
@@ -260,13 +264,13 @@ public class XMTPModule: Module {
                 payload: encryptedData
             )
             let encoded = try RemoteAttachment.decryptEncoded(encrypted: encrypted)
-            let attachment: Attachment = try encoded.decoded()
+            let attachment: Attachment = try encoded.decoded(with: client)
             let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try attachment.data.write(to: file)
             return try DecryptedLocalAttachment(
-                    fileUri: file.absoluteString,
-                    mimeType: attachment.mimeType,
-                    filename: attachment.filename
+                fileUri: file.absoluteString,
+                mimeType: attachment.mimeType,
+                filename: attachment.filename
             ).toJson()
         }
 
@@ -276,7 +280,7 @@ public class XMTPModule: Module {
             }
 
             let conversations = try await client.conversations.list()
-            
+
             return try await withThrowingTaskGroup(of: String.self) { group in
                 for conversation in conversations {
                     group.addTask {
@@ -284,19 +288,19 @@ public class XMTPModule: Module {
                         return try await ConversationWrapper.encode(conversation, client: client)
                     }
                 }
-                
+
                 var results: [String] = []
                 for try await result in group {
                     results.append(result)
                 }
-                
+
                 return results
             }
         }
 
         AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
-            let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!)/1000) : nil
-            let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!)/1000) : nil
+            let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil
+            let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!) / 1000) : nil
 
             guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
                 throw Error.conversationNotFound("no conversation found for \(topic)")
@@ -311,7 +315,7 @@ public class XMTPModule: Module {
                 direction: PagingInfoSortDirection(rawValue: sortDirection)
             )
 
-            return decodedMessages.compactMap { (msg) in
+            return decodedMessages.compactMap { msg in
                 do {
                     return try DecodedMessageWrapper.encode(msg)
                 } catch {
@@ -321,7 +325,7 @@ public class XMTPModule: Module {
             }
         }
 
-		AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [String] in
+        AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [String] in
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
@@ -330,7 +334,8 @@ public class XMTPModule: Module {
             topics.forEach { topicJSON in
                 let jsonData = topicJSON.data(using: .utf8)!
                 guard let jsonObj = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                      let topic = jsonObj["topic"] as? String else {
+                      let topic = jsonObj["topic"] as? String
+                else {
                     return // Skip this topic if it doesn't have valid JSON data or missing "topic" field
                 }
 
@@ -344,13 +349,13 @@ public class XMTPModule: Module {
                 }
 
                 if let beforeInt = jsonObj["before"] as? Double {
-                   before = TimeInterval(beforeInt/1000)
+                    before = TimeInterval(beforeInt / 1000)
                 }
 
                 if let afterInt = jsonObj["after"] as? Double {
-                    after = TimeInterval(afterInt/1000)
+                    after = TimeInterval(afterInt / 1000)
                 }
-                
+
                 if let directionStr = jsonObj["direction"] as? String {
                     let sortDirection: Int = (directionStr == "SORT_DIRECTION_ASCENDING") ? 1 : 2
                     direction = PagingInfoSortDirection(rawValue: sortDirection) ?? .descending
@@ -368,7 +373,7 @@ public class XMTPModule: Module {
 
             let decodedMessages = try await client.conversations.listBatchMessages(topics: topicsList)
 
-            return decodedMessages.compactMap { (msg) in
+            return decodedMessages.compactMap { msg in
                 do {
                     return try DecodedMessageWrapper.encode(msg)
                 } catch {
@@ -499,7 +504,7 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("decodeMessage") { (clientAddress: String, topic: String, encryptedMessage: String) -> String in
-            guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8))else {
+            guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
                 throw Error.noMessage
             }
 
@@ -514,7 +519,7 @@ public class XMTPModule: Module {
             let decodedMessage = try conversation.decode(envelope)
             return try DecodedMessageWrapper.encode(decodedMessage)
         }
-  }
+    }
 
     //
     // Helpers
@@ -522,26 +527,25 @@ public class XMTPModule: Module {
 
     func createClientConfig(env: String, appVersion: String?) -> XMTP.ClientOptions {
         // Ensure that all codecs have been registered.
-        ContentJson.initCodecs();
         switch env {
-            case "local":
-                return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
-                        env: XMTP.XMTPEnvironment.local,
-                        isSecure: false,
-                        appVersion: appVersion
-                    ))
-            case "production":
-                return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
-                        env: XMTP.XMTPEnvironment.production,
-                        isSecure: true,
-                        appVersion: appVersion
-                    ))
-            default:
-                return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
-                        env: XMTP.XMTPEnvironment.dev,
-                        isSecure: true,
-                        appVersion: appVersion
-                    ))
+        case "local":
+            return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
+                env: XMTP.XMTPEnvironment.local,
+                isSecure: false,
+                appVersion: appVersion
+            ))
+        case "production":
+            return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
+                env: XMTP.XMTPEnvironment.production,
+                isSecure: true,
+                appVersion: appVersion
+            ))
+        default:
+            return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
+                env: XMTP.XMTPEnvironment.dev,
+                isSecure: true,
+                appVersion: appVersion
+            ))
         }
     }
 
@@ -570,9 +574,9 @@ public class XMTPModule: Module {
         await subscriptionsManager.updateSubscription(key: "conversations", task: Task {
             do {
                 for try await conversation in try await client.conversations.stream() {
-                    sendEvent("conversation", [
+                    try sendEvent("conversation", [
                         "clientAddress": clientAddress,
-                        "conversation": try ConversationWrapper.encodeToObj(conversation, client: client)
+                        "conversation": ConversationWrapper.encodeToObj(conversation, client: client),
                     ])
                 }
             } catch {
@@ -592,9 +596,9 @@ public class XMTPModule: Module {
             do {
                 for try await message in try await client.conversations.streamAllMessages() {
                     do {
-                        sendEvent("message", [
+                        try sendEvent("message", [
                             "clientAddress": clientAddress,
-                            "message": try DecodedMessageWrapper.encodeToObj(message)
+                            "message": DecodedMessageWrapper.encodeToObj(message),
                         ])
                     } catch {
                         print("discarding message, unable to encode wrapper \(message.id)")
@@ -617,9 +621,9 @@ public class XMTPModule: Module {
             do {
                 for try await message in conversation.streamMessages() {
                     do {
-                        sendEvent("message", [
+                        try sendEvent("message", [
                             "clientAddress": clientAddress,
-                            "message": try DecodedMessageWrapper.encodeToObj(message)
+                            "message": DecodedMessageWrapper.encodeToObj(message),
                         ])
                     } catch {
                         print("discarding message, unable to encode wrapper \(message.id)")
