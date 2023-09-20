@@ -5,13 +5,13 @@ import XMTP
 // into react native.
 struct DecodedMessageWrapper {
     static func encodeToObj(_ model: XMTP.DecodedMessage) throws -> [String: Any] {
-        return [
+        return try [
             "id": model.id,
             "topic": model.topic,
             "contentTypeId": model.encodedContent.type.description,
-            "content": try ContentJson.fromEncoded(model.encodedContent).toJsonMap() as Any,
+            "content": ContentJson.fromEncoded(model.encodedContent, client: model.client).toJsonMap() as Any,
             "senderAddress": model.senderAddress,
-            "sent": UInt64(model.sent.timeIntervalSince1970 * 1000)
+            "sent": UInt64(model.sent.timeIntervalSince1970 * 1000),
         ]
     }
 
@@ -38,21 +38,21 @@ struct ContentJson {
         AttachmentCodec(),
         ReplyCodec(),
         RemoteAttachmentCodec(),
-        ReadReceiptCodec()
+        ReadReceiptCodec(),
         // TODO:
-        //CompositeCodec(),
+        // CompositeCodec(),
     ]
 
-    static func initCodecs() -> Void {
-        codecs.forEach { codec in Client.register(codec: codec) }
+    static func initCodecs(client: Client) {
+        codecs.forEach { codec in client.register(codec: codec) }
     }
 
     enum Error: Swift.Error {
         case unknownContentType, badAttachmentData, badReplyContent, badRemoteAttachmentMetadata
     }
 
-    static func fromEncoded(_ encoded: XMTP.EncodedContent) throws -> ContentJson {
-        return ContentJson(type: encoded.type, content: try encoded.decoded())
+    static func fromEncoded(_ encoded: XMTP.EncodedContent, client: Client) throws -> ContentJson {
+        return try ContentJson(type: encoded.type, content: encoded.decoded(with: client))
     }
 
     static func fromJsonObj(_ obj: [String: Any]) throws -> ContentJson {
@@ -60,10 +60,10 @@ struct ContentJson {
             return ContentJson(type: ContentTypeText, content: text)
         } else if let reaction = obj["reaction"] as? [String: Any] {
             return ContentJson(type: ContentTypeReaction, content: Reaction(
-                    reference: reaction["reference"] as? String ?? "",
-                    action: ReactionAction(rawValue: reaction["action"] as? String ?? "") ,
-                    content: reaction["content"] as? String ?? "",
-                    schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "") 
+                reference: reaction["reference"] as? String ?? "",
+                action: ReactionAction(rawValue: reaction["action"] as? String ?? ""),
+                content: reaction["content"] as? String ?? "",
+                schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "")
             ))
         } else if let reply = obj["reply"] as? [String: Any] {
             guard let nestedContent = reply["content"] as? [String: Any] else {
@@ -73,32 +73,32 @@ struct ContentJson {
                 throw Error.badReplyContent
             }
             return ContentJson(type: ContentTypeReply, content: Reply(
-                    reference: reply["reference"] as? String ?? "",
-                    content: nested.content,
-                    contentType: nested.type
+                reference: reply["reference"] as? String ?? "",
+                content: nested.content,
+                contentType: nested.type
             ))
         } else if let attachment = obj["attachment"] as? [String: Any] {
             guard let data = Data(base64Encoded: (attachment["data"] as? String) ?? "") else {
                 throw Error.badAttachmentData
             }
             return ContentJson(type: ContentTypeAttachment, content: Attachment(
-                    filename: attachment["filename"] as? String ?? "",
-                    mimeType: attachment["mimeType"] as? String ?? "",
-                    data: data
+                filename: attachment["filename"] as? String ?? "",
+                mimeType: attachment["mimeType"] as? String ?? "",
+                data: data
             ))
         } else if let remoteAttachment = obj["remoteAttachment"] as? [String: Any] {
             guard let metadata = try? EncryptedAttachmentMetadata.fromJsonObj(remoteAttachment) else {
                 throw Error.badRemoteAttachmentMetadata
             }
             guard var content = try? RemoteAttachment(
-              url: remoteAttachment["url"] as? String ?? "",
-              contentDigest: metadata.contentDigest,
-              secret: metadata.secret,
-              salt: metadata.salt,
-              nonce: metadata.nonce,
-              scheme: RemoteAttachment.Scheme.https
+                url: remoteAttachment["url"] as? String ?? "",
+                contentDigest: metadata.contentDigest,
+                secret: metadata.secret,
+                salt: metadata.salt,
+                nonce: metadata.nonce,
+                scheme: RemoteAttachment.Scheme.https
             ) else {
-              throw Error.badRemoteAttachmentMetadata
+                throw Error.badRemoteAttachmentMetadata
             }
             content.filename = metadata.filename
             content.contentLength = metadata.contentLength
@@ -126,21 +126,21 @@ struct ContentJson {
                 "reference": reaction.reference,
                 "action": reaction.action.rawValue,
                 "schema": reaction.schema.rawValue,
-                "content": reaction.content
-                ]]
+                "content": reaction.content,
+            ]]
         case ContentTypeReply.id where content is XMTP.Reply:
             let reply = content as! XMTP.Reply
             let nested = ContentJson(type: reply.contentType, content: reply.content)
             return ["reply": [
                 "reference": reply.reference,
-                "content": nested.toJsonMap()
-            ] as [String : Any]]
+                "content": nested.toJsonMap(),
+            ] as [String: Any]]
         case ContentTypeAttachment.id where content is XMTP.Attachment:
             let attachment = content as! XMTP.Attachment
             return ["attachment": [
                 "filename": attachment.filename,
                 "mimeType": attachment.mimeType,
-                "data": attachment.data.base64EncodedString()
+                "data": attachment.data.base64EncodedString(),
             ]]
         case ContentTypeRemoteAttachment.id where content is XMTP.RemoteAttachment:
             let remoteAttachment = content as! XMTP.RemoteAttachment
@@ -152,7 +152,7 @@ struct ContentJson {
                 "contentDigest": remoteAttachment.contentDigest,
                 "contentLength": String(remoteAttachment.contentLength ?? 0),
                 "scheme": "https://",
-                "url": remoteAttachment.url
+                "url": remoteAttachment.url,
             ]]
         case ContentTypeReadReceipt.id where content is XMTP.ReadReceipt:
             return ["readReceipt": ""]
@@ -175,14 +175,15 @@ struct EncryptedAttachmentMetadata {
     }
 
     static func fromAttachment(attachment: XMTP.Attachment,
-                     encrypted: XMTP.EncryptedEncodedContent) throws -> EncryptedAttachmentMetadata {
+                               encrypted: XMTP.EncryptedEncodedContent) throws -> EncryptedAttachmentMetadata
+    {
         return EncryptedAttachmentMetadata(
-                filename: attachment.filename,
-                secret: encrypted.secret,
-                salt: encrypted.salt,
-                nonce: encrypted.nonce,
-                contentDigest: encrypted.digest,
-                contentLength: attachment.data.count
+            filename: attachment.filename,
+            secret: encrypted.secret,
+            salt: encrypted.salt,
+            nonce: encrypted.nonce,
+            contentDigest: encrypted.digest,
+            contentLength: attachment.data.count
         )
     }
 
@@ -197,12 +198,12 @@ struct EncryptedAttachmentMetadata {
             throw Error.badRemoteAttachmentMetadata
         }
         return EncryptedAttachmentMetadata(
-                filename: obj["filename"] as? String ?? "",
-                secret: secret,
-                salt: salt,
-                nonce: nonce,
-                contentDigest: obj["contentDigest"] as? String ?? "",
-                contentLength: Int(obj["contentLength"] as? String ?? "") ?? 0
+            filename: obj["filename"] as? String ?? "",
+            secret: secret,
+            salt: salt,
+            nonce: nonce,
+            contentDigest: obj["contentDigest"] as? String ?? "",
+            contentLength: Int(obj["contentLength"] as? String ?? "") ?? 0
         )
     }
 
@@ -213,10 +214,9 @@ struct EncryptedAttachmentMetadata {
             "salt": salt.toHex,
             "nonce": nonce.toHex,
             "contentDigest": contentDigest,
-            "contentLength": String(contentLength)
+            "contentLength": String(contentLength),
         ]
     }
-
 }
 
 struct EncryptedLocalAttachment {
@@ -226,56 +226,58 @@ struct EncryptedLocalAttachment {
     static func from(attachment: XMTP.Attachment,
                      encrypted: XMTP.EncryptedEncodedContent,
                      encryptedFile: URL)
-        throws -> EncryptedLocalAttachment {
-        return EncryptedLocalAttachment(
-                encryptedLocalFileUri: encryptedFile.absoluteString,
-                metadata: try EncryptedAttachmentMetadata.fromAttachment(
-                        attachment: attachment,
-                        encrypted: encrypted
-                ))
+        throws -> EncryptedLocalAttachment
+    {
+        return try EncryptedLocalAttachment(
+            encryptedLocalFileUri: encryptedFile.absoluteString,
+            metadata: EncryptedAttachmentMetadata.fromAttachment(
+                attachment: attachment,
+                encrypted: encrypted
+            )
+        )
     }
 
     static func fromJson(_ json: String) throws -> EncryptedLocalAttachment {
         let data = json.data(using: .utf8)!
         let obj = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-        return EncryptedLocalAttachment(
+        return try EncryptedLocalAttachment(
             encryptedLocalFileUri: obj["encryptedLocalFileUri"] as? String ?? "",
-            metadata: try EncryptedAttachmentMetadata.fromJsonObj(obj["metadata"] as? [String: Any] ?? [:])
+            metadata: EncryptedAttachmentMetadata.fromJsonObj(obj["metadata"] as? [String: Any] ?? [:])
         )
     }
 
     func toJson() throws -> String {
         let obj: [String: Any] = [
             "encryptedLocalFileUri": encryptedLocalFileUri,
-            "metadata": metadata.toJsonMap()
+            "metadata": metadata.toJsonMap(),
         ]
         return try obj.toJson()
     }
 }
 
 struct DecryptedLocalAttachment {
-  var fileUri: String
-  var mimeType: String
-  var filename: String
+    var fileUri: String
+    var mimeType: String
+    var filename: String
 
-  static func fromJson(_ json: String) throws -> DecryptedLocalAttachment {
-    let data = json.data(using: .utf8)!
-    let obj = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-    return DecryptedLocalAttachment(
-      fileUri: obj["fileUri"] as? String ?? "",
-      mimeType: obj["mimeType"] as? String ?? "",
-      filename: obj["filename"] as? String ?? ""
-    )
-  }
+    static func fromJson(_ json: String) throws -> DecryptedLocalAttachment {
+        let data = json.data(using: .utf8)!
+        let obj = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        return DecryptedLocalAttachment(
+            fileUri: obj["fileUri"] as? String ?? "",
+            mimeType: obj["mimeType"] as? String ?? "",
+            filename: obj["filename"] as? String ?? ""
+        )
+    }
 
-  func toJson() throws -> String {
-    let obj: [String: Any] = [
-      "fileUri": fileUri,
-      "mimeType": mimeType,
-      "filename": filename
-    ]
-    return try obj.toJson()
-  }
+    func toJson() throws -> String {
+        let obj: [String: Any] = [
+            "fileUri": fileUri,
+            "mimeType": mimeType,
+            "filename": filename,
+        ]
+        return try obj.toJson()
+    }
 }
 
 struct PreparedLocalMessage {
@@ -287,19 +289,19 @@ struct PreparedLocalMessage {
         let data = json.data(using: .utf8)!
         let obj = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
         return PreparedLocalMessage(
-          messageId: obj["messageId"] as? String ?? "",
-          preparedFileUri: obj["preparedFileUri"] as? String ?? "",
-          preparedAt: UInt64(truncating: obj["preparedAt"] as? NSNumber ?? 0)
+            messageId: obj["messageId"] as? String ?? "",
+            preparedFileUri: obj["preparedFileUri"] as? String ?? "",
+            preparedAt: UInt64(truncating: obj["preparedAt"] as? NSNumber ?? 0)
         )
     }
 
     func toJson() throws -> String {
-      let obj: [String: Any] = [
-        "messageId": messageId,
-        "preparedFileUri": preparedFileUri,
-        "preparedAt": preparedAt
-      ]
-      return try obj.toJson()
+        let obj: [String: Any] = [
+            "messageId": messageId,
+            "preparedFileUri": preparedFileUri,
+            "preparedAt": preparedAt,
+        ]
+        return try obj.toJson()
     }
 }
 
