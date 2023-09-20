@@ -276,11 +276,21 @@ public class XMTPModule: Module {
             }
 
             let conversations = try await client.conversations.list()
-
-            return try conversations.map { conversation in
-                await conversationsManager.updateConversation(key: conversation.cacheKey(clientAddress), conversation: conversation)
-
-                return try ConversationWrapper.encode(conversation, client: client)
+            
+            return try await withThrowingTaskGroup(of: String.self) { group in
+                for conversation in conversations {
+                    group.addTask {
+                        await self.conversationsManager.updateConversation(key: conversation.cacheKey(clientAddress), conversation: conversation)
+                        return try await ConversationWrapper.encode(conversation, client: client)
+                    }
+                }
+                
+                var results: [String] = []
+                for try await result in group {
+                    results.append(result)
+                }
+                
+                return results
             }
         }
 
