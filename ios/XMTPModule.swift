@@ -570,10 +570,10 @@ public class XMTPModule: Module {
             return
         }
 
-        await subscriptionsManager.getSubscription(key: "conversations")?.cancel()
-        await subscriptionsManager.updateSubscription(key: "conversations", task: Task {
+			await subscriptionsManager.getSubscription(key: "conversations:\(client.address)")?.cancel()
+			await subscriptionsManager.updateSubscription(key: "conversations:\(client.address)", task: Task {
             do {
-                for try await conversation in try await client.conversations.stream() {
+                for try await conversation in await client.conversations.stream() {
                     try sendEvent("conversation", [
                         "clientAddress": clientAddress,
                         "conversation": ConversationWrapper.encodeToObj(conversation, client: client),
@@ -591,8 +591,8 @@ public class XMTPModule: Module {
             return
         }
 
-        await subscriptionsManager.getSubscription(key: "messages")?.cancel()
-        await subscriptionsManager.updateSubscription(key: "messages", task: Task {
+			await subscriptionsManager.getSubscription(key: "messages:\(client.address)")?.cancel()
+			await subscriptionsManager.updateSubscription(key: "messages:\(client.address)", task: Task {
             do {
                 for try await message in try await client.conversations.streamAllMessages() {
                     do {
