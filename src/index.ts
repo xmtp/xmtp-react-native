@@ -228,12 +228,12 @@ export async function subscribeToMessages(
   return await XMTPModule.subscribeToMessages(clientAddress, topic);
 }
 
-export function unsubscribeFromConversations() {
-  return XMTPModule.unsubscribeFromConversations();
+export function unsubscribeFromConversations(clientAddress: string) {
+  return XMTPModule.unsubscribeFromConversations(clientAddress);
 }
 
-export function unsubscribeFromAllMessages() {
-  return XMTPModule.unsubscribeFromAllMessages();
+export function unsubscribeFromAllMessages(clientAddress: string) {
+  return XMTPModule.unsubscribeFromAllMessages(clientAddress);
 }
 
 export async function unsubscribeFromMessages(
