@@ -475,11 +475,11 @@ public class XMTPModule: Module {
         }
 
         AsyncFunction("unsubscribeFromConversations") { (clientAddress: String) in
-            await subscriptionsManager.getSubscription(key: "conversations:\(clientAddress)")?.cancel()
+            await subscriptionsManager.getSubscription(key: getConversationsKey(key: clientAddress))?.cancel()
         }
 
         AsyncFunction("unsubscribeFromAllMessages") { (clientAddress: String) in
-            await subscriptionsManager.getSubscription(key: "messages:\(clientAddress)")?.cancel()
+            await subscriptionsManager.getSubscription(key: getMessagesKey(key: clientAddress))?.cancel()
         }
 
         AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String) in
@@ -570,8 +570,8 @@ public class XMTPModule: Module {
             return
         }
 
-			await subscriptionsManager.getSubscription(key: "conversations:\(clientAddress)")?.cancel()
-			await subscriptionsManager.updateSubscription(key: "conversations:\(clientAddress)", task: Task {
+			await subscriptionsManager.getSubscription(key: getConversationsKey(key: clientAddress))?.cancel()
+			await subscriptionsManager.updateSubscription(key: getConversationsKey(key: clientAddress), task: Task {
             do {
                 for try await conversation in await client.conversations.stream() {
                     try sendEvent("conversation", [
@@ -581,7 +581,7 @@ public class XMTPModule: Module {
                 }
             } catch {
                 print("Error in conversations subscription: \(error)")
-                await subscriptionsManager.getSubscription(key: "conversations:\(clientAddress)")?.cancel()
+                await subscriptionsManager.getSubscription(key: getConversationsKey(key: clientAddress))?.cancel()
             }
         })
     }
@@ -591,8 +591,8 @@ public class XMTPModule: Module {
             return
         }
 
-			await subscriptionsManager.getSubscription(key: "messages:\(clientAddress)")?.cancel()
-			await subscriptionsManager.updateSubscription(key: "messages:\(clientAddress)", task: Task {
+			await subscriptionsManager.getSubscription(key: getMessagesKey(key: clientAddress))?.cancel()
+			await subscriptionsManager.updateSubscription(key: getMessagesKey(key: clientAddress), task: Task {
             do {
                 for try await message in try await client.conversations.streamAllMessages() {
                     do {
@@ -606,7 +606,7 @@ public class XMTPModule: Module {
                 }
             } catch {
                 print("Error in all messages subscription: \(error)")
-                await subscriptionsManager.getSubscription(key: "messages:\(clientAddress)")?.cancel()
+                await subscriptionsManager.getSubscription(key: getMessagesKey(key: clientAddress))?.cancel()
             }
         })
     }
@@ -642,5 +642,13 @@ public class XMTPModule: Module {
         }
 
         await subscriptionsManager.getSubscription(key: conversation.cacheKey(clientAddress))?.cancel()
+    }
+    
+    func getMessagesKey(clientAddress: String) -> String {
+        return "messages:\(clientAddress)"
+    }
+
+    func getConversationsKey(clientAddress: String) -> String {
+        return "conversations:\(clientAddress)"
     }
 }
