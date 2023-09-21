@@ -443,12 +443,12 @@ class XMTPModule : Module() {
 
         Function("unsubscribeFromConversations") { clientAddress: String ->
             logV("unsubscribeFromConversations")
-            subscriptions["conversations:$clientAddress"]?.cancel()
+            subscriptions[getConversationsKey(clientAddress)]?.cancel()
         }
 
         Function("unsubscribeFromAllMessages") { clientAddress: String ->
             logV("unsubscribeFromAllMessages")
-            subscriptions["messages:$clientAddress"]?.cancel()
+            subscriptions[getMessagesKey(clientAddress)]?.cancel()
         }
 
         AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String ->
@@ -517,8 +517,8 @@ class XMTPModule : Module() {
     private fun subscribeToConversations(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-        subscriptions["conversations:${clientAddress})"]?.cancel()
-        subscriptions["conversations:${clientAddress}"] = CoroutineScope(Dispatchers.IO).launch {
+        subscriptions[getConversationsKey(clientAddress)]?.cancel()
+        subscriptions[getConversationsKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.conversations.stream().collect { conversation ->
                     sendEvent(
@@ -531,7 +531,7 @@ class XMTPModule : Module() {
                 }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in conversations subscription: $e")
-                subscriptions["conversations:${clientAddress}"]?.cancel()
+                subscriptions[getConversationsKey(clientAddress)]?.cancel()
             }
         }
     }
@@ -539,8 +539,8 @@ class XMTPModule : Module() {
     private fun subscribeToAllMessages(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-        subscriptions["messages:${clientAddress}"]?.cancel()
-        subscriptions["messages:${clientAddress}"] = CoroutineScope(Dispatchers.IO).launch {
+        subscriptions[getMessagesKey(clientAddress)]?.cancel()
+        subscriptions[getMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.conversations.streamAllMessages().collect { message ->
                     sendEvent(
@@ -553,7 +553,7 @@ class XMTPModule : Module() {
                 }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in all messages subscription: $e")
-                subscriptions["messages:${clientAddress}"]?.cancel()
+                subscriptions[getMessagesKey(clientAddress)]?.cancel()
             }
         }
     }
@@ -582,6 +582,14 @@ class XMTPModule : Module() {
                     subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
                 }
             }
+    }
+
+    private fun getMessagesKey(clientAddress: String): String {
+        return "messages:$clientAddress"
+    }
+
+    private fun getConversationsKey(clientAddress: String): String {
+        return "conversations:$clientAddress"
     }
 
     private fun unsubscribeFromMessages(
