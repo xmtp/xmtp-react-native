@@ -24,7 +24,7 @@ export default class Conversations {
   async importTopicData(topicData: string): Promise<Conversation> {
     const conversation = await XMTPModule.importConversationTopicData(
       this.client.address,
-      topicData
+      topicData,
     );
     this.known[conversation.topic] = true;
     return conversation;
@@ -32,12 +32,12 @@ export default class Conversations {
 
   async newConversation(
     peerAddress: string,
-    context?: ConversationContext
+    context?: ConversationContext,
   ): Promise<Conversation> {
     return await XMTPModule.createConversation(
       this.client.address,
       peerAddress,
-      context
+      context,
     );
   }
 
@@ -61,12 +61,12 @@ export default class Conversations {
 
         this.known[conversation.topic] = true;
         await callback(new Conversation(conversation));
-      }
+      },
     );
   }
 
   async streamAllMessages(
-    callback: (message: DecodedMessage) => Promise<void>
+    callback: (message: DecodedMessage) => Promise<void>,
   ) {
     XMTPModule.subscribeToAllMessages(this.client.address);
     XMTPModule.emitter.addListener(
@@ -79,17 +79,15 @@ export default class Conversations {
         message: DecodedMessage;
       }) => {
         if (clientAddress !== this.client.address) {
-          console.log("client address doesnt match this client address");
           return;
         }
         if (this.known[message.id]) {
-          console.log("known contains message id");
           return;
         }
 
         this.known[message.id] = true;
         await callback(message as DecodedMessage);
-      }
+      },
     );
   }
 
