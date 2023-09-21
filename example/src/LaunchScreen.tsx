@@ -16,7 +16,7 @@ export default function LaunchScreen({
   let savedKeys = useSavedKeys();
   const configureWallet = (
     label: string,
-    configuring: Promise<XMTP.Client>,
+    configuring: Promise<XMTP.Client>
   ) => {
     console.log("Connecting XMTP client", label);
     configuring
@@ -73,8 +73,8 @@ export default function LaunchScreen({
           color="green"
           onPress={() => {
             configureWallet(
-              'dev',
-              XMTP.Client.createRandom({ env: 'dev', appVersion }),
+              "dev",
+              XMTP.Client.createRandom({ env: "dev", appVersion })
             );
           }}
         />
@@ -85,8 +85,8 @@ export default function LaunchScreen({
           color="purple"
           onPress={() => {
             configureWallet(
-              'local',
-              XMTP.Client.createRandom({ env: 'local', appVersion }),
+              "local",
+              XMTP.Client.createRandom({ env: "local", appVersion })
             );
           }}
         />
@@ -112,11 +112,11 @@ export default function LaunchScreen({
               color="green"
               onPress={() => {
                 configureWallet(
-                  'dev',
+                  "dev",
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    env: 'dev',
+                    env: "dev",
                     appVersion,
-                  }),
+                  })
                 );
               }}
             />
@@ -127,11 +127,11 @@ export default function LaunchScreen({
               color="purple"
               onPress={() => {
                 configureWallet(
-                  'local',
+                  "local",
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    env: 'local',
+                    env: "local",
                     appVersion,
-                  }),
+                  })
                 );
               }}
             />
@@ -145,6 +145,41 @@ export default function LaunchScreen({
           </View>
         </>
       )}
+
+      <Button
+        title="Test Stream"
+        onPress={async () => {
+          console.log("testing streamsies");
+          const client1 = await XMTP.Client.createRandom();
+          const client2 = await XMTP.Client.createRandom();
+          const client3 = await XMTP.Client.createRandom();
+
+          const convo1 = await client3.conversations.newConversation(
+            client1.address
+          );
+
+          const convo2 = await client3.conversations.newConversation(
+            client2.address
+          );
+
+          await Promise.all([
+            client1.conversations.streamAllMessages(async (message) => {
+              console.log("client1 message", message);
+            }),
+
+            client2.conversations.streamAllMessages(async (message) => {
+              console.log("client2 message", message);
+            }),
+
+            async () => {
+              setTimeout(async () => {
+                console.log("sending message");
+                await convo1.send("hi");
+              }, 1000);
+            },
+          ]);
+        }}
+      />
     </ScrollView>
   );
 }
