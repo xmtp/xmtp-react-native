@@ -92,10 +92,10 @@ export default class Conversations {
   }
 
   cancelStream() {
-    XMTPModule.unsubscribeFromConversations();
+    XMTPModule.unsubscribeFromConversations(this.client.address);
   }
 
   cancelStreamAllMessages() {
-    XMTPModule.unsubscribeFromAllMessages();
+    XMTPModule.unsubscribeFromAllMessages(this.client.address);
   }
 }
