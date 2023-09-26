@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import {createContext, FC, ReactNode, useContext, useMemo, useState} from "react";
 import * as XMTP from "xmtp-react-native-sdk";
 
 const XmtpContext = createContext<{
@@ -9,7 +9,10 @@ const XmtpContext = createContext<{
   setClient: () => {},
 });
 export const useXmtp = () => useContext(XmtpContext);
-export function XmtpContextProvider({ children }) {
+type Props = {
+  children: ReactNode
+}
+export const XmtpContextProvider: FC<Props> = ({ children }) => {
   let [client, setClient] = useState<XMTP.Client | null>(null);
   let context = useMemo(() => ({ client, setClient }), [client, setClient]);
   return (

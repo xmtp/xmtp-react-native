@@ -36,12 +36,17 @@ import { PermissionStatus } from "expo-modules-core";
 import type { DocumentPickerAsset } from "expo-document-picker";
 import type { ImagePickerAsset } from "expo-image-picker";
 
+type Attachment = {
+  file?: DocumentPickerAsset
+  image?: ImagePickerAsset
+}
+
 /// Show the messages in a conversation.
 export default function ConversationScreen({
   route,
 }: NativeStackScreenProps<NavigationParamList, "conversation">) {
   let { topic } = route.params;
-  let messageListRef = useRef<FlatList>();
+  let messageListRef = useRef<FlatList>(null);
   let {
     data: messages,
     refetch: refreshMessages,
@@ -52,8 +57,7 @@ export default function ConversationScreen({
   let [replyingTo, setReplyingTo] = useState<string | null>(null);
   let [text, setText] = useState("");
   let [isShowingAttachmentModal, setShowingAttachmentModal] = useState(false);
-  let [attachment, setAttachment] = useState<
-    { image: ImagePickerAsset } | { file: DocumentPickerAsset } | null
+  let [attachment, setAttachment] = useState<Attachment | null
   >(null);
   let [isAttachmentPreviewing, setAttachmentPreviewing] = useState(false);
   let [isSending, setSending] = useState(false);
@@ -255,8 +259,7 @@ function AttachmentPreviewModal({
   onRequestClose,
 }: {
   attachment:
-    | { image: ImagePickerAsset }
-    | { file: DocumentPickerAsset }
+    Attachment
     | null;
   visible: boolean;
   onRequestClose: () => void;
@@ -264,7 +267,7 @@ function AttachmentPreviewModal({
   let isImage = attachment?.image?.type === "image";
   return (
     <CenteredModal visible={visible} onRequestClose={onRequestClose}>
-      {isImage && (
+      {(isImage && attachment?.image) && (
         <Image
           source={attachment.image}
           style={{
@@ -306,7 +309,7 @@ function AttachmentInputHeader({
   onRemove,
 }: {
   topic: string;
-  attachment: { file: DocumentPickerAsset } | { image: ImagePickerAsset };
+  attachment: Attachment;
   onPress: () => void;
   onRemove: () => void;
 }) {
@@ -323,7 +326,7 @@ function AttachmentInputHeader({
       }}
     >
       <TouchableOpacity onPress={onPress}>
-        {isImage && (
+        {(isImage && attachment?.image) && (
           <Image
             source={attachment.image}
             style={{
@@ -609,7 +612,7 @@ function AttachmentModal({
                   copyToCacheDirectory: true,
                   multiple: false,
                 });
-                if (result.type === "success" && result.assets?.length) {
+                if (!result.canceled && result.assets?.length) {
                   onAttachedFile(result.assets[0]);
                 }
               }}

@@ -1,7 +1,7 @@
 import { NavigationParamList } from "./Navigation";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useXmtp } from "./XmtpContext";
-import { useConversationList, useLastMessage, useMessages } from "./hooks";
+import { useConversationList, useMessages } from "./hooks";
 import {
   Button,
   FlatList,

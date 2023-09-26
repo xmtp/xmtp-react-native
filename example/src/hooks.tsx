@@ -248,7 +248,7 @@ export function usePrepareRemoteAttachment({
   fileUri,
   mimeType,
 }: {
-  fileUri?: `file://${string}`;
+  fileUri?: string;
   mimeType?: string;
 }): {
   remoteAttachment: RemoteAttachmentContent | undefined;
