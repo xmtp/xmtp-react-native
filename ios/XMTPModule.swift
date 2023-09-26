@@ -78,9 +78,9 @@ public class XMTPModule: Module {
         private var clients: [String: XMTP.Client] = [:]
 
         // A method to update the conversations
-        func updateClient(key: String, client: XMTP.Client?) {
+        func updateClient(key: String, client: XMTP.Client) {
+            ContentJson.initCodecs(client: client)
             clients[key] = client
-            ContentJson.initCodecs(client: clients[key])
         }
 
         // A method to retrieve a conversation
