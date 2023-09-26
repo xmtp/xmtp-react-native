@@ -1,6 +1,7 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import android.util.Base64
+import android.util.Log
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.protobuf.ByteString
@@ -146,8 +147,8 @@ class ContentJson(
             ContentTypeReaction.id -> mapOf(
                 "reaction" to mapOf(
                     "reference" to (content as Reaction).reference,
-                    "action" to content.action,
-                    "schema" to content.schema,
+                    "action" to content.action.javaClass.simpleName.lowercase(),
+                    "schema" to content.schema.javaClass.simpleName.lowercase(),
                     "content" to content.content,
                 )
             )
