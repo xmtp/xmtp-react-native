@@ -5,21 +5,17 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.protobuf.ByteString
 import org.xmtp.android.library.Client
-import org.xmtp.proto.message.contents.Content.EncodedContent
-import org.xmtp.android.library.codecs.decoded
+import org.xmtp.android.library.codecs.Attachment
+import org.xmtp.android.library.codecs.AttachmentCodec
 import org.xmtp.android.library.codecs.ContentTypeAttachment
 import org.xmtp.android.library.codecs.ContentTypeId
 import org.xmtp.android.library.codecs.ContentTypeReaction
-import org.xmtp.android.library.codecs.ContentTypeText
-import org.xmtp.android.library.codecs.AttachmentCodec
-import org.xmtp.android.library.codecs.Attachment
 import org.xmtp.android.library.codecs.ContentTypeReadReceipt
 import org.xmtp.android.library.codecs.ContentTypeRemoteAttachment
 import org.xmtp.android.library.codecs.ContentTypeReply
-import org.xmtp.android.library.codecs.ReactionAction
-import org.xmtp.android.library.codecs.ReactionSchema
-import org.xmtp.android.library.codecs.ReactionCodec
+import org.xmtp.android.library.codecs.ContentTypeText
 import org.xmtp.android.library.codecs.Reaction
+import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.ReadReceipt
 import org.xmtp.android.library.codecs.ReadReceiptCodec
 import org.xmtp.android.library.codecs.RemoteAttachment
@@ -27,12 +23,12 @@ import org.xmtp.android.library.codecs.RemoteAttachmentCodec
 import org.xmtp.android.library.codecs.Reply
 import org.xmtp.android.library.codecs.ReplyCodec
 import org.xmtp.android.library.codecs.TextCodec
+import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.codecs.getReactionAction
 import org.xmtp.android.library.codecs.getReactionSchema
 import org.xmtp.android.library.codecs.id
-
-import java.lang.Exception
+import org.xmtp.proto.message.contents.Content.EncodedContent
 import java.net.URL
 
 class ContentJson(
@@ -61,11 +57,13 @@ class ContentJson(
                 return ContentJson(ContentTypeText, obj.get("text").asString)
             } else if (obj.has("attachment")) {
                 val attachment = obj.get("attachment").asJsonObject
-                return ContentJson(ContentTypeAttachment, Attachment(
-                    filename = attachment.get("filename").asString,
-                    mimeType = attachment.get("mimeType").asString,
-                    data = ByteString.copyFrom(bytesFrom64(attachment.get("data").asString)),
-                ))
+                return ContentJson(
+                    ContentTypeAttachment, Attachment(
+                        filename = attachment.get("filename").asString,
+                        mimeType = attachment.get("mimeType").asString,
+                        data = ByteString.copyFrom(bytesFrom64(attachment.get("data").asString)),
+                    )
+                )
             } else if (obj.has("remoteAttachment")) {
                 val remoteAttachment = obj.get("remoteAttachment").asJsonObject
                 val metadata = EncryptedAttachmentMetadata.fromJsonObj(remoteAttachment)
@@ -84,12 +82,14 @@ class ContentJson(
                 )
             } else if (obj.has("reaction")) {
                 val reaction = obj.get("reaction").asJsonObject
-                return ContentJson(ContentTypeReaction, Reaction(
-                    reference = reaction.get("reference").asString,
-                    action = getReactionAction(reaction.get("action").asString.lowercase()),
-                    schema = getReactionSchema(reaction.get("schema").asString.lowercase()),
-                    content = reaction.get("content").asString,
-                ))
+                return ContentJson(
+                    ContentTypeReaction, Reaction(
+                        reference = reaction.get("reference").asString,
+                        action = getReactionAction(reaction.get("action").asString.lowercase()),
+                        schema = getReactionSchema(reaction.get("schema").asString.lowercase()),
+                        content = reaction.get("content").asString,
+                    )
+                )
             } else if (obj.has("reply")) {
                 val reply = obj.get("reply").asJsonObject
                 val nested = fromJsonObject(reply.get("content").asJsonObject)
@@ -99,11 +99,13 @@ class ContentJson(
                 if (nested.content == null) {
                     throw Exception("Bad reply content")
                 }
-                return ContentJson(ContentTypeReply, Reply(
-                    reference = reply.get("reference").asString,
-                    content = nested.content,
-                    contentType = nested.type,
-                ))
+                return ContentJson(
+                    ContentTypeReply, Reply(
+                        reference = reply.get("reference").asString,
+                        content = nested.content,
+                        contentType = nested.type,
+                    )
+                )
             } else if (obj.has("readReceipt")) {
                 return ContentJson(ContentTypeReadReceipt, ReadReceipt)
             } else {
@@ -146,8 +148,8 @@ class ContentJson(
             ContentTypeReaction.id -> mapOf(
                 "reaction" to mapOf(
                     "reference" to (content as Reaction).reference,
-                    "action" to content.action,
-                    "schema" to content.schema,
+                    "action" to content.action.javaClass.simpleName.lowercase(),
+                    "schema" to content.schema.javaClass.simpleName.lowercase(),
                     "content" to content.content,
                 )
             )
