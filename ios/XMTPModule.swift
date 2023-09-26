@@ -79,11 +79,8 @@ public class XMTPModule: Module {
 
         // A method to update the conversations
         func updateClient(key: String, client: XMTP.Client?) {
-            if clients[key] == nil, let client {
-                ContentJson.initCodecs(client: client)
-            }
-
             clients[key] = client
+            ContentJson.initCodecs(client: clients[key])
         }
 
         // A method to retrieve a conversation
