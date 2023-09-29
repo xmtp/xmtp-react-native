@@ -495,3 +495,64 @@ test("can send read receipts", async () => {
   return true;
 });
 
+test("can stream all messages", async () => {
+  const bo = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+  const alix = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+
+  // Record message stream across all conversations
+  const allMessages: DecodedMessage[] = [];
+  await alix.conversations.streamAllMessages(async (message) => {
+    console.log(`Pushing message ${message.id}`)
+    allMessages.push(message);
+  });
+
+  // Start Bob starts a new conversation.
+  const boConvo = await bo.conversations.newConversation(alix.address);
+  await delayToPropogate();
+
+  for (let i = 0; i < 5; i++) {
+    console.log(`Message ${i}`)
+    await boConvo.send({ text: `Message ${i}` });
+    await delayToPropogate();
+  }
+  if (allMessages.length !== 5) {
+    console.log("Failing here at 5")
+    throw Error("Unexpected all messages count " + allMessages.length);
+  }
+
+  // Starts a new conversation.
+  const caro = await XMTP.Client.createRandom({ env: "local" });
+  const caroConvo = await caro.conversations.newConversation(alix.address);
+  await delayToPropogate();
+  for (let i = 0; i < 5; i++) {
+    console.log(`Message2 ${i}`)
+    await caroConvo.send({ text: `Message ${i}` });
+    await delayToPropogate();
+  }
+  if (allMessages.length !== 10) {
+    console.log("Failing here at 10")
+    throw Error("Unexpected all messages count " + allMessages.length);
+  }
+
+  alix.conversations.cancelStreamAllMessages();
+
+  await alix.conversations.streamAllMessages(async (message) => {
+    allMessages.push(message);
+  });
+
+  for (let i = 0; i < 5; i++) {
+    console.log(`Message3 ${i}`)
+    await boConvo.send({ text: `Message ${i}` });
+    await delayToPropogate();
+  }
+  if (allMessages.length <= 10) {
+    console.log(`Failing here at 15 ${allMessages.length}`)
+    throw Error("Unexpected all messages count " + allMessages.length);
+  }
+
+
+  return true;
+});
+
