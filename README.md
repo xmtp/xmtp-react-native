@@ -1,6 +1,6 @@
 # xmtp-react-native
  
-![Lint](https://github.com/xmtp/xmtp-android/actions/workflows/lint.yml/badge.svg) ![Status](https://img.shields.io/badge/Project_Status-Beta-yellow)
+![Lint](https://github.com/xmtp/xmtp-android/actions/workflows/lint.yml/badge.svg) ![Status](https://img.shields.io/badge/Project_Status-Production-brightgreen)
 
 This repo provides a package you can use to build with XMTP in a React Native or Expo app.
 
@@ -92,7 +92,7 @@ Currently, network nodes are configured to rate limit high-volume publishing fro
 > **Important**  
 > If you are building a production-grade app, be sure to use an architecture that includes a local cache backed by an XMTP SDK.  
 
-To learn more, see [Use a local cache](https://xmtp.org/docs/tutorials/performance#use-a-local-cache).
+To learn more, see [Use local-first architecture](https://xmtp.org/docs/build/local-first).
 
 ## Create a client
 
@@ -220,7 +220,7 @@ You can listen for any new messages (incoming or outgoing) in a conversation by 
 
 A successfully received message (that makes it through the decoding and decryption without throwing) can be trusted to be authentic, i.e. that it was sent by the owner of the `message.senderAddress` wallet and that it wasn't modified in transit. The `message.sent` timestamp can be trusted to have been set by the sender.
 
-The Stream returned by the `stream` methods is an asynchronous iterator and as such usable by a for-await-of loop. Note however that it is by its nature infinite, so any looping construct used with it will not terminate, unless the termination is explicitly initiated by calling `cancelStreamMessages()`
+The Stream returned by the `stream` methods is an asynchronous iterator and as such usable by a for-await-of loop. Note however that it is by its nature infinite, so any looping construct used with it will not terminate, unless the termination is explicitly initiated by calling `cancelStreamMessages()`.
 
 ```tsx
 const conversation = await xmtp.conversations.newConversation(
@@ -315,7 +315,7 @@ All send functions support `SendOptions` as an optional parameter. The `contentT
 
 To learn more about content types, see [Content types with XMTP](https://xmtp.org/docs/concepts/content-types).
 
-For example, see the [Codecs](https://github.com/xmtp/xmtp-react-native/blob/main/src/lib/CodecRegistry.ts) available in `xmtp-react-native`.
+For example, see the [Codecs](https://github.com/xmtp/xmtp-react-native/blob/main/src/XMTP.types.ts) available in `xmtp-react-native`.
 
 ```tsx
   await conversation.send({
@@ -346,7 +346,7 @@ The keys returned by `exportKeyBundle` should be treated with the utmost care as
 
 ## Enable the example app to send push notifications
 
-Check out the `push-notifications-example` branch and follow instructions in the README
+Check out the `push-notifications-example` branch and follow instructions [in the README](https://github.com/xmtp/xmtp-react-native/blob/push-notifications-example/README.md).
 
 ## 🏗 Breaking revisions
 
@@ -376,7 +376,7 @@ XMTP provides both `production` and `dev` network environments to support the de
 The `production` and `dev` networks are completely separate and not interchangeable.
 For example, for a given blockchain account address, its XMTP identity on `dev` network is completely distinct from its XMTP identity on the `production` network, as are the messages associated with these identities. In addition, XMTP identities and messages created on the `dev` network can't be accessed from or moved to the `production` network, and vice versa.
 
-> **Important**
+> **Important**  
 > When you [create a client](#create-a-client), it connects to the XMTP `dev` environment by default. To learn how to use the `env` parameter to set your client's network environment, see [Configure the client](#configure-the-client).
 
 The `env` parameter accepts one of three valid values: `dev`, `production`, or `local`. Here are some best practices for when to use each environment:
