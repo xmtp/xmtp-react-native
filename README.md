@@ -315,7 +315,11 @@ All send functions support `SendOptions` as an optional parameter. The `contentT
 
 To learn more about content types, see [Content types with XMTP](https://xmtp.org/docs/concepts/content-types).
 
-For example, see the [Codecs](https://github.com/xmtp/xmtp-react-native/blob/main/src/XMTP.types.ts) available in `xmtp-react-native`.
+The SDK preregisters the following codecs:
+
+- For [Android](https://github.com/xmtp/xmtp-react-native/blob/main/android/src/main/java/expo/modules/xmtpreactnativesdk/wrappers/ContentJson.kt#L43-L53), using these [source codecs](https://github.com/xmtp/xmtp-android/tree/main/library/src/main/java/org/xmtp/android/library/codecs).
+
+- For [iOS](https://github.com/xmtp/xmtp-react-native/blob/main/ios/Wrappers/DecodedMessageWrapper.swift#L35-L48), using these [source codecs](https://github.com/xmtp/xmtp-ios/tree/main/Sources/XMTP/Codecs).
 
 ```tsx
   await conversation.send({
