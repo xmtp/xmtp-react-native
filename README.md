@@ -14,7 +14,7 @@ To learn more about XMTP and get answers to frequently asked questions, see [XMT
 
 ## Reference docs
 
-Access the `xmtp-react-native` client SDK [reference documentation](https://xmtp.github.io/xmtp-react-native/).
+Access the `xmtp-react-native` client SDK [reference documentation](https://xmtp.github.io/xmtp-react-native/modules.html).
 
 ## Example app
 
