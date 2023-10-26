@@ -559,24 +559,21 @@ test("canManagePreferences", async () => {
   );
   await delayToPropogate();
 
-  await bo.contacts.refreshAllowList();
-  await delayToPropogate();
-
   const initialConvoState = await alixConversation.allowState();
   if (initialConvoState != "allowed") {
     throw new Error(`conversations created by bo should be allowed by default not ${initialConvoState}`);
   }
 
-  const initialState = await bo.contacts.isAllowed(alixConversation.clientAddress);
+  const initialState = await bo.contacts.isAllowed(alixConversation.peerAddress);
   if (!initialState) {
     throw new Error(`contacts created by bo should be allowed by default not ${initialState}`);
   }
 
-  bo.contacts.block([alixConversation.clientAddress]);
+  bo.contacts.block([alixConversation.peerAddress]);
   await delayToPropogate();
 
-  const blockedState = await bo.contacts.isBlocked(alixConversation.clientAddress);
-  const allowedState = await bo.contacts.isAllowed(alixConversation.clientAddress);
+  const blockedState = await bo.contacts.isBlocked(alixConversation.peerAddress);
+  const allowedState = await bo.contacts.isAllowed(alixConversation.peerAddress);
   if (!blockedState) {
     throw new Error(`contacts blocked by bo should be blocked not ${blockedState}`);
   }
