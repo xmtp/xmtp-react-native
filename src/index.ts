@@ -261,6 +261,40 @@ export async function decodeMessage(
   );
 }
 
+export async function isAllowed(
+  clientAddress: string,
+  address: string,
+): Promise<boolean> {
+  return await XMTPModule.isAllowed(clientAddress, address);
+}
+
+export async function isBlocked(
+  clientAddress: string,
+  address: string,
+): Promise<boolean> {
+  return await XMTPModule.isBlocked(clientAddress, address);
+}
+
+export function blockContacts(
+  clientAddress: string,
+  addresses: string[],
+) {
+  XMTPModule.blockContacts(clientAddress, addresses);
+}
+
+export function allowContacts(
+  clientAddress: string,
+  addresses: string[],
+) {
+  XMTPModule.allowContacts(clientAddress, addresses);
+}
+
+export function refreshAllowList(
+  clientAddress: string
+) {
+  XMTPModule.refreshAllowList(clientAddress);
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);
 
 export { Client } from "./lib/Client";

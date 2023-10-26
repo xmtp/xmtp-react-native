@@ -19,8 +19,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
+import org.xmtp.android.library.AllowList
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.Conversation
@@ -487,6 +489,33 @@ class XMTPModule : Module() {
                     ?: throw XMTPException("no conversation found for $topic")
             val decodedMessage = conversation.decode(envelope)
             DecodedMessageWrapper.encode(decodedMessage)
+        }
+
+        AsyncFunction("isAllowed") { clientAddress: String, address: String ->
+            logV("isAllowed")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.isAllowed(address)
+        }
+
+        Function("isBlocked") { clientAddress: String, address: String ->
+            logV("isBlocked")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.isBlocked(address)
+        }
+
+        Function("blockContacts") { clientAddress: String, addresses: List<String>  ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.block(addresses)
+        }
+
+        Function("allowContacts") { clientAddress: String, addresses: List<String>  ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.allow(addresses)
+        }
+
+        Function("refreshAllowList") { clientAddress: String ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.refreshAllowList()
         }
     }
 
