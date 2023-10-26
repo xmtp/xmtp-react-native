@@ -549,14 +549,14 @@ public class XMTPModule: Module {
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
-            try await client.contacts.refreshAllowList()
+            try await client.contacts.refreshConsentList()
         }  
         
         AsyncFunction("conversationConsentState") { (clientAddress: String, conversationTopic: String) -> String in
             guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
                 throw Error.conversationNotFound(conversationTopic)
             }
-            switch (await conversation.allowState()) {
+            switch (await conversation.consentState()) {
             case .allowed: return "allowed"
             case .blocked: return "blocked"
             case .unknown: return "unknown"
