@@ -261,6 +261,47 @@ export async function decodeMessage(
   );
 }
 
+export async function conversationConsentState(
+  clientAddress: string, 
+  conversationTopic: string
+): Promise<"allowed" | "blocked" | "unknown"> {
+  return await XMTPModule.conversationConsentState(clientAddress, conversationTopic);
+}
+
+export async function isAllowed(
+  clientAddress: string,
+  address: string,
+): Promise<boolean> {
+  return await XMTPModule.isAllowed(clientAddress, address);
+}
+
+export async function isBlocked(
+  clientAddress: string,
+  address: string,
+): Promise<boolean> {
+  return await XMTPModule.isBlocked(clientAddress, address);
+}
+
+export function blockContacts(
+  clientAddress: string,
+  addresses: string[],
+) {
+  XMTPModule.blockContacts(clientAddress, addresses);
+}
+
+export function allowContacts(
+  clientAddress: string,
+  addresses: string[],
+) {
+  XMTPModule.allowContacts(clientAddress, addresses);
+}
+
+export function refreshConsentList(
+  clientAddress: string
+) {
+  XMTPModule.refreshConsentList(clientAddress);
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);
 
 export { Client } from "./lib/Client";

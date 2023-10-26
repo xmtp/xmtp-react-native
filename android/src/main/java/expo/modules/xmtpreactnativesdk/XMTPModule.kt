@@ -23,6 +23,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
+import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.PreparedMessage
 import org.xmtp.android.library.SendOptions
@@ -487,6 +488,43 @@ class XMTPModule : Module() {
                     ?: throw XMTPException("no conversation found for $topic")
             val decodedMessage = conversation.decode(envelope)
             DecodedMessageWrapper.encode(decodedMessage)
+        }
+
+        AsyncFunction("isAllowed") { clientAddress: String, address: String ->
+            logV("isAllowed")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.isAllowed(address)
+        }
+
+        Function("isBlocked") { clientAddress: String, address: String ->
+            logV("isBlocked")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.isBlocked(address)
+        }
+
+        AsyncFunction("blockContacts") { clientAddress: String, addresses: List<String> ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.block(addresses)
+        }
+
+        AsyncFunction("allowContacts") { clientAddress: String, addresses: List<String> ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.allow(addresses)
+        }
+
+        AsyncFunction("refreshConsentList") { clientAddress: String ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.refreshConsentList()
+        }
+
+        AsyncFunction("conversationConsentState") { clientAddress: String, conversationTopic: String ->
+            val conversation = findConversation(clientAddress, conversationTopic)
+                ?: throw XMTPException("no conversation found for $conversationTopic")
+            when (conversation.consentState()) {
+                ConsentState.ALLOWED -> "allowed"
+                ConsentState.BLOCKED -> "blocked"
+                ConsentState.UNKNOWN -> "unknown"
+            }
         }
     }
 

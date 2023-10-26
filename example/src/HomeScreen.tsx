@@ -10,8 +10,8 @@ import {
   Text,
   View,
 } from "react-native";
-import React, { useContext } from "react";
-import { Conversation } from "xmtp-react-native-sdk";
+import React, { useContext, useState } from "react";
+import { Conversation, Client } from "xmtp-react-native-sdk";
 import { NavigationContext } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack/src/types";
 import moment from "moment";
@@ -33,7 +33,7 @@ export default function HomeScreen() {
       data={conversations || []}
       keyExtractor={(item) => item.topic}
       renderItem={({ item: conversation }) => (
-        <ConversationItem conversation={conversation} />
+        <ConversationItem conversation={conversation} client={client}/>
       )}
       ListHeaderComponent={
         <View
@@ -57,10 +57,17 @@ export default function HomeScreen() {
   );
 }
 
-function ConversationItem({ conversation }: { conversation: Conversation }) {
+function ConversationItem({ conversation, client }: { conversation: Conversation, client: Client | null }) {
   const navigation = useContext(NavigationContext);
   const { data: messages } = useMessages({ topic: conversation.topic });
   const lastMessage = messages?.[0];
+  let [getConsentState, setConsentState] = useState<string | undefined>();
+
+  conversation.consentState().then(result => {
+    setConsentState(result);
+  })
+  const blockContact = () => client?.contacts.block([conversation.peerAddress]);
+
   return (
     <Pressable
       onPress={() =>
@@ -79,6 +86,13 @@ function ConversationItem({ conversation }: { conversation: Conversation }) {
           <Text style={{ fontWeight: "bold" }}>
             ({messages?.length} messages)
           </Text>
+          <Button
+            title="Block"
+            onPress={blockContact}
+            disabled={
+              getConsentState == "blocked"
+            }
+          />
         </View>
         <View style={{ padding: 4 }}>
           <Text numberOfLines={1} ellipsizeMode="tail">
@@ -86,6 +100,8 @@ function ConversationItem({ conversation }: { conversation: Conversation }) {
           </Text>
           <Text>{lastMessage?.senderAddress}:</Text>
           <Text>{moment(lastMessage?.sent).fromNow()}</Text>
+          <Text style={{ fontWeight: "bold", color: "red" }}>{getConsentState}</Text>
+
         </View>
       </View>
     </Pressable>

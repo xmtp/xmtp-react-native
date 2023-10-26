@@ -1,6 +1,7 @@
 import { Signer, utils } from "ethers";
 
 import Conversations from "./Conversations";
+import Contacts from "./Contacts";
 import type {
   DecryptedLocalAttachment,
   DecodedMessage,
@@ -15,6 +16,7 @@ declare const Buffer;
 export class Client {
   address: string;
   conversations: Conversations;
+  contacts: Contacts;
 
   static async create(
     signer: Signer,
@@ -84,6 +86,7 @@ export class Client {
   constructor(address: string) {
     this.address = address;
     this.conversations = new Conversations(this);
+    this.contacts = new Contacts(this);
   }
 
   async exportKeyBundle(): Promise<string> {
