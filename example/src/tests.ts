@@ -549,3 +549,41 @@ test("can stream all messages", async () => {
   return true;
 });
 
+test("canManagePreferences", async () => {
+  const bo = await XMTP.Client.createRandom({ env: "local" });
+  const alix = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+
+  const alixConversation = await bo.conversations.newConversation(
+      alix.address,
+  );
+  await delayToPropogate();
+
+  const initialState = await bo.contacts.isAllowed(alixConversation.clientAddress)
+  if (!initialState) {
+    throw new Error(`conversations created by bob should be allowed by default not ${initialState}`);
+  }
+
+  bo.contacts.block([alixConversation.clientAddress]);
+  await delayToPropogate();
+
+  const blockedState = await bo.contacts.isBlocked(alixConversation.clientAddress);
+  const allowedState = await bo.contacts.isAllowed(alixConversation.clientAddress);
+  if (!blockedState) {
+    throw new Error(`conversations blocked by bob should be blocked not ${blockedState}`);
+  }
+
+  if (allowedState) {
+    throw new Error(`conversations blocked by bob should be blocked not ${allowedState}`);
+  }
+
+  const convoState = await alixConversation.allowState();
+  await delayToPropogate();
+
+  if (convoState != "blocked") {
+    throw new Error(`conversations blocked by bob should be blocked not ${convoState}`);
+  }
+  
+  return true
+});
+

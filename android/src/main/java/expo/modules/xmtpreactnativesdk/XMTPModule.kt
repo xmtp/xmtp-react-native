@@ -23,6 +23,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import org.xmtp.android.library.AllowList
+import org.xmtp.android.library.AllowState
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.Conversation
@@ -503,19 +504,29 @@ class XMTPModule : Module() {
             client.contacts.isBlocked(address)
         }
 
-        Function("blockContacts") { clientAddress: String, addresses: List<String>  ->
+        AsyncFunction("blockContacts") { clientAddress: String, addresses: List<String> ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             client.contacts.block(addresses)
         }
 
-        Function("allowContacts") { clientAddress: String, addresses: List<String>  ->
+        AsyncFunction("allowContacts") { clientAddress: String, addresses: List<String> ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             client.contacts.allow(addresses)
         }
 
-        Function("refreshAllowList") { clientAddress: String ->
+        AsyncFunction("refreshAllowList") { clientAddress: String ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             client.contacts.refreshAllowList()
+        }
+
+        AsyncFunction("conversationAllowState") { clientAddress: String, conversationTopic: String ->
+            val conversation = findConversation(clientAddress, conversationTopic)
+                ?: throw XMTPException("no conversation found for $conversationTopic")
+            when (conversation.allowState()) {
+                AllowState.ALLOW -> "allowed"
+                AllowState.BLOCK -> "blocked"
+                AllowState.UNKNOWN -> "unknown"
+            }
         }
     }
 

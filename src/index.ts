@@ -261,6 +261,13 @@ export async function decodeMessage(
   );
 }
 
+export async function conversationAllowState(
+  clientAddress: string, 
+  conversationTopic: string
+): Promise<"allowed" | "blocked" | "unknown"> {
+  return await XMTPModule.conversationAllowState(clientAddress, conversationTopic);
+}
+
 export async function isAllowed(
   clientAddress: string,
   address: string,

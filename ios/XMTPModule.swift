@@ -545,12 +545,23 @@ public class XMTPModule: Module {
             return try await client.contacts.allow(addresses: addresses)
         }
         
-         AsyncFunction("refreshAllowList") { (clientAddress: String) in
+        AsyncFunction("refreshAllowList") { (clientAddress: String) in
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
             return try await client.contacts.refreshAllowList()
-        }       
+        }  
+        
+        AsyncFunction("conversationAllowState") { (clientAddress: String, conversationTopic: String) -> String in
+            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+                throw Error.conversationNotFound(topic)
+            }
+            switch (conversation.allowState()) {
+            case .allowed -> return "allowed"
+            case .blocked -> return "blocked"
+            case .unknown -> return "unknown"
+            }
+        }     
     }
 
     //
