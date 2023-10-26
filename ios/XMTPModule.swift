@@ -521,45 +521,45 @@ public class XMTPModule: Module {
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
-            return await client.contacts.isAllowed(address: address)
+            return await client.contacts.isAllowed(address)
         }
 
         AsyncFunction("isBlocked") { (clientAddress: String, address: String) -> Bool in
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
-            return await client.contacts.isBlocked(address: address)
+            return await client.contacts.isBlocked(address)
         }
 
         AsyncFunction("blockContacts") { (clientAddress: String, addresses: [String]) in
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
-            return try await client.contacts.block(addresses: addresses)
+            try await client.contacts.block(addresses: addresses)
         }
 
         AsyncFunction("allowContacts") { (clientAddress: String, addresses: [String]) in
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
-            return try await client.contacts.allow(addresses: addresses)
+            try await client.contacts.allow(addresses: addresses)
         }
         
         AsyncFunction("refreshAllowList") { (clientAddress: String) in
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
-            return try await client.contacts.refreshAllowList()
+            try await client.contacts.refreshAllowList()
         }  
         
         AsyncFunction("conversationAllowState") { (clientAddress: String, conversationTopic: String) -> String in
-            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
-                throw Error.conversationNotFound(topic)
+            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
+                throw Error.conversationNotFound(conversationTopic)
             }
-            switch (conversation.allowState()) {
-            case .allowed -> return "allowed"
-            case .blocked -> return "blocked"
-            case .unknown -> return "unknown"
+            switch (await conversation.allowState()) {
+            case .allowed: return "allowed"
+            case .blocked: return "blocked"
+            case .unknown: return "unknown"
             }
         }     
     }

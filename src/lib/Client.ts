@@ -86,6 +86,7 @@ export class Client {
   constructor(address: string) {
     this.address = address;
     this.conversations = new Conversations(this);
+    this.contacts = new Contacts(this);
   }
 
   async exportKeyBundle(): Promise<string> {

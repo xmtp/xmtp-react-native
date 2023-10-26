@@ -19,9 +19,9 @@ function test(name: string, perform: () => Promise<boolean>) {
   tests.push({ name, run: perform });
 }
 
-// test("can fail", async () => {
-//   return false;
-// });
+test("can fail", async () => {
+  return false;
+});
 
 test("can make a client", async () => {
   const client = await XMTP.Client.createRandom({
@@ -559,9 +559,17 @@ test("canManagePreferences", async () => {
   );
   await delayToPropogate();
 
-  const initialState = await bo.contacts.isAllowed(alixConversation.clientAddress)
+  await bo.contacts.refreshAllowList();
+  await delayToPropogate();
+
+  const initialConvoState = await alixConversation.allowState();
+  if (initialConvoState != "allowed") {
+    throw new Error(`conversations created by bo should be allowed by default not ${initialConvoState}`);
+  }
+
+  const initialState = await bo.contacts.isAllowed(alixConversation.clientAddress);
   if (!initialState) {
-    throw new Error(`conversations created by bob should be allowed by default not ${initialState}`);
+    throw new Error(`contacts created by bo should be allowed by default not ${initialState}`);
   }
 
   bo.contacts.block([alixConversation.clientAddress]);
@@ -570,18 +578,18 @@ test("canManagePreferences", async () => {
   const blockedState = await bo.contacts.isBlocked(alixConversation.clientAddress);
   const allowedState = await bo.contacts.isAllowed(alixConversation.clientAddress);
   if (!blockedState) {
-    throw new Error(`conversations blocked by bob should be blocked not ${blockedState}`);
+    throw new Error(`contacts blocked by bo should be blocked not ${blockedState}`);
   }
 
   if (allowedState) {
-    throw new Error(`conversations blocked by bob should be blocked not ${allowedState}`);
+    throw new Error(`contacts blocked by bo should be blocked not ${allowedState}`);
   }
 
   const convoState = await alixConversation.allowState();
   await delayToPropogate();
 
   if (convoState != "blocked") {
-    throw new Error(`conversations blocked by bob should be blocked not ${convoState}`);
+    throw new Error(`conversations blocked by bo should be blocked not ${convoState}`);
   }
   
   return true
