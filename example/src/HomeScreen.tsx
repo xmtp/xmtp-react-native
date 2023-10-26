@@ -61,10 +61,10 @@ function ConversationItem({ conversation, client }: { conversation: Conversation
   const navigation = useContext(NavigationContext);
   const { data: messages } = useMessages({ topic: conversation.topic });
   const lastMessage = messages?.[0];
-  let [getAllowState, setAllowState] = useState<string>();
+  let [getConsentState, setConsentState] = useState<string>();
 
-  conversation.allowState().then(result => {
-    setAllowState(result);
+  conversation.consentState().then(result => {
+    setConsentState(result);
   })
   const blockContact = () => client?.contacts.block([conversation.peerAddress]);
 
@@ -90,7 +90,7 @@ function ConversationItem({ conversation, client }: { conversation: Conversation
             title="Block"
             onPress={blockContact}
             disabled={
-              getAllowState == "blocked"
+              getConsentState == "blocked"
             }
           />
         </View>
@@ -100,7 +100,7 @@ function ConversationItem({ conversation, client }: { conversation: Conversation
           </Text>
           <Text>{lastMessage?.senderAddress}:</Text>
           <Text>{moment(lastMessage?.sent).fromNow()}</Text>
-          <Text style={{ fontWeight: "bold", color: "red" }}>{getAllowState}</Text>
+          <Text style={{ fontWeight: "bold", color: "red" }}>{getConsentState}</Text>
 
         </View>
       </View>

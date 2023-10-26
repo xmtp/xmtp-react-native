@@ -555,7 +555,7 @@ test("canManagePreferences", async () => {
   );
   await delayToPropogate();
 
-  const initialConvoState = await alixConversation.allowState();
+  const initialConvoState = await alixConversation.consentState();
   if (initialConvoState != "allowed") {
     throw new Error(`conversations created by bo should be allowed by default not ${initialConvoState}`);
   }
@@ -578,7 +578,7 @@ test("canManagePreferences", async () => {
     throw new Error(`contacts blocked by bo should be blocked not ${allowedState}`);
   }
 
-  const convoState = await alixConversation.allowState();
+  const convoState = await alixConversation.consentState();
   await delayToPropogate();
 
   if (convoState != "blocked") {
