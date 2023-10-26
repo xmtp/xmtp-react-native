@@ -61,7 +61,7 @@ function ConversationItem({ conversation, client }: { conversation: Conversation
   const navigation = useContext(NavigationContext);
   const { data: messages } = useMessages({ topic: conversation.topic });
   const lastMessage = messages?.[0];
-  let [getAllowState, setAllowState] = useState<string>("Not Set");
+  let [getAllowState, setAllowState] = useState<string>();
 
   conversation.allowState().then(result => {
     setAllowState(result);
