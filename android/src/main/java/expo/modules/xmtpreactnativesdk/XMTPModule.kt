@@ -19,10 +19,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
-import org.xmtp.android.library.AllowList
 import org.xmtp.android.library.AllowState
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
