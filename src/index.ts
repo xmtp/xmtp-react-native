@@ -261,11 +261,11 @@ export async function decodeMessage(
   );
 }
 
-export async function conversationAllowState(
+export async function conversationConsentState(
   clientAddress: string, 
   conversationTopic: string
 ): Promise<"allowed" | "blocked" | "unknown"> {
-  return await XMTPModule.conversationAllowState(clientAddress, conversationTopic);
+  return await XMTPModule.conversationConsentState(clientAddress, conversationTopic);
 }
 
 export async function isAllowed(
@@ -296,10 +296,10 @@ export function allowContacts(
   XMTPModule.allowContacts(clientAddress, addresses);
 }
 
-export function refreshAllowList(
+export function refreshConsentList(
   clientAddress: string
 ) {
-  XMTPModule.refreshAllowList(clientAddress);
+  XMTPModule.refreshConsentList(clientAddress);
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);

@@ -26,7 +26,7 @@ export default class Contacts {
     XMTPModule.allowContacts(this.client.address, addresses);
   }
 
-  refreshAllowList() {
-    XMTPModule.refreshAllowList(this.client.address);
+  refreshConsentList() {
+    XMTPModule.refreshConsentList(this.client.address);
   }
 }

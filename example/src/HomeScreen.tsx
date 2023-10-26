@@ -61,7 +61,7 @@ function ConversationItem({ conversation, client }: { conversation: Conversation
   const navigation = useContext(NavigationContext);
   const { data: messages } = useMessages({ topic: conversation.topic });
   const lastMessage = messages?.[0];
-  let [getConsentState, setConsentState] = useState<string>();
+  let [getConsentState, setConsentState] = useState<string | undefined>();
 
   conversation.consentState().then(result => {
     setConsentState(result);

@@ -512,12 +512,12 @@ class XMTPModule : Module() {
             client.contacts.allow(addresses)
         }
 
-        AsyncFunction("refreshAllowList") { clientAddress: String ->
+        AsyncFunction("refreshConsentList") { clientAddress: String ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             client.contacts.refreshAllowList()
         }
 
-        AsyncFunction("conversationAllowState") { clientAddress: String, conversationTopic: String ->
+        AsyncFunction("conversationConsentState") { clientAddress: String, conversationTopic: String ->
             val conversation = findConversation(clientAddress, conversationTopic)
                 ?: throw XMTPException("no conversation found for $conversationTopic")
             when (conversation.allowState()) {
