@@ -516,6 +516,41 @@ public class XMTPModule: Module {
             let decodedMessage = try conversation.decode(envelope)
             return try DecodedMessageWrapper.encode(decodedMessage)
         }
+
+        AsyncFunction("isAllowed") { (clientAddress: String, address: String) -> Bool in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            return await client.contacts.isAllowed(address: address)
+        }
+
+        AsyncFunction("isBlocked") { (clientAddress: String, address: String) -> Bool in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            return await client.contacts.isBlocked(address: address)
+        }
+
+        AsyncFunction("blockContacts") { (clientAddress: String, addresses: [String]) in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            return try await client.contacts.block(addresses: addresses)
+        }
+
+        AsyncFunction("allowContacts") { (clientAddress: String, addresses: [String]) in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            return try await client.contacts.allow(addresses: addresses)
+        }
+        
+         AsyncFunction("refreshAllowList") { (clientAddress: String) in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            return try await client.contacts.refreshAllowList()
+        }       
     }
 
     //
