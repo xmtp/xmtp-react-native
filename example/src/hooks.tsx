@@ -17,6 +17,7 @@ import { downloadFile, uploadFile } from "./storage";
  */
 export function useConversationList(): UseQueryResult<Conversation[]> {
   const { client } = useXmtp();
+  client?.contacts.refreshAllowList();
   return useQuery<Conversation[]>(
     ["xmtp", "conversations", client?.address],
     () => client!.conversations.list(),
