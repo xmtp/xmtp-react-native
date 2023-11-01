@@ -496,15 +496,16 @@ class XMTPModule : Module() {
             client.contacts.isAllowed(address)
         }
 
-        Function("isBlocked") { clientAddress: String, address: String ->
-            logV("isBlocked")
+        Function("isDenied") { clientAddress: String, address: String ->
+            logV("isDenied")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.isBlocked(address)
+            client.contacts.isDenied(address)
         }
 
-        AsyncFunction("blockContacts") { clientAddress: String, addresses: List<String> ->
+        AsyncFunction("denyContacts") { clientAddress: String, addresses: List<String> ->
+            logV("denyContacts")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.block(addresses)
+            client.contacts.deny(addresses)
         }
 
         AsyncFunction("allowContacts") { clientAddress: String, addresses: List<String> ->
@@ -522,7 +523,7 @@ class XMTPModule : Module() {
                 ?: throw XMTPException("no conversation found for $conversationTopic")
             when (conversation.consentState()) {
                 ConsentState.ALLOWED -> "allowed"
-                ConsentState.BLOCKED -> "blocked"
+                ConsentState.DENIED -> "denied"
                 ConsentState.UNKNOWN -> "unknown"
             }
         }

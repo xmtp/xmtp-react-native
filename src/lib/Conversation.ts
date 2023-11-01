@@ -114,7 +114,7 @@ export class Conversation {
     }
   }
 
-  async consentState(): Promise<"allowed" | "blocked" | "unknown"> {
+  async consentState(): Promise<"allowed" | "denied" | "unknown"> {
     return await XMTP.conversationConsentState(this.clientAddress, this.topic);
   }
 

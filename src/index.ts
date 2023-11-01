@@ -264,7 +264,7 @@ export async function decodeMessage(
 export async function conversationConsentState(
   clientAddress: string, 
   conversationTopic: string
-): Promise<"allowed" | "blocked" | "unknown"> {
+): Promise<"allowed" | "denied" | "unknown"> {
   return await XMTPModule.conversationConsentState(clientAddress, conversationTopic);
 }
 
@@ -275,18 +275,18 @@ export async function isAllowed(
   return await XMTPModule.isAllowed(clientAddress, address);
 }
 
-export async function isBlocked(
+export async function isDenied(
   clientAddress: string,
   address: string,
 ): Promise<boolean> {
-  return await XMTPModule.isBlocked(clientAddress, address);
+  return await XMTPModule.isDenied(clientAddress, address);
 }
 
-export function blockContacts(
+export function denyContacts(
   clientAddress: string,
   addresses: string[],
 ) {
-  XMTPModule.blockContacts(clientAddress, addresses);
+  XMTPModule.denyContacts(clientAddress, addresses);
 }
 
 export function allowContacts(

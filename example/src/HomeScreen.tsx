@@ -66,7 +66,7 @@ function ConversationItem({ conversation, client }: { conversation: Conversation
   conversation.consentState().then(result => {
     setConsentState(result);
   })
-  const blockContact = () => client?.contacts.block([conversation.peerAddress]);
+  const denyContact = () => client?.contacts.deny([conversation.peerAddress]);
 
   return (
     <Pressable
@@ -87,10 +87,10 @@ function ConversationItem({ conversation, client }: { conversation: Conversation
             ({messages?.length} messages)
           </Text>
           <Button
-            title="Block"
-            onPress={blockContact}
+            title="Denied"
+            onPress={denyContact}
             disabled={
-              getConsentState == "blocked"
+              getConsentState == "denied"
             }
           />
         </View>

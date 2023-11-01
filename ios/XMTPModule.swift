@@ -524,18 +524,18 @@ public class XMTPModule: Module {
             return await client.contacts.isAllowed(address)
         }
 
-        AsyncFunction("isBlocked") { (clientAddress: String, address: String) -> Bool in
+        AsyncFunction("isDenied") { (clientAddress: String, address: String) -> Bool in
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
-            return await client.contacts.isBlocked(address)
+            return await client.contacts.isDenied(address)
         }
 
-        AsyncFunction("blockContacts") { (clientAddress: String, addresses: [String]) in
+        AsyncFunction("denyContacts") { (clientAddress: String, addresses: [String]) in
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
             }
-            try await client.contacts.block(addresses: addresses)
+            try await client.contacts.deny(addresses: addresses)
         }
 
         AsyncFunction("allowContacts") { (clientAddress: String, addresses: [String]) in
@@ -558,7 +558,7 @@ public class XMTPModule: Module {
             }
             switch (await conversation.consentState()) {
             case .allowed: return "allowed"
-            case .blocked: return "blocked"
+            case .denied: return "denied"
             case .unknown: return "unknown"
             }
         }     
