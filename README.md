@@ -255,6 +255,18 @@ for await (const message of await xmtp.conversations.streamAllMessages()) {
 }
 ```
 
+## Request and respect user consent
+
+![Feature status](https://img.shields.io/badge/Feature_status-Alpha-orange)
+
+The user consent feature enables your app to request and respect user consent preferences. With this feature, another blockchain account address registered on the XMTP network can have one of three consent preference values:
+
+- Unknown
+- Allowed
+- Denied
+
+To learn more, see [Request and respect user consent](https://xmtp.org/docs/build/user-consent).
+
 ## Check if an address is on the network
 
 If you would like to check and see if a blockchain address is registered on the network before instantiating a client instance, you can use `Client.canMessage`.
