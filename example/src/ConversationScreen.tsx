@@ -21,7 +21,7 @@ import { Buffer } from "buffer";
 import { FontAwesome } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   useConversation,
   useMessage,
@@ -101,6 +101,14 @@ export default function ConversationScreen({
       animated: true,
     });
   };
+
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      await refreshMessages();
+    }, 2000)
+    return () => clearInterval(intervalId)
+  }, []);
+  
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -129,8 +137,8 @@ export default function ConversationScreen({
             ref={messageListRef}
             style={{ flexGrow: 1 }}
             contentContainerStyle={{ paddingBottom: 100 }}
-            refreshing={isFetching || isRefetching}
-            onRefresh={refreshMessages}
+            // refreshing={isRefetching}
+            // onRefresh={refreshMessages}
             data={messages}
             inverted
             keyboardDismissMode={"none"}
