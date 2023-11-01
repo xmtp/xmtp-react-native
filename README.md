@@ -259,7 +259,7 @@ for await (const message of await xmtp.conversations.streamAllMessages()) {
 
 ![Feature status](https://img.shields.io/badge/Feature_status-Alpha-orange)
 
-The user consent feature enables your app to request and respect user consent preferences. With this feature, a blockchain account address registered on the XMTP network can have one of three consent preference values:
+The user consent feature enables your app to request and respect user consent preferences. With this feature, another blockchain account address registered on the XMTP network can have one of three consent preference values:
 
 - Unknown
 - Allowed
