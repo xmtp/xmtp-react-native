@@ -13,13 +13,13 @@ export default class Contacts {
     return result;
   }
 
-  async isBlocked(address: string): Promise<boolean> {
-    const result = await XMTPModule.isBlocked(this.client.address, address);
+  async isDenied(address: string): Promise<boolean> {
+    const result = await XMTPModule.isDenied(this.client.address, address);
     return result;
   }
 
-  block(addresses: string[]) {
-    XMTPModule.blockContacts(this.client.address, addresses);
+  deny(addresses: string[]) {
+    XMTPModule.denyContacts(this.client.address, addresses);
   }
 
   allow(addresses: string[]) {
