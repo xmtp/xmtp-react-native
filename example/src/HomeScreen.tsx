@@ -87,7 +87,7 @@ function ConversationItem({ conversation, client }: { conversation: Conversation
             ({messages?.length} messages)
           </Text>
           <Button
-            title="Denied"
+            title="Deny"
             onPress={denyContact}
             disabled={
               getConsentState == "denied"
