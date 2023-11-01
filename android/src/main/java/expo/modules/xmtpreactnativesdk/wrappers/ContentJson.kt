@@ -34,10 +34,12 @@ import java.net.URL
 class ContentJson(
     val type: ContentTypeId,
     val content: Any?,
+    val ephemeral: Boolean?,
 ) {
     constructor(encoded: EncodedContent) : this(
         type = encoded.type,
         content = encoded.decoded(),
+        ephemeral = false,
     );
 
     companion object {
@@ -54,7 +56,12 @@ class ContentJson(
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
             if (obj.has("text")) {
-                return ContentJson(ContentTypeText, obj.get("text").asString)
+                val ephemeral: Boolean = if (obj.has("ephemeral")) {
+                    ephemeral = obj.get("ephemeral").asBoolean
+                } else {
+                    false
+                }
+                return ContentJson(ContentTypeText, obj.get("text").asString, ephemeral)
             } else if (obj.has("attachment")) {
                 val attachment = obj.get("attachment").asJsonObject
                 return ContentJson(
@@ -126,6 +133,7 @@ class ContentJson(
         return when (type.id) {
             ContentTypeText.id -> mapOf(
                 "text" to (content as String? ?: ""),
+                "ephemeral" to (content.ephemeral as Boolean? ?: false),
             )
 
             ContentTypeAttachment.id -> mapOf(

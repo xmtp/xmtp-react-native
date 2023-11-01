@@ -228,6 +228,13 @@ export async function subscribeToMessages(
   return await XMTPModule.subscribeToMessages(clientAddress, topic);
 }
 
+export async function subscribeToEphemeralMessages(
+  clientAddress: string,
+  topic: string,
+) {
+  return await XMTPModule.subscribeToEphemeralMessages(clientAddress, topic);
+}
+
 export function unsubscribeFromConversations(clientAddress: string) {
   return XMTPModule.unsubscribeFromConversations(clientAddress);
 }

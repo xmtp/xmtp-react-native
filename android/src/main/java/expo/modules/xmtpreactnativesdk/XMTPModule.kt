@@ -355,7 +355,10 @@ class XMTPModule : Module() {
             val sending = ContentJson.fromJson(contentJson)
             conversation.send(
                 content = sending.content,
-                options = SendOptions(contentType = sending.type)
+                options = SendOptions(
+                    contentType = sending.type,
+                    ephemeral = sending.ephemeral
+                )
             )
         }
 
@@ -437,6 +440,14 @@ class XMTPModule : Module() {
         AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String ->
             logV("subscribeToMessages")
             subscribeToMessages(
+                clientAddress = clientAddress,
+                topic = topic
+            )
+        }
+
+        AsyncFunction("subscribeToEphemeralMessages") { clientAddress: String, topic: String ->
+            logV("subscribeToEphemeralMessages")
+            subscribeToEphemeralMessages(
                 clientAddress = clientAddress,
                 topic = topic
             )
@@ -612,6 +623,33 @@ class XMTPModule : Module() {
                             mapOf(
                                 "clientAddress" to clientAddress,
                                 "message" to DecodedMessageWrapper.encodeMap(message),
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e("XMTPModule", "Error in messages subscription: $e")
+                    subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+                }
+            }
+    }
+
+    private fun subscribeToEphemeralMessages(clientAddress: String, topic: String) {
+        val conversation =
+            findConversation(
+                clientAddress = clientAddress,
+                topic = topic
+            ) ?: return
+        subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+        subscriptions[conversation.cacheKey(clientAddress)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    conversation.streamEphemeral().collect { envelope ->
+                        sendEvent(
+                            "ephemeralMessage",
+                            mapOf(
+                                "clientAddress" to clientAddress,
+                                "timestamp": envelope.timestampNs,
+                                "message": envelope.message,
                             )
                         )
                     }

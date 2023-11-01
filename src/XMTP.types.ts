@@ -81,6 +81,7 @@ export type PreparedLocalMessage = {
 // This is a one-of or union type: only one of these fields will be present.
 export type MessageContent = {
   text?: string;
+  ephemeral?: boolean;
   unknown?: UnknownContent;
   reply?: ReplyContent;
   reaction?: ReactionContent;

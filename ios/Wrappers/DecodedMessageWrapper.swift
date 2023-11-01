@@ -57,7 +57,7 @@ struct ContentJson {
 
     static func fromJsonObj(_ obj: [String: Any]) throws -> ContentJson {
         if let text = obj["text"] as? String {
-            return ContentJson(type: ContentTypeText, content: text)
+            return ContentJson(type: ContentTypeText, content: text, ephemeral: obj["ephemeral"] as? Bool ?? false)
         } else if let reaction = obj["reaction"] as? [String: Any] {
             return ContentJson(type: ContentTypeReaction, content: Reaction(
                 reference: reaction["reference"] as? String ?? "",
@@ -119,7 +119,10 @@ struct ContentJson {
     func toJsonMap() -> [String: Any] {
         switch type.id {
         case ContentTypeText.id:
-            return ["text": content]
+            return [
+                "text": content,
+                "ephemeral": content.ephemeral ?? false,
+            ]
         case ContentTypeReaction.id where content is XMTP.Reaction:
             let reaction = content as! XMTP.Reaction
             return ["reaction": [

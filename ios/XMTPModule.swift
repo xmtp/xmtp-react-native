@@ -388,7 +388,10 @@ public class XMTPModule: Module {
             let sending = try ContentJson.fromJson(contentJson)
             return try await conversation.send(
                 content: sending.content,
-                options: SendOptions(contentType: sending.type)
+                options: SendOptions(
+                    contentType: sending.type,
+                    ephemeral: sending.ephemeral
+                )
             )
         }
 
@@ -469,6 +472,10 @@ public class XMTPModule: Module {
 
         AsyncFunction("subscribeToMessages") { (clientAddress: String, topic: String) in
             try await subscribeToMessages(clientAddress: clientAddress, topic: topic)
+        }
+
+        AsyncFunction("subscribeToEphemeralMessages") { (clientAddress: String, topic: String) in
+            try await subscribeToEphemeralMessages(clientAddress: clientAddress, topic: topic)
         }
 
         AsyncFunction("unsubscribeFromConversations") { (clientAddress: String) in
@@ -670,6 +677,32 @@ public class XMTPModule: Module {
                         ])
                     } catch {
                         print("discarding message, unable to encode wrapper \(message.id)")
+                    }
+                }
+            } catch {
+                print("Error in messages subscription: \(error)")
+                await subscriptionsManager.getSubscription(key: conversation.cacheKey(clientAddress))?.cancel()
+            }
+        })
+    }
+
+    func subscribeToEphemeralMessages(clientAddress: String, topic: String) async throws {
+        guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+            return
+        }
+
+        await subscriptionsManager.getSubscription(key: conversation.cacheKey(clientAddress))?.cancel()
+        await subscriptionsManager.updateSubscription(key: conversation.cacheKey(clientAddress), task: Task {
+            do {
+                for try await envelope in conversation.streamEphemeral() {
+                    do {
+                        try sendEvent("ephemeralMessage", [
+                            "clientAddress": clientAddress,
+                            "timestamp": envelope.timestampNs,
+                            "message": envelope.message,
+                        ])
+                    } catch {
+                        print("discarding ephemeral message, unable to encode wrapper \(message.id)")
                     }
                 }
             } catch {
