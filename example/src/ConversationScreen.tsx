@@ -21,7 +21,7 @@ import { Buffer } from "buffer";
 import { FontAwesome } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   useConversation,
   useMessage,
@@ -35,6 +35,8 @@ import moment from "moment";
 import { PermissionStatus } from "expo-modules-core";
 import type { DocumentPickerAsset } from "expo-document-picker";
 import type { ImagePickerAsset } from "expo-image-picker";
+import debounce from "lodash.debounce";
+import throttle from 'lodash.throttle';
 
 type Attachment = {
   file?: DocumentPickerAsset
@@ -56,6 +58,8 @@ export default function ConversationScreen({
   let { data: conversation } = useConversation({ topic });
   let [replyingTo, setReplyingTo] = useState<string | null>(null);
   let [text, setText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  let [ephemeralMessage, setEphemeralMessage] = useState('');
   let [isShowingAttachmentModal, setShowingAttachmentModal] = useState(false);
   let [attachment, setAttachment] = useState<Attachment | null
   >(null);
@@ -66,7 +70,6 @@ export default function ConversationScreen({
     mimeType: attachment?.file?.mimeType,
   });
   messages = (messages || []).filter(({ content }) => !content.reaction);
-  // console.log("messages", JSON.stringify(messages, null, 2));
   const sendMessage = async (content: MessageContent) => {
     setSending(true);
     console.log("Sending message", content);
@@ -91,6 +94,11 @@ export default function ConversationScreen({
   const sendRemoteAttachmentMessage = () =>
     sendMessage({ remoteAttachment }).then(() => setAttachment(null));
   const sendTextMessage = () => sendMessage({ text }).then(() => setText(""));
+  const sendIsTypingNotification = () => {
+    if (conversation === undefined) return
+
+    conversation?.send({text: conversation!.clientAddress + " is typing...", ephemeral: true})
+  }
   const scrollToMessageId = (messageId: string) => {
     let index = (messages || []).findIndex((m) => m.id === messageId);
     if (index == -1) {
@@ -102,11 +110,66 @@ export default function ConversationScreen({
     });
   };
 
+  const throttledTypingNotificationSend = useRef(
+      throttle(() => {
+          sendIsTypingNotification()
+      }, 6000)
+  ).current
+
+  const debouncedEnd = useRef(
+    debounce(() => {
+      setIsTyping(false)
+      sendMessage({text: "stop", ephemeral: true})
+    }, 1000)).current;
+
+  
   useEffect(() => {
-    const intervalId = setInterval(async () => {
-      await refreshMessages();
-    }, 2000)
-    return () => clearInterval(intervalId)
+    if (isTyping) {
+      throttledTypingNotificationSend()
+    }
+  }, [isTyping])
+
+  const onChangeText = (text: string) => {
+    setText(text)
+    if (!isTyping) {
+      setIsTyping(true)
+      throttledTypingNotificationSend()
+    }
+    debouncedEnd()
+  }
+
+  useEffect(() => {
+    if (!conversation) {
+      return
+    }
+    const handleEphemeralMessage = async (message: any) => {
+
+      // for some reason I was running into comparison issues and this seemed to do the trick
+      let msgSender = message.senderAddress.toLowerCase();
+      let peer = conversation?.peerAddress.toLowerCase() ?? ""
+
+      try {
+        
+        if (msgSender === peer) {
+          if(message.content.text === "stop") {
+            setEphemeralMessage("")
+          } else {
+            setEphemeralMessage(message.content.text ?? "")
+          }
+        }
+      } catch (error) {
+        console.error('Failed to handle ephemeral message:', error);
+      }
+    };
+
+    try {
+      const unsubscribe = conversation.subscribeEphemeral(handleEphemeralMessage);
+      return () => {
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error('Failed to subscribe to ephemeral messages:', error);
+    }
   }, []);
   
   return (
@@ -171,6 +234,11 @@ export default function ConversationScreen({
                   borderColor: "#aaa",
                 }}
               >
+                {ephemeralMessage ? (
+                <View style={{ height: 50, justifyContent: 'center' }}>
+                  <Text>{ephemeralMessage}</Text>
+                </View>
+                ) : null}
                 {replyingTo && (
                   <ReplyInputHeader
                     topic={topic}
@@ -233,7 +301,7 @@ export default function ConversationScreen({
                         onSubmitEditing={sendTextMessage}
                         editable={!isSending}
                         value={text}
-                        onChangeText={setText}
+                        onChangeText={onChangeText}
                         style={{
                           height: 40,
                           marginRight: 0,

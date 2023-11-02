@@ -72,7 +72,7 @@ function ConversationItem({ conversation, client }: { conversation: Conversation
     <Pressable
       onPress={() =>
         navigation!.navigate("conversation", {
-          topic: conversation.topic,
+          topic: conversation.topic
         })
       }
     >
