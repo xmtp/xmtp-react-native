@@ -168,6 +168,10 @@ test("can list batch messages", async () => {
     throw Error("Unexpected message content " + messages[0].content);
   }
 
+  if (messages[0].fallback !== 'Reacted “💖” to an earlier message') {
+    throw Error("Unexpected message fallback " + messages[0].fallback);
+  }
+
   return true;
 });
 
@@ -486,6 +490,10 @@ test("can send read receipts", async () => {
 
   if (bobMessages[0].contentTypeId !== "xmtp.org/readReceipt:1.0") {
     throw Error("Unexpected message content " + bobMessages[0].content);
+  }
+
+  if (bobMessages[0].fallback) {
+    throw Error("Unexpected message fallback " + bobMessages[0].fallback);
   }
 
   return true;

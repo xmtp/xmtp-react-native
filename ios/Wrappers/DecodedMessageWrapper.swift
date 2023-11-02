@@ -12,6 +12,7 @@ struct DecodedMessageWrapper {
             "content": ContentJson.fromEncoded(model.encodedContent, client: model.client).toJsonMap() as Any,
             "senderAddress": model.senderAddress,
             "sent": UInt64(model.sent.timeIntervalSince1970 * 1000),
+            "fallback": model.fallbackContent
         ]
     }
 
