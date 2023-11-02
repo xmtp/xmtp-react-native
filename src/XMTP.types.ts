@@ -96,6 +96,7 @@ export type DecodedMessage = {
   content: MessageContent;
   senderAddress: string;
   sent: number; // timestamp in milliseconds
+  fallback: string | undefined;
 };
 
 export type ConversationContext = {
