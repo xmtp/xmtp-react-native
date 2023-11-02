@@ -31,6 +31,7 @@ extension ContentTypeID {
 struct ContentJson {
     var type: ContentTypeID
     var content: Any
+    var ephemeral: Bool
 
     static var codecs: [any ContentCodec] = [
         TextCodec(),
@@ -52,19 +53,20 @@ struct ContentJson {
     }
 
     static func fromEncoded(_ encoded: XMTP.EncodedContent, client: Client) throws -> ContentJson {
-        return try ContentJson(type: encoded.type, content: encoded.decoded(with: client))
+        return try ContentJson(type: encoded.type, content: encoded.decoded(with: client), ephemeral: false)
     }
 
     static func fromJsonObj(_ obj: [String: Any]) throws -> ContentJson {
+        let ephemeral = obj["ephemeral"] as? Bool ?? false
         if let text = obj["text"] as? String {
-            return ContentJson(type: ContentTypeText, content: text, ephemeral: obj["ephemeral"] as? Bool ?? false)
+            return ContentJson(type: ContentTypeText, content: text, ephemeral: ephemeral)
         } else if let reaction = obj["reaction"] as? [String: Any] {
             return ContentJson(type: ContentTypeReaction, content: Reaction(
                 reference: reaction["reference"] as? String ?? "",
                 action: ReactionAction(rawValue: reaction["action"] as? String ?? ""),
                 content: reaction["content"] as? String ?? "",
                 schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "")
-            ))
+            ), ephemeral: ephemeral)
         } else if let reply = obj["reply"] as? [String: Any] {
             guard let nestedContent = reply["content"] as? [String: Any] else {
                 throw Error.badReplyContent
@@ -76,7 +78,7 @@ struct ContentJson {
                 reference: reply["reference"] as? String ?? "",
                 content: nested.content,
                 contentType: nested.type
-            ))
+            ), ephemeral: ephemeral)
         } else if let attachment = obj["attachment"] as? [String: Any] {
             guard let data = Data(base64Encoded: (attachment["data"] as? String) ?? "") else {
                 throw Error.badAttachmentData
@@ -85,7 +87,7 @@ struct ContentJson {
                 filename: attachment["filename"] as? String ?? "",
                 mimeType: attachment["mimeType"] as? String ?? "",
                 data: data
-            ))
+            ), ephemeral: ephemeral)
         } else if let remoteAttachment = obj["remoteAttachment"] as? [String: Any] {
             guard let metadata = try? EncryptedAttachmentMetadata.fromJsonObj(remoteAttachment) else {
                 throw Error.badRemoteAttachmentMetadata
@@ -102,9 +104,9 @@ struct ContentJson {
             }
             content.filename = metadata.filename
             content.contentLength = metadata.contentLength
-            return ContentJson(type: ContentTypeRemoteAttachment, content: content)
+            return ContentJson(type: ContentTypeRemoteAttachment, content: content, ephemeral: ephemeral)
         } else if let readReceipt = obj["readReceipt"] as? [String: Any] {
-            return ContentJson(type: ContentTypeReadReceipt, content: ReadReceipt())
+            return ContentJson(type: ContentTypeReadReceipt, content: ReadReceipt(), ephemeral: ephemeral)
         } else {
             throw Error.unknownContentType
         }
@@ -121,7 +123,6 @@ struct ContentJson {
         case ContentTypeText.id:
             return [
                 "text": content,
-                "ephemeral": content.ephemeral ?? false,
             ]
         case ContentTypeReaction.id where content is XMTP.Reaction:
             let reaction = content as! XMTP.Reaction
@@ -133,7 +134,7 @@ struct ContentJson {
             ]]
         case ContentTypeReply.id where content is XMTP.Reply:
             let reply = content as! XMTP.Reply
-            let nested = ContentJson(type: reply.contentType, content: reply.content)
+            let nested = ContentJson(type: reply.contentType, content: reply.content, ephemeral: ephemeral)
             return ["reply": [
                 "reference": reply.reference,
                 "content": nested.toJsonMap(),

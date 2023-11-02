@@ -694,15 +694,19 @@ public class XMTPModule: Module {
         await subscriptionsManager.getSubscription(key: conversation.cacheKey(clientAddress))?.cancel()
         await subscriptionsManager.updateSubscription(key: conversation.cacheKey(clientAddress), task: Task {
             do {
-                for try await envelope in conversation.streamEphemeral() {
+                guard let stream = conversation.streamEphemeral() else {
+                    print("No stream available")
+                    return
+                }
+                for try await envelope in stream {
                     do {
-                        try sendEvent("ephemeralMessage", [
+                        let decodedEnvelope = try conversation.decode(envelope)
+                        try sendEvent("message", [
                             "clientAddress": clientAddress,
-                            "timestamp": envelope.timestampNs,
-                            "message": envelope.message,
+                            "message": DecodedMessageWrapper.encodeToObj(decodedEnvelope)
                         ])
                     } catch {
-                        print("discarding ephemeral message, unable to encode wrapper \(message.id)")
+                        print("discarding ephemeral message, unable to encode wrapper \(envelope.contentTopic)")
                     }
                 }
             } catch {
@@ -710,6 +714,14 @@ public class XMTPModule: Module {
                 await subscriptionsManager.getSubscription(key: conversation.cacheKey(clientAddress))?.cancel()
             }
         })
+    }
+
+    func unsubscribeFromEphemeralMessages(clientAddress: String, topic: String) async throws {
+        guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+            return
+        }
+
+        await subscriptionsManager.getSubscription(key: conversation.cacheKey(clientAddress))?.cancel()
     }
 
     func unsubscribeFromMessages(clientAddress: String, topic: String) async throws {
