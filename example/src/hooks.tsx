@@ -70,19 +70,6 @@ export function useMessages({
   );
 }
 
-// export function ephemeralMessages({
-//   topic,
-// }: {
-//   topic: string
-// }): UseQueryResult<any> {
-//   const { client } = useXmtp();
-//   const { data: conversation } = useConversation({ topic });
-//   return useQuery<any>(
-//     [],
-//     async () => conversation!.streamEphemeral
-//   )
-// }
-
 /**
  * Get the message with the `messageId` from the conversation identified by `topic`.
  *
