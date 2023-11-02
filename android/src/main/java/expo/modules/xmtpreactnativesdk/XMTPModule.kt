@@ -645,11 +645,10 @@ class XMTPModule : Module() {
                 try {
                     conversation.streamEphemeral().collect { envelope ->
                         sendEvent(
-                            "ephemeralMessage",
+                            "message",
                             mapOf(
                                 "clientAddress" to clientAddress,
-                                "timestamp": envelope.timestampNs,
-                                "message": envelope.message,
+                                "message" to DecodedMessageWrapper.encodeMap(conversation.decode(envelope))
                             )
                         )
                     }
@@ -669,6 +668,18 @@ class XMTPModule : Module() {
     }
 
     private fun unsubscribeFromMessages(
+        clientAddress: String,
+        topic: String,
+    ) {
+        val conversation =
+            findConversation(
+                clientAddress = clientAddress,
+                topic = topic
+            ) ?: return
+        subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+    }
+
+    private fun unsubscribeFromEphemeralMessages(
         clientAddress: String,
         topic: String,
     ) {

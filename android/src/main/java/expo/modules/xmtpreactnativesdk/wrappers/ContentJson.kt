@@ -34,7 +34,7 @@ import java.net.URL
 class ContentJson(
     val type: ContentTypeId,
     val content: Any?,
-    val ephemeral: Boolean?,
+    val ephemeral: Boolean = false,
 ) {
     constructor(encoded: EncodedContent) : this(
         type = encoded.type,
@@ -55,13 +55,14 @@ class ContentJson(
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
+            val isEphemeral: Boolean
+            if (obj.has("ephemeral")) {
+                isEphemeral = obj.get("ephemeral").asBoolean
+            } else {
+                isEphemeral = false
+            }
             if (obj.has("text")) {
-                val ephemeral: Boolean = if (obj.has("ephemeral")) {
-                    ephemeral = obj.get("ephemeral").asBoolean
-                } else {
-                    false
-                }
-                return ContentJson(ContentTypeText, obj.get("text").asString, ephemeral)
+                return ContentJson(ContentTypeText, obj.get("text").asString, isEphemeral)
             } else if (obj.has("attachment")) {
                 val attachment = obj.get("attachment").asJsonObject
                 return ContentJson(
@@ -69,7 +70,7 @@ class ContentJson(
                         filename = attachment.get("filename").asString,
                         mimeType = attachment.get("mimeType").asString,
                         data = ByteString.copyFrom(bytesFrom64(attachment.get("data").asString)),
-                    )
+                    ), isEphemeral
                 )
             } else if (obj.has("remoteAttachment")) {
                 val remoteAttachment = obj.get("remoteAttachment").asJsonObject
@@ -85,7 +86,7 @@ class ContentJson(
                         scheme = "https://",
                         contentLength = metadata.contentLength,
                         filename = metadata.filename,
-                    )
+                    ), isEphemeral
                 )
             } else if (obj.has("reaction")) {
                 val reaction = obj.get("reaction").asJsonObject
@@ -95,7 +96,7 @@ class ContentJson(
                         action = getReactionAction(reaction.get("action").asString.lowercase()),
                         schema = getReactionSchema(reaction.get("schema").asString.lowercase()),
                         content = reaction.get("content").asString,
-                    )
+                    ), isEphemeral
                 )
             } else if (obj.has("reply")) {
                 val reply = obj.get("reply").asJsonObject
@@ -111,10 +112,10 @@ class ContentJson(
                         reference = reply.get("reference").asString,
                         content = nested.content,
                         contentType = nested.type,
-                    )
+                    ), isEphemeral
                 )
             } else if (obj.has("readReceipt")) {
-                return ContentJson(ContentTypeReadReceipt, ReadReceipt)
+                return ContentJson(ContentTypeReadReceipt, ReadReceipt, isEphemeral)
             } else {
                 throw Exception("Unknown content type")
             }
@@ -133,7 +134,7 @@ class ContentJson(
         return when (type.id) {
             ContentTypeText.id -> mapOf(
                 "text" to (content as String? ?: ""),
-                "ephemeral" to (content.ephemeral as Boolean? ?: false),
+                "ephemeral" to ephemeral,
             )
 
             ContentTypeAttachment.id -> mapOf(
