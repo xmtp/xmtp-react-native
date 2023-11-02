@@ -250,6 +250,13 @@ export async function unsubscribeFromMessages(
   return await XMTPModule.unsubscribeFromMessages(clientAddress, topic);
 }
 
+export async function unsubscribeFromEphemeralMessages(
+  clientAddress: string,
+  topic: string,
+) {
+  return await XMTPModule.unsubscribeFromEphemeralMessages(clientAddress, topic);
+}
+
 export function registerPushToken(pushServer: string, token: string) {
   return XMTPModule.registerPushToken(pushServer, token);
 }

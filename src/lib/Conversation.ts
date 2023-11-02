@@ -1,6 +1,7 @@
 import * as XMTP from "../index";
 import { DecodedMessage, MessageContent, PreparedLocalMessage } from "../XMTP.types";
 import { ConversationContext } from "../index";
+import { Message } from "@xmtp/proto/ts/dist/types/message_contents/message.pb";
 
 export class Conversation {
   clientAddress: string;
@@ -116,6 +117,42 @@ export class Conversation {
 
   async consentState(): Promise<"allowed" | "blocked" | "unknown"> {
     return await XMTP.conversationConsentState(this.clientAddress, this.topic);
+  }
+
+  subscribeEphemeral( // todo: This needs a better type, currently doesn't handle the content if I go DecodedMessage
+    callback: (message: any) => Promise<void>,
+  ): () => void {
+    XMTP.subscribeToEphemeralMessages(this.clientAddress, this.topic);
+    const hasSeen = {};
+    XMTP.emitter.addListener(
+      "message",
+      async ({
+        clientAddress,
+        message,
+      }: {
+        clientAddress: string;
+        message: any;
+      }) => {
+        if (clientAddress !== this.clientAddress) {
+          return;
+        }
+
+        if (hasSeen[message.id]) {
+          return;
+        }
+
+        hasSeen[message.id] = true;
+        try {
+          await callback(message as any);
+        } catch (e) {
+          console.error("Error in subscribeEphemeral callback:", e);
+        }
+      },
+    );
+
+    return () => {
+      XMTP.unsubscribeFromEphemeralMessages(this.clientAddress, this.topic);
+    };
   }
 
   streamMessages(
