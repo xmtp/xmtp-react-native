@@ -516,6 +516,52 @@ public class XMTPModule: Module {
             let decodedMessage = try conversation.decode(envelope)
             return try DecodedMessageWrapper.encode(decodedMessage)
         }
+
+        AsyncFunction("isAllowed") { (clientAddress: String, address: String) -> Bool in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            return await client.contacts.isAllowed(address)
+        }
+
+        AsyncFunction("isDenied") { (clientAddress: String, address: String) -> Bool in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            return await client.contacts.isDenied(address)
+        }
+
+        AsyncFunction("denyContacts") { (clientAddress: String, addresses: [String]) in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            try await client.contacts.deny(addresses: addresses)
+        }
+
+        AsyncFunction("allowContacts") { (clientAddress: String, addresses: [String]) in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            try await client.contacts.allow(addresses: addresses)
+        }
+        
+        AsyncFunction("refreshConsentList") { (clientAddress: String) in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            try await client.contacts.refreshConsentList()
+        }  
+        
+        AsyncFunction("conversationConsentState") { (clientAddress: String, conversationTopic: String) -> String in
+            guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
+                throw Error.conversationNotFound(conversationTopic)
+            }
+            switch (await conversation.consentState()) {
+            case .allowed: return "allowed"
+            case .denied: return "denied"
+            case .unknown: return "unknown"
+            }
+        }     
     }
 
     //

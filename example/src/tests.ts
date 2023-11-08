@@ -19,10 +19,6 @@ function test(name: string, perform: () => Promise<boolean>) {
   tests.push({ name, run: perform });
 }
 
-// test("can fail", async () => {
-//   return false;
-// });
-
 test("can make a client", async () => {
   const client = await XMTP.Client.createRandom({
     env: "local",
@@ -194,6 +190,10 @@ test("can list batch messages", async () => {
 
   if (messages[0].contentTypeId !== "xmtp.org/reaction:1.0") {
     throw Error("Unexpected message content " + messages[0].content);
+  }
+
+  if (messages[0].fallback !== 'Reacted “💖” to an earlier message') {
+    throw Error("Unexpected message fallback " + messages[0].fallback);
   }
 
   return true;
@@ -516,6 +516,10 @@ test("can send read receipts", async () => {
     throw Error("Unexpected message content " + bobMessages[0].content);
   }
 
+  if (bobMessages[0].fallback) {
+    throw Error("Unexpected message fallback " + bobMessages[0].fallback);
+  }
+
   return true;
 });
 
@@ -571,5 +575,48 @@ test("can stream all messages", async () => {
 
 
   return true;
+});
+
+test("canManagePreferences", async () => {
+  const bo = await XMTP.Client.createRandom({ env: "local" });
+  const alix = await XMTP.Client.createRandom({ env: "local" });
+  await delayToPropogate();
+
+  const alixConversation = await bo.conversations.newConversation(
+      alix.address,
+  );
+  await delayToPropogate();
+
+  const initialConvoState = await alixConversation.consentState();
+  if (initialConvoState != "allowed") {
+    throw new Error(`conversations created by bo should be allowed by default not ${initialConvoState}`);
+  }
+
+  const initialState = await bo.contacts.isAllowed(alixConversation.peerAddress);
+  if (!initialState) {
+    throw new Error(`contacts created by bo should be allowed by default not ${initialState}`);
+  }
+
+  bo.contacts.deny([alixConversation.peerAddress]);
+  await delayToPropogate();
+
+  const deniedState = await bo.contacts.isDenied(alixConversation.peerAddress);
+  const allowedState = await bo.contacts.isAllowed(alixConversation.peerAddress);
+  if (!deniedState) {
+    throw new Error(`contacts denied by bo should be denied not ${deniedState}`);
+  }
+
+  if (allowedState) {
+    throw new Error(`contacts denied by bo should be denied not ${allowedState}`);
+  }
+
+  const convoState = await alixConversation.consentState();
+  await delayToPropogate();
+
+  if (convoState != "denied") {
+    throw new Error(`conversations denied by bo should be denied not ${convoState}`);
+  }
+  
+  return true
 });
 
