@@ -39,8 +39,8 @@ export class Conversation {
   // TODO: Support pagination and conversation ID here
   async messages(
     limit?: number | undefined,
-    before?: Date | undefined,
-    after?: Date | undefined,
+    before?: number | Date | undefined,
+    after?: number | Date | undefined,
     direction?: "SORT_DIRECTION_ASCENDING" | "SORT_DIRECTION_DESCENDING" | undefined,
   ): Promise<DecodedMessage[]> {
     try {

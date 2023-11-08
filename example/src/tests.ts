@@ -48,21 +48,45 @@ test("can pass a custom filter date and receive message objects with expected da
     let sentAt = Date.now();
     await bobConversation.send({ text: "hello" });
 
+    const initialQueryDate = new Date("2023-01-01")
+    const finalQueryDate = new Date("2025-01-01")
+
     // Show all messages before date in the past
     const messages1: DecodedMessage[] = await aliceConversation.messages(
       undefined,
-      new Date("2023-01-01")
+      initialQueryDate
     );
 
     // Show all messages before date in the future
     const messages2: DecodedMessage[] = await aliceConversation.messages(
       undefined,
-      new Date("2025-01-01")
+      finalQueryDate
     );
 
     const isAboutRightSendTime = Math.abs(messages2[0].sent - sentAt) < 1000;
+    if (!isAboutRightSendTime) return false
 
-    return !messages1.length && messages2.length === 1 && isAboutRightSendTime;
+    const passingDateFieldSuccessful = !messages1.length && messages2.length === 1;
+
+    if (!passingDateFieldSuccessful) return false
+
+    // repeat the above test with a numeric date value
+
+    // Show all messages before date in the past
+    const messages3: DecodedMessage[] = await aliceConversation.messages(
+      undefined,
+      initialQueryDate.getTime()
+    );
+
+    // Show all messages before date in the future
+    const messages4: DecodedMessage[] = await aliceConversation.messages(
+      undefined,
+      finalQueryDate.getTime()
+    );
+
+    const passingTimestampFieldSuccessful = !messages3.length && messages4.length === 1;
+
+    return passingTimestampFieldSuccessful
   } catch (e) {
     return false;
   }

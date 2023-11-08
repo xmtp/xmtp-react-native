@@ -117,16 +117,16 @@ export async function listMessages(
   clientAddress: string,
   conversationTopic: string,
   limit?: number | undefined,
-  before?: Date | undefined,
-  after?: Date | undefined,
+  before?: number | Date | undefined,
+  after?: number | Date | undefined,
   direction?: "SORT_DIRECTION_ASCENDING" | "SORT_DIRECTION_DESCENDING" | undefined,
 ): Promise<DecodedMessage[]> {
   const messages = await XMTPModule.loadMessages(
     clientAddress,
     conversationTopic,
     limit,
-    before?.getTime(),
-    after?.getTime(),
+    typeof before === 'number' ? before : before?.getTime(),
+    typeof after === 'number' ? after : after?.getTime(),
     direction || "SORT_DIRECTION_DESCENDING",
   );
   return messages.map((json: string) => {
@@ -142,8 +142,8 @@ export async function listBatchMessages(
     return JSON.stringify({
       limit: item.pageSize || 0,
       topic: item.contentTopic,
-      after: item.startTime?.getTime() || 0,
-      before: item.endTime?.getTime() || 0,
+      after: (typeof item.startTime === 'number' ? item.startTime :  item.startTime?.getTime()) || 0,
+      before: (typeof item.endTime === 'number' ? item.endTime :  item.endTime?.getTime()) || 0,
       direction: item.direction || "SORT_DIRECTION_DESCENDING",
     });
   });
