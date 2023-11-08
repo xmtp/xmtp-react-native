@@ -28,68 +28,63 @@ test("can make a client", async () => {
 });
 
 test("can pass a custom filter date and receive message objects with expected dates", async () => {
-  try {
-    const bob = await XMTP.Client.createRandom({ env: "local" });
-    const alice = await XMTP.Client.createRandom({ env: "local" });
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  const alice = await XMTP.Client.createRandom({ env: "local" });
 
-    if (bob.address === alice.address) {
-      throw new Error("bob and alice should be different");
-    }
-
-    const bobConversation = await bob.conversations.newConversation(
-      alice.address
-    );
-
-    const aliceConversation = (await alice.conversations.list())[0];
-    if (!aliceConversation) {
-      throw new Error("aliceConversation should exist");
-    }
-
-    let sentAt = Date.now();
-    await bobConversation.send({ text: "hello" });
-
-    const initialQueryDate = new Date("2023-01-01")
-    const finalQueryDate = new Date("2025-01-01")
-
-    // Show all messages before date in the past
-    const messages1: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      initialQueryDate
-    );
-
-    // Show all messages before date in the future
-    const messages2: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      finalQueryDate
-    );
-
-    const isAboutRightSendTime = Math.abs(messages2[0].sent - sentAt) < 1000;
-    if (!isAboutRightSendTime) return false
-
-    const passingDateFieldSuccessful = !messages1.length && messages2.length === 1;
-
-    if (!passingDateFieldSuccessful) return false
-
-    // repeat the above test with a numeric date value
-
-    // Show all messages before date in the past
-    const messages3: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      initialQueryDate.getTime()
-    );
-
-    // Show all messages before date in the future
-    const messages4: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      initialQueryDate.getTime()
-    );
-
-    const passingTimestampFieldSuccessful = !messages3.length && messages4.length === 1;
-
-    return passingTimestampFieldSuccessful
-  } catch (e) {
-    return false;
+  if (bob.address === alice.address) {
+    throw new Error("bob and alice should be different");
   }
+
+  const bobConversation = await bob.conversations.newConversation(
+    alice.address
+  );
+
+  const aliceConversation = (await alice.conversations.list())[0];
+  if (!aliceConversation) {
+    throw new Error("aliceConversation should exist");
+  }
+
+  let sentAt = Date.now();
+  await bobConversation.send({ text: "hello" });
+
+  const initialQueryDate = new Date("2023-01-01")
+  const finalQueryDate = new Date("2025-01-01")
+
+  // Show all messages before date in the past
+  const messages1: DecodedMessage[] = await aliceConversation.messages(
+    undefined,
+    initialQueryDate
+  );
+
+  // Show all messages before date in the future
+  const messages2: DecodedMessage[] = await aliceConversation.messages(
+    undefined,
+    finalQueryDate
+  );
+
+  const isAboutRightSendTime = Math.abs(messages2[0].sent - sentAt) < 1000;
+  if (!isAboutRightSendTime) return false
+
+  const passingDateFieldSuccessful = !messages1.length && messages2.length === 1;
+
+  if (!passingDateFieldSuccessful) return false
+  // repeat the above test with a numeric date value
+
+  // Show all messages before date in the past
+  const messages3: DecodedMessage[] = await aliceConversation.messages(
+    undefined,
+    initialQueryDate.getTime()
+  );
+
+  // Show all messages before date in the future
+  const messages4: DecodedMessage[] = await aliceConversation.messages(
+    undefined,
+    finalQueryDate.getTime()
+  );
+
+  const passingTimestampFieldSuccessful = !messages3.length && messages4.length === 1;
+
+  return passingTimestampFieldSuccessful
 });
 
 test("canMessage", async () => {
