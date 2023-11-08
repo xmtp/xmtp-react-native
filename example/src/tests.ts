@@ -85,7 +85,7 @@ test("can pass a custom filter date and receive message objects with expected da
     // Show all messages before date in the future
     const messages4: DecodedMessage[] = await aliceConversation.messages(
       undefined,
-      initialQueryDate.getTime()
+      finalQueryDate.getTime()
     );
 
     const passingTimestampFieldSuccessful = !messages3.length && messages4.length === 1;
