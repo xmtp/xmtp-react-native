@@ -30,16 +30,16 @@ import {
   useLoadRemoteAttachment,
   usePrepareRemoteAttachment,
 } from "./hooks";
-import { MessageContent, RemoteAttachmentContent } from "xmtp-react-native-sdk";
+import { RemoteAttachmentContent } from "xmtp-react-native-sdk";
 import moment from "moment";
 import { PermissionStatus } from "expo-modules-core";
 import type { DocumentPickerAsset } from "expo-document-picker";
 import type { ImagePickerAsset } from "expo-image-picker";
 
 type Attachment = {
-  file?: DocumentPickerAsset
-  image?: ImagePickerAsset
-}
+  file?: DocumentPickerAsset;
+  image?: ImagePickerAsset;
+};
 
 /// Show the messages in a conversation.
 export default function ConversationScreen({
@@ -57,8 +57,7 @@ export default function ConversationScreen({
   let [replyingTo, setReplyingTo] = useState<string | null>(null);
   let [text, setText] = useState("");
   let [isShowingAttachmentModal, setShowingAttachmentModal] = useState(false);
-  let [attachment, setAttachment] = useState<Attachment | null
-  >(null);
+  let [attachment, setAttachment] = useState<Attachment | null>(null);
   let [isAttachmentPreviewing, setAttachmentPreviewing] = useState(false);
   let [isSending, setSending] = useState(false);
   let { remoteAttachment } = usePrepareRemoteAttachment({
@@ -67,7 +66,7 @@ export default function ConversationScreen({
   });
   messages = (messages || []).filter(({ content }) => !content.reaction);
   // console.log("messages", JSON.stringify(messages, null, 2));
-  const sendMessage = async (content: MessageContent) => {
+  const sendMessage = async (content: any) => {
     setSending(true);
     console.log("Sending message", content);
     try {
@@ -258,16 +257,14 @@ function AttachmentPreviewModal({
   visible,
   onRequestClose,
 }: {
-  attachment:
-    Attachment
-    | null;
+  attachment: Attachment | null;
   visible: boolean;
   onRequestClose: () => void;
 }) {
   let isImage = attachment?.image?.type === "image";
   return (
     <CenteredModal visible={visible} onRequestClose={onRequestClose}>
-      {(isImage && attachment?.image) && (
+      {isImage && attachment?.image && (
         <Image
           source={attachment.image}
           style={{
@@ -326,7 +323,7 @@ function AttachmentInputHeader({
       }}
     >
       <TouchableOpacity onPress={onPress}>
-        {(isImage && attachment?.image) && (
+        {isImage && attachment?.image && (
           <Image
             source={attachment.image}
             style={{
@@ -1028,7 +1025,7 @@ function RemoteAttachmentMessageContents({
   );
 }
 
-function MessageContents({ content }: { content: MessageContent }) {
+function MessageContents({ content }: { content: any }) {
   if (content.text) {
     return (
       <>

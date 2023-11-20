@@ -1,3 +1,5 @@
+import { ContentTypeId } from "@xmtp/proto/ts/dist/types/message_contents/content.pb";
+
 export type UnknownContent = {
   contentTypeId: string;
 };
@@ -6,7 +8,8 @@ export type ReadReceiptContent = object;
 
 export type ReplyContent = {
   reference: string;
-  content: MessageContent;
+  content: any;
+  contentType: ContentTypeId;
 };
 
 export type ReactionContent = {
@@ -38,7 +41,7 @@ export type RemoteAttachmentMetadata = {
 };
 
 export type EncryptedLocalAttachment = {
-  encryptedLocalFileUri: `file://${string}`;
+  encryptedLocalFileUri: string;
   metadata: RemoteAttachmentMetadata;
 };
 
@@ -74,28 +77,19 @@ export type PreparedLocalMessage = {
   messageId: string;
   preparedFileUri: `file://${string}`;
   preparedAt: number; // timestamp in milliseconds
-}
+};
 
 // This contains the contents of a message.
 // Each of these corresponds to a codec supported by the native libraries.
 // This is a one-of or union type: only one of these fields will be present.
-export type MessageContent = {
-  text?: string;
-  unknown?: UnknownContent;
-  reply?: ReplyContent;
-  reaction?: ReactionContent;
-  attachment?: StaticAttachmentContent;
-  remoteAttachment?: RemoteAttachmentContent;
-  readReceipt?: ReadReceiptContent;
-};
 
 export type DecodedMessage = {
   id: string;
   topic: string;
   contentTypeId: string;
-  content: MessageContent;
   senderAddress: string;
   sent: number; // timestamp in milliseconds
+  content: any;
   fallback: string | undefined;
 };
 

@@ -48,8 +48,8 @@ test("can pass a custom filter date and receive message objects with expected da
     let sentAt = Date.now();
     await bobConversation.send({ text: "hello" });
 
-    const initialQueryDate = new Date("2023-01-01")
-    const finalQueryDate = new Date("2025-01-01")
+    const initialQueryDate = new Date("2023-01-01");
+    const finalQueryDate = new Date("2025-01-01");
 
     // Show all messages before date in the past
     const messages1: DecodedMessage[] = await aliceConversation.messages(
@@ -64,11 +64,12 @@ test("can pass a custom filter date and receive message objects with expected da
     );
 
     const isAboutRightSendTime = Math.abs(messages2[0].sent - sentAt) < 1000;
-    if (!isAboutRightSendTime) return false
+    if (!isAboutRightSendTime) return false;
 
-    const passingDateFieldSuccessful = !messages1.length && messages2.length === 1;
+    const passingDateFieldSuccessful =
+      !messages1.length && messages2.length === 1;
 
-    if (!passingDateFieldSuccessful) return false
+    if (!passingDateFieldSuccessful) return false;
 
     // repeat the above test with a numeric date value
 
@@ -84,9 +85,10 @@ test("can pass a custom filter date and receive message objects with expected da
       finalQueryDate.getTime()
     );
 
-    const passingTimestampFieldSuccessful = !messages3.length && messages4.length === 1;
+    const passingTimestampFieldSuccessful =
+      !messages3.length && messages4.length === 1;
 
-    return passingTimestampFieldSuccessful
+    return passingTimestampFieldSuccessful;
   } catch (e) {
     return false;
   }
@@ -118,7 +120,7 @@ test("canPrepareMessage", async () => {
   await delayToPropogate();
 
   const bobConversation = await bob.conversations.newConversation(
-      alice.address,
+    alice.address
   );
   await delayToPropogate();
 
@@ -132,15 +134,14 @@ test("canPrepareMessage", async () => {
   // await bob.sendPreparedMessage(prepared);
 
   await delayToPropogate();
-  const messages = await bobConversation.messages()
+  const messages = await bobConversation.messages();
   if (messages.length !== 1) {
     throw new Error(`expected 1 message: got ${messages.length}`);
   }
-  const message = messages[0]
+  const message = messages[0];
 
   return message?.id === prepared.messageId;
 });
-
 
 test("can list batch messages", async () => {
   const bob = await XMTP.Client.createRandom({ env: "local" });
@@ -192,7 +193,7 @@ test("can list batch messages", async () => {
     throw Error("Unexpected message content " + messages[0].content);
   }
 
-  if (messages[0].fallback !== 'Reacted “💖” to an earlier message') {
+  if (messages[0].fallback !== "Reacted “💖” to an earlier message") {
     throw Error("Unexpected message fallback " + messages[0].fallback);
   }
 
@@ -504,7 +505,7 @@ test("can send read receipts", async () => {
     throw new Error("aliceConversation should exist");
   }
 
-  await bobConversation.send({ readReceipt: {}});
+  await bobConversation.send({ readReceipt: {} });
 
   const bobMessages = await bobConversation.messages();
 
@@ -555,6 +556,7 @@ test("can stream all messages", async () => {
     await caroConvo.send({ text: `Message ${i}` });
     await delayToPropogate();
   }
+
   if (allMessages.length !== 10) {
     throw Error("Unexpected all messages count " + allMessages.length);
   }
@@ -573,7 +575,6 @@ test("can stream all messages", async () => {
     throw Error("Unexpected all messages count " + allMessages.length);
   }
 
-
   return true;
 });
 
@@ -582,41 +583,89 @@ test("canManagePreferences", async () => {
   const alix = await XMTP.Client.createRandom({ env: "local" });
   await delayToPropogate();
 
-  const alixConversation = await bo.conversations.newConversation(
-      alix.address,
-  );
+  const alixConversation = await bo.conversations.newConversation(alix.address);
   await delayToPropogate();
 
   const initialConvoState = await alixConversation.consentState();
   if (initialConvoState != "allowed") {
-    throw new Error(`conversations created by bo should be allowed by default not ${initialConvoState}`);
+    throw new Error(
+      `conversations created by bo should be allowed by default not ${initialConvoState}`
+    );
   }
 
-  const initialState = await bo.contacts.isAllowed(alixConversation.peerAddress);
+  const initialState = await bo.contacts.isAllowed(
+    alixConversation.peerAddress
+  );
   if (!initialState) {
-    throw new Error(`contacts created by bo should be allowed by default not ${initialState}`);
+    throw new Error(
+      `contacts created by bo should be allowed by default not ${initialState}`
+    );
   }
 
   bo.contacts.deny([alixConversation.peerAddress]);
   await delayToPropogate();
 
   const deniedState = await bo.contacts.isDenied(alixConversation.peerAddress);
-  const allowedState = await bo.contacts.isAllowed(alixConversation.peerAddress);
+  const allowedState = await bo.contacts.isAllowed(
+    alixConversation.peerAddress
+  );
   if (!deniedState) {
-    throw new Error(`contacts denied by bo should be denied not ${deniedState}`);
+    throw new Error(
+      `contacts denied by bo should be denied not ${deniedState}`
+    );
   }
 
   if (allowedState) {
-    throw new Error(`contacts denied by bo should be denied not ${allowedState}`);
+    throw new Error(
+      `contacts denied by bo should be denied not ${allowedState}`
+    );
   }
 
   const convoState = await alixConversation.consentState();
   await delayToPropogate();
 
   if (convoState != "denied") {
-    throw new Error(`conversations denied by bo should be denied not ${convoState}`);
+    throw new Error(
+      `conversations denied by bo should be denied not ${convoState}`
+    );
   }
-  
-  return true
+
+  return true;
 });
 
+// test("register and use custom content types", async () => {
+//   const bob = await XMTP.Client.createRandom({ env: "local" });
+//   const alice = await XMTP.Client.createRandom({ env: "local" });
+//   const bobConvo = await bob.conversations.newConversation(alice.address);
+//   const aliceConvo = await alice.conversations.newConversation(bob.address);
+
+//   const reaction: Reaction = {
+//     reference: "abcdefg",
+//     action: "added",
+//     content: "coolcool",
+//     schema: "custom",
+//   };
+
+//   await bobConvo.send(reaction, {
+//     contentType: XMTP.ContentTypeReaction,
+//   });
+
+//   function assert(condition: boolean, msg: string) {
+//     if (!condition) {
+//       throw new Error(msg);
+//     }
+//   }
+
+//   const messages = await aliceConvo.messages();
+//   assert(messages.length !== 1, "did not get messages");
+
+//   const message = messages[0];
+//   const messageReaction: XMTP.Reaction = message.content;
+
+//   assert(
+//     messageReaction.reference === "abcdefg",
+//     "did not set reference properly"
+//   );
+
+//   return true;
+// });

@@ -16,7 +16,7 @@ export default function LaunchScreen({
   let savedKeys = useSavedKeys();
   const configureWallet = (
     label: string,
-    configuring: Promise<XMTP.Client>,
+    configuring: Promise<XMTP.Client>
   ) => {
     console.log("Connecting XMTP client", label);
     configuring
@@ -73,8 +73,8 @@ export default function LaunchScreen({
           color="green"
           onPress={() => {
             configureWallet(
-              'dev',
-              XMTP.Client.createRandom({ env: 'dev', appVersion }),
+              "dev",
+              XMTP.Client.createRandom({ env: "dev", appVersion })
             );
           }}
         />
@@ -85,8 +85,8 @@ export default function LaunchScreen({
           color="purple"
           onPress={() => {
             configureWallet(
-              'local',
-              XMTP.Client.createRandom({ env: 'local', appVersion }),
+              "local",
+              XMTP.Client.createRandom({ env: "local", appVersion })
             );
           }}
         />
@@ -112,11 +112,11 @@ export default function LaunchScreen({
               color="green"
               onPress={() => {
                 configureWallet(
-                  'dev',
+                  "dev",
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    env: 'dev',
+                    env: "dev",
                     appVersion,
-                  }),
+                  })
                 );
               }}
             />
@@ -127,11 +127,11 @@ export default function LaunchScreen({
               color="purple"
               onPress={() => {
                 configureWallet(
-                  'local',
+                  "local",
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    env: 'local',
+                    env: "local",
                     appVersion,
-                  }),
+                  })
                 );
               }}
             />
