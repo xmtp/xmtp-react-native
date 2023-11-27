@@ -4,20 +4,20 @@ import XMTP
 // Wrapper around XMTP.DecodedMessage to allow passing these objects back
 // into react native.
 struct DecodedMessageWrapper {
-	static func encodeToObj(_ model: XMTP.DecodedMessage) throws -> [String: Any] {
-		return try [
+	static func encodeToObj(_ model: XMTP.DecryptedMessage, client: Client) throws -> [String: Any] {
+		return [
 			"id": model.id,
 			"topic": model.topic,
 			"contentTypeId": model.encodedContent.type.description,
-			"content": ContentJson.fromEncoded(model.encodedContent, client: model.client).toJsonMap() as Any,
+			"content": try ContentJson.fromEncoded(model.encodedContent, client: client).toJsonMap() as Any,
 			"senderAddress": model.senderAddress,
-			"sent": UInt64(model.sent.timeIntervalSince1970 * 1000),
-			"fallback": model.fallbackContent,
+			"sent": UInt64(model.sentAt.timeIntervalSince1970 * 1000),
+			"fallback": model.encodedContent.fallback,
 		]
 	}
 
-	static func encode(_ model: XMTP.DecodedMessage) throws -> String {
-		let obj = try encodeToObj(model)
+	static func encode(_ model: XMTP.DecryptedMessage, client: Client) throws -> String {
+		let obj = try encodeToObj(model, client: client)
 		return try obj.toJson()
 	}
 }
@@ -32,6 +32,7 @@ extension ContentTypeID {
 struct ContentJson {
 	var type: ContentTypeID
 	var content: Any
+	var encodedContent: EncodedContent?
 
 	static var codecs: [any ContentCodec] = [
 		TextCodec(),
@@ -53,7 +54,7 @@ struct ContentJson {
 	}
 
 	static func fromEncoded(_ encoded: XMTP.EncodedContent, client: Client) throws -> ContentJson {
-		return try ContentJson(type: encoded.type, content: encoded.decoded(with: client))
+		return try ContentJson(type: encoded.type, content: encoded.decoded(with: client), encodedContent: encoded)
 	}
 
 	static func fromJsonObj(_ obj: [String: Any]) throws -> ContentJson {
@@ -158,7 +159,11 @@ struct ContentJson {
 		case ContentTypeReadReceipt.id where content is XMTP.ReadReceipt:
 			return ["readReceipt": ""]
 		default:
-			return ["unknown": ["contentTypeId": type.description]]
+			if let encodedContent, let encodedContentJSON = try? encodedContent.jsonString() {
+				return ["encoded": encodedContentJSON]
+			} else {
+				return ["unknown": ["contentTypeId": type.description]]
+			}
 		}
 	}
 }

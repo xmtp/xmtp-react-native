@@ -3,13 +3,18 @@ import { EventEmitter, NativeModulesProxy } from "expo-modules-core";
 import XMTPModule from "./XMTPModule";
 import { Conversation } from "./lib/Conversation";
 import type { Query } from "./lib/Query";
-import type {
+import {
   ConversationContext,
   DecodedMessage,
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
   PreparedLocalMessage,
 } from "./XMTP.types";
+import { JSContentCodec } from "./lib/ContentCodec";
+import { content } from "@xmtp/proto";
+import { Client } from ".";
+
+const EncodedContent = content.EncodedContent;
 
 export function address(): string {
   return XMTPModule.address();
@@ -61,14 +66,14 @@ export async function exportConversationTopicData(
 }
 
 export async function importConversationTopicData(
-  clientAddress: string,
+  client: Client,
   topicData: string
 ): Promise<Conversation> {
   const json = await XMTPModule.importConversationTopicData(
-    clientAddress,
+    client.address,
     topicData
   );
-  return new Conversation(JSON.parse(json));
+  return new Conversation(client, JSON.parse(json));
 }
 
 export async function canMessage(
@@ -103,17 +108,17 @@ export async function decryptAttachment(
 }
 
 export async function listConversations(
-  clientAddress: string
+  client: Client
 ): Promise<Conversation[]> {
-  return (await XMTPModule.listConversations(clientAddress)).map(
+  return (await XMTPModule.listConversations(client.address)).map(
     (json: string) => {
-      return new Conversation(JSON.parse(json));
+      return new Conversation(client, JSON.parse(json));
     }
   );
 }
 
 export async function listMessages(
-  clientAddress: string,
+  client: Client,
   conversationTopic: string,
   limit?: number | undefined,
   before?: number | Date | undefined,
@@ -124,20 +129,21 @@ export async function listMessages(
     | undefined
 ): Promise<DecodedMessage[]> {
   const messages = await XMTPModule.loadMessages(
-    clientAddress,
+    client.address,
     conversationTopic,
     limit,
     typeof before === "number" ? before : before?.getTime(),
     typeof after === "number" ? after : after?.getTime(),
     direction || "SORT_DIRECTION_DESCENDING"
   );
+
   return messages.map((json: string) => {
-    return JSON.parse(json);
+    return DecodedMessage.from(json, client);
   });
 }
 
 export async function listBatchMessages(
-  clientAddress: string,
+  client: Client,
   queries: Query[]
 ): Promise<DecodedMessage[]> {
   const topics = queries.map((item) => {
@@ -155,27 +161,45 @@ export async function listBatchMessages(
       direction: item.direction || "SORT_DIRECTION_DESCENDING",
     });
   });
-  const messages = await XMTPModule.loadBatchMessages(clientAddress, topics);
+  const messages = await XMTPModule.loadBatchMessages(client.address, topics);
 
   return messages.map((json: string) => {
-    return JSON.parse(json);
+    return DecodedMessage.from(json, client);
   });
 }
 
 // TODO: support conversation ID
 export async function createConversation(
-  clientAddress: string,
+  client: Client,
   peerAddress: string,
   context?: ConversationContext
 ): Promise<Conversation> {
   return new Conversation(
+    client,
     JSON.parse(
       await XMTPModule.createConversation(
-        clientAddress,
+        client.address,
         peerAddress,
         JSON.stringify(context || {})
       )
     )
+  );
+}
+
+export async function sendWithContentType<T>(
+  clientAddress: string,
+  conversationTopic: string,
+  content: T,
+  codec: JSContentCodec<T>
+): Promise<string> {
+  const encodedContent = codec.encode(content);
+  encodedContent.fallback = codec.fallback(content);
+  const encodedContentData = EncodedContent.encode(encodedContent).finish();
+
+  return await XMTPModule.sendEncodedContent(
+    clientAddress,
+    conversationTopic,
+    Array.from(encodedContentData)
   );
 }
 
@@ -307,6 +331,7 @@ export function refreshConsentList(clientAddress: string) {
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);
 
+export * from "./lib/ContentCodec";
 export { Client } from "./lib/Client";
 export { Conversation } from "./lib/Conversation";
 export * from "./XMTP.types";

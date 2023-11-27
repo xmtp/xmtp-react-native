@@ -198,6 +198,15 @@ public class XMTPModule: Module {
 			).toJson()
 		}
 
+		AsyncFunction("sendEncodedContent") { (clientAddress: String, topic: String, encodedContentData: [UInt8]) -> String in
+			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+				throw Error.conversationNotFound("no conversation found for \(topic)")
+			}
+
+			let encodedContent = try EncodedContent(serializedData: Data(encodedContentData))
+
+			return try await conversation.send(encodedContent: encodedContent)
+		}
 
 		AsyncFunction("listConversations") { (clientAddress: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
@@ -227,22 +236,28 @@ public class XMTPModule: Module {
 			let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil
 			let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!) / 1000) : nil
 
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+
 			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
 				throw Error.conversationNotFound("no conversation found for \(topic)")
 			}
 
 			let sortDirection: Int = (direction != nil && direction == "SORT_DIRECTION_ASCENDING") ? 1 : 2
 
-			let decodedMessages = try await conversation.messages(
+			let decryptedMessages = try await conversation.decryptedMessages(
 				limit: limit,
 				before: beforeDate,
 				after: afterDate,
 				direction: PagingInfoSortDirection(rawValue: sortDirection)
 			)
 
-			return decodedMessages.compactMap { msg in
+			print("GOT HERE AGAIN", decryptedMessages)
+
+			return decryptedMessages.compactMap { msg in
 				do {
-					return try DecodedMessageWrapper.encode(msg)
+					return try DecodedMessageWrapper.encode(msg, client: client)
 				} catch {
 					print("discarding message, unable to encode wrapper \(msg.id)")
 					return nil
@@ -296,11 +311,11 @@ public class XMTPModule: Module {
 				topicsList[topic] = page
 			}
 
-			let decodedMessages = try await client.conversations.listBatchMessages(topics: topicsList)
+			let decodedMessages = try await client.conversations.listBatchDecryptedMessages(topics: topicsList)
 
 			return decodedMessages.compactMap { msg in
 				do {
-					return try DecodedMessageWrapper.encode(msg)
+					return try DecodedMessageWrapper.encode(msg, client: client)
 				} catch {
 					print("discarding message, unable to encode wrapper \(msg.id)")
 					return nil
@@ -438,11 +453,15 @@ public class XMTPModule: Module {
 				envelope.contentTopic = topic
 			}
 
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+
 			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
 				throw Error.conversationNotFound("no conversation found for \(topic)")
 			}
-			let decodedMessage = try conversation.decode(envelope)
-			return try DecodedMessageWrapper.encode(decodedMessage)
+			let decodedMessage = try conversation.decrypt(envelope)
+			return try DecodedMessageWrapper.encode(decodedMessage, client: client)
 		}
 
 		AsyncFunction("isAllowed") { (clientAddress: String, address: String) -> Bool in
@@ -565,11 +584,11 @@ public class XMTPModule: Module {
 		await subscriptionsManager.get(getMessagesKey(clientAddress: clientAddress))?.cancel()
 		await subscriptionsManager.set(getMessagesKey(clientAddress: clientAddress), Task {
 			do {
-				for try await message in try await client.conversations.streamAllMessages() {
+				for try await message in try await client.conversations.streamAllDecryptedMessages() {
 					do {
 						try sendEvent("message", [
 							"clientAddress": clientAddress,
-							"message": DecodedMessageWrapper.encodeToObj(message),
+							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
 						])
 					} catch {
 						print("discarding message, unable to encode wrapper \(message.id)")
@@ -587,14 +606,18 @@ public class XMTPModule: Module {
 			return
 		}
 
+		guard let client = await clientsManager.getClient(key: clientAddress) else {
+			throw Error.noClient
+		}
+
 		await subscriptionsManager.get(conversation.cacheKey(clientAddress))?.cancel()
 		await subscriptionsManager.set(conversation.cacheKey(clientAddress), Task {
 			do {
-				for try await message in conversation.streamMessages() {
+				for try await message in conversation.streamDecryptedMessages() {
 					do {
 						try sendEvent("message", [
 							"clientAddress": clientAddress,
-							"message": DecodedMessageWrapper.encodeToObj(message),
+							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
 						])
 					} catch {
 						print("discarding message, unable to encode wrapper \(message.id)")

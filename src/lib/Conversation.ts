@@ -1,13 +1,8 @@
 import * as XMTP from "../index";
 import { DecodedMessage, PreparedLocalMessage } from "../XMTP.types";
 import { ConversationContext } from "../index";
-import { ContentTypeId } from "@xmtp/proto/ts/dist/types/message_contents/content.pb";
-
-type SendOptions = {
-  contentType: ContentTypeId;
-};
 export class Conversation {
-  clientAddress: string;
+  client: XMTP.Client;
   createdAt: number;
   context?: ConversationContext;
   topic: string;
@@ -15,16 +10,18 @@ export class Conversation {
   version: string;
   conversationID?: string | undefined;
 
-  constructor(params: {
-    clientAddress: string;
-    createdAt: number;
-    context?: ConversationContext;
-    topic: string;
-    peerAddress: string;
-    version: string;
-    conversationID?: string | undefined;
-  }) {
-    this.clientAddress = params.clientAddress;
+  constructor(
+    client: XMTP.Client,
+    params: {
+      createdAt: number;
+      context?: ConversationContext;
+      topic: string;
+      peerAddress: string;
+      version: string;
+      conversationID?: string | undefined;
+    }
+  ) {
+    this.client = client;
     this.createdAt = params.createdAt;
     this.context = params.context;
     this.topic = params.topic;
@@ -33,9 +30,13 @@ export class Conversation {
     this.conversationID = params.conversationID;
   }
 
+  get clientAddress(): string {
+    return this.client.address;
+  }
+
   async exportTopicData(): Promise<string> {
     return await XMTP.exportConversationTopicData(
-      this.clientAddress,
+      this.client.address,
       this.topic
     );
   }
@@ -51,28 +52,54 @@ export class Conversation {
       | undefined
   ): Promise<DecodedMessage[]> {
     try {
-      return await XMTP.listMessages(
-        this.clientAddress,
+      console.log("message() client is", this.client);
+
+      const messages = await XMTP.listMessages(
+        this.client,
         this.topic,
         limit,
         before,
         after,
         direction
       );
+
+      return messages;
     } catch (e) {
       console.info("ERROR in listMessages", e);
       return [];
     }
   }
 
+  async sendWithJSCodec<T>(
+    content: T,
+    contentType: XMTP.ContentTypeId,
+    client: XMTP.Client
+  ): Promise<string> {
+    const codec =
+      client.codecRegistry[
+        `${contentType.authorityId}/${contentType.typeId}:${contentType.versionMajor}.${contentType.versionMinor}`
+      ];
+
+    if (!codec) {
+      throw new Error(`no codec found for: ${contentType}`);
+    }
+
+    return await XMTP.sendWithContentType(
+      this.client.address,
+      this.topic,
+      content,
+      codec
+    );
+  }
+
   // TODO: support conversation ID
-  async send(content: any, sendOptions?: SendOptions): Promise<string> {
+  async send(content: any): Promise<string> {
     try {
       if (typeof content === "string") {
         content = { text: content };
       }
 
-      return await XMTP.sendMessage(this.clientAddress, this.topic, content);
+      return await XMTP.sendMessage(this.client.address, this.topic, content);
     } catch (e) {
       console.info("ERROR in send()", e);
       throw e;
@@ -93,7 +120,11 @@ export class Conversation {
       if (typeof content === "string") {
         content = { text: content };
       }
-      return await XMTP.prepareMessage(this.clientAddress, this.topic, content);
+      return await XMTP.prepareMessage(
+        this.client.address,
+        this.topic,
+        content
+      );
     } catch (e) {
       console.info("ERROR in prepareMessage()", e);
       throw e;
@@ -102,7 +133,7 @@ export class Conversation {
 
   async sendPreparedMessage(prepared: PreparedLocalMessage): Promise<string> {
     try {
-      return await XMTP.sendPreparedMessage(this.clientAddress, prepared);
+      return await XMTP.sendPreparedMessage(this.client.address, prepared);
     } catch (e) {
       console.info("ERROR in sendPreparedMessage()", e);
       throw e;
@@ -112,7 +143,7 @@ export class Conversation {
   async decodeMessage(encryptedMessage: string): Promise<DecodedMessage> {
     try {
       return await XMTP.decodeMessage(
-        this.clientAddress,
+        this.client.address,
         this.topic,
         encryptedMessage
       );
@@ -123,13 +154,13 @@ export class Conversation {
   }
 
   async consentState(): Promise<"allowed" | "denied" | "unknown"> {
-    return await XMTP.conversationConsentState(this.clientAddress, this.topic);
+    return await XMTP.conversationConsentState(this.client.address, this.topic);
   }
 
   streamMessages(
     callback: (message: DecodedMessage) => Promise<void>
   ): () => void {
-    XMTP.subscribeToMessages(this.clientAddress, this.topic);
+    XMTP.subscribeToMessages(this.client.address, this.topic);
     const hasSeen = {};
     XMTP.emitter.addListener(
       "message",
@@ -140,7 +171,7 @@ export class Conversation {
         clientAddress: string;
         message: DecodedMessage;
       }) => {
-        if (clientAddress !== this.clientAddress) {
+        if (clientAddress !== this.client.address) {
           return;
         }
         if (hasSeen[message.id]) {
@@ -148,12 +179,14 @@ export class Conversation {
         }
 
         hasSeen[message.id] = true;
-        await callback(message as DecodedMessage);
+
+        message.client = this.client;
+        await callback(DecodedMessage.fromObject(message, this.client));
       }
     );
 
     return () => {
-      XMTP.unsubscribeFromMessages(this.clientAddress, this.topic);
+      XMTP.unsubscribeFromMessages(this.client.address, this.topic);
     };
   }
 }

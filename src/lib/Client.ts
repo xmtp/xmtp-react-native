@@ -11,16 +11,18 @@ import type {
 import { Query } from "./Query";
 import { hexToBytes } from "./util";
 import * as XMTPModule from "../index";
+import { content } from "@xmtp/proto";
 
 declare const Buffer;
 export class Client {
   address: string;
   conversations: Conversations;
   contacts: Contacts;
+  codecRegistry: { [key: string]: XMTPModule.ContentCodec };
 
   static async create(
     signer: Signer,
-    opts?: Partial<ClientOptions>,
+    opts?: Partial<ClientOptions>
   ): Promise<Client> {
     const options = defaultOptions(opts);
     return new Promise<Client>((resolve, reject) => {
@@ -41,7 +43,7 @@ export class Client {
             const signature = Buffer.from(sigBytes).toString("base64");
 
             XMTPModule.receiveSignature(request.id, signature);
-          },
+          }
         );
 
         XMTPModule.emitter.addListener("authed", async () => {
@@ -51,7 +53,7 @@ export class Client {
         XMTPModule.auth(
           await signer.getAddress(),
           options.env,
-          options.appVersion,
+          options.appVersion
         );
       })();
     });
@@ -61,20 +63,20 @@ export class Client {
     const options = defaultOptions(opts);
     const address = await XMTPModule.createRandom(
       options.env,
-      options.appVersion,
+      options.appVersion
     );
     return new Client(address);
   }
 
   static async createFromKeyBundle(
     keyBundle: string,
-    opts?: Partial<ClientOptions>,
+    opts?: Partial<ClientOptions>
   ): Promise<Client> {
     const options = defaultOptions(opts);
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
-      options.appVersion,
+      options.appVersion
     );
     return new Client(address);
   }
@@ -87,6 +89,12 @@ export class Client {
     this.address = address;
     this.conversations = new Conversations(this);
     this.contacts = new Contacts(this);
+    this.codecRegistry = {};
+  }
+
+  register(contentCodec: XMTPModule.ContentCodec) {
+    const id = `${contentCodec.contentType.authorityId}/${contentCodec.contentType.typeId}:${contentCodec.contentType.versionMajor}.${contentCodec.contentType.versionMinor}`;
+    this.codecRegistry[id] = contentCodec;
   }
 
   async exportKeyBundle(): Promise<string> {
@@ -99,7 +107,7 @@ export class Client {
 
   async listBatchMessages(queries: Query[]): Promise<DecodedMessage[]> {
     try {
-      return await XMTPModule.listBatchMessages(this.address, queries);
+      return await XMTPModule.listBatchMessages(this, queries);
     } catch (e) {
       console.info("ERROR in listBatchMessages", e);
       return [];
@@ -107,7 +115,7 @@ export class Client {
   }
 
   async encryptAttachment(
-    file: DecryptedLocalAttachment,
+    file: DecryptedLocalAttachment
   ): Promise<EncryptedLocalAttachment> {
     if (!file.fileUri?.startsWith("file://")) {
       throw new Error("the attachment must be a local file:// uri");
@@ -115,7 +123,7 @@ export class Client {
     return await XMTPModule.encryptAttachment(this.address, file);
   }
   async decryptAttachment(
-    encryptedFile: EncryptedLocalAttachment,
+    encryptedFile: EncryptedLocalAttachment
   ): Promise<DecryptedLocalAttachment> {
     if (!encryptedFile.encryptedLocalFileUri?.startsWith("file://")) {
       throw new Error("the attachment must be a local file:// uri");
@@ -138,7 +146,7 @@ export type NetworkOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
    */
-  env: 'local' | 'dev' | 'production';
+  env: "local" | "dev" | "production";
   /**
    * identifier that's included with API requests.
    *

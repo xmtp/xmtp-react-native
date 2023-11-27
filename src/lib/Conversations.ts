@@ -1,6 +1,6 @@
 import { Client } from "./Client";
 import { Conversation } from "./Conversation";
-import type { ConversationContext, DecodedMessage } from "../XMTP.types";
+import { ConversationContext, DecodedMessage } from "../XMTP.types";
 import * as XMTPModule from "../index";
 
 export default class Conversations {
@@ -12,7 +12,7 @@ export default class Conversations {
   }
 
   async list(): Promise<Conversation[]> {
-    const result = await XMTPModule.listConversations(this.client.address);
+    const result = await XMTPModule.listConversations(this.client);
 
     for (const conversation of result) {
       this.known[conversation.topic] = true;
@@ -23,8 +23,8 @@ export default class Conversations {
 
   async importTopicData(topicData: string): Promise<Conversation> {
     const conversation = await XMTPModule.importConversationTopicData(
-      this.client.address,
-      topicData,
+      this.client,
+      topicData
     );
     this.known[conversation.topic] = true;
     return conversation;
@@ -32,12 +32,12 @@ export default class Conversations {
 
   async newConversation(
     peerAddress: string,
-    context?: ConversationContext,
+    context?: ConversationContext
   ): Promise<Conversation> {
     return await XMTPModule.createConversation(
-      this.client.address,
+      this.client,
       peerAddress,
-      context,
+      context
     );
   }
 
@@ -60,13 +60,13 @@ export default class Conversations {
         }
 
         this.known[conversation.topic] = true;
-        await callback(new Conversation(conversation));
-      },
+        await callback(new Conversation(this.client, conversation));
+      }
     );
   }
 
   async streamAllMessages(
-    callback: (message: DecodedMessage) => Promise<void>,
+    callback: (message: DecodedMessage) => Promise<void>
   ) {
     XMTPModule.subscribeToAllMessages(this.client.address);
     XMTPModule.emitter.addListener(
@@ -86,8 +86,8 @@ export default class Conversations {
         }
 
         this.known[message.id] = true;
-        await callback(message as DecodedMessage);
-      },
+        await callback(DecodedMessage.fromObject(message, this.client));
+      }
     );
   }
 

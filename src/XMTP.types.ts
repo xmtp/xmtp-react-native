@@ -1,4 +1,5 @@
 import { ContentTypeId } from "@xmtp/proto/ts/dist/types/message_contents/content.pb";
+import { Client } from "./lib/Client";
 
 export type UnknownContent = {
   contentTypeId: string;
@@ -83,15 +84,93 @@ export type PreparedLocalMessage = {
 // Each of these corresponds to a codec supported by the native libraries.
 // This is a one-of or union type: only one of these fields will be present.
 
-export type DecodedMessage = {
+export class DecodedMessage {
+  client: Client;
   id: string;
   topic: string;
   contentTypeId: string;
   senderAddress: string;
   sent: number; // timestamp in milliseconds
-  content: any;
+  _content: any;
   fallback: string | undefined;
-};
+
+  static from(json: string, client: Client): DecodedMessage {
+    const decoded = JSON.parse(json);
+    return new DecodedMessage(
+      client,
+      decoded.id,
+      decoded.topic,
+      decoded.contentTypeId,
+      decoded.senderAddress,
+      decoded.sent,
+      decoded.content,
+      decoded.fallback
+    );
+  }
+
+  static fromObject(
+    object: {
+      id: string;
+      topic: string;
+      contentTypeId: string;
+      senderAddress: string;
+      sent: number; // timestamp in milliseconds
+      content: any;
+      fallback: string | undefined;
+    },
+    client: Client
+  ): DecodedMessage {
+    return new DecodedMessage(
+      client,
+      object.id,
+      object.topic,
+      object.contentTypeId,
+      object.senderAddress,
+      object.sent,
+      object.content,
+      object.fallback
+    );
+  }
+
+  constructor(
+    client: Client,
+    id: string,
+    topic: string,
+    contentTypeId: string,
+    senderAddress: string,
+    sent: number,
+    content: any,
+    fallback: string | undefined
+  ) {
+    this.client = client;
+    this.id = id;
+    this.topic = topic;
+    this.contentTypeId = contentTypeId;
+    this.senderAddress = senderAddress;
+    this.sent = sent;
+    this._content = content;
+    this.fallback = fallback;
+  }
+
+  content(): any {
+    console.log("here is the content", this);
+    console.log("registry", this.client.codecRegistry);
+
+    const encodedJSON = this._content.encoded;
+    if (encodedJSON) {
+      const encoded = JSON.parse(encodedJSON);
+      const codec = this.client.codecRegistry[this.contentTypeId];
+
+      if (!codec) {
+        return this.fallback;
+      } else {
+        return codec.decode(encoded);
+      }
+    } else {
+      return this._content;
+    }
+  }
+}
 
 export type ConversationContext = {
   conversationID: string;

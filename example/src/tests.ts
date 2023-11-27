@@ -1,7 +1,41 @@
 import ReactNativeBlobUtil from "react-native-blob-util";
 import * as XMTP from "../../src/index";
+import { content } from "@xmtp/proto";
+
+type EncodedContent = content.EncodedContent;
+type ContentTypeId = content.ContentTypeId;
 
 const { fs } = ReactNativeBlobUtil;
+
+const ContentTypeNumber = {
+  authorityId: "xmtp.org",
+  typeId: "number",
+  versionMajor: 1,
+  versionMinor: 0,
+};
+
+class NumberCodec implements XMTP.JSContentCodec<number> {
+  contentType = ContentTypeNumber;
+
+  // a completely absurd way of encoding number values
+  encode(content: number): EncodedContent {
+    return {
+      type: ContentTypeNumber,
+      parameters: {
+        number: JSON.stringify(content),
+      },
+      content: new Uint8Array(),
+    };
+  }
+
+  decode(encodedContent: EncodedContent): number {
+    return JSON.parse(encodedContent.parameters.number) as number;
+  }
+
+  fallback(content: number): string | undefined {
+    return "a billion";
+  }
+}
 
 export type Test = {
   name: string;
@@ -9,6 +43,12 @@ export type Test = {
 };
 
 export const tests: Test[] = [];
+
+function assert(condition: boolean, msg: string) {
+  if (!condition) {
+    throw new Error(msg);
+  }
+}
 
 function delayToPropogate(): Promise<void> {
   // delay 1s to avoid clobbering
@@ -262,38 +302,38 @@ test("can paginate batch messages", async () => {
   if (messagesLimited.length !== 2) {
     throw Error("Unexpected messagesLimited count " + messagesLimited.length);
   }
-  if (messagesLimited[0].content.text !== "Message 4") {
+  if (messagesLimited[0].content().text !== "Message 4") {
     throw Error(
-      "Unexpected messagesLimited content " + messagesLimited[0].content.text
+      "Unexpected messagesLimited content " + messagesLimited[0].content().text
     );
   }
-  if (messagesLimited[1].content.text !== "Message 3") {
+  if (messagesLimited[1].content().text !== "Message 3") {
     throw Error(
-      "Unexpected messagesLimited content " + messagesLimited[1].content.text
+      "Unexpected messagesLimited content " + messagesLimited[1].content().text
     );
   }
 
   if (messagesBefore.length !== 1) {
     throw Error("Unexpected messagesBefore count " + messagesBefore.length);
   }
-  if (messagesBefore[0].content.text !== "Initial Message") {
+  if (messagesBefore[0].content().text !== "Initial Message") {
     throw Error(
-      "Unexpected messagesBefore content " + messagesBefore[0].content.text
+      "Unexpected messagesBefore content " + messagesBefore[0].content().text
     );
   }
 
   if (messagesAfter.length !== 5) {
     throw Error("Unexpected messagesAfter count " + messagesAfter.length);
   }
-  if (messagesAfter[0].content.text !== "Message 4") {
+  if (messagesAfter[0].content().text !== "Message 4") {
     throw Error(
-      "Unexpected messagesAfter content " + messagesAfter[0].content.text
+      "Unexpected messagesAfter content " + messagesAfter[0].content().text
     );
   }
 
-  if (messagesAsc[0].content.text !== "Initial Message") {
+  if (messagesAsc[0].content().text !== "Initial Message") {
     throw Error(
-      "Unexpected messagesAsc content " + messagesAsc[0].content.text
+      "Unexpected messagesAsc content " + messagesAsc[0].content().text
     );
   }
 
@@ -383,17 +423,17 @@ test("can stream messages", async () => {
     throw Error("Unexpected convo messages count " + convoMessages.length);
   }
   for (let i = 0; i < 5; i++) {
-    if (allMessages[i].content.text !== `Message ${i}`) {
+    if (allMessages[i].content().text !== `Message ${i}`) {
       throw Error(
-        "Unexpected all message content " + allMessages[i].content.text
+        "Unexpected all message content " + allMessages[i].content().text
       );
     }
     if (allMessages[i].topic !== bobConvo.topic) {
       throw Error("Unexpected all message topic " + allMessages[i].topic);
     }
-    if (convoMessages[i].content.text !== `Message ${i}`) {
+    if (convoMessages[i].content().text !== `Message ${i}`) {
       throw Error(
-        "Unexpected convo message content " + convoMessages[i].content.text
+        "Unexpected convo message content " + convoMessages[i].content().text
       );
     }
     if (convoMessages[i].topic !== bobConvo.topic) {
@@ -451,10 +491,10 @@ test("remote attachments should work", async () => {
   if (message.contentTypeId !== "xmtp.org/remoteStaticAttachment:1.0") {
     throw new Error("Expected correctly formatted typeId");
   }
-  if (!message.content.remoteAttachment) {
+  if (!message.content().remoteAttachment) {
     throw new Error("Expected remoteAttachment");
   }
-  if (message.content.remoteAttachment.url !== "https://example.com/123") {
+  if (message.content().remoteAttachment.url !== "https://example.com/123") {
     throw new Error("Expected url to match");
   }
 
@@ -471,7 +511,7 @@ test("remote attachments should work", async () => {
   // Now we can decrypt the downloaded file using the message metadata.
   const attached = await alice.decryptAttachment({
     encryptedLocalFileUri: downloadedFileUri,
-    metadata: message.content.remoteAttachment,
+    metadata: message.content().remoteAttachment,
   });
   if (attached.mimeType !== "text/plain") {
     throw new Error("Expected mimeType to match");
@@ -633,39 +673,28 @@ test("canManagePreferences", async () => {
   return true;
 });
 
-// test("register and use custom content types", async () => {
-//   const bob = await XMTP.Client.createRandom({ env: "local" });
-//   const alice = await XMTP.Client.createRandom({ env: "local" });
-//   const bobConvo = await bob.conversations.newConversation(alice.address);
-//   const aliceConvo = await alice.conversations.newConversation(bob.address);
+test("register and use custom content types", async () => {
+  const bob = await XMTP.Client.createRandom({ env: "local" });
+  const alice = await XMTP.Client.createRandom({ env: "local" });
 
-//   const reaction: Reaction = {
-//     reference: "abcdefg",
-//     action: "added",
-//     content: "coolcool",
-//     schema: "custom",
-//   };
+  bob.register(new NumberCodec());
+  alice.register(new NumberCodec());
 
-//   await bobConvo.send(reaction, {
-//     contentType: XMTP.ContentTypeReaction,
-//   });
+  const bobConvo = await bob.conversations.newConversation(alice.address);
+  const aliceConvo = await alice.conversations.newConversation(bob.address);
 
-//   function assert(condition: boolean, msg: string) {
-//     if (!condition) {
-//       throw new Error(msg);
-//     }
-//   }
+  await bobConvo.sendWithJSCodec(12, ContentTypeNumber, bob);
 
-//   const messages = await aliceConvo.messages();
-//   assert(messages.length !== 1, "did not get messages");
+  const messages = await aliceConvo.messages();
+  assert(messages.length === 1, "did not get messages");
 
-//   const message = messages[0];
-//   const messageReaction: XMTP.Reaction = message.content;
+  const message = messages[0];
+  const messageContent: number = message.content();
 
-//   assert(
-//     messageReaction.reference === "abcdefg",
-//     "did not set reference properly"
-//   );
+  assert(
+    messageContent === 12,
+    "did not get content properly: " + JSON.stringify(messageContent)
+  );
 
-//   return true;
-// });
+  return true;
+});
