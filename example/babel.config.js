@@ -1,25 +1,25 @@
-const path = require("path");
+const path = require('path')
 module.exports = function (api) {
-  api.cache(true);
+  api.cache(true)
   return {
-    presets: ["babel-preset-expo"],
+    presets: ['babel-preset-expo'],
     plugins: [
       [
-        "module-resolver",
+        'module-resolver',
         {
-          extensions: [".tsx", ".ts", ".js", ".json"],
+          extensions: ['.tsx', '.ts', '.js', '.json'],
           alias: {
             // For development, we want to alias the library to the source
-            "xmtp-react-native-sdk": path.join(
+            'xmtp-react-native-sdk': path.join(
               __dirname,
-              "..",
-              "src",
-              "index.ts",
+              '..',
+              'src',
+              'index.ts'
             ),
           },
         },
       ],
-      "@babel/plugin-proposal-export-namespace-from",
+      '@babel/plugin-proposal-export-namespace-from',
     ],
-  };
-};
+  }
+}

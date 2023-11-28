@@ -1,104 +1,103 @@
-import { Signer, utils } from "ethers";
+import { Signer, utils } from 'ethers'
 
-import Conversations from "./Conversations";
-import Contacts from "./Contacts";
+import Contacts from './Contacts'
+import Conversations from './Conversations'
+import { Query } from './Query'
+import { hexToBytes } from './util'
 import type {
   DecryptedLocalAttachment,
   DecodedMessage,
   EncryptedLocalAttachment,
   PreparedLocalMessage,
-} from "../XMTP.types";
-import { Query } from "./Query";
-import { hexToBytes } from "./util";
-import * as XMTPModule from "../index";
-import { content } from "@xmtp/proto";
+} from '../XMTP.types'
+import * as XMTPModule from '../index'
 
-declare const Buffer;
+declare const Buffer
 export class Client {
-  address: string;
-  conversations: Conversations;
-  contacts: Contacts;
-  codecRegistry: { [key: string]: XMTPModule.ContentCodec };
+  address: string
+  conversations: Conversations
+  contacts: Contacts
+  codecRegistry: { [key: string]: XMTPModule.ContentCodec }
 
   static async create(
     signer: Signer,
     opts?: Partial<ClientOptions>
   ): Promise<Client> {
-    const options = defaultOptions(opts);
+    const options = defaultOptions(opts)
     return new Promise<Client>((resolve, reject) => {
-      (async () => {
+      ;(async () => {
         XMTPModule.emitter.addListener(
-          "sign",
+          'sign',
           async (message: { id: string; message: string }) => {
-            const request: { id: string; message: string } = message;
-            const signatureString = await signer.signMessage(request.message);
-            const eSig = utils.splitSignature(signatureString);
-            const r = hexToBytes(eSig.r);
-            const s = hexToBytes(eSig.s);
-            const sigBytes = new Uint8Array(65);
-            sigBytes.set(r);
-            sigBytes.set(s, r.length);
-            sigBytes[64] = eSig.recoveryParam;
+            const request: { id: string; message: string } = message
+            const signatureString = await signer.signMessage(request.message)
+            const eSig = utils.splitSignature(signatureString)
+            const r = hexToBytes(eSig.r)
+            const s = hexToBytes(eSig.s)
+            const sigBytes = new Uint8Array(65)
+            sigBytes.set(r)
+            sigBytes.set(s, r.length)
+            sigBytes[64] = eSig.recoveryParam
 
-            const signature = Buffer.from(sigBytes).toString("base64");
+            const signature = Buffer.from(sigBytes).toString('base64')
 
-            XMTPModule.receiveSignature(request.id, signature);
+            XMTPModule.receiveSignature(request.id, signature)
           }
-        );
+        )
 
-        XMTPModule.emitter.addListener("authed", async () => {
-          const address = await signer.getAddress();
-          resolve(new Client(address));
-        });
+        XMTPModule.emitter.addListener('authed', async () => {
+          const address = await signer.getAddress()
+          resolve(new Client(address))
+        })
         XMTPModule.auth(
           await signer.getAddress(),
           options.env,
           options.appVersion
-        );
-      })();
-    });
+        )
+      })()
+    })
   }
 
   static async createRandom(opts?: Partial<ClientOptions>): Promise<Client> {
-    const options = defaultOptions(opts);
+    const options = defaultOptions(opts)
     const address = await XMTPModule.createRandom(
       options.env,
       options.appVersion
-    );
-    return new Client(address);
+    )
+    return new Client(address)
   }
 
   static async createFromKeyBundle(
     keyBundle: string,
     opts?: Partial<ClientOptions>
   ): Promise<Client> {
-    const options = defaultOptions(opts);
+    const options = defaultOptions(opts)
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
       options.appVersion
-    );
-    return new Client(address);
+    )
+    return new Client(address)
   }
 
   async canMessage(peerAddress: string): Promise<boolean> {
-    return await XMTPModule.canMessage(this.address, peerAddress);
+    return await XMTPModule.canMessage(this.address, peerAddress)
   }
 
   constructor(address: string) {
-    this.address = address;
-    this.conversations = new Conversations(this);
-    this.contacts = new Contacts(this);
-    this.codecRegistry = {};
+    this.address = address
+    this.conversations = new Conversations(this)
+    this.contacts = new Contacts(this)
+    this.codecRegistry = {}
   }
 
   register(contentCodec: XMTPModule.ContentCodec) {
-    const id = `${contentCodec.contentType.authorityId}/${contentCodec.contentType.typeId}:${contentCodec.contentType.versionMajor}.${contentCodec.contentType.versionMinor}`;
-    this.codecRegistry[id] = contentCodec;
+    const id = `${contentCodec.contentType.authorityId}/${contentCodec.contentType.typeId}:${contentCodec.contentType.versionMajor}.${contentCodec.contentType.versionMinor}`
+    this.codecRegistry[id] = contentCodec
   }
 
   async exportKeyBundle(): Promise<string> {
-    return XMTPModule.exportKeyBundle(this.address);
+    return XMTPModule.exportKeyBundle(this.address)
   }
 
   // TODO: support persisting conversations for quick lookup
@@ -107,46 +106,46 @@ export class Client {
 
   async listBatchMessages(queries: Query[]): Promise<DecodedMessage[]> {
     try {
-      return await XMTPModule.listBatchMessages(this, queries);
+      return await XMTPModule.listBatchMessages(this, queries)
     } catch (e) {
-      console.info("ERROR in listBatchMessages", e);
-      return [];
+      console.info('ERROR in listBatchMessages', e)
+      return []
     }
   }
 
   async encryptAttachment(
     file: DecryptedLocalAttachment
   ): Promise<EncryptedLocalAttachment> {
-    if (!file.fileUri?.startsWith("file://")) {
-      throw new Error("the attachment must be a local file:// uri");
+    if (!file.fileUri?.startsWith('file://')) {
+      throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.encryptAttachment(this.address, file);
+    return await XMTPModule.encryptAttachment(this.address, file)
   }
   async decryptAttachment(
     encryptedFile: EncryptedLocalAttachment
   ): Promise<DecryptedLocalAttachment> {
-    if (!encryptedFile.encryptedLocalFileUri?.startsWith("file://")) {
-      throw new Error("the attachment must be a local file:// uri");
+    if (!encryptedFile.encryptedLocalFileUri?.startsWith('file://')) {
+      throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.decryptAttachment(this.address, encryptedFile);
+    return await XMTPModule.decryptAttachment(this.address, encryptedFile)
   }
 
   async sendPreparedMessage(prepared: PreparedLocalMessage): Promise<string> {
     try {
-      return await XMTPModule.sendPreparedMessage(this.address, prepared);
+      return await XMTPModule.sendPreparedMessage(this.address, prepared)
     } catch (e) {
-      console.info("ERROR in sendPreparedMessage()", e);
-      throw e;
+      console.info('ERROR in sendPreparedMessage()', e)
+      throw e
     }
   }
 }
 
-export type ClientOptions = NetworkOptions;
+export type ClientOptions = NetworkOptions
 export type NetworkOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
    */
-  env: "local" | "dev" | "production";
+  env: 'local' | 'dev' | 'production'
   /**
    * identifier that's included with API requests.
    *
@@ -157,8 +156,8 @@ export type NetworkOptions = {
    * provide app support, especially around communicating important
    * SDK updates, including deprecations and required upgrades.
    */
-  appVersion?: string;
-};
+  appVersion?: string
+}
 
 /**
  * Provide a default client configuration. These settings can be used on their own, or as a starting point for custom configurations
@@ -167,8 +166,8 @@ export type NetworkOptions = {
  */
 export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
   const _defaultOptions: ClientOptions = {
-    env: "dev",
-  };
+    env: 'dev',
+  }
 
-  return { ..._defaultOptions, ...opts } as ClientOptions;
+  return { ..._defaultOptions, ...opts } as ClientOptions
 }
