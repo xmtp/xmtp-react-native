@@ -230,19 +230,6 @@ test('can list batch messages', async () => {
     throw Error('No message')
   }
 
-  const getCircularReplacer = () => {
-    const seen = new WeakSet()
-    return (key, value) => {
-      if (typeof value === 'object' && value !== null) {
-        if (seen.has(value)) {
-          return
-        }
-        seen.add(value)
-      }
-      return value
-    }
-  }
-
   if (messages[0].contentTypeId !== 'xmtp.org/reaction:1.0') {
     throw Error(
       'Unexpected message content ' + JSON.stringify(messages[0].contentTypeId)
