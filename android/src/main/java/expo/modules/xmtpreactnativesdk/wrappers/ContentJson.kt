@@ -1,6 +1,7 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import android.util.Base64
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.protobuf.ByteString
@@ -14,6 +15,7 @@ import org.xmtp.android.library.codecs.ContentTypeReadReceipt
 import org.xmtp.android.library.codecs.ContentTypeRemoteAttachment
 import org.xmtp.android.library.codecs.ContentTypeReply
 import org.xmtp.android.library.codecs.ContentTypeText
+import org.xmtp.android.library.codecs.EncodedContent
 import org.xmtp.android.library.codecs.Reaction
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.ReadReceipt
@@ -28,16 +30,17 @@ import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.codecs.getReactionAction
 import org.xmtp.android.library.codecs.getReactionSchema
 import org.xmtp.android.library.codecs.id
-import org.xmtp.proto.message.contents.Content.EncodedContent
 import java.net.URL
 
 class ContentJson(
     val type: ContentTypeId,
     val content: Any?,
+    val encodedContent: EncodedContent? = null,
 ) {
     constructor(encoded: EncodedContent) : this(
         type = encoded.type,
         content = encoded.decoded(),
+        encodedContent = encoded
     );
 
     companion object {
@@ -157,7 +160,11 @@ class ContentJson(
             ContentTypeReply.id -> mapOf(
                 "reply" to mapOf(
                     "reference" to (content as Reply).reference,
-                    "content" to ContentJson(content.contentType, content.content).toJsonMap(),
+                    "content" to ContentJson(
+                        content.contentType,
+                        content.content,
+                        encodedContent
+                    ).toJsonMap(),
                 )
             )
 
@@ -165,11 +172,23 @@ class ContentJson(
                 "readReceipt" to ""
             )
 
-            else -> mapOf(
-                "unknown" to mapOf(
-                    "contentTypeId" to type.description
-                )
-            )
+            else -> {
+                val gson = GsonBuilder().create()
+                val encodedContentJSON = try {
+                    gson.toJson(encodedContent).toString()
+                } catch (e: Exception) {
+                    null
+                }
+                if (!encodedContentJSON.isNullOrBlank()) {
+                    mapOf("encoded" to encodedContentJSON)
+                } else {
+                    mapOf(
+                        "unknown" to mapOf(
+                            "contentTypeId" to type.description
+                        )
+                    )
+                }
+            }
         }
     }
 }
