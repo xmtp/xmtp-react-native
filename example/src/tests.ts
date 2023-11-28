@@ -1,5 +1,4 @@
 import { content } from '@xmtp/proto'
-import { randomBytes } from 'crypto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 
 import {
@@ -152,7 +151,7 @@ test('canMessage', async () => {
 
 test('createFromKeyBundle throws error for non string value', async () => {
   try {
-    const bytes = randomBytes(32)
+    const bytes = [1, 2, 3]
     await Client.createFromKeyBundle(JSON.stringify(bytes), {
       env: 'local',
     })
@@ -231,8 +230,23 @@ test('can list batch messages', async () => {
     throw Error('No message')
   }
 
-  if (messages[0].contentTypeId !== 'org/reaction:1.0') {
-    throw Error('Unexpected message content ' + messages[0].content)
+  const getCircularReplacer = () => {
+    const seen = new WeakSet()
+    return (key, value) => {
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) {
+          return
+        }
+        seen.add(value)
+      }
+      return value
+    }
+  }
+
+  if (messages[0].contentTypeId !== 'xmtp.org/reaction:1.0') {
+    throw Error(
+      'Unexpected message content ' + JSON.stringify(messages[0].contentTypeId)
+    )
   }
 
   if (messages[0].fallback !== 'Reacted “💖” to an earlier message') {
@@ -484,7 +498,7 @@ test('remote attachments should work', async () => {
   }
   const message = messages[0]
 
-  if (message.contentTypeId !== 'org/remoteStaticAttachment:1.0') {
+  if (message.contentTypeId !== 'xmtp.org/remoteStaticAttachment:1.0') {
     throw new Error('Expected correctly formatted typeId')
   }
   if (!message.content().remoteAttachment) {
@@ -547,8 +561,8 @@ test('can send read receipts', async () => {
     throw Error('No message')
   }
 
-  if (bobMessages[0].contentTypeId !== 'org/readReceipt:1.0') {
-    throw Error('Unexpected message content ' + bobMessages[0].content)
+  if (bobMessages[0].contentTypeId !== 'xmtp.org/readReceipt:1.0') {
+    throw Error('Unexpected message content ' + bobMessages[0].contentTypeId)
   }
 
   if (bobMessages[0].fallback) {
