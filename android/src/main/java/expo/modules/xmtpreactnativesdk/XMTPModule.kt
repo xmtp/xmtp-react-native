@@ -267,15 +267,24 @@ class XMTPModule : Module() {
                 filename = attachment.filename
             ).toJson()
         }
-        
-        AsyncFunction("sendEncodedContent") { clientAddress: String, topic: String, encodedContentData: ByteArray ->
+
+        AsyncFunction("sendEncodedContent") { clientAddress: String, topic: String, encodedContentData: List<Int> ->
             val conversation =
                 findConversation(
                     clientAddress = clientAddress,
                     topic = topic
                 ) ?: throw XMTPException("no conversation found for $topic")
 
-            val encodedContent = EncodedContent.parseFrom(encodedContentData.toByteString())
+            val encodedContentDataBytes =
+                encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
+                    a.apply {
+                        set(
+                            i,
+                            v.toByte()
+                        )
+                    }
+                }
+            val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
 
             conversation.send(encodedContent = encodedContent)
         }

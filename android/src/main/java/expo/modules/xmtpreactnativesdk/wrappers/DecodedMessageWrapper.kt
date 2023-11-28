@@ -2,7 +2,7 @@ package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.codecs.description
-import uniffi.xmtp_dh.org.xmtp.android.library.messages.DecryptedMessage
+import org.xmtp.android.library.messages.DecryptedMessage
 
 class DecodedMessageWrapper {
 
