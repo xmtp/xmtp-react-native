@@ -1,75 +1,75 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Button, ScrollView } from "react-native";
-import * as XMTP from "../../src/index";
-import { tests, Test } from "./tests";
+import React, { useEffect, useState } from 'react'
+import { View, Text, Button, ScrollView } from 'react-native'
 
-type Result = "waiting" | "running" | "success" | "failure" | "error";
+import { tests, Test } from './tests'
+
+type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
 function TestView({
   test,
   onComplete,
 }: {
-  test: Test;
-  onComplete: () => void;
+  test: Test
+  onComplete: () => void
 }): JSX.Element {
-  const [markedComplete, setMarkedComplete] = useState<boolean>(false);
-  const [result, setResult] = useState<Result>("waiting");
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [markedComplete, setMarkedComplete] = useState<boolean>(false)
+  const [result, setResult] = useState<Result>('waiting')
+  const [errorMessage, setErrorMessage] = useState<string>('')
 
   async function run() {
-    setResult("running");
-    setErrorMessage("");
+    setResult('running')
+    setErrorMessage('')
     try {
-      const result = await test.run();
-      setResult(result ? "success" : "failure");
-      setErrorMessage("");
+      const result = await test.run()
+      setResult(result ? 'success' : 'failure')
+      setErrorMessage('')
     } catch (err) {
-      setResult("error");
+      setResult('error')
       if (err instanceof Error) {
-        setErrorMessage(err.message + "\n" + err.stack);
+        setErrorMessage(err.message + '\n' + err.stack)
       } else {
-        setErrorMessage(JSON.stringify(err));
+        setErrorMessage(JSON.stringify(err))
       }
     }
     // delay a moment to avoid clobbering
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 300))
     if (!markedComplete) {
-      onComplete();
-      setMarkedComplete(true);
+      onComplete()
+      setMarkedComplete(true)
     }
   }
 
   useEffect(() => {
-    (async () => {
-      await run();
-    })();
-  }, [test]);
+    ;(async () => {
+      await run()
+    })()
+  }, [test])
 
   const backgroundColor = {
-    waiting: "#fafafa",
-    success: "#d4edda",
-    failure: "#f8d7da",
-    error: "#f8d7da",
-    running: "#fafafa",
-  }[result];
+    waiting: '#fafafa',
+    success: '#d4edda',
+    failure: '#f8d7da',
+    error: '#f8d7da',
+    running: '#fafafa',
+  }[result]
 
   return (
-    <View style={{ backgroundColor: backgroundColor }}>
+    <View style={{ backgroundColor }}>
       <View
         style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           paddingHorizontal: 12,
         }}
       >
         <Text style={{ fontSize: 12 }}>{test.name}</Text>
         <Button
           onPress={async () => await run()}
-          title={result == "running" ? "Running..." : "Run"}
+          title={result === 'running' ? 'Running...' : 'Run'}
         />
       </View>
-      {result == "failure" && (
+      {result === 'failure' && (
         <Text
           testID="FAIL"
           accessible
@@ -85,18 +85,18 @@ function TestView({
             testID="FAIL"
             accessible
             accessibilityLabel="FAIL"
-            style={{ color: "#721c24" }}
+            style={{ color: '#721c24' }}
           >
             Error: {errorMessage}
           </Text>
         </View>
       )}
     </View>
-  );
+  )
 }
 
 export default function TestScreen(): JSX.Element {
-  const [completedTests, setCompletedTests] = useState<number>(0);
+  const [completedTests, setCompletedTests] = useState<number>(0)
 
   return (
     <ScrollView>
@@ -106,13 +106,13 @@ export default function TestScreen(): JSX.Element {
             Unit Tests
           </Text>
           <View
-            style={{ flexDirection: "row", justifyContent: "space-between" }}
+            style={{ flexDirection: 'row', justifyContent: 'space-between' }}
           >
             <Text>
               Running {completedTests}/{tests.length}
             </Text>
 
-            {completedTests == tests.length && (
+            {completedTests === tests.length && (
               <Text
                 testID="tests-complete"
                 accessible
@@ -134,14 +134,14 @@ export default function TestScreen(): JSX.Element {
               <TestView
                 test={test}
                 onComplete={() => {
-                  setCompletedTests((prev) => prev + 1);
+                  setCompletedTests((prev) => prev + 1)
                 }}
                 key={i}
               />
-            );
+            )
           })}
         </View>
       </View>
     </ScrollView>
-  );
+  )
 }

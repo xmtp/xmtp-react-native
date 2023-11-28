@@ -1,45 +1,46 @@
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { NavigationParamList } from "./Navigation";
-import { Button, ScrollView, StyleSheet, Text, View } from "react-native";
-import React from "react";
-import { useXmtp } from "./XmtpContext";
-import * as XMTP from "xmtp-react-native-sdk";
-import { useSavedKeys } from "./hooks";
+import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import React from 'react'
+import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
+import * as XMTP from 'xmtp-react-native-sdk'
 
-const appVersion = "XMTP_RN_EX/0.0.1";
+import { NavigationParamList } from './Navigation'
+import { useXmtp } from './XmtpContext'
+import { useSavedKeys } from './hooks'
+
+const appVersion = 'XMTP_RN_EX/0.0.1'
 
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
 export default function LaunchScreen({
   navigation,
-}: NativeStackScreenProps<NavigationParamList, "launch">) {
-  let { setClient } = useXmtp();
-  let savedKeys = useSavedKeys();
+}: NativeStackScreenProps<NavigationParamList, 'launch'>) {
+  const { setClient } = useXmtp()
+  const savedKeys = useSavedKeys()
   const configureWallet = (
     label: string,
     configuring: Promise<XMTP.Client>
   ) => {
-    console.log("Connecting XMTP client", label);
+    console.log('Connecting XMTP client', label)
     configuring
       .then(async (client) => {
-        console.log("Connected XMTP client", label, {
+        console.log('Connected XMTP client', label, {
           address: client.address,
-        });
-        setClient(client);
-        navigation.navigate("home");
+        })
+        setClient(client)
+        navigation.navigate('home')
         // Save the configured client keys for use in later sessions.
-        let keyBundle = await client.exportKeyBundle();
-        await savedKeys.save(keyBundle);
+        const keyBundle = await client.exportKeyBundle()
+        await savedKeys.save(keyBundle)
       })
-      .catch((err) => console.log("Unable to connect XMTP client", label, err));
-  };
+      .catch((err) => console.log('Unable to connect XMTP client', label, err))
+  }
   return (
     <ScrollView>
       <Text
         style={{
           fontSize: 16,
-          textAlign: "right",
-          textTransform: "uppercase",
-          color: "#333",
+          textAlign: 'right',
+          textTransform: 'uppercase',
+          color: '#333',
           marginTop: 16,
           paddingHorizontal: 16,
           marginHorizontal: 16,
@@ -50,7 +51,7 @@ export default function LaunchScreen({
       <View key="run-tests" style={{ margin: 16, marginTop: 16 }}>
         <Button
           title="Run Unit Tests"
-          onPress={() => navigation.navigate("test")}
+          onPress={() => navigation.navigate('test')}
           accessibilityLabel="Unit-tests"
         />
       </View>
@@ -58,36 +59,36 @@ export default function LaunchScreen({
       <Text
         style={{
           fontSize: 16,
-          textAlign: "right",
-          textTransform: "uppercase",
-          color: "#333",
+          textAlign: 'right',
+          textTransform: 'uppercase',
+          color: '#333',
           paddingHorizontal: 16,
           marginHorizontal: 16,
         }}
       >
         Random Wallet
       </Text>
-      <View key={`generated-dev`} style={{ margin: 16 }}>
+      <View key="generated-dev" style={{ margin: 16 }}>
         <Button
-          title={`Use Generated Wallet (dev)`}
+          title="Use Generated Wallet (dev)"
           color="green"
           onPress={() => {
             configureWallet(
-              "dev",
-              XMTP.Client.createRandom({ env: "dev", appVersion })
-            );
+              'dev',
+              XMTP.Client.createRandom({ env: 'dev', appVersion })
+            )
           }}
         />
       </View>
-      <View key={`generated-local`} style={{ margin: 16 }}>
+      <View key="generated-local" style={{ margin: 16 }}>
         <Button
-          title={`Use Generated Wallet (local)`}
+          title="Use Generated Wallet (local)"
           color="purple"
           onPress={() => {
             configureWallet(
-              "local",
-              XMTP.Client.createRandom({ env: "local", appVersion })
-            );
+              'local',
+              XMTP.Client.createRandom({ env: 'local', appVersion })
+            )
           }}
         />
       </View>
@@ -97,9 +98,9 @@ export default function LaunchScreen({
           <Text
             style={{
               fontSize: 16,
-              textAlign: "right",
-              textTransform: "uppercase",
-              color: "#333",
+              textAlign: 'right',
+              textTransform: 'uppercase',
+              color: '#333',
               paddingHorizontal: 16,
               marginHorizontal: 16,
             }}
@@ -112,12 +113,12 @@ export default function LaunchScreen({
               color="green"
               onPress={() => {
                 configureWallet(
-                  "dev",
+                  'dev',
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    env: "dev",
+                    env: 'dev',
                     appVersion,
                   })
-                );
+                )
               }}
             />
           </View>
@@ -127,12 +128,12 @@ export default function LaunchScreen({
               color="purple"
               onPress={() => {
                 configureWallet(
-                  "local",
+                  'local',
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    env: "local",
+                    env: 'local',
                     appVersion,
                   })
-                );
+                )
               }}
             />
           </View>
@@ -146,17 +147,17 @@ export default function LaunchScreen({
         </>
       )}
     </ScrollView>
-  );
+  )
 }
 
 function Divider() {
   return (
     <View
       style={{
-        borderBottomColor: "black",
+        borderBottomColor: 'black',
         margin: 16,
         borderBottomWidth: StyleSheet.hairlineWidth,
       }}
     />
-  );
+  )
 }

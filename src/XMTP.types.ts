@@ -1,55 +1,56 @@
-import { ContentTypeId } from "@xmtp/proto/ts/dist/types/message_contents/content.pb";
-import { Client } from "./lib/Client";
+import { ContentTypeId } from '@xmtp/proto/ts/dist/types/message_contents/content.pb'
+
+import { Client } from './lib/Client'
 
 export type UnknownContent = {
-  contentTypeId: string;
-};
+  contentTypeId: string
+}
 
-export type ReadReceiptContent = object;
+export type ReadReceiptContent = object
 
 export type ReplyContent = {
-  reference: string;
-  content: any;
-  contentType: ContentTypeId;
-};
+  reference: string
+  content: any
+  contentType: ContentTypeId
+}
 
 export type ReactionContent = {
-  reference: string;
-  action: "added" | "removed" | "unknown";
-  schema: "unicode" | "shortcode" | "custom" | "unknown";
-  content: string;
-};
+  reference: string
+  action: 'added' | 'removed' | 'unknown'
+  schema: 'unicode' | 'shortcode' | 'custom' | 'unknown'
+  content: string
+}
 
 export type StaticAttachmentContent = {
-  filename: string;
-  mimeType: string;
-  data: string;
-};
+  filename: string
+  mimeType: string
+  data: string
+}
 
 export type DecryptedLocalAttachment = {
-  fileUri: string;
-  mimeType?: string;
-  filename?: string;
-};
+  fileUri: string
+  mimeType?: string
+  filename?: string
+}
 
 export type RemoteAttachmentMetadata = {
-  filename?: string;
-  secret: string;
-  salt: string;
-  nonce: string;
-  contentDigest: string;
-  contentLength?: string;
-};
+  filename?: string
+  secret: string
+  salt: string
+  nonce: string
+  contentDigest: string
+  contentLength?: string
+}
 
 export type EncryptedLocalAttachment = {
-  encryptedLocalFileUri: string;
-  metadata: RemoteAttachmentMetadata;
-};
+  encryptedLocalFileUri: string
+  metadata: RemoteAttachmentMetadata
+}
 
 export type RemoteAttachmentContent = RemoteAttachmentMetadata & {
-  scheme: "https://";
-  url: string;
-};
+  scheme: 'https://'
+  url: string
+}
 
 // This contains a message that has been prepared for sending.
 // It contains the message ID and the URI of a local file
@@ -75,27 +76,27 @@ export type RemoteAttachmentContent = RemoteAttachmentMetadata & {
 // You can also stuff the `preparedData` elsewhere (e.g. in a database) if that
 // is more convenient for your use case.
 export type PreparedLocalMessage = {
-  messageId: string;
-  preparedFileUri: `file://${string}`;
-  preparedAt: number; // timestamp in milliseconds
-};
+  messageId: string
+  preparedFileUri: `file://${string}`
+  preparedAt: number // timestamp in milliseconds
+}
 
 // This contains the contents of a message.
 // Each of these corresponds to a codec supported by the native libraries.
 // This is a one-of or union type: only one of these fields will be present.
 
 export class DecodedMessage {
-  client: Client;
-  id: string;
-  topic: string;
-  contentTypeId: string;
-  senderAddress: string;
-  sent: number; // timestamp in milliseconds
-  _content: any;
-  fallback: string | undefined;
+  client: Client
+  id: string
+  topic: string
+  contentTypeId: string
+  senderAddress: string
+  sent: number // timestamp in milliseconds
+  _content: any
+  fallback: string | undefined
 
   static from(json: string, client: Client): DecodedMessage {
-    const decoded = JSON.parse(json);
+    const decoded = JSON.parse(json)
     return new DecodedMessage(
       client,
       decoded.id,
@@ -105,18 +106,18 @@ export class DecodedMessage {
       decoded.sent,
       decoded.content,
       decoded.fallback
-    );
+    )
   }
 
   static fromObject(
     object: {
-      id: string;
-      topic: string;
-      contentTypeId: string;
-      senderAddress: string;
-      sent: number; // timestamp in milliseconds
-      content: any;
-      fallback: string | undefined;
+      id: string
+      topic: string
+      contentTypeId: string
+      senderAddress: string
+      sent: number // timestamp in milliseconds
+      content: any
+      fallback: string | undefined
     },
     client: Client
   ): DecodedMessage {
@@ -129,7 +130,7 @@ export class DecodedMessage {
       object.sent,
       object.content,
       object.fallback
-    );
+    )
   }
 
   constructor(
@@ -142,37 +143,37 @@ export class DecodedMessage {
     content: any,
     fallback: string | undefined
   ) {
-    this.client = client;
-    this.id = id;
-    this.topic = topic;
-    this.contentTypeId = contentTypeId;
-    this.senderAddress = senderAddress;
-    this.sent = sent;
-    this._content = content;
-    this.fallback = fallback;
+    this.client = client
+    this.id = id
+    this.topic = topic
+    this.contentTypeId = contentTypeId
+    this.senderAddress = senderAddress
+    this.sent = sent
+    this._content = content
+    this.fallback = fallback
   }
 
   content(): any {
-    console.log("here is the content", this);
-    console.log("registry", this.client.codecRegistry);
+    console.log('here is the content', this)
+    console.log('registry', this.client.codecRegistry)
 
-    const encodedJSON = this._content.encoded;
+    const encodedJSON = this._content.encoded
     if (encodedJSON) {
-      const encoded = JSON.parse(encodedJSON);
-      const codec = this.client.codecRegistry[this.contentTypeId];
+      const encoded = JSON.parse(encodedJSON)
+      const codec = this.client.codecRegistry[this.contentTypeId]
 
       if (!codec) {
-        return this.fallback;
+        return this.fallback
       } else {
-        return codec.decode(encoded);
+        return codec.decode(encoded)
       }
     } else {
-      return this._content;
+      return this._content
     }
   }
 }
 
 export type ConversationContext = {
-  conversationID: string;
-  metadata: { [key: string]: string };
-};
+  conversationID: string
+  metadata: { [key: string]: string }
+}
