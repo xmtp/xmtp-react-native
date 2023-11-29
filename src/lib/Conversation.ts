@@ -1,6 +1,6 @@
-import { DecodedMessage, PreparedLocalMessage } from '../XMTP.types'
+import { DecodedMessage } from './DecodedMessage'
 import * as XMTP from '../index'
-import { ConversationContext } from '../index'
+import { ConversationContext, PreparedLocalMessage } from '../index'
 export class Conversation {
   client: XMTP.Client
   createdAt: number

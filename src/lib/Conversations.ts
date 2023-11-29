@@ -1,6 +1,7 @@
 import { Client } from './Client'
 import { Conversation } from './Conversation'
-import { ConversationContext, DecodedMessage } from '../XMTP.types'
+import { DecodedMessage } from './DecodedMessage'
+import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 
 export default class Conversations {

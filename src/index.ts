@@ -2,16 +2,16 @@ import { content } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import { Client } from '.'
+import { ConversationContext } from './XMTP.types'
+import XMTPModule from './XMTPModule'
 import {
-  ConversationContext,
-  DecodedMessage,
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
   PreparedLocalMessage,
-} from './XMTP.types'
-import XMTPModule from './XMTPModule'
-import { JSContentCodec } from './lib/ContentCodec'
+  ContentCodec,
+} from './lib/ContentCodec'
 import { Conversation } from './lib/Conversation'
+import { DecodedMessage } from './lib/DecodedMessage'
 import type { Query } from './lib/Query'
 
 const EncodedContent = content.EncodedContent
@@ -190,17 +190,26 @@ export async function sendWithContentType<T>(
   clientAddress: string,
   conversationTopic: string,
   content: T,
-  codec: JSContentCodec<T>
+  codec: ContentCodec<T>
 ): Promise<string> {
-  const encodedContent = codec.encode(content)
-  encodedContent.fallback = codec.fallback(content)
-  const encodedContentData = EncodedContent.encode(encodedContent).finish()
+  if ('contentKey' in codec) {
+    const contentJson = JSON.stringify(content)
+    return await XMTPModule.sendMessage(
+      clientAddress,
+      conversationTopic,
+      contentJson
+    )
+  } else {
+    const encodedContent = codec.encode(content)
+    encodedContent.fallback = codec.fallback(content)
+    const encodedContentData = EncodedContent.encode(encodedContent).finish()
 
-  return await XMTPModule.sendEncodedContent(
-    clientAddress,
-    conversationTopic,
-    Array.from(encodedContentData)
-  )
+    return await XMTPModule.sendEncodedContent(
+      clientAddress,
+      conversationTopic,
+      Array.from(encodedContentData)
+    )
+  }
 }
 
 export async function sendMessage(

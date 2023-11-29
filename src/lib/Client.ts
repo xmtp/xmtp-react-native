@@ -1,15 +1,15 @@
 import { Signer, utils } from 'ethers'
 
 import Contacts from './Contacts'
-import Conversations from './Conversations'
-import { Query } from './Query'
-import { hexToBytes } from './util'
 import type {
   DecryptedLocalAttachment,
-  DecodedMessage,
   EncryptedLocalAttachment,
   PreparedLocalMessage,
-} from '../XMTP.types'
+} from './ContentCodec'
+import Conversations from './Conversations'
+import { DecodedMessage } from './DecodedMessage'
+import { Query } from './Query'
+import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
 
 declare const Buffer
@@ -17,7 +17,7 @@ export class Client {
   address: string
   conversations: Conversations
   contacts: Contacts
-  codecRegistry: { [key: string]: XMTPModule.ContentCodec }
+  codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
 
   static async create(
     signer: Signer,
@@ -91,7 +91,7 @@ export class Client {
     this.codecRegistry = {}
   }
 
-  register(contentCodec: XMTPModule.ContentCodec) {
+  register<T, Codec extends XMTPModule.ContentCodec<T>>(contentCodec: Codec) {
     const id = `${contentCodec.contentType.authorityId}/${contentCodec.contentType.typeId}:${contentCodec.contentType.versionMajor}.${contentCodec.contentType.versionMinor}`
     this.codecRegistry[id] = contentCodec
   }

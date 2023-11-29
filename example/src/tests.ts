@@ -1,13 +1,9 @@
 import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 
-import {
-  DecodedMessage,
-  Query,
-  JSContentCodec,
-  Client,
-  Conversation,
-} from '../../src/index'
+import { Query, JSContentCodec, Client, Conversation } from '../../src/index'
+import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
+import { TextCodec } from 'xmtp-react-native-sdk/lib/NativeCodecs/TextCodec'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
@@ -99,13 +95,13 @@ test('can pass a custom filter date and receive message objects with expected da
     const finalQueryDate = new Date('2025-01-01')
 
     // Show all messages before date in the past
-    const messages1: DecodedMessage[] = await aliceConversation.messages(
+    const messages1: DecodedMessage<any>[] = await aliceConversation.messages(
       undefined,
       initialQueryDate
     )
 
     // Show all messages before date in the future
-    const messages2: DecodedMessage[] = await aliceConversation.messages(
+    const messages2: DecodedMessage<any>[] = await aliceConversation.messages(
       undefined,
       finalQueryDate
     )
@@ -293,49 +289,52 @@ test('can paginate batch messages', async () => {
     } as Query,
   ])
 
-  const messagesAsc: DecodedMessage[] = await alice.listBatchMessages([
-    {
-      contentTopic: bobConversation.topic,
-      direction: 'SORT_DIRECTION_ASCENDING',
-    } as Query,
-  ])
+  const messagesAsc: DecodedMessage<any, any>[] = await alice.listBatchMessages(
+    [
+      {
+        contentTopic: bobConversation.topic,
+        direction: 'SORT_DIRECTION_ASCENDING',
+      } as Query,
+    ]
+  )
 
   if (messagesLimited.length !== 2) {
     throw Error('Unexpected messagesLimited count ' + messagesLimited.length)
   }
-  if (messagesLimited[0].content().text !== 'Message 4') {
+
+  const content: number = messagesLimited[0].content(new TextCodec())
+  console.log('string', content)
+  if (messagesLimited[0].content() !== 'Message 4') {
     throw Error(
-      'Unexpected messagesLimited content ' + messagesLimited[0].content().text
+      'Unexpected messagesLimited content ' + messagesLimited[0].content()
     )
   }
-  if (messagesLimited[1].content().text !== 'Message 3') {
+  if (messagesLimited[1].content() !== 'Message 3') {
     throw Error(
-      'Unexpected messagesLimited content ' + messagesLimited[1].content().text
+      'Unexpected messagesLimited content ' + messagesLimited[1].content()
     )
   }
 
   if (messagesBefore.length !== 1) {
     throw Error('Unexpected messagesBefore count ' + messagesBefore.length)
   }
-  if (messagesBefore[0].content().text !== 'Initial Message') {
+  if (messagesBefore[0].content() !== 'Initial Message') {
     throw Error(
-      'Unexpected messagesBefore content ' + messagesBefore[0].content().text
+      'Unexpected messagesBefore content ' + messagesBefore[0].content()
     )
   }
 
   if (messagesAfter.length !== 5) {
     throw Error('Unexpected messagesAfter count ' + messagesAfter.length)
   }
-  if (messagesAfter[0].content().text !== 'Message 4') {
+  if (messagesAfter[0].content() !== 'Message 4') {
     throw Error(
-      'Unexpected messagesAfter content ' + messagesAfter[0].content().text
+      'Unexpected messagesAfter content ' + messagesAfter[0].content()
     )
   }
 
-  if (messagesAsc[0].content().text !== 'Initial Message') {
-    throw Error(
-      'Unexpected messagesAsc content ' + messagesAsc[0].content().text
-    )
+  if (messagesAsc[0].content() !== 'Initial Message') {
+    throw Error('Unexpected messagesAsc content ' + messagesAsc[0].content())
   }
 
   return true
