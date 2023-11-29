@@ -20,7 +20,7 @@
 <ul class="tsd-hierarchy">
 <li><span class="target">Client</span></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L16">lib/Client.ts:16</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L16">lib/Client.ts:16</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-index-accordion" open><summary class="tsd-accordion-summary tsd-index-summary">
@@ -62,24 +62,24 @@
 <h5><span class="tsd-kind-parameter">address</span>: <span class="tsd-signature-type">string</span></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L86">lib/Client.ts:86</a></li></ul></aside></li></ul></section></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L121">lib/Client.ts:121</a></li></ul></aside></li></ul></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Properties</h2>
 <section class="tsd-panel tsd-member"><a id="address" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>address</span><a href="#address" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">address</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L17">lib/Client.ts:17</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L17">lib/Client.ts:17</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="contacts" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>contacts</span><a href="#contacts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">contacts</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type ">default</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L19">lib/Client.ts:19</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L19">lib/Client.ts:19</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="conversations" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>conversations</span><a href="#conversations" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">conversations</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type ">default</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L18">lib/Client.ts:18</a></li></ul></aside></section></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L18">lib/Client.ts:18</a></li></ul></aside></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Methods</h2>
 <section class="tsd-panel tsd-member"><a id="canMessage" class="tsd-anchor"></a>
@@ -87,117 +87,203 @@
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="canMessage.canMessage-1"><span class="tsd-kind-call-signature">can<wbr/>Message</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">peerAddress</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">&gt;</span><a href="#canMessage.canMessage-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Determines whether the current user can send messages to a specified peer.</p>
+<p>This method checks if the specified peer has signed up for XMTP
+and ensures that the message is not addressed to the sender (no self-messaging).</p>
+</div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5><span class="tsd-kind-parameter">peerAddress</span>: <span class="tsd-signature-type">string</span></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<h5><span class="tsd-kind-parameter">peerAddress</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>The address of the peer to check for messaging eligibility.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A Promise resolving to true if messaging is allowed, and false otherwise.</p>
+
+<div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L82">lib/Client.ts:82</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L117">lib/Client.ts:117</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="decryptAttachment" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>decrypt<wbr/>Attachment</span><a href="#decryptAttachment" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="decryptAttachment.decryptAttachment-1"><span class="tsd-kind-call-signature">decrypt<wbr/>Attachment</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">encryptedFile</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/DecryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">DecryptedLocalAttachment</a><span class="tsd-signature-symbol">&gt;</span><a href="#decryptAttachment.decryptAttachment-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Decrypts an encrypted local attachment.</p>
+<p>This asynchronous method takes an encrypted local attachment and decrypts it.</p>
+</div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5><span class="tsd-kind-parameter">encryptedFile</span>: <a href="../types/EncryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">EncryptedLocalAttachment</a></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/DecryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">DecryptedLocalAttachment</a><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<h5><span class="tsd-kind-parameter">encryptedFile</span>: <a href="../types/EncryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">EncryptedLocalAttachment</a></h5>
+<div class="tsd-comment tsd-typography"><p>The encrypted local attachment to be decrypted.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/DecryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">DecryptedLocalAttachment</a><span class="tsd-signature-symbol">&gt;</span></h4><p>A Promise that resolves to the decrypted local attachment.</p>
+
+<div class="tsd-comment tsd-typography">
+<h4>Throws</h4><p>Throws an error if the attachment is not a local file URI (must start with &quot;file://&quot;).</p>
+</div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L117">lib/Client.ts:117</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L188">lib/Client.ts:188</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="encryptAttachment" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>encrypt<wbr/>Attachment</span><a href="#encryptAttachment" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="encryptAttachment.encryptAttachment-1"><span class="tsd-kind-call-signature">encrypt<wbr/>Attachment</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">file</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/EncryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">EncryptedLocalAttachment</a><span class="tsd-signature-symbol">&gt;</span><a href="#encryptAttachment.encryptAttachment-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Encrypts a local attachment for secure transmission.</p>
+<p>This asynchronous method takes a file, checks if it&#39;s a local file URI,
+and encrypts the attachment for secure transmission.</p>
+</div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5><span class="tsd-kind-parameter">file</span>: <a href="../types/DecryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">DecryptedLocalAttachment</a></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/EncryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">EncryptedLocalAttachment</a><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<h5><span class="tsd-kind-parameter">file</span>: <a href="../types/DecryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">DecryptedLocalAttachment</a></h5>
+<div class="tsd-comment tsd-typography"><p>The local attachment to be encrypted.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/EncryptedLocalAttachment.html" class="tsd-signature-type tsd-kind-type-alias">EncryptedLocalAttachment</a><span class="tsd-signature-symbol">&gt;</span></h4><p>A Promise that resolves to the encrypted local attachment.</p>
+
+<div class="tsd-comment tsd-typography">
+<h4>Throws</h4><p>Throws an error if the attachment is not a local file URI (must start with &quot;file://&quot;).</p>
+</div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L109">lib/Client.ts:109</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L171">lib/Client.ts:171</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="exportKeyBundle" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>export<wbr/>Key<wbr/>Bundle</span><a href="#exportKeyBundle" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="exportKeyBundle.exportKeyBundle-1"><span class="tsd-kind-call-signature">export<wbr/>Key<wbr/>Bundle</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><a href="#exportKeyBundle.exportKeyBundle-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<div class="tsd-comment tsd-typography"><p>Exports the key bundle associated with the current XMTP address.</p>
+<p>This method allows you to obtain the unencrypted key bundle for the current XMTP address.
+Ensure the exported keys are stored securely and encrypted.</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A Promise that resolves to the unencrypted key bundle for the current XMTP address.</p>
+
+<div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L92">lib/Client.ts:92</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L135">lib/Client.ts:135</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="listBatchMessages" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>list<wbr/>Batch<wbr/>Messages</span><a href="#listBatchMessages" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="listBatchMessages.listBatchMessages-1"><span class="tsd-kind-call-signature">list<wbr/>Batch<wbr/>Messages</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">queries</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/DecodedMessage.html" class="tsd-signature-type tsd-kind-type-alias">DecodedMessage</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span><a href="#listBatchMessages.listBatchMessages-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Retrieves a list of batch messages based on the provided queries.</p>
+<p>This method pulls messages associated from multiple conversation with the current address
+and specified queries.</p>
+</div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5><span class="tsd-kind-parameter">queries</span>: <a href="../types/Query.html" class="tsd-signature-type tsd-kind-type-alias">Query</a><span class="tsd-signature-symbol">[]</span></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/DecodedMessage.html" class="tsd-signature-type tsd-kind-type-alias">DecodedMessage</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<h5><span class="tsd-kind-parameter">queries</span>: <a href="../types/Query.html" class="tsd-signature-type tsd-kind-type-alias">Query</a><span class="tsd-signature-symbol">[]</span></h5>
+<div class="tsd-comment tsd-typography"><p>An array of queries to filter the batch messages.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/DecodedMessage.html" class="tsd-signature-type tsd-kind-type-alias">DecodedMessage</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A Promise that resolves to a list of batch messages.</p>
+
+<div class="tsd-comment tsd-typography">
+<h4>Throws</h4><p>The error is logged, and the method gracefully returns an empty array.</p>
+</div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L100">lib/Client.ts:100</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L153">lib/Client.ts:153</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="sendPreparedMessage" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>send<wbr/>Prepared<wbr/>Message</span><a href="#sendPreparedMessage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="sendPreparedMessage.sendPreparedMessage-1"><span class="tsd-kind-call-signature">send<wbr/>Prepared<wbr/>Message</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">prepared</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><a href="#sendPreparedMessage.sendPreparedMessage-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Sends a prepared message.</p>
+</div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5><span class="tsd-kind-parameter">prepared</span>: <a href="../types/PreparedLocalMessage.html" class="tsd-signature-type tsd-kind-type-alias">PreparedLocalMessage</a></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<h5><span class="tsd-kind-parameter">prepared</span>: <a href="../types/PreparedLocalMessage.html" class="tsd-signature-type tsd-kind-type-alias">PreparedLocalMessage</a></h5>
+<div class="tsd-comment tsd-typography"><p>The prepared local message to be sent.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4><p>A Promise that resolves to a string identifier for the sent message.</p>
+
+<div class="tsd-comment tsd-typography">
+<h4>Throws</h4><p>Throws an error if there is an issue with sending the prepared message.</p>
+</div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L126">lib/Client.ts:126</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L204">lib/Client.ts:204</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="create" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagStatic">Static</code> <span>create</span><a href="#create" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="create.create-1"><span class="tsd-kind-call-signature">create</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">signer</span>, <span class="tsd-kind-parameter">opts</span><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a><span class="tsd-signature-symbol">&gt;</span><a href="#create.create-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Creates a new instance of the Client class using the provided signer.</p>
+</div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5><span class="tsd-kind-parameter">signer</span>: <span class="tsd-signature-type ">Signer</span></h5></li>
+<h5><span class="tsd-kind-parameter">signer</span>: <span class="tsd-signature-type ">Signer</span></h5>
+<div class="tsd-comment tsd-typography"><p>The signer object used for authentication and message signing.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li>
 <li>
-<h5><code class="tsd-tag ts-flagOptional">Optional</code> <span class="tsd-kind-parameter">opts</span>: <span class="tsd-signature-type ">Partial</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">NetworkOptions</span><span class="tsd-signature-symbol">&gt;</span></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<h5><code class="tsd-tag ts-flagOptional">Optional</code> <span class="tsd-kind-parameter">opts</span>: <span class="tsd-signature-type ">Partial</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">NetworkOptions</span><span class="tsd-signature-symbol">&gt;</span></h5>
+<div class="tsd-comment tsd-typography"><p>Optional configuration options for the Client.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a><span class="tsd-signature-symbol">&gt;</span></h4><p>A Promise that resolves to a new Client instance.</p>
+<p>See <a href="https://xmtp.org/docs/build/authentication#create-a-client">XMTP Docs</a> for more information.</p>
+
+<div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L21">lib/Client.ts:21</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L30">lib/Client.ts:30</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="createFromKeyBundle" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagStatic">Static</code> <span>create<wbr/>From<wbr/>Key<wbr/>Bundle</span><a href="#createFromKeyBundle" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="createFromKeyBundle.createFromKeyBundle-1"><span class="tsd-kind-call-signature">create<wbr/>From<wbr/>Key<wbr/>Bundle</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">keyBundle</span>, <span class="tsd-kind-parameter">opts</span><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a><span class="tsd-signature-symbol">&gt;</span><a href="#createFromKeyBundle.createFromKeyBundle-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Creates a new instance of the Client class from a provided key bundle.</p>
+<p>This method is useful for scenarios where you want to manually handle private key storage,
+allowing the application to have access to XMTP keys without exposing wallet keys.</p>
+</div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5><span class="tsd-kind-parameter">keyBundle</span>: <span class="tsd-signature-type">string</span></h5></li>
+<h5><span class="tsd-kind-parameter">keyBundle</span>: <span class="tsd-signature-type">string</span></h5>
+<div class="tsd-comment tsd-typography"><p>The key bundle used for address generation.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li>
 <li>
-<h5><code class="tsd-tag ts-flagOptional">Optional</code> <span class="tsd-kind-parameter">opts</span>: <span class="tsd-signature-type ">Partial</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">NetworkOptions</span><span class="tsd-signature-symbol">&gt;</span></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<h5><code class="tsd-tag ts-flagOptional">Optional</code> <span class="tsd-kind-parameter">opts</span>: <span class="tsd-signature-type ">Partial</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">NetworkOptions</span><span class="tsd-signature-symbol">&gt;</span></h5>
+<div class="tsd-comment tsd-typography"><p>Optional configuration options for the Client.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a><span class="tsd-signature-symbol">&gt;</span></h4><p>A Promise that resolves to a new Client instance based on the provided key bundle.</p>
+
+<div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L69">lib/Client.ts:69</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L94">lib/Client.ts:94</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member"><a id="createRandom" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagStatic">Static</code> <span>create<wbr/>Random</span><a href="#createRandom" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="tsd-signature tsd-anchor-link" id="createRandom.createRandom-1"><span class="tsd-kind-call-signature">create<wbr/>Random</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">opts</span><span class="tsd-signature-symbol">?</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a><span class="tsd-signature-symbol">&gt;</span><a href="#createRandom.createRandom-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></li>
 <li class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Creates a new instance of the XMTP Client with a randomly generated address.</p>
+</div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5><code class="tsd-tag ts-flagOptional">Optional</code> <span class="tsd-kind-parameter">opts</span>: <span class="tsd-signature-type ">Partial</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">NetworkOptions</span><span class="tsd-signature-symbol">&gt;</span></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<h5><code class="tsd-tag ts-flagOptional">Optional</code> <span class="tsd-kind-parameter">opts</span>: <span class="tsd-signature-type ">Partial</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type ">NetworkOptions</span><span class="tsd-signature-symbol">&gt;</span></h5>
+<div class="tsd-comment tsd-typography"><p>Optional configuration options for the Client.</p>
+</div>
+<div class="tsd-comment tsd-typography"></div></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type ">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="Client.html" class="tsd-signature-type tsd-kind-class">Client</a><span class="tsd-signature-symbol">&gt;</span></h4><p>A Promise that resolves to a new Client instance with a random address.</p>
+
+<div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/22b79fa/src/lib/Client.ts#L60">lib/Client.ts:60</a></li></ul></aside></li></ul></section></section></div>
+<li>Defined in <a href="https://github.com/xmtp/xmtp-react-native/blob/3a4f98d/src/lib/Client.ts#L75">lib/Client.ts:75</a></li></ul></aside></li></ul></section></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
