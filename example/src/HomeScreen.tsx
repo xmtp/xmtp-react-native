@@ -59,8 +59,8 @@ function ConversationItem({
   conversation,
   client,
 }: {
-  conversation: Conversation
-  client: Client | null
+  conversation: Conversation<any>
+  client: Client<any> | null
 }) {
   const navigation = useContext(NavigationContext)
   const { data: messages } = useMessages({ topic: conversation.topic })

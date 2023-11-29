@@ -31,6 +31,9 @@ export class ReplyCodec implements NativeContentCodec<ReplyContent> {
   }
 
   fallback(content: ReplyContent): string | undefined {
-    return 'replied'
+    if (typeof content.content === 'string') {
+      return `Replied with “${content.content}” to an earlier message`
+    }
+    return 'Replied to an earlier message'
   }
 }

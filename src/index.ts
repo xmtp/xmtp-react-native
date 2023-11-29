@@ -14,6 +14,13 @@ import { Conversation } from './lib/Conversation'
 import { DecodedMessage } from './lib/DecodedMessage'
 import type { Query } from './lib/Query'
 
+export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
+export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
+export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
+export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
+export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
+export { TextCodec } from './lib/NativeCodecs/TextCodec'
+
 const EncodedContent = content.EncodedContent
 
 export function address(): string {
@@ -65,10 +72,10 @@ export async function exportConversationTopicData(
   )
 }
 
-export async function importConversationTopicData(
-  client: Client,
+export async function importConversationTopicData<ContentTypes>(
+  client: Client<ContentTypes>,
   topicData: string
-): Promise<Conversation> {
+): Promise<Conversation<ContentTypes>> {
   const json = await XMTPModule.importConversationTopicData(
     client.address,
     topicData
@@ -107,9 +114,9 @@ export async function decryptAttachment(
   return JSON.parse(fileJson)
 }
 
-export async function listConversations(
-  client: Client
-): Promise<Conversation[]> {
+export async function listConversations<ContentTypes>(
+  client: Client<ContentTypes>
+): Promise<Conversation<ContentTypes>[]> {
   return (await XMTPModule.listConversations(client.address)).map(
     (json: string) => {
       return new Conversation(client, JSON.parse(json))
@@ -117,8 +124,8 @@ export async function listConversations(
   )
 }
 
-export async function listMessages(
-  client: Client,
+export async function listMessages<ContentTypes>(
+  client: Client<ContentTypes>,
   conversationTopic: string,
   limit?: number | undefined,
   before?: number | Date | undefined,
@@ -142,8 +149,8 @@ export async function listMessages(
   })
 }
 
-export async function listBatchMessages(
-  client: Client,
+export async function listBatchMessages<ContentTypes>(
+  client: Client<ContentTypes>,
   queries: Query[]
 ): Promise<DecodedMessage[]> {
   const topics = queries.map((item) => {
@@ -169,11 +176,11 @@ export async function listBatchMessages(
 }
 
 // TODO: support conversation ID
-export async function createConversation(
-  client: Client,
+export async function createConversation<ContentTypes>(
+  client: Client<ContentTypes>,
   peerAddress: string,
   context?: ConversationContext
-): Promise<Conversation> {
+): Promise<Conversation<ContentTypes>> {
   return new Conversation(
     client,
     JSON.parse(

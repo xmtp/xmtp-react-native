@@ -11,20 +11,40 @@ import { DecodedMessage } from './DecodedMessage'
 import { Query } from './Query'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
+import { TextCodec } from './NativeCodecs/TextCodec'
 
 declare const Buffer
-export class Client {
+
+export type GetMessageContentTypeFromClient<C> = C extends Client<infer T>
+  ? T
+  : never
+
+export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
+  ? T
+  : never
+
+export class Client<ContentTypes> {
   address: string
-  conversations: Conversations
+  conversations: Conversations<ContentTypes>
   contacts: Contacts
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
 
-  static async create(
+  static async create<
+    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
+  >(
     signer: Signer,
-    opts?: Partial<ClientOptions>
-  ): Promise<Client> {
+    opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
+  ): Promise<
+    Client<
+      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
+    >
+  > {
     const options = defaultOptions(opts)
-    return new Promise<Client>((resolve, reject) => {
+    return new Promise<
+      Client<
+        ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
+      >
+    >((resolve, reject) => {
       ;(async () => {
         XMTPModule.emitter.addListener(
           'sign',
@@ -47,7 +67,7 @@ export class Client {
 
         XMTPModule.emitter.addListener('authed', async () => {
           const address = await signer.getAddress()
-          resolve(new Client(address))
+          resolve(new Client(address, opts?.codecs || []))
         })
         XMTPModule.auth(
           await signer.getAddress(),
@@ -58,37 +78,60 @@ export class Client {
     })
   }
 
-  static async createRandom(opts?: Partial<ClientOptions>): Promise<Client> {
+  static async createRandom<
+    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
+  >(
+    opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
+  ): Promise<
+    Client<
+      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
+    >
+  > {
     const options = defaultOptions(opts)
     const address = await XMTPModule.createRandom(
       options.env,
       options.appVersion
     )
-    return new Client(address)
+    return new Client(address, opts?.codecs || [])
   }
 
-  static async createFromKeyBundle(
+  static async createFromKeyBundle<
+    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
+  >(
     keyBundle: string,
-    opts?: Partial<ClientOptions>
-  ): Promise<Client> {
+    opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
+  ): Promise<
+    Client<
+      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
+    >
+  > {
     const options = defaultOptions(opts)
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
       options.appVersion
     )
-    return new Client(address)
+    return new Client(address, opts?.codecs || [])
   }
 
   async canMessage(peerAddress: string): Promise<boolean> {
     return await XMTPModule.canMessage(this.address, peerAddress)
   }
 
-  constructor(address: string) {
+  constructor(
+    address: string,
+    codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
+  ) {
     this.address = address
     this.conversations = new Conversations(this)
     this.contacts = new Contacts(this)
     this.codecRegistry = {}
+
+    this.register(new TextCodec())
+
+    for (const codec of codecs) {
+      this.register(codec)
+    }
   }
 
   register<T, Codec extends XMTPModule.ContentCodec<T>>(contentCodec: Codec) {

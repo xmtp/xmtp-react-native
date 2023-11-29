@@ -8,8 +8,8 @@ import {
 import { ReplyCodec } from './NativeCodecs/ReplyCodec'
 import { TextCodec } from './NativeCodecs/TextCodec'
 
-export class DecodedMessage<T> {
-  client: Client
+export class DecodedMessage<ContentTypes = any> {
+  client: Client<ContentTypes>
   id: string
   topic: string
   contentTypeId: string
@@ -17,11 +17,13 @@ export class DecodedMessage<T> {
   sent: number // timestamp in milliseconds
   nativeContent: NativeMessageContent
   fallback: string | undefined
-  codec: ContentCodec<T>
 
-  static from<T>(json: string, client: Client): DecodedMessage<T> {
+  static from<ContentTypes>(
+    json: string,
+    client: Client<ContentTypes>
+  ): DecodedMessage {
     const decoded = JSON.parse(json)
-    return new DecodedMessage(
+    return new DecodedMessage<ContentTypes>(
       client,
       decoded.id,
       decoded.topic,
@@ -33,7 +35,7 @@ export class DecodedMessage<T> {
     )
   }
 
-  static fromObject<T>(
+  static fromObject<ContentTypes>(
     object: {
       id: string
       topic: string
@@ -43,8 +45,8 @@ export class DecodedMessage<T> {
       content: any
       fallback: string | undefined
     },
-    client: Client
-  ): DecodedMessage<T> {
+    client: Client<ContentTypes>
+  ): DecodedMessage<ContentTypes> {
     return new DecodedMessage(
       client,
       object.id,
@@ -58,7 +60,7 @@ export class DecodedMessage<T> {
   }
 
   constructor(
-    client: Client,
+    client: Client<ContentTypes>,
     id: string,
     topic: string,
     contentTypeId: string,
@@ -75,22 +77,21 @@ export class DecodedMessage<T> {
     this.sent = sent
     this.nativeContent = content
     this.fallback = fallback
-    this.codec = client.codecRegistry[contentTypeId] as ContentCodec<T>
   }
 
-  content(): T {
+  content(): ContentTypes {
     const encodedJSON = this.nativeContent.encoded
     if (encodedJSON) {
       const encoded = JSON.parse(encodedJSON)
       const codec = this.client.codecRegistry[
         this.contentTypeId
-      ] as JSContentCodec<T>
+      ] as JSContentCodec<ContentTypes>
 
       return codec.decode(encoded)
     } else {
-      for (const nativeCodec of [new TextCodec(), new ReplyCodec()]) {
-        if (this.nativeContent[nativeCodec.contentKey]) {
-          return (nativeCodec as NativeContentCodec<T>).decode(
+      for (const codec of Object.values(this.client.codecRegistry)) {
+        if ('contentKey' in codec && this.nativeContent[codec.contentKey]) {
+          return (codec as NativeContentCodec<ContentTypes>).decode(
             this.nativeContent
           )
         }

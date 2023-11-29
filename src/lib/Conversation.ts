@@ -1,8 +1,8 @@
 import { DecodedMessage } from './DecodedMessage'
 import * as XMTP from '../index'
 import { ConversationContext, PreparedLocalMessage } from '../index'
-export class Conversation {
-  client: XMTP.Client
+export class Conversation<ContentTypes> {
+  client: XMTP.Client<ContentTypes>
   createdAt: number
   context?: ConversationContext
   topic: string
@@ -11,7 +11,7 @@ export class Conversation {
   conversationID?: string | undefined
 
   constructor(
-    client: XMTP.Client,
+    client: XMTP.Client<ContentTypes>,
     params: {
       createdAt: number
       context?: ConversationContext
@@ -50,7 +50,7 @@ export class Conversation {
       | 'SORT_DIRECTION_ASCENDING'
       | 'SORT_DIRECTION_DESCENDING'
       | undefined
-  ): Promise<DecodedMessage[]> {
+  ): Promise<DecodedMessage<ContentTypes>[]> {
     try {
       console.log('message() client is', this.client)
 
@@ -72,11 +72,10 @@ export class Conversation {
 
   async sendWithJSCodec<T>(
     content: T,
-    contentType: XMTP.ContentTypeId,
-    client: XMTP.Client
+    contentType: XMTP.ContentTypeId
   ): Promise<string> {
     const codec =
-      client.codecRegistry[
+      this.client.codecRegistry[
         `${contentType.authorityId}/${contentType.typeId}:${contentType.versionMajor}.${contentType.versionMinor}`
       ]
 

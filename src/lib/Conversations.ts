@@ -4,15 +4,15 @@ import { DecodedMessage } from './DecodedMessage'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 
-export default class Conversations {
-  client: Client
+export default class Conversations<ContentTypes> {
+  client: Client<ContentTypes>
   private known = {} as { [topic: string]: boolean }
 
-  constructor(client: Client) {
+  constructor(client: Client<ContentTypes>) {
     this.client = client
   }
 
-  async list(): Promise<Conversation[]> {
+  async list(): Promise<Conversation<ContentTypes>[]> {
     const result = await XMTPModule.listConversations(this.client)
 
     for (const conversation of result) {
@@ -22,7 +22,9 @@ export default class Conversations {
     return result
   }
 
-  async importTopicData(topicData: string): Promise<Conversation> {
+  async importTopicData(
+    topicData: string
+  ): Promise<Conversation<ContentTypes>> {
     const conversation = await XMTPModule.importConversationTopicData(
       this.client,
       topicData
@@ -34,7 +36,7 @@ export default class Conversations {
   async newConversation(
     peerAddress: string,
     context?: ConversationContext
-  ): Promise<Conversation> {
+  ): Promise<Conversation<ContentTypes>> {
     return await XMTPModule.createConversation(
       this.client,
       peerAddress,
@@ -42,7 +44,9 @@ export default class Conversations {
     )
   }
 
-  async stream(callback: (conversation: Conversation) => Promise<void>) {
+  async stream(
+    callback: (conversation: Conversation<ContentTypes>) => Promise<void>
+  ) {
     XMTPModule.subscribeToConversations(this.client.address)
     XMTPModule.emitter.addListener(
       'conversation',
@@ -51,7 +55,7 @@ export default class Conversations {
         conversation,
       }: {
         clientAddress: string
-        conversation: Conversation
+        conversation: Conversation<ContentTypes>
       }) => {
         if (clientAddress !== this.client.address) {
           return

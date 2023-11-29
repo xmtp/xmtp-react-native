@@ -1,9 +1,16 @@
 import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
-
-import { Query, JSContentCodec, Client, Conversation } from '../../src/index'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
-import { TextCodec } from 'xmtp-react-native-sdk/lib/NativeCodecs/TextCodec'
+
+import {
+  Query,
+  JSContentCodec,
+  Client,
+  Conversation,
+  StaticAttachmentCodec,
+  RemoteAttachmentCodec,
+  RemoteAttachmentContent,
+} from '../../src/index'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
@@ -289,20 +296,18 @@ test('can paginate batch messages', async () => {
     } as Query,
   ])
 
-  const messagesAsc: DecodedMessage<any, any>[] = await alice.listBatchMessages(
-    [
-      {
-        contentTopic: bobConversation.topic,
-        direction: 'SORT_DIRECTION_ASCENDING',
-      } as Query,
-    ]
-  )
+  const messagesAsc: DecodedMessage[] = await alice.listBatchMessages([
+    {
+      contentTopic: bobConversation.topic,
+      direction: 'SORT_DIRECTION_ASCENDING',
+    } as Query,
+  ])
 
   if (messagesLimited.length !== 2) {
     throw Error('Unexpected messagesLimited count ' + messagesLimited.length)
   }
 
-  const content: number = messagesLimited[0].content(new TextCodec())
+  const content: number = messagesLimited[0].content()
   console.log('string', content)
   if (messagesLimited[0].content() !== 'Message 4') {
     throw Error(
@@ -347,7 +352,7 @@ test('can stream messages', async () => {
   await delayToPropogate()
 
   // Record new conversation stream
-  const allConversations: Conversation[] = []
+  const allConversations: Conversation<any>[] = []
   await alice.conversations.stream(async (conversation) => {
     allConversations.push(conversation)
   })
@@ -419,17 +424,15 @@ test('can stream messages', async () => {
     throw Error('Unexpected convo messages count ' + convoMessages.length)
   }
   for (let i = 0; i < 5; i++) {
-    if (allMessages[i].content().text !== `Message ${i}`) {
-      throw Error(
-        'Unexpected all message content ' + allMessages[i].content().text
-      )
+    if (allMessages[i].content() !== `Message ${i}`) {
+      throw Error('Unexpected all message content ' + allMessages[i].content())
     }
     if (allMessages[i].topic !== bobConvo.topic) {
       throw Error('Unexpected all message topic ' + allMessages[i].topic)
     }
-    if (convoMessages[i].content().text !== `Message ${i}`) {
+    if (convoMessages[i].content() !== `Message ${i}`) {
       throw Error(
-        'Unexpected convo message content ' + convoMessages[i].content().text
+        'Unexpected convo message content ' + convoMessages[i].content()
       )
     }
     if (convoMessages[i].topic !== bobConvo.topic) {
@@ -443,8 +446,14 @@ test('can stream messages', async () => {
 })
 
 test('remote attachments should work', async () => {
-  const alice = await Client.createRandom({ env: 'local' })
-  const bob = await Client.createRandom({ env: 'local' })
+  const alice = await Client.createRandom({
+    env: 'local',
+    codecs: [new StaticAttachmentCodec(), new RemoteAttachmentCodec()],
+  })
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [new StaticAttachmentCodec(), new RemoteAttachmentCodec()],
+  })
   const convo = await alice.conversations.newConversation(bob.address)
 
   // Alice is sending Bob a file from her phone.
@@ -487,10 +496,13 @@ test('remote attachments should work', async () => {
   if (message.contentTypeId !== 'xmtp.org/remoteStaticAttachment:1.0') {
     throw new Error('Expected correctly formatted typeId')
   }
-  if (!message.content().remoteAttachment) {
+  if (!message.content()) {
     throw new Error('Expected remoteAttachment')
   }
-  if (message.content().remoteAttachment.url !== 'https://example.com/123') {
+  if (
+    (message.content() as RemoteAttachmentContent).url !==
+    'https://example.com/123'
+  ) {
     throw new Error('Expected url to match')
   }
 
@@ -507,7 +519,7 @@ test('remote attachments should work', async () => {
   // Now we can decrypt the downloaded file using the message metadata.
   const attached = await alice.decryptAttachment({
     encryptedLocalFileUri: downloadedFileUri,
-    metadata: message.content().remoteAttachment,
+    metadata: message.content() as RemoteAttachmentContent,
   })
   if (attached.mimeType !== 'text/plain') {
     throw new Error('Expected mimeType to match')
@@ -664,8 +676,14 @@ test('canManagePreferences', async () => {
 })
 
 test('register and use custom content types', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  const alice = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+  })
+  const alice = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+  })
 
   bob.register(new NumberCodec())
   alice.register(new NumberCodec())
@@ -673,13 +691,13 @@ test('register and use custom content types', async () => {
   const bobConvo = await bob.conversations.newConversation(alice.address)
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
-  await bobConvo.sendWithJSCodec(12, ContentTypeNumber, bob)
+  await bobConvo.sendWithJSCodec(12, ContentTypeNumber)
 
   const messages = await aliceConvo.messages()
   assert(messages.length === 1, 'did not get messages')
 
   const message = messages[0]
-  const messageContent: number = message.content()
+  const messageContent = message.content()
 
   assert(
     messageContent === 12,
