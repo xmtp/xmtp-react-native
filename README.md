@@ -344,6 +344,23 @@ The SDK preregisters the following codecs:
   });
 ```
 
+### Using custom content types
+
+```tsx
+  import { Client } from '@xmtp/xmtp-react-native'
+  // Create the client with a `Signer` from your application and specify any custom codecs
+  const xmtp = await Client.create(wallet, { env: 'production', codecs: [new CustomCodec()]})
+  // Register the custom codec so you can encode and decode it
+  xmtp.register(new CustomCodec())
+  // Use the content type name from you custom codec when sending messages with them
+  await conversation.send(<CUSTOMCONTENT>, { contentType: ContentTypeCustom })
+```
+
+To learn more about how to build a custom content type, see [Build a custom content type](https://xmtp.org/docs/content-types/introduction#create-custom-content-types).
+
+Custom codecs and content types may be proposed as interoperable standards through XRCs. To learn about the custom content type proposal process, see [XIP-5](https://github.com/xmtp/XIPs/blob/main/XIPs/xip-5-message-content-types.md).
+
+
 ## Manually handle private key storage
 
 The SDK will handle key storage for the user by encrypting the private key bundle using a signature generated from the wallet, and storing the encrypted payload on the XMTP network. This can be awkward for some server-side applications, where you may only want to give the application access to the XMTP keys but not your wallet keys. Mobile applications may also want to store keys in a secure enclave rather than rely on decrypting the remote keys on the network each time the application starts up.
