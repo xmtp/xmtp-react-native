@@ -175,14 +175,16 @@ class ContentJson(
             else -> {
                 val json = JsonObject()
                 encodedContent?.let {
-                    val gson = GsonBuilder().create()
-                    val encodedType = gson.toJson(encodedContent.type)
-                    val parameters = gson.toJson(encodedContent.parametersMap)
-
+                    val typeJson = JsonObject()
+                    typeJson.addProperty("authorityId", encodedContent.type.authorityId)
+                    typeJson.addProperty("typeId", encodedContent.type.typeId)
+                    typeJson.addProperty("versionMajor", encodedContent.type.versionMajor)
+                    typeJson.addProperty("versionMinor", encodedContent.type.versionMinor)
+                    val parameters = GsonBuilder().create().toJson(encodedContent.parametersMap)
 
                     json.addProperty("fallback", encodedContent.fallback)
                     json.add("parameters", JsonParser.parseString(parameters))
-                    json.add("type", JsonParser.parseString(encodedType))
+                    json.add("type", typeJson)
                 }
                 val encodedContentJSON = json.toString()
                 if (encodedContentJSON.isNotBlank()) {
