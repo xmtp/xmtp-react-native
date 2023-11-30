@@ -28,6 +28,6 @@ export class ReadReceiptCodec
   }
 
   fallback(content: object): string | undefined {
-    return 'read'
+    return undefined
   }
 }
