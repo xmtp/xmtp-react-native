@@ -66,7 +66,7 @@ Your app must use Android `minSdkVersion = 22` to work with the `xmtp-react-nati
 The [XMTP message API](https://xmtp.org/docs/concepts/architectural-overview#network-layer) revolves around a network client that allows retrieving and sending messages to other network participants. A client must be connected to a wallet on startup. If this is the very first time the client is created, the client will generate a [key bundle](https://xmtp.org/docs/concepts/key-generation-and-usage) that is used to [encrypt and authenticate messages](https://xmtp.org/docs/concepts/invitation-and-message-encryption). The key bundle persists encrypted in the network using a [wallet signature](https://xmtp.org/docs/concepts/account-signatures). The public side of the key bundle is also regularly advertised on the network to allow parties to establish shared encryption keys. All this happens transparently, without requiring any additional code.
 
 ```tsx
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native";
 
 // Create the client with your wallet. This will connect to the XMTP development network by default
@@ -105,7 +105,7 @@ A client is created with `Client.create(wallet: Signer): Promise<Client>` that r
 > The client connects to the XMTP `dev` environment by default. [Use `ClientOptions`](#configure-the-client) to change this and other parameters of the network connection.
 
 ```tsx
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 // Create the client with a `Signer` from your application
 const xmtp = await Client.create(wallet)
 ```
@@ -124,7 +124,7 @@ The client's network connection and key storage method can be configured with th
 Most of the time, when interacting with the network, you'll want to do it through `conversations`. Conversations are between two wallets.
 
 ```tsx
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 // Create the client with a `Signer` from your application
 const xmtp = await Client.create(wallet)
 const conversations = xmtp.conversations
@@ -272,7 +272,7 @@ To learn more, see [Request and respect user consent](https://xmtp.org/docs/buil
 If you would like to check and see if a blockchain address is registered on the network before instantiating a client instance, you can use `Client.canMessage`.
 
 ```tsx
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 
 const isOnDevNetwork = await Client.canMessage(
   '0x3F11b27F323b62B159D2642964fa27C46C841897'
@@ -292,7 +292,7 @@ For example:
 
 ```tsx
 const ethers = require('ethers')
-const { Client } = require('@xmtp/xmtp-react-native')
+const { Client } = require('@xmtp/react-native-sdk')
 
 async function main() {
   //Create a random wallet for example purposes. On the frontend you should replace it with the user's wallet (metamask, rainbow, etc)
@@ -351,7 +351,7 @@ The SDK will handle key storage for the user by encrypting the private key bundl
 You can export the unencrypted key bundle using the static method `Client.exportKeyBundle`, save it somewhere secure, and then provide those keys at a later time to initialize a new client using the exported XMTP identity.
 
 ```js
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 // Get the keys using a valid Signer. Save them somewhere secure.
 const keys = await Client.exportKeyBundle()
 // Create a client using keys returned from getKeys
