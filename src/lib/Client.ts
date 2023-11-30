@@ -118,6 +118,16 @@ export class Client {
     return await XMTPModule.canMessage(this.address, peerAddress);
   }
 
+  /**
+   * Static method to determine if the address is currently in our network.
+   * 
+   * This method checks if the specified peer has signed up for XMTP.
+   * 
+   * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
+   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
+   * @returns {Promise<boolean>}
+   */
+
   static async canMessage(peerAddress: string, opts?: Partial<ClientOptions>): Promise<boolean> {
     const options = defaultOptions(opts);
     return await XMTPModule.staticCanMessage(peerAddress, options.env, options.appVersion);
