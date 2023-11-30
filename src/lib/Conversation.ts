@@ -1,6 +1,11 @@
 import { DecodedMessage } from './DecodedMessage'
 import * as XMTP from '../index'
 import { ConversationContext, PreparedLocalMessage } from '../index'
+
+export type SendOptions = {
+  contentType?: XMTP.ContentTypeId
+}
+
 export class Conversation<ContentTypes> {
   client: XMTP.Client<ContentTypes>
   createdAt: number
@@ -81,7 +86,7 @@ export class Conversation<ContentTypes> {
     }
   }
 
-  async sendWithJSCodec<T>(
+  private async _sendWithJSCodec<T>(
     content: T,
     contentType: XMTP.ContentTypeId
   ): Promise<string> {
@@ -111,7 +116,11 @@ export class Conversation<ContentTypes> {
    *
    * @todo Support specifying a conversation ID in future implementations.
    */
-  async send(content: any): Promise<string> {
+  async send(content: any, opts?: SendOptions): Promise<string> {
+    if (opts && opts.contentType) {
+      return await this._sendWithJSCodec(content, opts.contentType)
+    }
+
     try {
       if (typeof content === 'string') {
         content = { text: content }

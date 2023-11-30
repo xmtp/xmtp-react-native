@@ -691,7 +691,7 @@ test('register and use custom content types', async () => {
   const bobConvo = await bob.conversations.newConversation(alice.address)
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
-  await bobConvo.sendWithJSCodec(12, ContentTypeNumber)
+  await bobConvo.send(12, { contentType: ContentTypeNumber })
 
   const messages = await aliceConvo.messages()
   assert(messages.length === 1, 'did not get messages')
