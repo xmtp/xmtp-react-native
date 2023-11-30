@@ -1060,7 +1060,7 @@ function MessageContents({ message }: { message: DecodedMessage }) {
   return (
     <>
       <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
-        unsupported message content
+        unsupported message content {message.contentTypeId}
       </Text>
     </>
   )
