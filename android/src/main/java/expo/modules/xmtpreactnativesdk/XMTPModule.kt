@@ -218,10 +218,9 @@ class XMTPModule : Module() {
             try {
                 logV("staticCanMessage")
                 val options = ClientOptions(api = apiEnvironments(environment, appVersion))
-                val canMessage = Client.canMessage(peerAddress = peerAddress, options = options)
-                canMessage
+                Client.canMessage(peerAddress = peerAddress, options = options)
             } catch (e: Exception) {
-                throw XMTPException("Failed to create client: $e")
+                throw XMTPException("Failed to create client: ${e.message}")
             }
         }
 
