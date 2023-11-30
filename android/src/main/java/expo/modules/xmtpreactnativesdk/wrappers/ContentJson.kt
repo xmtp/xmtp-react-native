@@ -35,7 +35,7 @@ import java.net.URL
 class ContentJson(
     val type: ContentTypeId,
     val content: Any?,
-    val encodedContent: EncodedContent? = null,
+    private val encodedContent: EncodedContent? = null,
 ) {
     constructor(encoded: EncodedContent) : this(
         type = encoded.type,
@@ -173,13 +173,19 @@ class ContentJson(
             )
 
             else -> {
-                val gson = GsonBuilder().create()
-                val encodedContentJSON = try {
-                    gson.toJson(encodedContent).toString()
-                } catch (e: Exception) {
-                    null
+                val json = JsonObject()
+                encodedContent?.let {
+                    val gson = GsonBuilder().create()
+                    val encodedType = gson.toJson(encodedContent.type)
+                    val parameters = gson.toJson(encodedContent.parametersMap)
+
+
+                    json.addProperty("fallback", encodedContent.fallback)
+                    json.add("parameters", JsonParser.parseString(parameters))
+                    json.add("type", JsonParser.parseString(encodedType))
                 }
-                if (!encodedContentJSON.isNullOrBlank()) {
+                val encodedContentJSON = json.toString()
+                if (encodedContentJSON.isNotBlank()) {
                     mapOf("encoded" to encodedContentJSON)
                 } else {
                     mapOf(
