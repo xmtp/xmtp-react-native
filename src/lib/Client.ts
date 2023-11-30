@@ -118,6 +118,11 @@ export class Client {
     return await XMTPModule.canMessage(this.address, peerAddress);
   }
 
+  static async canMessage(peerAddress: string, opts?: Partial<ClientOptions>): Promise<boolean> {
+    const options = defaultOptions(opts);
+    return await XMTPModule.staticCanMessage(peerAddress, options.env, options.appVersion);
+  }
+
   constructor(address: string) {
     this.address = address;
     this.conversations = new Conversations(this);
