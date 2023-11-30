@@ -214,6 +214,17 @@ class XMTPModule : Module() {
             client.canMessage(peerAddress)
         }
 
+        AsyncFunction("publicCanMessage") { peerAddress: String, environment: String, appVersion: String? ->
+            try {
+                logV("publicCanMessage")
+                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+                Client.canMessage(peerAddress = peerAddress, options = options)
+                true
+            } catch (e: Exception) {
+                throw XMTPException("Failed to create client: $e")
+            }
+        }
+
         AsyncFunction("encryptAttachment") { clientAddress: String, fileJson: String ->
             logV("encryptAttachment")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
