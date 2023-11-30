@@ -214,9 +214,9 @@ class XMTPModule : Module() {
             client.canMessage(peerAddress)
         }
 
-        AsyncFunction("publicCanMessage") { peerAddress: String, environment: String, appVersion: String? ->
+        AsyncFunction("staticCanMessage") { peerAddress: String, environment: String, appVersion: String? ->
             try {
-                logV("publicCanMessage")
+                logV("staticCanMessage")
                 val options = ClientOptions(api = apiEnvironments(environment, appVersion))
                 Client.canMessage(peerAddress = peerAddress, options = options)
                 true

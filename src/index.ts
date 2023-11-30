@@ -79,12 +79,12 @@ export async function canMessage(
   return await XMTPModule.canMessage(clientAddress, peerAddress);
 }
 
-export async function publicCanMessage(
+export async function staticCanMessage(
   peerAddress: string,
   environment: "local" | "dev" | "production",
   appVersion?: string | undefined,
 ): Promise<boolean> {
-  return await XMTPModule.publicCanMessage(peerAddress, environment, appVersion);
+  return await XMTPModule.staticCanMessage(peerAddress, environment, appVersion);
 }
 
 export async function encryptAttachment(
