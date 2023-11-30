@@ -25,7 +25,11 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native'
-import { RemoteAttachmentContent } from 'xmtp-react-native-sdk'
+import {
+  RemoteAttachmentContent,
+  DecodedMessage,
+  StaticAttachmentContent,
+} from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
 import {
@@ -871,7 +875,7 @@ function MessageItem({
     topic,
     messageId,
   })
-  if (!message) {
+  if (!(message instanceof DecodedMessage)) {
     return null
   }
   let content = message.content()
@@ -928,7 +932,7 @@ function MessageItem({
                 </Text>
               </View>
             )}
-            <MessageContents content={content} />
+            <MessageContents message={message} />
             <MessageReactions
               reactions={reactions || []}
               onAddReaction={(reaction) =>
@@ -1025,31 +1029,32 @@ function RemoteAttachmentMessageContents({
   )
 }
 
-function MessageContents({ content }: { content: any }) {
-  if (content.text) {
+function MessageContents({ message }: { message: DecodedMessage }) {
+  if (message.contentTypeId === 'xmtp.org/text:1.0') {
+    const content: string = message.content()
+
     return (
       <>
-        <Text>{content.text}</Text>
+        <Text>{content}</Text>
       </>
     )
   }
-  if (content.attachment) {
+  if (message.contentTypeId === 'xmtp.org/attachment:1.0') {
+    const content: StaticAttachmentContent = message.content()
+
     return (
       <>
         <Text style={{ fontStyle: 'italic' }}>
-          Attachment: {content.attachment.filename} (
-          {content.attachment.mimeType}) (
-          {new Buffer(content.attachment.data, 'base64').length} bytes)
+          Attachment: {content.filename} ({content.mimeType}) (
+          {new Buffer(content.data, 'base64').length} bytes)
         </Text>
       </>
     )
   }
-  if (content.remoteAttachment) {
-    return (
-      <RemoteAttachmentMessageContents
-        remoteAttachment={content.remoteAttachment}
-      />
-    )
+  if (message.contentTypeId === 'xmtp.org/remoteStaticAttachment:1.0') {
+    const content: RemoteAttachmentContent = message.content()
+
+    return <RemoteAttachmentMessageContents remoteAttachment={content} />
   }
   // console.log("unsupported content", content);
   return (

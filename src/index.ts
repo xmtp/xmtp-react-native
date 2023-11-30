@@ -353,3 +353,4 @@ export { Conversation } from './lib/Conversation'
 export * from './XMTP.types'
 export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
+export { DecodedMessage }
