@@ -29,6 +29,15 @@ export class Client<ContentTypes> {
   contacts: Contacts
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
 
+  /**
+   * Creates a new instance of the Client class using the provided signer.
+   *
+   * @param {Signer} signer - The signer object used for authentication and message signing.
+   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
+   * @returns {Promise<Client>} A Promise that resolves to a new Client instance.
+   *
+   * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
+   */
   static async create<
     ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
   >(
@@ -78,6 +87,12 @@ export class Client<ContentTypes> {
     })
   }
 
+  /**
+   * Creates a new instance of the XMTP Client with a randomly generated address.
+   *
+   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
+   * @returns {Promise<Client>} A Promise that resolves to a new Client instance with a random address.
+   */
   static async createRandom<
     ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
   >(
@@ -88,6 +103,7 @@ export class Client<ContentTypes> {
     >
   > {
     const options = defaultOptions(opts)
+
     const address = await XMTPModule.createRandom(
       options.env,
       options.appVersion
@@ -95,6 +111,16 @@ export class Client<ContentTypes> {
     return new Client(address, opts?.codecs || [])
   }
 
+  /**
+   * Creates a new instance of the Client class from a provided key bundle.
+   *
+   * This method is useful for scenarios where you want to manually handle private key storage,
+   * allowing the application to have access to XMTP keys without exposing wallet keys.
+   *
+   * @param {string} keyBundle - The key bundle used for address generation.
+   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
+   * @returns {Promise<Client>} A Promise that resolves to a new Client instance based on the provided key bundle.
+   */
   static async createFromKeyBundle<
     ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
   >(
@@ -114,6 +140,15 @@ export class Client<ContentTypes> {
     return new Client(address, opts?.codecs || [])
   }
 
+  /**
+   * Determines whether the current user can send messages to a specified peer.
+   *
+   * This method checks if the specified peer has signed up for XMTP
+   * and ensures that the message is not addressed to the sender (no self-messaging).
+   *
+   * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
+   * @returns {Promise<boolean>} A Promise resolving to true if messaging is allowed, and false otherwise.
+   */
   async canMessage(peerAddress: string): Promise<boolean> {
     return await XMTPModule.canMessage(this.address, peerAddress)
   }
@@ -139,6 +174,14 @@ export class Client<ContentTypes> {
     this.codecRegistry[id] = contentCodec
   }
 
+  /**
+   * Exports the key bundle associated with the current XMTP address.
+   *
+   * This method allows you to obtain the unencrypted key bundle for the current XMTP address.
+   * Ensure the exported keys are stored securely and encrypted.
+   *
+   * @returns {Promise<string>} A Promise that resolves to the unencrypted key bundle for the current XMTP address.
+   */
   async exportKeyBundle(): Promise<string> {
     return XMTPModule.exportKeyBundle(this.address)
   }
@@ -147,6 +190,16 @@ export class Client<ContentTypes> {
   // async importConversation(exported: string): Promise<Conversation> { ... }
   // async exportConversation(topic: string): Promise<string> { ... }
 
+  /**
+   * Retrieves a list of batch messages based on the provided queries.
+   *
+   * This method pulls messages associated from multiple conversation with the current address
+   * and specified queries.
+   *
+   * @param {Query[]} queries - An array of queries to filter the batch messages.
+   * @returns {Promise<DecodedMessage[]>} A Promise that resolves to a list of batch messages.
+   * @throws {Error} The error is logged, and the method gracefully returns an empty array.
+   */
   async listBatchMessages(queries: Query[]): Promise<DecodedMessage[]> {
     try {
       return await XMTPModule.listBatchMessages(this, queries)
@@ -156,6 +209,15 @@ export class Client<ContentTypes> {
     }
   }
 
+  /**
+   * Encrypts a local attachment for secure transmission.
+   *
+   * This asynchronous method takes a file, checks if it's a local file URI,
+   * and encrypts the attachment for secure transmission.
+   * @param {DecryptedLocalAttachment} file - The local attachment to be encrypted.
+   * @returns {Promise<EncryptedLocalAttachment>} A Promise that resolves to the encrypted local attachment.
+   * @throws {Error} Throws an error if the attachment is not a local file URI (must start with "file://").
+   */
   async encryptAttachment(
     file: DecryptedLocalAttachment
   ): Promise<EncryptedLocalAttachment> {
@@ -164,6 +226,15 @@ export class Client<ContentTypes> {
     }
     return await XMTPModule.encryptAttachment(this.address, file)
   }
+
+  /**
+   * Decrypts an encrypted local attachment.
+   *
+   * This asynchronous method takes an encrypted local attachment and decrypts it.
+   * @param {EncryptedLocalAttachment} encryptedFile - The encrypted local attachment to be decrypted.
+   * @returns {Promise<DecryptedLocalAttachment>} A Promise that resolves to the decrypted local attachment.
+   * @throws {Error} Throws an error if the attachment is not a local file URI (must start with "file://").
+   */
   async decryptAttachment(
     encryptedFile: EncryptedLocalAttachment
   ): Promise<DecryptedLocalAttachment> {
@@ -173,6 +244,13 @@ export class Client<ContentTypes> {
     return await XMTPModule.decryptAttachment(this.address, encryptedFile)
   }
 
+  /**
+   * Sends a prepared message.
+   *
+   * @param {PreparedLocalMessage} prepared - The prepared local message to be sent.
+   * @returns {Promise<string>} A Promise that resolves to a string identifier for the sent message.
+   * @throws {Error} Throws an error if there is an issue with sending the prepared message.
+   */
   async sendPreparedMessage(prepared: PreparedLocalMessage): Promise<string> {
     try {
       return await XMTPModule.sendPreparedMessage(this.address, prepared)
