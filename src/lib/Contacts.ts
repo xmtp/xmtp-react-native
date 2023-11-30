@@ -2,9 +2,9 @@ import { Client } from './Client'
 import * as XMTPModule from '../index'
 
 export default class Contacts {
-  client: Client
+  client: Client<any>
 
-  constructor(client: Client) {
+  constructor(client: Client<any>) {
     this.client = client
   }
 
