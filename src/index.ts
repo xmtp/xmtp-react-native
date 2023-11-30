@@ -79,6 +79,14 @@ export async function canMessage(
   return await XMTPModule.canMessage(clientAddress, peerAddress);
 }
 
+export async function publicCanMessage(
+  peerAddress: string,
+  environment: "local" | "dev" | "production",
+  appVersion?: string | undefined,
+): Promise<boolean> {
+  return await XMTPModule.publicCanMessage(peerAddress, environment, appVersion);
+}
+
 export async function encryptAttachment(
   clientAddress: string,
   file: DecryptedLocalAttachment,

@@ -219,6 +219,16 @@ public class XMTPModule: Module {
             return try await client.canMessage(peerAddress)
         }
 
+        AsyncFunction("publicCanMessage") { (peerAddress: String, environment: String, appVersion: String?) -> Bool in
+            do {
+                let options = createClientConfig(env: environment, appVersion: appVersion)
+              return try await XMTP.Client.canMessage(peerAddress, options: options)
+            } catch {
+                print("ERRO! canMessage method: \(error)")
+                throw error
+            }
+        }
+
         AsyncFunction("encryptAttachment") { (clientAddress: String, fileJson: String) -> String in
             guard let client = await clientsManager.getClient(key: clientAddress) else {
                 throw Error.noClient
