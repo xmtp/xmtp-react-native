@@ -7,7 +7,7 @@ import {
 export type ReplyContent = {
   reference: string
   content: any
-  contentType: ContentTypeId
+  contentType: string
 }
 
 export class ReplyCodec implements NativeContentCodec<ReplyContent> {

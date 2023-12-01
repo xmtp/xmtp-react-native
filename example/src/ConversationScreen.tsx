@@ -1084,10 +1084,13 @@ function MessageContents({
     const actualReplyContent = codec.decode(replyContent.content)
 
     return (
-      <MessageContents
-        contentTypeId={replyContentType}
-        content={actualReplyContent}
-      />
+      <View>
+        <Text style={{ color: 'gray' }}>Reply</Text>
+        <MessageContents
+          contentTypeId={replyContentType}
+          content={actualReplyContent}
+        />
+      </View>
     )
   }
 
