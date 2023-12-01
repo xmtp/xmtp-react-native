@@ -87,7 +87,7 @@ export default function LaunchScreen({
           onPress={() => {
             configureWallet(
               'local',
-              XMTP.Client.createRandom({ env: 'local', appVersion })
+              XMTP.Client.createRandom({ env: 'local', appVersion, codecs: [new XMTP.ReactionCodec()] })
             )
           }}
         />
@@ -132,6 +132,7 @@ export default function LaunchScreen({
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
                     env: 'local',
                     appVersion,
+                    codecs: [new XMTP.ReactionCodec()]
                   })
                 )
               }}

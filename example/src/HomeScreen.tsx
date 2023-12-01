@@ -98,7 +98,7 @@ function ConversationItem({
         </View>
         <View style={{ padding: 4 }}>
           <Text numberOfLines={1} ellipsizeMode="tail">
-            {lastMessage?.content().text}
+            {lastMessage?.fallback}
           </Text>
           <Text>{lastMessage?.senderAddress}:</Text>
           <Text>{moment(lastMessage?.sent).fromNow()}</Text>

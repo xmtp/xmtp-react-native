@@ -97,7 +97,7 @@ export class DecodedMessage<ContentTypes = any> {
         }
       }
 
-      throw new Error('no content type found')
+      throw new Error(`no content type found ${JSON.stringify(this.nativeContent)}`)
     }
   }
 }

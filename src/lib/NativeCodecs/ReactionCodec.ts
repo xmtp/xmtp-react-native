@@ -6,7 +6,7 @@ import {
 } from '../ContentCodec'
 
 export class ReactionCodec implements NativeContentCodec<ReactionContent> {
-  contentKey: string = 'attachment'
+  contentKey: string = 'reaction'
 
   contentType: ContentTypeId = {
     authorityId: 'xmtp.org',
