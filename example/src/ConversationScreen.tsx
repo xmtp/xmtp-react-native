@@ -30,6 +30,7 @@ import {
   DecodedMessage,
   StaticAttachmentContent,
   ReplyContent,
+  Client,
 } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
@@ -41,6 +42,7 @@ import {
   useLoadRemoteAttachment,
   usePrepareRemoteAttachment,
 } from './hooks'
+import { useXmtp } from './XmtpContext'
 
 type Attachment = {
   file?: DocumentPickerAsset
@@ -1044,6 +1046,8 @@ function MessageContents({
   contentTypeId: string
   content: any
 }) {
+  const { client }: { client: Client<any> } = useXmtp()
+
   if (contentTypeId === 'xmtp.org/text:1.0') {
     const text: string = content
 
@@ -1074,10 +1078,17 @@ function MessageContents({
   }
 
   if (contentTypeId === 'xmtp.org/reply:1.0') {
-    const replyContent: any = content
+    const replyContent: ReplyContent = content
+    throw new Error(JSON.stringify(content))
+    const replyContentType = `${replyContent.contentType.authorityId}/${replyContent.contentType.typeId}:${replyContent.contentType.versionMajor}.${replyContent.contentType.versionMinor}`
+    const codec = client.codecRegistry[replyContentType]
+    const actualReplyContent = codec.decode(replyContent.content)
 
     return (
-      <MessageContents contentTypeId={contentTypeId} content={replyContent} />
+      <MessageContents
+        contentTypeId={replyContentType}
+        content={actualReplyContent}
+      />
     )
   }
 
