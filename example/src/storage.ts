@@ -11,8 +11,8 @@ const headers = {
 }
 
 export async function uploadFile(
-  localFileUri: `file://${string}`,
-  fileId: string
+  localFileUri: string,
+  fileId: string | undefined
 ): Promise<string> {
   const url = `${storageUrl}/${fileId}`
   console.log('uploading to', url)

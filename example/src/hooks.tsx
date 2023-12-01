@@ -5,6 +5,7 @@ import {
   DecodedMessage,
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
+  ReactionContent,
   RemoteAttachmentContent,
 } from 'xmtp-react-native-sdk'
 
@@ -16,10 +17,12 @@ import { downloadFile, uploadFile } from './storage'
  *
  * Note: this is better done with a DB, but we're using react-query for now.
  */
-export function useConversationList(): UseQueryResult<Conversation[]> {
+export function useConversationList<ContentTypes>(): UseQueryResult<
+  Conversation<ContentTypes>[]
+> {
   const { client } = useXmtp()
   client?.contacts.refreshConsentList()
-  return useQuery<Conversation[]>(
+  return useQuery<Conversation<ContentTypes>[]>(
     ['xmtp', 'conversations', client?.address],
     () => client!.conversations.list(),
     {
@@ -33,14 +36,18 @@ export function useConversationList(): UseQueryResult<Conversation[]> {
  *
  * Note: this is better done with a DB, but we're using react-query for now.
  */
-export function useConversation({
+export function useConversation<ContentTypes>({
   topic,
 }: {
   topic: string
-}): UseQueryResult<Conversation | undefined> {
+}): UseQueryResult<Conversation<ContentTypes> | undefined> {
   const { client } = useXmtp()
   // TODO: use a DB instead of scanning the cached conversation list
-  return useQuery<Conversation[], unknown, Conversation | undefined>(
+  return useQuery<
+    Conversation<ContentTypes>[],
+    unknown,
+    Conversation<ContentTypes> | undefined
+  >(
     ['xmtp', 'conversations', client?.address, topic],
     () => client!.conversations.list(),
     {
@@ -127,7 +134,10 @@ export function useMessage({
 export function useConversationReactions({ topic }: { topic: string }) {
   const { client } = useXmtp()
   const { data: messages } = useMessages({ topic })
-  const reactions = (messages || []).filter(({ content }) => content.reaction)
+  const reactions = (messages || []).filter(
+    (message: DecodedMessage) =>
+      message.contentTypeId === 'xmtp.org/reaction:1.0'
+  )
   return useQuery<{
     [messageId: string]: {
       reaction: string
@@ -145,7 +155,9 @@ export function useConversationReactions({ topic }: { topic: string }) {
       reactions
         .slice()
         .reverse()
-        .forEach(({ id, senderAddress, content: { reaction } }) => {
+        .forEach((message: DecodedMessage) => {
+          const { senderAddress } = message
+          const reaction: ReactionContent = message.content()
           const messageId = reaction!.reference
           const reactionText = reaction!.content
           const v = byId[messageId] || ({} as { [reaction: string]: string[] })
@@ -193,7 +205,13 @@ export function useConversationReactions({ topic }: { topic: string }) {
   )
 }
 
-export function useMessageReactions({ topic, messageId }) {
+export function useMessageReactions({
+  topic,
+  messageId,
+}: {
+  topic: string
+  messageId: string
+}) {
   const { data: reactionsByMessageId } = useConversationReactions({ topic })
   const reactions = ((reactionsByMessageId || {})[messageId] || []) as {
     reaction: string
@@ -213,7 +231,7 @@ export function useLoadRemoteAttachment({
   enabled: boolean
 }): { decrypted: DecryptedLocalAttachment | undefined } {
   const { client } = useXmtp()
-  const { data: encryptedLocalFileUri } = useQuery<`file://${string}`>(
+  const { data: encryptedLocalFileUri } = useQuery<string>(
     [
       'xmtp',
       'localAttachment',

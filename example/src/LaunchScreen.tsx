@@ -9,6 +9,13 @@ import { useSavedKeys } from './hooks'
 
 const appVersion = 'XMTP_RN_EX/0.0.1'
 
+const supportedCodecs = [
+  new XMTP.ReactionCodec(),
+  new XMTP.ReplyCodec(),
+  new XMTP.RemoteAttachmentCodec(),
+  new XMTP.StaticAttachmentCodec(),
+]
+
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
 export default function LaunchScreen({
   navigation,
@@ -75,7 +82,11 @@ export default function LaunchScreen({
           onPress={() => {
             configureWallet(
               'dev',
-              XMTP.Client.createRandom({ env: 'dev', appVersion })
+              XMTP.Client.createRandom({
+                env: 'dev',
+                appVersion,
+                codecs: supportedCodecs,
+              })
             )
           }}
         />
@@ -87,7 +98,11 @@ export default function LaunchScreen({
           onPress={() => {
             configureWallet(
               'local',
-              XMTP.Client.createRandom({ env: 'local', appVersion, codecs: [new XMTP.ReactionCodec()] })
+              XMTP.Client.createRandom({
+                env: 'local',
+                appVersion,
+                codecs: supportedCodecs,
+              })
             )
           }}
         />
@@ -117,6 +132,7 @@ export default function LaunchScreen({
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
                     env: 'dev',
                     appVersion,
+                    codecs: supportedCodecs,
                   })
                 )
               }}
@@ -132,7 +148,7 @@ export default function LaunchScreen({
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
                     env: 'local',
                     appVersion,
-                    codecs: [new XMTP.ReactionCodec()]
+                    codecs: supportedCodecs,
                   })
                 )
               }}

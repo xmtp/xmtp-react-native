@@ -29,6 +29,7 @@ import {
   RemoteAttachmentContent,
   DecodedMessage,
   StaticAttachmentContent,
+  ReplyContent,
 } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
@@ -45,6 +46,8 @@ type Attachment = {
   file?: DocumentPickerAsset
   image?: ImagePickerAsset
 }
+
+const hiddenMessageTypes = ['xmtp.org/reaction:1.0']
 
 /// Show the messages in a conversation.
 export default function ConversationScreen({
@@ -69,7 +72,9 @@ export default function ConversationScreen({
     fileUri: attachment?.image?.uri || attachment?.file?.uri,
     mimeType: attachment?.file?.mimeType,
   })
-  messages = (messages || []).filter((message) => !message.content().reaction)
+  messages = (messages || []).filter(
+    (message) => !hiddenMessageTypes.includes(message.contentTypeId)
+  )
   // console.log("messages", JSON.stringify(messages, null, 2));
   const sendMessage = async (content: any) => {
     setSending(true)
@@ -932,7 +937,10 @@ function MessageItem({
                 </Text>
               </View>
             )}
-            <MessageContents message={message} />
+            <MessageContents
+              contentTypeId={message.contentTypeId}
+              content={message.content()}
+            />
             <MessageReactions
               reactions={reactions || []}
               onAddReaction={(reaction) =>
@@ -1029,38 +1037,55 @@ function RemoteAttachmentMessageContents({
   )
 }
 
-function MessageContents({ message }: { message: DecodedMessage }) {
-  if (message.contentTypeId === 'xmtp.org/text:1.0') {
-    const content: string = message.content()
+function MessageContents({
+  contentTypeId,
+  content,
+}: {
+  contentTypeId: string
+  content: any
+}) {
+  if (contentTypeId === 'xmtp.org/text:1.0') {
+    const text: string = content
 
     return (
       <>
-        <Text>{content}</Text>
+        <Text>{text}</Text>
       </>
     )
   }
-  if (message.contentTypeId === 'xmtp.org/attachment:1.0') {
-    const content: StaticAttachmentContent = message.content()
+  if (contentTypeId === 'xmtp.org/attachment:1.0') {
+    const attachment: StaticAttachmentContent = content
 
     return (
       <>
         <Text style={{ fontStyle: 'italic' }}>
-          Attachment: {content.filename} ({content.mimeType}) (
-          {new Buffer(content.data, 'base64').length} bytes)
+          Attachment: {attachment.filename} ({attachment.mimeType}) (
+          {new Buffer(attachment.data, 'base64').length} bytes)
         </Text>
       </>
     )
   }
-  if (message.contentTypeId === 'xmtp.org/remoteStaticAttachment:1.0') {
-    const content: RemoteAttachmentContent = message.content()
+  if (contentTypeId === 'xmtp.org/remoteStaticAttachment:1.0') {
+    const remoteAttachment: RemoteAttachmentContent = content
 
-    return <RemoteAttachmentMessageContents remoteAttachment={content} />
+    return (
+      <RemoteAttachmentMessageContents remoteAttachment={remoteAttachment} />
+    )
   }
+
+  if (contentTypeId === 'xmtp.org/reply:1.0') {
+    const replyContent: any = content
+
+    return (
+      <MessageContents contentTypeId={contentTypeId} content={replyContent} />
+    )
+  }
+
   // console.log("unsupported content", content);
   return (
     <>
       <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
-        unsupported message content {message.contentTypeId}
+        unsupported message content {contentTypeId}
       </Text>
     </>
   )

@@ -8,10 +8,10 @@ import type {
 } from './ContentCodec'
 import Conversations from './Conversations'
 import { DecodedMessage } from './DecodedMessage'
+import { TextCodec } from './NativeCodecs/TextCodec'
 import { Query } from './Query'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
-import { TextCodec } from './NativeCodecs/TextCodec'
 
 declare const Buffer
 
