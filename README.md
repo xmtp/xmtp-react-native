@@ -118,6 +118,7 @@ The client's network connection and key storage method can be configured with th
 | ------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | appVersion                | `undefined`                                                                       | Add a client app version identifier that's included with API requests.<br/>For example, you can use the following format: `appVersion: APP_NAME + '/' + APP_VERSION`.<br/>Setting this value provides telemetry that shows which apps are using the XMTP client SDK. This information can help XMTP developers provide app support, especially around communicating important SDK updates, including deprecations and required upgrades. |
 | env                       | `dev`                                                                             | Connect to the specified XMTP network environment. Valid values include `dev`, `production`, or `local`. For important details about working with these environments, see [XMTP `production` and `dev` network environments](#xmtp-production-and-dev-network-environments). |
+| codecs                    | `[new XMTP.ReactionCodec()]`                                                                     | Add codecs to support additional content types.                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ## Handle conversations
 
@@ -327,33 +328,34 @@ All send functions support `SendOptions` as an optional parameter. The `contentT
 
 To learn more about content types, see [Content types with XMTP](https://xmtp.org/docs/concepts/content-types).
 
-The SDK preregisters the following codecs:
+Support for other types of content can be added by registering additional `ContentCodecs` with the `Client`. Every codec is associated with a content type identifier, `ContentTypeId`, which is used to signal to the client which codec should be used to process the content that is being sent or received.
+For example, see the [Native Codecs](https://github.com/xmtp/xmtp-react-native/tree/main/src/lib/NativeCodecs) available in `xmtp-react-native`.
 
-- For [Android](https://github.com/xmtp/xmtp-react-native/blob/main/android/src/main/java/expo/modules/xmtpreactnativesdk/wrappers/ContentJson.kt#L43-L53), using these [source codecs](https://github.com/xmtp/xmtp-android/tree/main/library/src/main/java/org/xmtp/android/library/codecs).
+```ts
+// Assuming we've loaded a fictional NumberCodec that can be used to encode numbers,
+// and is identified with ContentTypeNumber, we can use it as follows.
 
-- For [iOS](https://github.com/xmtp/xmtp-react-native/blob/main/ios/Wrappers/DecodedMessageWrapper.swift#L35-L48), using these [source codecs](https://github.com/xmtp/xmtp-ios/tree/main/Sources/XMTP/Codecs).
-
-```tsx
-  await conversation.send({
-    reaction: {
-      reference: otherMessage.id,
-      action: "added",
-      schema: "unicode",
-      content: "💖",
-    },
-  });
+xmtp.register(new NumberCodec())
+conversation.send(3.14, {
+  contentType: ContentTypeNumber
+})
 ```
 
-### Using custom content types
+Additional codecs can be configured through the `ClientOptions` parameter of `Client.create`. The `codecs` option is a list of codec instances that should be added to the default set of codecs (currently only the `TextCodec`). If a codec is added for a content type that is already in the default set, it will replace the original codec.
 
-```tsx
-  import { Client } from '@xmtp/xmtp-react-native'
-  // Create the client with a `Signer` from your application and specify any custom codecs
-  const xmtp = await Client.create(wallet, { env: 'production', codecs: [new CustomCodec()]})
-  // Register the custom codec so you can encode and decode it
-  xmtp.register(new CustomCodec())
-  // Use the content type name from you custom codec when sending messages with them
-  await conversation.send(<CUSTOMCONTENT>, { contentType: ContentTypeCustom })
+```ts
+// Adding support for `xmtp.org/reaction` content type
+import { ReactionCodec } from '@xmtp/react-native-sdk'
+const xmtp = Client.create(wallet, { codecs: [new ReactionCodec()] })
+
+await conversation.send({
+  reaction: {
+    reference: otherMessage.id,
+    action: "added",
+    schema: "unicode",
+    content: "💖",
+  },
+});
 ```
 
 To learn more about how to build a custom content type, see [Build a custom content type](https://xmtp.org/docs/content-types/introduction#create-custom-content-types).
