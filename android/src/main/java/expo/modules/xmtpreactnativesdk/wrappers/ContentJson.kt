@@ -165,6 +165,7 @@ class ContentJson(
                         content.content,
                         encodedContent
                     ).toJsonMap(),
+                    "contentType" to content.contentType.description
                 )
             )
 

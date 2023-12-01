@@ -136,6 +136,7 @@ struct ContentJson {
 			return ["reply": [
 				"reference": reply.reference,
 				"content": nested.toJsonMap(),
+                "contentType": reply.contentType.description
 			] as [String: Any]]
 		case ContentTypeAttachment.id where content is XMTP.Attachment:
 			let attachment = content as! XMTP.Attachment

@@ -15,7 +15,7 @@ export type ReadReceiptContent = object
 export type ReplyContent = {
   reference: string
   content: any
-  contentType: ContentTypeId
+  contentType: string
 }
 
 export type ReactionContent = {
