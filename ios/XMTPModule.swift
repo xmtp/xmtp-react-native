@@ -148,11 +148,10 @@ public class XMTPModule: Module {
 
         AsyncFunction("staticCanMessage") { (peerAddress: String, environment: String, appVersion: String?) -> Bool in
             do {
-                let options = createClientConfig(env: environment, appVersion: appVersion)
-              return try await XMTP.Client.canMessage(peerAddress, options: options)
+        		let options = createClientConfig(env: environment, appVersion: appVersion)
+              	return try await XMTP.Client.canMessage(peerAddress, options: options)
             } catch {
-                print("ERRO! canMessage method: \(error)")
-                throw error
+                throw Error.noClient
             }
         }
 
