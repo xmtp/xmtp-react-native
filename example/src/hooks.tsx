@@ -1,30 +1,34 @@
-import { useQuery, UseQueryResult } from "react-query";
+import EncryptedStorage from 'react-native-encrypted-storage'
+import { useQuery, UseQueryResult } from 'react-query'
 import {
   Conversation,
   DecodedMessage,
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
+  ReactionContent,
   RemoteAttachmentContent,
-} from "xmtp-react-native-sdk";
-import { useXmtp } from "./XmtpContext";
-import EncryptedStorage from "react-native-encrypted-storage";
-import { downloadFile, uploadFile } from "./storage";
+} from 'xmtp-react-native-sdk'
+
+import { useXmtp } from './XmtpContext'
+import { downloadFile, uploadFile } from './storage'
 
 /**
  * List all conversations.
  *
  * Note: this is better done with a DB, but we're using react-query for now.
  */
-export function useConversationList(): UseQueryResult<Conversation[]> {
-  const { client } = useXmtp();
-  client?.contacts.refreshConsentList();
-  return useQuery<Conversation[]>(
-    ["xmtp", "conversations", client?.address],
+export function useConversationList<ContentTypes>(): UseQueryResult<
+  Conversation<ContentTypes>[]
+> {
+  const { client } = useXmtp()
+  client?.contacts.refreshConsentList()
+  return useQuery<Conversation<ContentTypes>[]>(
+    ['xmtp', 'conversations', client?.address],
     () => client!.conversations.list(),
     {
       enabled: !!client,
-    },
-  );
+    }
+  )
 }
 
 /**
@@ -32,21 +36,25 @@ export function useConversationList(): UseQueryResult<Conversation[]> {
  *
  * Note: this is better done with a DB, but we're using react-query for now.
  */
-export function useConversation({
+export function useConversation<ContentTypes>({
   topic,
 }: {
-  topic: string;
-}): UseQueryResult<Conversation | undefined> {
-  const { client } = useXmtp();
+  topic: string
+}): UseQueryResult<Conversation<ContentTypes> | undefined> {
+  const { client } = useXmtp()
   // TODO: use a DB instead of scanning the cached conversation list
-  return useQuery<Conversation[], unknown, Conversation | undefined>(
-    ["xmtp", "conversations", client?.address, topic],
+  return useQuery<
+    Conversation<ContentTypes>[],
+    unknown,
+    Conversation<ContentTypes> | undefined
+  >(
+    ['xmtp', 'conversations', client?.address, topic],
     () => client!.conversations.list(),
     {
       select: (conversations) => conversations.find((c) => c.topic === topic),
       enabled: !!client && !!topic,
-    },
-  );
+    }
+  )
 }
 
 /**
@@ -57,17 +65,17 @@ export function useConversation({
 export function useMessages({
   topic,
 }: {
-  topic: string;
+  topic: string
 }): UseQueryResult<DecodedMessage[]> {
-  const { client } = useXmtp();
-  const { data: conversation } = useConversation({ topic });
+  const { client } = useXmtp()
+  const { data: conversation } = useConversation({ topic })
   return useQuery<DecodedMessage[]>(
-    ["xmtp", "messages", client?.address, conversation?.topic],
+    ['xmtp', 'messages', client?.address, conversation?.topic],
     () => conversation!.messages(),
     {
       enabled: !!client && !!topic && !!conversation,
-    },
-  );
+    }
+  )
 }
 
 /**
@@ -79,43 +87,43 @@ export function useMessage({
   topic,
   messageId,
 }: {
-  topic: string;
-  messageId: string;
+  topic: string
+  messageId: string
 }): {
-  message: DecodedMessage | undefined;
-  isSenderMe: boolean;
+  message: DecodedMessage | undefined
+  isSenderMe: boolean
   performReaction:
     | undefined
-    | ((action: "added" | "removed", content: string) => Promise<void>);
+    | ((action: 'added' | 'removed', content: string) => Promise<void>)
 } {
-  const { client } = useXmtp();
-  const { data: conversation } = useConversation({ topic });
-  const { data: messages, refetch: refreshMessages } = useMessages({ topic });
-  let message = messages?.find(({ id }) => id === messageId);
-  let performReaction =
+  const { client } = useXmtp()
+  const { data: conversation } = useConversation({ topic })
+  const { data: messages, refetch: refreshMessages } = useMessages({ topic })
+  const message = messages?.find(({ id }) => id === messageId)
+  const performReaction =
     conversation &&
     message &&
-    ((action: "added" | "removed", content: string) =>
+    ((action: 'added' | 'removed', content: string) =>
       conversation!
         .send({
           reaction: {
             reference: message!.id,
             action,
-            schema: "unicode",
+            schema: 'unicode',
             content,
           },
         })
         .then(() => {
           refreshMessages().catch((err) =>
-            console.log("Error refreshing messages", err),
-          );
-        }));
-  let isSenderMe = message?.senderAddress === client?.address;
+            console.log('Error refreshing messages', err)
+          )
+        }))
+  const isSenderMe = message?.senderAddress === client?.address
   return {
     message,
     performReaction,
     isSenderMe,
-  };
+  }
 }
 
 /**
@@ -124,112 +132,123 @@ export function useMessage({
  * Note: this is better done with a DB, but we're using react-query for now.
  */
 export function useConversationReactions({ topic }: { topic: string }) {
-  const { client } = useXmtp();
-  const { data: messages } = useMessages({ topic });
-  let reactions = (messages || []).filter(({ content }) => content.reaction);
+  const { client } = useXmtp()
+  const { data: messages } = useMessages({ topic })
+  const reactions = (messages || []).filter(
+    (message: DecodedMessage) =>
+      message.contentTypeId === 'xmtp.org/reaction:1.0'
+  )
   return useQuery<{
     [messageId: string]: {
-      reaction: string;
-      count: number;
-      includesMe: boolean;
-    }[];
+      reaction: string
+      count: number
+      includesMe: boolean
+    }[]
   }>(
-    ["xmtp", "reactions", client?.address, topic, reactions.length],
+    ['xmtp', 'reactions', client?.address, topic, reactions.length],
     () => {
       // SELECT messageId, reaction, senderAddress FROM reactions GROUP BY messageId, reaction
-      let byId = {} as {
-        [messageId: string]: { [reaction: string]: string[] };
-      };
+      const byId = {} as {
+        [messageId: string]: { [reaction: string]: string[] }
+      }
       // Reverse so we apply them in chronological order (adding/removing)
       reactions
         .slice()
         .reverse()
-        .forEach(({ id, senderAddress, content: { reaction } }) => {
-          let messageId = reaction!.reference;
-          let reactionText = reaction!.content;
-          let v = byId[messageId] || ({} as { [reaction: string]: string[] });
+        .forEach((message: DecodedMessage) => {
+          const { senderAddress } = message
+          const reaction: ReactionContent = message.content()
+          const messageId = reaction!.reference
+          const reactionText = reaction!.content
+          const v = byId[messageId] || ({} as { [reaction: string]: string[] })
           // DELETE FROM reactions WHERE messageId = ? AND reaction = ? AND senderAddress = ?
           let prior = (v[reactionText] || [])
             // This removes any prior instances of the sender using this reaction.
-            .filter((address) => address !== senderAddress);
-          if (reaction!.action === "added") {
+            .filter((address) => address !== senderAddress)
+          if (reaction!.action === 'added') {
             // INSERT INTO reactions (messageId, reaction, senderAddress) VALUES (?, ?, ?)
-            prior = prior.concat([senderAddress]);
+            prior = prior.concat([senderAddress])
           }
-          v[reactionText] = prior;
-          byId[messageId] = v;
-        });
+          v[reactionText] = prior
+          byId[messageId] = v
+        })
       // SELECT messageId, reaction, COUNT(*) AS count, COUNT(senderAddress = ?) AS includesMe
       // FROM reactions
       // GROUP BY messageId, reaction
       // ORDER BY count DESC
-      let result = {} as {
+      const result = {} as {
         [messageId: string]: {
-          reaction: string;
-          count: number;
-          includesMe: boolean;
-        }[];
-      };
+          reaction: string
+          count: number
+          includesMe: boolean
+        }[]
+      }
       Object.keys(byId).forEach((messageId) => {
-        let reactions = byId[messageId];
+        const reactions = byId[messageId]
         result[messageId] = Object.keys(reactions)
           .map((reaction) => {
-            let addresses = reactions[reaction];
+            const addresses = reactions[reaction]
             return {
               reaction,
               count: addresses.length,
               includesMe: addresses.includes(client!.address),
-            };
+            }
           })
           .filter(({ count }) => count > 0)
-          .sort((a, b) => b.count - a.count);
-      });
-      return result;
+          .sort((a, b) => b.count - a.count)
+      })
+      return result
     },
     {
       enabled: !!reactions.length,
-    },
-  );
+    }
+  )
 }
 
-export function useMessageReactions({ topic, messageId }) {
-  let { data: reactionsByMessageId } = useConversationReactions({ topic });
-  let reactions = ((reactionsByMessageId || {})[messageId] || []) as {
-    reaction: string;
-    count: number;
-    includesMe: boolean;
-  }[];
+export function useMessageReactions({
+  topic,
+  messageId,
+}: {
+  topic: string
+  messageId: string
+}) {
+  const { data: reactionsByMessageId } = useConversationReactions({ topic })
+  const reactions = ((reactionsByMessageId || {})[messageId] || []) as {
+    reaction: string
+    count: number
+    includesMe: boolean
+  }[]
   return {
     reactions,
-  };
+  }
 }
 
 export function useLoadRemoteAttachment({
   remoteAttachment,
   enabled,
 }: {
-  remoteAttachment?: RemoteAttachmentContent;
-  enabled: boolean;
+  remoteAttachment?: RemoteAttachmentContent
+  enabled: boolean
 }): { decrypted: DecryptedLocalAttachment | undefined } {
-  const { client } = useXmtp();
-  let { data: encryptedLocalFileUri } = useQuery<`file://${string}`>(
+  const { client } = useXmtp()
+  const { data: encryptedLocalFileUri } = useQuery<string>(
     [
-      "xmtp",
-      "localAttachment",
-      "download",
+      'xmtp',
+      'localAttachment',
+      'download',
       remoteAttachment?.url,
       remoteAttachment?.contentDigest,
     ],
     () => downloadFile(remoteAttachment!.url),
     {
       enabled: enabled && !!remoteAttachment?.url,
-    },
-  );
-  let { data: decrypted } = useQuery<DecryptedLocalAttachment>(
+    }
+  )
+  const { data: decrypted } = useQuery<DecryptedLocalAttachment>(
     [
-      "xmtp",
-      "localAttachment",
-      "decrypt",
+      'xmtp',
+      'localAttachment',
+      'decrypt',
       encryptedLocalFileUri,
       remoteAttachment?.contentDigest,
     ],
@@ -240,23 +259,23 @@ export function useLoadRemoteAttachment({
       }),
     {
       enabled: enabled && !!encryptedLocalFileUri && !!remoteAttachment,
-    },
-  );
-  return { decrypted };
+    }
+  )
+  return { decrypted }
 }
 
 export function usePrepareRemoteAttachment({
   fileUri,
   mimeType,
 }: {
-  fileUri?: string;
-  mimeType?: string;
+  fileUri?: string
+  mimeType?: string
 }): {
-  remoteAttachment: RemoteAttachmentContent | undefined;
+  remoteAttachment: RemoteAttachmentContent | undefined
 } {
-  const { client } = useXmtp();
-  let { data: encrypted } = useQuery<EncryptedLocalAttachment>(
-    ["xmtp", "remoteAttachment", "local", fileUri, mimeType ?? ""],
+  const { client } = useXmtp()
+  const { data: encrypted } = useQuery<EncryptedLocalAttachment>(
+    ['xmtp', 'remoteAttachment', 'local', fileUri, mimeType ?? ''],
     () =>
       client!.encryptAttachment({
         fileUri: fileUri!,
@@ -264,51 +283,51 @@ export function usePrepareRemoteAttachment({
       }),
     {
       enabled: !!client && !!fileUri,
-    },
-  );
-  let { data: url } = useQuery<string>(
-    ["xmtp", "remoteAttachment", "upload", encrypted?.metadata?.contentDigest],
+    }
+  )
+  const { data: url } = useQuery<string>(
+    ['xmtp', 'remoteAttachment', 'upload', encrypted?.metadata?.contentDigest],
     () =>
       uploadFile(
         encrypted!.encryptedLocalFileUri,
-        encrypted?.metadata?.contentDigest,
+        encrypted?.metadata?.contentDigest
       ),
     {
       enabled: !!encrypted,
-    },
-  );
+    }
+  )
   return {
     remoteAttachment: url
       ? {
-          url: url,
-          scheme: "https://",
+          url,
+          scheme: 'https://',
           ...encrypted!.metadata,
         }
       : undefined,
-  };
+  }
 }
 
 /**
  * Load or save a keyBundle for future use.
  */
 export function useSavedKeys(): {
-  keyBundle: string | null | undefined;
-  save: (keyBundle: string) => void;
-  clear: () => void;
+  keyBundle: string | null | undefined
+  save: (keyBundle: string) => void
+  clear: () => void
 } {
-  let { data: keyBundle, refetch } = useQuery<string | null>(
-    ["xmtp", "keyBundle"],
-    () => EncryptedStorage.getItem("xmtp.keyBundle"),
-  );
+  const { data: keyBundle, refetch } = useQuery<string | null>(
+    ['xmtp', 'keyBundle'],
+    () => EncryptedStorage.getItem('xmtp.keyBundle')
+  )
   return {
     keyBundle,
     save: async (keyBundle: string) => {
-      await EncryptedStorage.setItem("xmtp.keyBundle", keyBundle);
-      await refetch();
+      await EncryptedStorage.setItem('xmtp.keyBundle', keyBundle)
+      await refetch()
     },
     clear: async () => {
-      await EncryptedStorage.removeItem("xmtp.keyBundle");
-      await refetch();
+      await EncryptedStorage.removeItem('xmtp.keyBundle')
+      await refetch()
     },
-  };
+  }
 }

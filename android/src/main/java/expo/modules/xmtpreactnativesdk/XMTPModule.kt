@@ -268,6 +268,27 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
+        AsyncFunction("sendEncodedContent") { clientAddress: String, topic: String, encodedContentData: List<Int> ->
+            val conversation =
+                findConversation(
+                    clientAddress = clientAddress,
+                    topic = topic
+                ) ?: throw XMTPException("no conversation found for $topic")
+
+            val encodedContentDataBytes =
+                encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
+                    a.apply {
+                        set(
+                            i,
+                            v.toByte()
+                        )
+                    }
+                }
+            val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
+
+            conversation.send(encodedContent = encodedContent)
+        }
+
         AsyncFunction("listConversations") { clientAddress: String ->
             logV("listConversations")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
@@ -288,7 +309,7 @@ class XMTPModule : Module() {
             val beforeDate = if (before != null) Date(before) else null
             val afterDate = if (after != null) Date(after) else null
 
-            conversation.messages(
+            conversation.decryptedMessages(
                 limit = limit,
                 before = beforeDate,
                 after = afterDate,
@@ -340,7 +361,7 @@ class XMTPModule : Module() {
                 topicsList.add(Pair(topic, page))
             }
 
-            client.conversations.listBatchMessages(topicsList)
+            client.conversations.listBatchDecryptedMessages(topicsList)
                 .map { DecodedMessageWrapper.encode(it) }
         }
 
@@ -486,7 +507,7 @@ class XMTPModule : Module() {
                     topic = topic
                 )
                     ?: throw XMTPException("no conversation found for $topic")
-            val decodedMessage = conversation.decode(envelope)
+            val decodedMessage = conversation.decrypt(envelope)
             DecodedMessageWrapper.encode(decodedMessage)
         }
 
@@ -581,7 +602,7 @@ class XMTPModule : Module() {
         subscriptions[getMessagesKey(clientAddress)]?.cancel()
         subscriptions[getMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.conversations.streamAllMessages().collect { message ->
+                client.conversations.streamAllDecryptedMessages().collect { message ->
                     sendEvent(
                         "message",
                         mapOf(
@@ -607,7 +628,7 @@ class XMTPModule : Module() {
         subscriptions[conversation.cacheKey(clientAddress)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    conversation.streamMessages().collect { message ->
+                    conversation.streamDecryptedMessages().collect { message ->
                         sendEvent(
                             "message",
                             mapOf(

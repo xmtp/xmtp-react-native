@@ -1,311 +1,356 @@
-import { EventEmitter, NativeModulesProxy } from "expo-modules-core";
+import { content } from '@xmtp/proto'
+import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
-import XMTPModule from "./XMTPModule";
-import { Conversation } from "./lib/Conversation";
-import type { Query } from "./lib/Query";
-import type {
-  ConversationContext,
-  DecodedMessage,
+import { Client } from '.'
+import { ConversationContext } from './XMTP.types'
+import XMTPModule from './XMTPModule'
+import {
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
-  MessageContent,
   PreparedLocalMessage,
-} from "./XMTP.types";
+  ContentCodec,
+} from './lib/ContentCodec'
+import { Conversation } from './lib/Conversation'
+import { DecodedMessage } from './lib/DecodedMessage'
+import type { Query } from './lib/Query'
+
+export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
+export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
+export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
+export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
+export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
+export { TextCodec } from './lib/NativeCodecs/TextCodec'
+
+const EncodedContent = content.EncodedContent
 
 export function address(): string {
-  return XMTPModule.address();
+  return XMTPModule.address()
 }
 
 export async function auth(
   address: string,
-  environment: "local" | "dev" | "production",
-  appVersion?: string | undefined,
+  environment: 'local' | 'dev' | 'production',
+  appVersion?: string | undefined
 ) {
-  return await XMTPModule.auth(address, environment, appVersion);
+  return await XMTPModule.auth(address, environment, appVersion)
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
-  return await XMTPModule.receiveSignature(requestID, signature);
+  return await XMTPModule.receiveSignature(requestID, signature)
 }
 
 export async function createRandom(
-  environment: "local" | "dev" | "production",
-  appVersion?: string | undefined,
+  environment: 'local' | 'dev' | 'production',
+  appVersion?: string | undefined
 ): Promise<string> {
-  return await XMTPModule.createRandom(environment, appVersion);
+  return await XMTPModule.createRandom(environment, appVersion)
 }
 
 export async function createFromKeyBundle(
   keyBundle: string,
-  environment: "local" | "dev" | "production",
-  appVersion?: string | undefined,
+  environment: 'local' | 'dev' | 'production',
+  appVersion?: string | undefined
 ): Promise<string> {
   return await XMTPModule.createFromKeyBundle(
     keyBundle,
     environment,
-    appVersion,
-  );
+    appVersion
+  )
 }
 
 export async function exportKeyBundle(clientAddress: string): Promise<string> {
-  return await XMTPModule.exportKeyBundle(clientAddress);
+  return await XMTPModule.exportKeyBundle(clientAddress)
 }
 
 export async function exportConversationTopicData(
   clientAddress: string,
-  conversationTopic: string,
+  conversationTopic: string
 ): Promise<string> {
   return await XMTPModule.exportConversationTopicData(
     clientAddress,
-    conversationTopic,
-  );
+    conversationTopic
+  )
 }
 
-export async function importConversationTopicData(
-  clientAddress: string,
-  topicData: string,
-): Promise<Conversation> {
+export async function importConversationTopicData<ContentTypes>(
+  client: Client<ContentTypes>,
+  topicData: string
+): Promise<Conversation<ContentTypes>> {
   const json = await XMTPModule.importConversationTopicData(
-    clientAddress,
-    topicData,
-  );
-  return new Conversation(JSON.parse(json));
+    client.address,
+    topicData
+  )
+  return new Conversation(client, JSON.parse(json))
 }
 
 export async function canMessage(
   clientAddress: string,
-  peerAddress: string,
+  peerAddress: string
 ): Promise<boolean> {
-  return await XMTPModule.canMessage(clientAddress, peerAddress);
+  return await XMTPModule.canMessage(clientAddress, peerAddress)
 }
 
 export async function encryptAttachment(
   clientAddress: string,
-  file: DecryptedLocalAttachment,
+  file: DecryptedLocalAttachment
 ): Promise<EncryptedLocalAttachment> {
-  let fileJson = JSON.stringify(file);
-  let encryptedFileJson = await XMTPModule.encryptAttachment(
+  const fileJson = JSON.stringify(file)
+  const encryptedFileJson = await XMTPModule.encryptAttachment(
     clientAddress,
-    fileJson,
-  );
-  return JSON.parse(encryptedFileJson);
+    fileJson
+  )
+  return JSON.parse(encryptedFileJson)
 }
 
 export async function decryptAttachment(
   clientAddress: string,
-  encryptedFile: EncryptedLocalAttachment,
+  encryptedFile: EncryptedLocalAttachment
 ): Promise<DecryptedLocalAttachment> {
-  let encryptedFileJson = JSON.stringify(encryptedFile);
-  let fileJson = await XMTPModule.decryptAttachment(
+  const encryptedFileJson = JSON.stringify(encryptedFile)
+  const fileJson = await XMTPModule.decryptAttachment(
     clientAddress,
-    encryptedFileJson,
-  );
-  return JSON.parse(fileJson);
+    encryptedFileJson
+  )
+  return JSON.parse(fileJson)
 }
 
-export async function listConversations(
-  clientAddress: string,
-): Promise<Conversation[]> {
-  return (await XMTPModule.listConversations(clientAddress)).map(
+export async function listConversations<ContentTypes>(
+  client: Client<ContentTypes>
+): Promise<Conversation<ContentTypes>[]> {
+  return (await XMTPModule.listConversations(client.address)).map(
     (json: string) => {
-      return new Conversation(JSON.parse(json));
-    },
-  );
+      return new Conversation(client, JSON.parse(json))
+    }
+  )
 }
 
-export async function listMessages(
-  clientAddress: string,
+export async function listMessages<ContentTypes>(
+  client: Client<ContentTypes>,
   conversationTopic: string,
   limit?: number | undefined,
   before?: number | Date | undefined,
   after?: number | Date | undefined,
-  direction?: "SORT_DIRECTION_ASCENDING" | "SORT_DIRECTION_DESCENDING" | undefined,
+  direction?:
+    | 'SORT_DIRECTION_ASCENDING'
+    | 'SORT_DIRECTION_DESCENDING'
+    | undefined
 ): Promise<DecodedMessage[]> {
   const messages = await XMTPModule.loadMessages(
-    clientAddress,
+    client.address,
     conversationTopic,
     limit,
     typeof before === 'number' ? before : before?.getTime(),
     typeof after === 'number' ? after : after?.getTime(),
-    direction || "SORT_DIRECTION_DESCENDING",
-  );
+    direction || 'SORT_DIRECTION_DESCENDING'
+  )
+
   return messages.map((json: string) => {
-    return JSON.parse(json);
-  });
+    return DecodedMessage.from(json, client)
+  })
 }
 
-export async function listBatchMessages(
-  clientAddress: string,
-  queries: Query[],
+export async function listBatchMessages<ContentTypes>(
+  client: Client<ContentTypes>,
+  queries: Query[]
 ): Promise<DecodedMessage[]> {
   const topics = queries.map((item) => {
     return JSON.stringify({
       limit: item.pageSize || 0,
       topic: item.contentTopic,
-      after: (typeof item.startTime === 'number' ? item.startTime :  item.startTime?.getTime()) || 0,
-      before: (typeof item.endTime === 'number' ? item.endTime :  item.endTime?.getTime()) || 0,
-      direction: item.direction || "SORT_DIRECTION_DESCENDING",
-    });
-  });
-  const messages = await XMTPModule.loadBatchMessages(clientAddress, topics);
+      after:
+        (typeof item.startTime === 'number'
+          ? item.startTime
+          : item.startTime?.getTime()) || 0,
+      before:
+        (typeof item.endTime === 'number'
+          ? item.endTime
+          : item.endTime?.getTime()) || 0,
+      direction: item.direction || 'SORT_DIRECTION_DESCENDING',
+    })
+  })
+  const messages = await XMTPModule.loadBatchMessages(client.address, topics)
 
   return messages.map((json: string) => {
-    return JSON.parse(json);
-  });
+    return DecodedMessage.from(json, client)
+  })
 }
 
 // TODO: support conversation ID
-export async function createConversation(
-  clientAddress: string,
+export async function createConversation<ContentTypes>(
+  client: Client<ContentTypes>,
   peerAddress: string,
-  context?: ConversationContext,
-): Promise<Conversation> {
+  context?: ConversationContext
+): Promise<Conversation<ContentTypes>> {
   return new Conversation(
+    client,
     JSON.parse(
       await XMTPModule.createConversation(
-        clientAddress,
+        client.address,
         peerAddress,
-        JSON.stringify(context || {}),
-      ),
-    ),
-  );
+        JSON.stringify(context || {})
+      )
+    )
+  )
+}
+
+export async function sendWithContentType<T>(
+  clientAddress: string,
+  conversationTopic: string,
+  content: T,
+  codec: ContentCodec<T>
+): Promise<string> {
+  if ('contentKey' in codec) {
+    const contentJson = JSON.stringify(content)
+    return await XMTPModule.sendMessage(
+      clientAddress,
+      conversationTopic,
+      contentJson
+    )
+  } else {
+    const encodedContent = codec.encode(content)
+    encodedContent.fallback = codec.fallback(content)
+    const encodedContentData = EncodedContent.encode(encodedContent).finish()
+
+    return await XMTPModule.sendEncodedContent(
+      clientAddress,
+      conversationTopic,
+      Array.from(encodedContentData)
+    )
+  }
 }
 
 export async function sendMessage(
   clientAddress: string,
   conversationTopic: string,
-  content: MessageContent,
+  content: any
 ): Promise<string> {
   // TODO: consider eager validating of `MessageContent` here
   //       instead of waiting for native code to validate
-  let contentJson = JSON.stringify(content);
+  const contentJson = JSON.stringify(content)
   return await XMTPModule.sendMessage(
     clientAddress,
     conversationTopic,
-    contentJson,
-  );
+    contentJson
+  )
 }
 
 export async function prepareMessage(
   clientAddress: string,
   conversationTopic: string,
-  content: MessageContent,
+  content: any
 ): Promise<PreparedLocalMessage> {
   // TODO: consider eager validating of `MessageContent` here
   //       instead of waiting for native code to validate
-  let contentJson = JSON.stringify(content);
-  let preparedJson = await XMTPModule.prepareMessage(
+  const contentJson = JSON.stringify(content)
+  const preparedJson = await XMTPModule.prepareMessage(
     clientAddress,
     conversationTopic,
-    contentJson,
-  );
-  return JSON.parse(preparedJson);
+    contentJson
+  )
+  return JSON.parse(preparedJson)
 }
 
 export async function sendPreparedMessage(
   clientAddress: string,
-  preparedLocalMessage: PreparedLocalMessage,
+  preparedLocalMessage: PreparedLocalMessage
 ): Promise<string> {
-  let preparedLocalMessageJson = JSON.stringify(preparedLocalMessage);
+  const preparedLocalMessageJson = JSON.stringify(preparedLocalMessage)
   return await XMTPModule.sendPreparedMessage(
     clientAddress,
-    preparedLocalMessageJson,
-  );
+    preparedLocalMessageJson
+  )
 }
 
 export function subscribeToConversations(clientAddress: string) {
-  return XMTPModule.subscribeToConversations(clientAddress);
+  return XMTPModule.subscribeToConversations(clientAddress)
 }
 
 export function subscribeToAllMessages(clientAddress: string) {
-  return XMTPModule.subscribeToAllMessages(clientAddress);
+  return XMTPModule.subscribeToAllMessages(clientAddress)
 }
 
 export async function subscribeToMessages(
   clientAddress: string,
-  topic: string,
+  topic: string
 ) {
-  return await XMTPModule.subscribeToMessages(clientAddress, topic);
+  return await XMTPModule.subscribeToMessages(clientAddress, topic)
 }
 
 export function unsubscribeFromConversations(clientAddress: string) {
-  return XMTPModule.unsubscribeFromConversations(clientAddress);
+  return XMTPModule.unsubscribeFromConversations(clientAddress)
 }
 
 export function unsubscribeFromAllMessages(clientAddress: string) {
-  return XMTPModule.unsubscribeFromAllMessages(clientAddress);
+  return XMTPModule.unsubscribeFromAllMessages(clientAddress)
 }
 
 export async function unsubscribeFromMessages(
   clientAddress: string,
-  topic: string,
+  topic: string
 ) {
-  return await XMTPModule.unsubscribeFromMessages(clientAddress, topic);
+  return await XMTPModule.unsubscribeFromMessages(clientAddress, topic)
 }
 
 export function registerPushToken(pushServer: string, token: string) {
-  return XMTPModule.registerPushToken(pushServer, token);
+  return XMTPModule.registerPushToken(pushServer, token)
 }
 
 export function subscribePushTopics(topics: string[]) {
-  return XMTPModule.subscribePushTopics(topics);
+  return XMTPModule.subscribePushTopics(topics)
 }
 
 export async function decodeMessage(
   clientAddress: string,
   topic: string,
-  encryptedMessage: string,
+  encryptedMessage: string
 ): Promise<DecodedMessage> {
   return JSON.parse(
-    await XMTPModule.decodeMessage(clientAddress, topic, encryptedMessage),
-  );
+    await XMTPModule.decodeMessage(clientAddress, topic, encryptedMessage)
+  )
 }
 
 export async function conversationConsentState(
-  clientAddress: string, 
+  clientAddress: string,
   conversationTopic: string
-): Promise<"allowed" | "denied" | "unknown"> {
-  return await XMTPModule.conversationConsentState(clientAddress, conversationTopic);
+): Promise<'allowed' | 'denied' | 'unknown'> {
+  return await XMTPModule.conversationConsentState(
+    clientAddress,
+    conversationTopic
+  )
 }
 
 export async function isAllowed(
   clientAddress: string,
-  address: string,
+  address: string
 ): Promise<boolean> {
-  return await XMTPModule.isAllowed(clientAddress, address);
+  return await XMTPModule.isAllowed(clientAddress, address)
 }
 
 export async function isDenied(
   clientAddress: string,
-  address: string,
+  address: string
 ): Promise<boolean> {
-  return await XMTPModule.isDenied(clientAddress, address);
+  return await XMTPModule.isDenied(clientAddress, address)
 }
 
-export function denyContacts(
-  clientAddress: string,
-  addresses: string[],
-) {
-  XMTPModule.denyContacts(clientAddress, addresses);
+export function denyContacts(clientAddress: string, addresses: string[]) {
+  XMTPModule.denyContacts(clientAddress, addresses)
 }
 
-export function allowContacts(
-  clientAddress: string,
-  addresses: string[],
-) {
-  XMTPModule.allowContacts(clientAddress, addresses);
+export function allowContacts(clientAddress: string, addresses: string[]) {
+  XMTPModule.allowContacts(clientAddress, addresses)
 }
 
-export function refreshConsentList(
-  clientAddress: string
-) {
-  XMTPModule.refreshConsentList(clientAddress);
+export function refreshConsentList(clientAddress: string) {
+  XMTPModule.refreshConsentList(clientAddress)
 }
 
-export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP);
+export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
-export { Client } from "./lib/Client";
-export { Conversation } from "./lib/Conversation";
-export * from "./XMTP.types";
-export { Query } from "./lib/Query";
-export { XMTPPush } from "./lib/XMTPPush";
+export * from './lib/ContentCodec'
+export { Client } from './lib/Client'
+export { Conversation } from './lib/Conversation'
+export * from './XMTP.types'
+export { Query } from './lib/Query'
+export { XMTPPush } from './lib/XMTPPush'
+export { DecodedMessage }

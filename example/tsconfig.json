@@ -4,7 +4,9 @@
     "strict": true,
     "paths": {
       "xmtp-react-native-sdk": ["../src/index"],
-      "xmtp-react-native-sdk/*": ["../src/*"]
-    }
+      "xmtp-react-native-sdk/*": ["../src/*"],
+      "react": ["./node_modules/@types/react"]
+    },
+    "jsx": "react-native"
   }
 }
