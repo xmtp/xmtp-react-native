@@ -678,12 +678,12 @@ test('canManagePreferences', async () => {
 test('is address on the XMTP network', async () => {
   const alix = await Client.createRandom({ env: 'local' })
   const notOnNetwork = '0x0000000000000000000000000000000000000000'
-  
-  const isAlixAddressAvailable = await Client.canMessage(alix.address, { 
-    env: 'local' 
+
+  const isAlixAddressAvailable = await Client.canMessage(alix.address, {
+    env: 'local',
   })
-  const isAddressAvailable = await Client.canMessage(notOnNetwork, { 
-    env: 'local' 
+  const isAddressAvailable = await Client.canMessage(notOnNetwork, {
+    env: 'local',
   })
 
   if (!isAlixAddressAvailable) {
@@ -695,7 +695,7 @@ test('is address on the XMTP network', async () => {
   }
 
   return true
-});
+})
 
 test('register and use custom content types', async () => {
   const bob = await Client.createRandom({
