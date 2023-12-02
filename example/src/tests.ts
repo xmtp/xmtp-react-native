@@ -675,19 +675,23 @@ test('canManagePreferences', async () => {
   return true
 })
 
-test("is address on the XMTP network", async () => {
-  const alix = await Client.createRandom({ env: "local" });
-  const notOnNetwork = "0x0000000000000000000000000000000000000000"
+test('is address on the XMTP network', async () => {
+  const alix = await Client.createRandom({ env: 'local' })
+  const notOnNetwork = '0x0000000000000000000000000000000000000000'
   
-  const isAlixAddressAvailable = await Client.canMessage(alix.address, { env: 'local' });
-  const isAddressAvailable = await Client.canMessage(notOnNetwork, { env: 'local' });
+  const isAlixAddressAvailable = await Client.canMessage(alix.address, { 
+    env: 'local' 
+  })
+  const isAddressAvailable = await Client.canMessage(notOnNetwork, { 
+    env: 'local' 
+  })
 
   if (!isAlixAddressAvailable) {
-    throw new Error('alix address should be available');
+    throw new Error('alix address should be available')
   }
 
-  if(isAddressAvailable) {
-    throw new Error('address not on network should not be available');
+  if (isAddressAvailable) {
+    throw new Error('address not on network should not be available')
   }
 
   return true
