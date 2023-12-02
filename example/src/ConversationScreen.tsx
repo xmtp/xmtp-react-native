@@ -1,5 +1,14 @@
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { NavigationParamList } from "./Navigation";
+import { FontAwesome } from '@expo/vector-icons'
+import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import 'react-native-url-polyfill/auto'
+import { Buffer } from 'buffer'
+import * as DocumentPicker from 'expo-document-picker'
+import type { DocumentPickerAsset } from 'expo-document-picker'
+import * as ImagePicker from 'expo-image-picker'
+import type { ImagePickerAsset } from 'expo-image-picker'
+import { PermissionStatus } from 'expo-modules-core'
+import moment from 'moment'
+import React, { useRef, useState } from 'react'
 import {
   Button,
   FlatList,
@@ -15,13 +24,16 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
-} from "react-native";
-import "react-native-url-polyfill/auto";
-import { Buffer } from "buffer";
-import { FontAwesome } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
-import * as DocumentPicker from "expo-document-picker";
-import React, { useRef, useState } from "react";
+} from 'react-native'
+import {
+  RemoteAttachmentContent,
+  DecodedMessage,
+  StaticAttachmentContent,
+  ReplyContent,
+  Client,
+} from 'xmtp-react-native-sdk'
+
+import { NavigationParamList } from './Navigation'
 import {
   useConversation,
   useMessage,
@@ -29,47 +41,46 @@ import {
   useMessages,
   useLoadRemoteAttachment,
   usePrepareRemoteAttachment,
-} from "./hooks";
-import { MessageContent, RemoteAttachmentContent } from "xmtp-react-native-sdk";
-import moment from "moment";
-import { PermissionStatus } from "expo-modules-core";
-import type { DocumentPickerAsset } from "expo-document-picker";
-import type { ImagePickerAsset } from "expo-image-picker";
+} from './hooks'
+import { useXmtp } from './XmtpContext'
 
 type Attachment = {
   file?: DocumentPickerAsset
   image?: ImagePickerAsset
 }
 
+const hiddenMessageTypes = ['xmtp.org/reaction:1.0']
+
 /// Show the messages in a conversation.
 export default function ConversationScreen({
   route,
-}: NativeStackScreenProps<NavigationParamList, "conversation">) {
-  let { topic } = route.params;
-  let messageListRef = useRef<FlatList>(null);
+}: NativeStackScreenProps<NavigationParamList, 'conversation'>) {
+  const { topic } = route.params
+  const messageListRef = useRef<FlatList>(null)
   let {
     data: messages,
     refetch: refreshMessages,
     isFetching,
     isRefetching,
-  } = useMessages({ topic });
-  let { data: conversation } = useConversation({ topic });
-  let [replyingTo, setReplyingTo] = useState<string | null>(null);
-  let [text, setText] = useState("");
-  let [isShowingAttachmentModal, setShowingAttachmentModal] = useState(false);
-  let [attachment, setAttachment] = useState<Attachment | null
-  >(null);
-  let [isAttachmentPreviewing, setAttachmentPreviewing] = useState(false);
-  let [isSending, setSending] = useState(false);
-  let { remoteAttachment } = usePrepareRemoteAttachment({
+  } = useMessages({ topic })
+  const { data: conversation } = useConversation({ topic })
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [text, setText] = useState('')
+  const [isShowingAttachmentModal, setShowingAttachmentModal] = useState(false)
+  const [attachment, setAttachment] = useState<Attachment | null>(null)
+  const [isAttachmentPreviewing, setAttachmentPreviewing] = useState(false)
+  const [isSending, setSending] = useState(false)
+  const { remoteAttachment } = usePrepareRemoteAttachment({
     fileUri: attachment?.image?.uri || attachment?.file?.uri,
     mimeType: attachment?.file?.mimeType,
-  });
-  messages = (messages || []).filter(({ content }) => !content.reaction);
+  })
+  messages = (messages || []).filter(
+    (message) => !hiddenMessageTypes.includes(message.contentTypeId)
+  )
   // console.log("messages", JSON.stringify(messages, null, 2));
-  const sendMessage = async (content: MessageContent) => {
-    setSending(true);
-    console.log("Sending message", content);
+  const sendMessage = async (content: any) => {
+    setSending(true)
+    console.log('Sending message', content)
     try {
       content = replyingTo
         ? {
@@ -78,50 +89,50 @@ export default function ConversationScreen({
               content,
             },
           }
-        : content;
-      await conversation!.send(content);
-      await refreshMessages();
-      setReplyingTo(null);
+        : content
+      await conversation!.send(content)
+      await refreshMessages()
+      setReplyingTo(null)
     } catch (e) {
-      console.log("Error sending message", e);
+      console.log('Error sending message', e)
     } finally {
-      setSending(false);
+      setSending(false)
     }
-  };
+  }
   const sendRemoteAttachmentMessage = () =>
-    sendMessage({ remoteAttachment }).then(() => setAttachment(null));
-  const sendTextMessage = () => sendMessage({ text }).then(() => setText(""));
+    sendMessage({ remoteAttachment }).then(() => setAttachment(null))
+  const sendTextMessage = () => sendMessage({ text }).then(() => setText(''))
   const scrollToMessageId = (messageId: string) => {
-    let index = (messages || []).findIndex((m) => m.id === messageId);
-    if (index == -1) {
-      return;
+    const index = (messages || []).findIndex((m) => m.id === messageId)
+    if (index === -1) {
+      return
     }
     return messageListRef.current?.scrollToIndex({
       index,
       animated: true,
-    });
-  };
+    })
+  }
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
-        behavior={"padding"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
-        style={{ flex: 1, flexDirection: "column" }}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+        style={{ flex: 1, flexDirection: 'column' }}
       >
         <View style={{ flex: 1 }}>
           <AttachmentModal
             visible={isShowingAttachmentModal}
             onAttachedImageFromCamera={(image) =>
-              console.log("from camera", image)
+              console.log('from camera', image)
             }
             onAttachedImageFromLibrary={(image) => {
-              setAttachment({ image });
-              setShowingAttachmentModal(false);
+              setAttachment({ image })
+              setShowingAttachmentModal(false)
             }}
             onAttachedFile={(file) => {
-              console.log("from file", file);
-              setAttachment({ file });
-              setShowingAttachmentModal(false);
+              console.log('from file', file)
+              setAttachment({ file })
+              setShowingAttachmentModal(false)
             }}
             onRequestClose={() => setShowingAttachmentModal(false)}
           />
@@ -133,7 +144,7 @@ export default function ConversationScreen({
             onRefresh={refreshMessages}
             data={messages}
             inverted
-            keyboardDismissMode={"none"}
+            keyboardDismissMode="none"
             keyExtractor={(message) => message.id}
             ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
             renderItem={({ item: message, index }) => (
@@ -156,11 +167,11 @@ export default function ConversationScreen({
             ListHeaderComponent={
               <View
                 style={{
-                  flexDirection: "column",
+                  flexDirection: 'column',
                   marginTop: 16,
                   paddingTop: 8,
                   borderTopWidth: 2,
-                  borderColor: "#aaa",
+                  borderColor: '#aaa',
                 }}
               >
                 {replyingTo && (
@@ -187,12 +198,12 @@ export default function ConversationScreen({
                   </>
                 )}
                 <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
                 >
                   <FontAwesome.Button
                     name="plus-circle"
                     backgroundColor="transparent"
-                    color={"#999"}
+                    color="#999"
                     size={32}
                     borderRadius={0}
                     style={{ marginLeft: 10, paddingRight: 0 }}
@@ -207,7 +218,7 @@ export default function ConversationScreen({
                           marginRight: 0,
                           borderWidth: 1,
                           padding: 10,
-                          backgroundColor: "white",
+                          backgroundColor: 'white',
                           flexGrow: 1,
                         }}
                       />
@@ -231,7 +242,7 @@ export default function ConversationScreen({
                           marginRight: 0,
                           borderWidth: 1,
                           padding: 10,
-                          backgroundColor: "white",
+                          backgroundColor: 'white',
                           flexGrow: 1,
                           opacity: isSending ? 0.5 : 1,
                         }}
@@ -250,7 +261,7 @@ export default function ConversationScreen({
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
+  )
 }
 
 function AttachmentPreviewModal({
@@ -258,28 +269,26 @@ function AttachmentPreviewModal({
   visible,
   onRequestClose,
 }: {
-  attachment:
-    Attachment
-    | null;
-  visible: boolean;
-  onRequestClose: () => void;
+  attachment: Attachment | null
+  visible: boolean
+  onRequestClose: () => void
 }) {
-  let isImage = attachment?.image?.type === "image";
+  const isImage = attachment?.image?.type === 'image'
   return (
     <CenteredModal visible={visible} onRequestClose={onRequestClose}>
-      {(isImage && attachment?.image) && (
+      {isImage && attachment?.image && (
         <Image
           source={attachment.image}
           style={{
             width: 300,
             height: 300,
             borderWidth: 1,
-            borderColor: "#aaa",
+            borderColor: '#aaa',
             borderRadius: 4,
-            backgroundColor: "#eee",
+            backgroundColor: '#eee',
           }}
-          resizeMethod={"auto"}
-          resizeMode={"cover"}
+          resizeMethod="auto"
+          resizeMode="cover"
         />
       )}
       {!isImage && (
@@ -288,18 +297,18 @@ function AttachmentPreviewModal({
             width: 300,
             height: 300,
             borderWidth: 1,
-            borderColor: "#aaa",
+            borderColor: '#aaa',
             borderRadius: 4,
-            backgroundColor: "#eee",
-            justifyContent: "center",
-            alignItems: "center",
+            backgroundColor: '#eee',
+            justifyContent: 'center',
+            alignItems: 'center',
           }}
         >
-          <FontAwesome name={"file"} size={64} color={"#999"} />
+          <FontAwesome name="file" size={64} color="#999" />
         </View>
       )}
     </CenteredModal>
-  );
+  )
 }
 
 function AttachmentInputHeader({
@@ -308,12 +317,12 @@ function AttachmentInputHeader({
   onPress,
   onRemove,
 }: {
-  topic: string;
-  attachment: Attachment;
-  onPress: () => void;
-  onRemove: () => void;
+  topic: string
+  attachment: Attachment
+  onPress: () => void
+  onRemove: () => void
 }) {
-  let isImage = attachment.image?.type === "image";
+  const isImage = attachment.image?.type === 'image'
   return (
     <View
       style={{
@@ -326,7 +335,7 @@ function AttachmentInputHeader({
       }}
     >
       <TouchableOpacity onPress={onPress}>
-        {(isImage && attachment?.image) && (
+        {isImage && attachment?.image && (
           <Image
             source={attachment.image}
             style={{
@@ -334,12 +343,12 @@ function AttachmentInputHeader({
               width: 100,
               height: 100,
               borderWidth: 1,
-              borderColor: "#aaa",
+              borderColor: '#aaa',
               borderRadius: 4,
-              backgroundColor: "#eee",
+              backgroundColor: '#eee',
             }}
-            resizeMethod={"auto"}
-            resizeMode={"cover"}
+            resizeMethod="auto"
+            resizeMode="cover"
           />
         )}
         {!isImage && (
@@ -349,14 +358,14 @@ function AttachmentInputHeader({
               width: 100,
               height: 100,
               borderWidth: 1,
-              borderColor: "#aaa",
+              borderColor: '#aaa',
               borderRadius: 4,
-              backgroundColor: "#f4f4f4",
-              justifyContent: "center",
-              alignItems: "center",
+              backgroundColor: '#f4f4f4',
+              justifyContent: 'center',
+              alignItems: 'center',
             }}
           >
-            <FontAwesome name={"file"} size={32} color={"#999"} />
+            <FontAwesome name="file" size={32} color="#999" />
           </View>
         )}
       </TouchableOpacity>
@@ -365,8 +374,8 @@ function AttachmentInputHeader({
           width: 32,
           height: 32,
           borderRadius: 16,
-          backgroundColor: "#999",
-          position: "absolute",
+          backgroundColor: '#999',
+          position: 'absolute',
           padding: 8,
           right: 0,
           top: 0,
@@ -374,15 +383,15 @@ function AttachmentInputHeader({
         onPress={onRemove}
       >
         <FontAwesome
-          name={"close"}
+          name="close"
           size={16}
-          backgroundColor={"transparent"}
-          style={{ alignSelf: "center" }}
-          color={"white"}
+          backgroundColor="transparent"
+          style={{ alignSelf: 'center' }}
+          color="white"
         />
       </TouchableOpacity>
     </View>
-  );
+  )
 }
 
 function ReplyInputHeader({
@@ -391,27 +400,27 @@ function ReplyInputHeader({
   onCancel,
   onPress,
 }: {
-  topic: string;
-  replyingToMessageId: string;
-  onCancel: () => void;
-  onPress: () => void;
+  topic: string
+  replyingToMessageId: string
+  onCancel: () => void
+  onPress: () => void
 }) {
-  let { message, isSenderMe } = useMessage({
+  const { message, isSenderMe } = useMessage({
     topic,
     messageId: replyingToMessageId,
-  });
+  })
   return (
     <View
       style={{
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#ddd",
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ddd',
         borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: "#333",
+        borderTopColor: '#333',
       }}
     >
       <TouchableHighlight onPress={onCancel} underlayColor="#eee">
-        <Text style={{ color: "black", fontSize: 16, padding: 16 }}>X</Text>
+        <Text style={{ color: 'black', fontSize: 16, padding: 16 }}>X</Text>
       </TouchableHighlight>
       <TouchableHighlight
         style={{ flexGrow: 1 }}
@@ -420,13 +429,13 @@ function ReplyInputHeader({
       >
         <View
           style={{
-            flexDirection: "row",
-            alignItems: "center",
+            flexDirection: 'row',
+            alignItems: 'center',
             padding: 16,
             paddingLeft: 0,
           }}
         >
-          <Text style={{ color: "#777", fontSize: 16, marginRight: 8 }}>
+          <Text style={{ color: '#777', fontSize: 16, marginRight: 8 }}>
             Replying to
           </Text>
           <View
@@ -434,17 +443,17 @@ function ReplyInputHeader({
               width: 20,
               height: 20,
               borderRadius: 10,
-              backgroundColor: isSenderMe ? "green" : "gray",
+              backgroundColor: isSenderMe ? 'green' : 'gray',
             }}
           />
-          <Text style={{ fontSize: 12, fontWeight: "bold" }}>
+          <Text style={{ fontSize: 12, fontWeight: 'bold' }}>
             {message?.senderAddress.slice(0, 6)}…
             {message?.senderAddress.slice(-4)}
           </Text>
         </View>
       </TouchableHighlight>
     </View>
-  );
+  )
 }
 
 function PillButton({
@@ -453,18 +462,18 @@ function PillButton({
   onPress,
   children,
 }: {
-  highlighted?: boolean;
-  style?: {};
-  onPress: () => void;
-  children: React.ReactNode;
+  highlighted?: boolean
+  style?: object
+  onPress: () => void
+  children: React.ReactNode
 }) {
   return (
     <TouchableHighlight
       style={{
         borderWidth: StyleSheet.hairlineWidth,
         borderRadius: 4,
-        borderColor: highlighted ? "#aa9" : "#aaa",
-        backgroundColor: highlighted ? "#ffd" : "#fff",
+        borderColor: highlighted ? '#aa9' : '#aaa',
+        backgroundColor: highlighted ? '#ffd' : '#fff',
         padding: 3,
         ...style,
       }}
@@ -472,15 +481,15 @@ function PillButton({
     >
       <View
         style={{
-          backgroundColor: "transparent",
-          flexDirection: "row",
-          alignItems: "center",
+          backgroundColor: 'transparent',
+          flexDirection: 'row',
+          alignItems: 'center',
         }}
       >
         {children}
       </View>
     </TouchableHighlight>
-  );
+  )
 }
 
 function AttachmentModal({
@@ -490,43 +499,42 @@ function AttachmentModal({
   onAttachedFile,
   visible,
 }: {
-  visible: boolean;
-  onRequestClose: () => void;
-  onAttachedImageFromLibrary: (image: ImagePickerAsset) => void;
-  onAttachedImageFromCamera: (image: ImagePickerAsset) => void;
-  onAttachedFile: (file: DocumentPickerAsset) => void;
+  visible: boolean
+  onRequestClose: () => void
+  onAttachedImageFromLibrary: (image: ImagePickerAsset) => void
+  onAttachedImageFromCamera: (image: ImagePickerAsset) => void
+  onAttachedFile: (file: DocumentPickerAsset) => void
 }) {
-  const [cameraPerm, requestCamera] = ImagePicker.useCameraPermissions();
-  const [libraryPerm, requestLibrary] =
-    ImagePicker.useMediaLibraryPermissions();
+  const [cameraPerm, requestCamera] = ImagePicker.useCameraPermissions()
+  const [libraryPerm, requestLibrary] = ImagePicker.useMediaLibraryPermissions()
   return (
     <Modal transparent visible={visible} onRequestClose={onRequestClose}>
       <TouchableWithoutFeedback onPress={onRequestClose}>
         <View
           style={{
-            position: "absolute",
+            position: 'absolute',
             top: 0,
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: 'rgba(0,0,0,0.5)',
           }}
         />
       </TouchableWithoutFeedback>
       <View
         style={{
           flex: 1,
-          justifyContent: "center",
-          margin: "5%",
+          justifyContent: 'center',
+          margin: '5%',
         }}
       >
         <View
           style={{
             margin: 20,
-            backgroundColor: "#f1f1f1",
+            backgroundColor: '#f1f1f1',
             borderRadius: 4,
             padding: 24,
-            shadowColor: "#000",
+            shadowColor: '#000',
             shadowOffset: {
               width: 0,
               height: 2,
@@ -534,86 +542,86 @@ function AttachmentModal({
             shadowOpacity: 0.25,
             shadowRadius: 4,
             elevation: 5,
-            flexDirection: "column",
+            flexDirection: 'column',
             gap: 16,
           }}
         >
           <View
-            style={{ flexDirection: "row", justifyContent: "space-evenly" }}
+            style={{ flexDirection: 'row', justifyContent: 'space-evenly' }}
           >
             <FontAwesome.Button
               name="image"
-              backgroundColor={"transparent"}
-              color={"#666"}
+              backgroundColor="transparent"
+              color="#666"
               size={32}
-              style={{ alignSelf: "center" }}
+              style={{ alignSelf: 'center' }}
               iconStyle={{ marginLeft: 8, marginRight: 8 }}
               onPress={async () => {
                 if (libraryPerm?.status !== PermissionStatus.GRANTED) {
                   if (!libraryPerm?.canAskAgain) {
-                    return;
+                    return
                   }
-                  let updated = await requestLibrary();
+                  const updated = await requestLibrary()
                   if (updated?.status !== PermissionStatus.GRANTED) {
-                    return;
+                    return
                   }
                 }
-                let result = await ImagePicker.launchImageLibraryAsync({
+                const result = await ImagePicker.launchImageLibraryAsync({
                   // mediaTypes: ImagePicker.MediaTypeOptions.Images,
                   mediaTypes: ImagePicker.MediaTypeOptions.All,
                   allowsMultipleSelection: false, // TODO
                   aspect: [4, 3],
                   quality: 1,
-                });
+                })
                 if (result.assets?.length) {
-                  onAttachedImageFromLibrary(result.assets[0]);
+                  onAttachedImageFromLibrary(result.assets[0])
                 }
               }}
             />
             <FontAwesome.Button
               name="camera"
-              backgroundColor={"transparent"}
-              color={"#666"}
+              backgroundColor="transparent"
+              color="#666"
               size={32}
-              style={{ alignSelf: "center" }}
+              style={{ alignSelf: 'center' }}
               iconStyle={{ marginLeft: 8, marginRight: 8 }}
               onPress={async () => {
-                console.log("cameraPerm", cameraPerm);
+                console.log('cameraPerm', cameraPerm)
                 if (cameraPerm?.status !== PermissionStatus.GRANTED) {
                   if (!cameraPerm?.canAskAgain) {
-                    return;
+                    return
                   }
-                  let updated = await requestCamera();
+                  const updated = await requestCamera()
                   if (updated?.status !== PermissionStatus.GRANTED) {
-                    return;
+                    return
                   }
                 }
-                let result = await ImagePicker.launchCameraAsync({
+                const result = await ImagePicker.launchCameraAsync({
                   mediaTypes: ImagePicker.MediaTypeOptions.Images,
                   allowsMultipleSelection: false, // TODO
                   aspect: [4, 3],
                   quality: 1,
-                });
+                })
                 if (result.assets?.length) {
-                  onAttachedImageFromCamera(result.assets[0]);
+                  onAttachedImageFromCamera(result.assets[0])
                 }
               }}
             />
             <FontAwesome.Button
               name="paperclip"
-              backgroundColor={"transparent"}
-              color={"#666"}
+              backgroundColor="transparent"
+              color="#666"
               size={32}
-              style={{ alignSelf: "center" }}
+              style={{ alignSelf: 'center' }}
               iconStyle={{ marginLeft: 8, marginRight: 8 }}
               onPress={async () => {
-                let result = await DocumentPicker.getDocumentAsync({
-                  type: "*/*",
+                const result = await DocumentPicker.getDocumentAsync({
+                  type: '*/*',
                   copyToCacheDirectory: true,
                   multiple: false,
-                });
+                })
                 if (!result.canceled && result.assets?.length) {
-                  onAttachedFile(result.assets[0]);
+                  onAttachedFile(result.assets[0])
                 }
               }}
             />
@@ -621,7 +629,7 @@ function AttachmentModal({
         </View>
       </View>
     </Modal>
-  );
+  )
 }
 
 function CenteredModal({
@@ -629,38 +637,38 @@ function CenteredModal({
   onRequestClose,
   children,
 }: {
-  visible: boolean;
-  onRequestClose: () => void;
-  children: React.ReactNode;
+  visible: boolean
+  onRequestClose: () => void
+  children: React.ReactNode
 }) {
   return (
     <Modal transparent visible={visible} onRequestClose={onRequestClose}>
       <TouchableWithoutFeedback onPress={onRequestClose}>
         <View
           style={{
-            position: "absolute",
+            position: 'absolute',
             top: 0,
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: 'rgba(0,0,0,0.5)',
           }}
         />
       </TouchableWithoutFeedback>
       <View
         style={{
           flex: 1,
-          justifyContent: "center",
-          margin: "5%",
+          justifyContent: 'center',
+          margin: '5%',
         }}
       >
         <View
           style={{
             margin: 20,
-            backgroundColor: "#f1f1f1",
+            backgroundColor: '#f1f1f1',
             borderRadius: 4,
             padding: 24,
-            shadowColor: "#000",
+            shadowColor: '#000',
             shadowOffset: {
               width: 0,
               height: 2,
@@ -668,7 +676,7 @@ function CenteredModal({
             shadowOpacity: 0.25,
             shadowRadius: 4,
             elevation: 5,
-            flexDirection: "column",
+            flexDirection: 'column',
             gap: 16,
           }}
         >
@@ -676,7 +684,7 @@ function CenteredModal({
         </View>
       </View>
     </Modal>
-  );
+  )
 }
 
 function ReactionModal({
@@ -685,27 +693,27 @@ function ReactionModal({
   onReply,
   visible,
 }: {
-  onRequestClose: () => void;
-  onReaction: (reaction: string) => void;
-  onReply: () => void;
-  visible: boolean;
+  onRequestClose: () => void
+  onReaction: (reaction: string) => void
+  onReply: () => void
+  visible: boolean
 }) {
   return (
     <CenteredModal visible={visible} onRequestClose={onRequestClose}>
       <View
         style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-around",
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-around',
         }}
       >
-        {["👍", "👋", "❤️", "👎"].map((reaction) => (
+        {['👍', '👋', '❤️', '👎'].map((reaction) => (
           <PillButton
             key={`reaction-${reaction}`}
             style={{
               borderWidth: 0,
               borderRadius: 8,
-              backgroundColor: "#fff",
+              backgroundColor: '#fff',
             }}
             onPress={() => onReaction(reaction)}
           >
@@ -713,9 +721,9 @@ function ReactionModal({
           </PillButton>
         ))}
       </View>
-      <Button title={"Reply"} onPress={onReply} />
+      <Button title="Reply" onPress={onReply} />
     </CenteredModal>
-  );
+  )
 }
 
 function MessageReactions({
@@ -724,21 +732,21 @@ function MessageReactions({
   onRemoveReaction,
   onNewReaction,
 }: {
-  reactions: { reaction: string; count: number; includesMe: boolean }[];
-  onAddReaction: (reaction: string) => void;
-  onRemoveReaction: (reaction: string) => void;
-  onNewReaction: () => void;
+  reactions: { reaction: string; count: number; includesMe: boolean }[]
+  onAddReaction: (reaction: string) => void
+  onRemoveReaction: (reaction: string) => void
+  onNewReaction: () => void
 }) {
   if (!reactions || reactions.length === 0) {
-    return null;
+    return null
   }
   return (
     <View
       style={{
-        flexDirection: "row",
+        flexDirection: 'row',
         paddingVertical: 4,
         gap: 8,
-        alignItems: "center",
+        alignItems: 'center',
       }}
     >
       {(reactions || []).map(({ reaction, count, includesMe }) => (
@@ -757,7 +765,7 @@ function MessageReactions({
         <Text style={{ paddingLeft: 8, paddingRight: 8, opacity: 0.5 }}>+</Text>
       </PillButton>
     </View>
-  );
+  )
 }
 
 function ReplyMessageHeader({
@@ -765,14 +773,14 @@ function ReplyMessageHeader({
   parentMessageId,
   onPress,
 }: {
-  topic: string;
-  parentMessageId: string;
-  onPress: () => void;
+  topic: string
+  parentMessageId: string
+  onPress: () => void
 }) {
-  let { isSenderMe, message } = useMessage({
+  const { isSenderMe, message } = useMessage({
     topic,
     messageId: parentMessageId,
-  });
+  })
   if (!message) {
     return (
       <View
@@ -782,21 +790,21 @@ function ReplyMessageHeader({
           marginBottom: 4,
         }}
       />
-    );
+    )
   }
   return (
     <TouchableHighlight onPress={onPress} underlayColor="#eee">
       <View
         style={{
-          flexDirection: "row",
-          alignItems: "flex-end",
+          flexDirection: 'row',
+          alignItems: 'flex-end',
           gap: 2,
           marginBottom: 2,
         }}
       >
         <View
           style={{
-            overflow: "hidden",
+            overflow: 'hidden',
             width: 56,
             height: 32,
             paddingTop: 12,
@@ -810,7 +818,7 @@ function ReplyMessageHeader({
               height: 32 - 16 + 2,
               borderTopWidth: 2,
               borderLeftWidth: 2,
-              borderColor: "#aaa",
+              borderColor: '#aaa',
               borderTopLeftRadius: 6,
               // backgroundColor: "red",
             }}
@@ -818,10 +826,10 @@ function ReplyMessageHeader({
         </View>
         <View
           style={{
-            flexDirection: "row",
+            flexDirection: 'row',
             height: 36,
             gap: 6,
-            alignItems: "center",
+            alignItems: 'center',
           }}
         >
           <View
@@ -829,30 +837,30 @@ function ReplyMessageHeader({
               width: 20,
               height: 20,
               borderRadius: 10,
-              backgroundColor: isSenderMe ? "green" : "gray",
+              backgroundColor: isSenderMe ? 'green' : 'gray',
             }}
           />
-          <Text style={{ fontSize: 12, fontWeight: "bold" }}>
+          <Text style={{ fontSize: 12, fontWeight: 'bold' }}>
             {message.senderAddress.slice(0, 6)}…
             {message.senderAddress.slice(-4)}
           </Text>
-          {message.content.text ? (
+          {message.content().text ? (
             <Text
-              style={{ fontSize: 12, color: "gray" }}
+              style={{ fontSize: 12, color: 'gray' }}
               ellipsizeMode="tail"
               numberOfLines={1}
             >
-              {message.content.text}
+              {message.content().text}
             </Text>
           ) : (
-            <Text style={{ fontSize: 12, color: "gray", fontStyle: "italic" }}>
+            <Text style={{ fontSize: 12, color: 'gray', fontStyle: 'italic' }}>
               Tap to see
             </Text>
           )}
         </View>
       </View>
     </TouchableHighlight>
-  );
+  )
 }
 
 function MessageItem({
@@ -862,27 +870,27 @@ function MessageItem({
   onReply,
   onMessageReferencePress,
 }: {
-  topic: string;
-  messageId: string;
-  showSender: boolean;
-  onReply: () => void;
-  onMessageReferencePress: (messageId: string) => void;
+  topic: string
+  messageId: string
+  showSender: boolean
+  onReply: () => void
+  onMessageReferencePress: (messageId: string) => void
 }) {
-  let [showNewReaction, setShowNewReaction] = useState(false);
-  let { reactions } = useMessageReactions({ topic, messageId });
-  let { message, isSenderMe, performReaction } = useMessage({
+  const [showNewReaction, setShowNewReaction] = useState(false)
+  const { reactions } = useMessageReactions({ topic, messageId })
+  const { message, isSenderMe, performReaction } = useMessage({
     topic,
     messageId,
-  });
-  if (!message) {
-    return null;
+  })
+  if (!(message instanceof DecodedMessage)) {
+    return null
   }
-  let content = message.content;
-  let replyingTo = content.reply?.reference;
+  let content = message.content()
+  const replyingTo = content.reply?.reference
   if (content.reply) {
-    content = content.reply.content;
+    content = content.reply.content
   }
-  showSender = !!(replyingTo || showSender);
+  showSender = !!(replyingTo || showSender)
   return (
     <View>
       {replyingTo && (
@@ -896,7 +904,7 @@ function MessageItem({
         onLongPress={() => setShowNewReaction(true)}
         underlayColor="#eee"
       >
-        <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
           {showSender ? (
             <View
               style={{
@@ -906,7 +914,7 @@ function MessageItem({
                 width: 32,
                 height: 32,
                 borderRadius: 16,
-                backgroundColor: isSenderMe ? "green" : "gray",
+                backgroundColor: isSenderMe ? 'green' : 'gray',
               }}
             />
           ) : (
@@ -916,63 +924,66 @@ function MessageItem({
             {showSender && (
               <View
                 style={{
-                  flexDirection: "row",
+                  flexDirection: 'row',
                   marginTop: replyingTo ? 0 : 8,
                   gap: 8,
-                  alignItems: "flex-start",
+                  alignItems: 'flex-start',
                 }}
               >
-                <Text style={{ fontWeight: "bold" }}>
+                <Text style={{ fontWeight: 'bold' }}>
                   {message.senderAddress.slice(0, 6)}…
                   {message.senderAddress.slice(-4)}
                 </Text>
-                <Text style={{ fontWeight: "300" }}>
+                <Text style={{ fontWeight: '300' }}>
                   {moment(message.sent).fromNow()}
                 </Text>
               </View>
             )}
-            <MessageContents content={content} />
+            <MessageContents
+              contentTypeId={message.contentTypeId}
+              content={message.content()}
+            />
             <MessageReactions
               reactions={reactions || []}
               onAddReaction={(reaction) =>
-                performReaction && performReaction("added", reaction)
+                performReaction && performReaction('added', reaction)
               }
               onRemoveReaction={(reaction) =>
-                performReaction && performReaction("removed", reaction)
+                performReaction && performReaction('removed', reaction)
               }
               onNewReaction={() => setShowNewReaction(true)}
             />
             <ReactionModal
               onRequestClose={() => setShowNewReaction(false)}
               onReply={() => {
-                setShowNewReaction(false);
-                onReply();
+                setShowNewReaction(false)
+                onReply()
               }}
               visible={showNewReaction}
               onReaction={(reaction) => {
-                setShowNewReaction(false);
-                performReaction && performReaction("added", reaction);
+                setShowNewReaction(false)
+                performReaction && performReaction('added', reaction)
               }}
             />
           </View>
         </View>
       </TouchableHighlight>
     </View>
-  );
+  )
 }
 
 function RemoteAttachmentMessageContents({
   remoteAttachment,
   onPress,
 }: {
-  remoteAttachment: RemoteAttachmentContent;
-  onPress?: () => void;
+  remoteAttachment: RemoteAttachmentContent
+  onPress?: () => void
 }) {
-  let [isLoading, setIsLoading] = useState(false);
-  let { decrypted } = useLoadRemoteAttachment({
+  const [isLoading, setIsLoading] = useState(false)
+  const { decrypted } = useLoadRemoteAttachment({
     remoteAttachment,
     enabled: isLoading,
-  });
+  })
   if (decrypted) {
     return (
       <TouchableOpacity onPress={onPress}>
@@ -983,15 +994,15 @@ function RemoteAttachmentMessageContents({
             width: 100,
             height: 100,
             borderWidth: 1,
-            borderColor: "#aaa",
+            borderColor: '#aaa',
             borderRadius: 4,
-            backgroundColor: "#eee",
+            backgroundColor: '#eee',
           }}
-          resizeMethod={"auto"}
-          resizeMode={"cover"}
+          resizeMethod="auto"
+          resizeMode="cover"
         />
       </TouchableOpacity>
-    );
+    )
   }
   return (
     <TouchableOpacity onPress={() => setIsLoading(true)}>
@@ -1001,65 +1012,94 @@ function RemoteAttachmentMessageContents({
           width: 100,
           height: 100,
           borderWidth: 1,
-          borderColor: "#aaa",
+          borderColor: '#aaa',
           borderRadius: 4,
-          backgroundColor: "#eee",
+          backgroundColor: '#eee',
           paddingHorizontal: 4,
-          flexDirection: "column",
-          alignItems: "center",
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
         <Text
           numberOfLines={1}
-          ellipsizeMode={"middle"}
+          ellipsizeMode="middle"
           style={{ marginTop: 8, fontSize: 12 }}
         >
           {remoteAttachment.filename}
         </Text>
-        <Text style={{ marginBottom: 8, fontSize: 10, fontStyle: "italic" }}>
+        <Text style={{ marginBottom: 8, fontSize: 10, fontStyle: 'italic' }}>
           {new URL(remoteAttachment.url).host}
         </Text>
-        <Text style={{ marginBottom: 4, fontSize: 10, textAlign: "center" }}>
+        <Text style={{ marginBottom: 4, fontSize: 10, textAlign: 'center' }}>
           {Number(remoteAttachment.contentLength).toLocaleString()} bytes
         </Text>
-        <FontAwesome name={"download"} size={24} />
+        <FontAwesome name="download" size={24} />
       </View>
     </TouchableOpacity>
-  );
+  )
 }
 
-function MessageContents({ content }: { content: MessageContent }) {
-  if (content.text) {
+function MessageContents({
+  contentTypeId,
+  content,
+}: {
+  contentTypeId: string
+  content: any
+}) {
+  const { client }: { client: Client<any> } = useXmtp()
+
+  if (contentTypeId === 'xmtp.org/text:1.0') {
+    const text: string = content
+
     return (
       <>
-        <Text>{content.text}</Text>
+        <Text>{text}</Text>
       </>
-    );
+    )
   }
-  if (content.attachment) {
+  if (contentTypeId === 'xmtp.org/attachment:1.0') {
+    const attachment: StaticAttachmentContent = content
+
     return (
       <>
-        <Text style={{ fontStyle: "italic" }}>
-          Attachment: {content.attachment.filename} (
-          {content.attachment.mimeType}) (
-          {new Buffer(content.attachment.data, "base64").length} bytes)
+        <Text style={{ fontStyle: 'italic' }}>
+          Attachment: {attachment.filename} ({attachment.mimeType}) (
+          {new Buffer(attachment.data, 'base64').length} bytes)
         </Text>
       </>
-    );
+    )
   }
-  if (content.remoteAttachment) {
+  if (contentTypeId === 'xmtp.org/remoteStaticAttachment:1.0') {
+    const remoteAttachment: RemoteAttachmentContent = content
+
     return (
-      <RemoteAttachmentMessageContents
-        remoteAttachment={content.remoteAttachment}
-      />
-    );
+      <RemoteAttachmentMessageContents remoteAttachment={remoteAttachment} />
+    )
   }
+
+  if (contentTypeId === 'xmtp.org/reply:1.0') {
+    const replyContent: ReplyContent = content
+    const replyContentType = replyContent.contentType
+    const codec = client.codecRegistry[replyContentType]
+    const actualReplyContent = codec.decode(replyContent.content)
+
+    return (
+      <View>
+        <Text style={{ color: 'gray' }}>Reply</Text>
+        <MessageContents
+          contentTypeId={replyContentType}
+          content={actualReplyContent}
+        />
+      </View>
+    )
+  }
+
   // console.log("unsupported content", content);
   return (
     <>
-      <Text style={{ opacity: 0.5, fontStyle: "italic" }}>
-        unsupported message content
+      <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
+        unsupported message content {contentTypeId}
       </Text>
     </>
-  );
+  )
 }

@@ -66,7 +66,7 @@ Your app must use Android `minSdkVersion = 22` to work with the `xmtp-react-nati
 The [XMTP message API](https://xmtp.org/docs/concepts/architectural-overview#network-layer) revolves around a network client that allows retrieving and sending messages to other network participants. A client must be connected to a wallet on startup. If this is the very first time the client is created, the client will generate a [key bundle](https://xmtp.org/docs/concepts/key-generation-and-usage) that is used to [encrypt and authenticate messages](https://xmtp.org/docs/concepts/invitation-and-message-encryption). The key bundle persists encrypted in the network using a [wallet signature](https://xmtp.org/docs/concepts/account-signatures). The public side of the key bundle is also regularly advertised on the network to allow parties to establish shared encryption keys. All this happens transparently, without requiring any additional code.
 
 ```tsx
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native";
 
 // Create the client with your wallet. This will connect to the XMTP development network by default
@@ -105,7 +105,7 @@ A client is created with `Client.create(wallet: Signer): Promise<Client>` that r
 > The client connects to the XMTP `dev` environment by default. [Use `ClientOptions`](#configure-the-client) to change this and other parameters of the network connection.
 
 ```tsx
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 // Create the client with a `Signer` from your application
 const xmtp = await Client.create(wallet)
 ```
@@ -118,13 +118,14 @@ The client's network connection and key storage method can be configured with th
 | ------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | appVersion                | `undefined`                                                                       | Add a client app version identifier that's included with API requests.<br/>For example, you can use the following format: `appVersion: APP_NAME + '/' + APP_VERSION`.<br/>Setting this value provides telemetry that shows which apps are using the XMTP client SDK. This information can help XMTP developers provide app support, especially around communicating important SDK updates, including deprecations and required upgrades. |
 | env                       | `dev`                                                                             | Connect to the specified XMTP network environment. Valid values include `dev`, `production`, or `local`. For important details about working with these environments, see [XMTP `production` and `dev` network environments](#xmtp-production-and-dev-network-environments). |
+| codecs                    | `[new XMTP.ReactionCodec()]`                                                                     | Add codecs to support additional content types.                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ## Handle conversations
 
 Most of the time, when interacting with the network, you'll want to do it through `conversations`. Conversations are between two wallets.
 
 ```tsx
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 // Create the client with a `Signer` from your application
 const xmtp = await Client.create(wallet)
 const conversations = xmtp.conversations
@@ -272,7 +273,7 @@ To learn more, see [Request and respect user consent](https://xmtp.org/docs/buil
 If you would like to check and see if a blockchain address is registered on the network before instantiating a client instance, you can use `Client.canMessage`.
 
 ```tsx
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 
 const isOnDevNetwork = await Client.canMessage(
   '0x3F11b27F323b62B159D2642964fa27C46C841897'
@@ -292,7 +293,7 @@ For example:
 
 ```tsx
 const ethers = require('ethers')
-const { Client } = require('@xmtp/xmtp-react-native')
+const { Client } = require('@xmtp/react-native-sdk')
 
 async function main() {
   //Create a random wallet for example purposes. On the frontend you should replace it with the user's wallet (metamask, rainbow, etc)
@@ -327,22 +328,39 @@ All send functions support `SendOptions` as an optional parameter. The `contentT
 
 To learn more about content types, see [Content types with XMTP](https://xmtp.org/docs/concepts/content-types).
 
-The SDK preregisters the following codecs:
+Support for other types of content can be added by registering additional `ContentCodecs` with the `Client`. Every codec is associated with a content type identifier, `ContentTypeId`, which is used to signal to the client which codec should be used to process the content that is being sent or received.
+For example, see the [Native Codecs](https://github.com/xmtp/xmtp-react-native/tree/main/src/lib/NativeCodecs) available in `xmtp-react-native`.
 
-- For [Android](https://github.com/xmtp/xmtp-react-native/blob/main/android/src/main/java/expo/modules/xmtpreactnativesdk/wrappers/ContentJson.kt#L43-L53), using these [source codecs](https://github.com/xmtp/xmtp-android/tree/main/library/src/main/java/org/xmtp/android/library/codecs).
+```ts
+// Assuming we've loaded a fictional NumberCodec that can be used to encode numbers,
+// and is identified with ContentTypeNumber, we can use it as follows.
 
-- For [iOS](https://github.com/xmtp/xmtp-react-native/blob/main/ios/Wrappers/DecodedMessageWrapper.swift#L35-L48), using these [source codecs](https://github.com/xmtp/xmtp-ios/tree/main/Sources/XMTP/Codecs).
-
-```tsx
-  await conversation.send({
-    reaction: {
-      reference: otherMessage.id,
-      action: "added",
-      schema: "unicode",
-      content: "💖",
-    },
-  });
+xmtp.register(new NumberCodec())
+conversation.send(3.14, {
+  contentType: ContentTypeNumber
+})
 ```
+
+Additional codecs can be configured through the `ClientOptions` parameter of `Client.create`. The `codecs` option is a list of codec instances that should be added to the default set of codecs (currently only the `TextCodec`). If a codec is added for a content type that is already in the default set, it will replace the original codec.
+
+```ts
+// Adding support for `xmtp.org/reaction` content type
+import { ReactionCodec } from '@xmtp/react-native-sdk'
+const xmtp = Client.create(wallet, { codecs: [new ReactionCodec()] })
+
+await conversation.send({
+  reaction: {
+    reference: otherMessage.id,
+    action: "added",
+    schema: "unicode",
+    content: "💖",
+  },
+});
+```
+
+To learn more about how to build a custom content type, see [Build a custom content type](https://xmtp.org/docs/content-types/introduction#create-custom-content-types).
+
+Custom codecs and content types may be proposed as interoperable standards through XRCs. To learn about the custom content type proposal process, see [XIP-5](https://github.com/xmtp/XIPs/blob/main/XIPs/xip-5-message-content-types.md).
 
 ## Manually handle private key storage
 
@@ -351,7 +369,7 @@ The SDK will handle key storage for the user by encrypting the private key bundl
 You can export the unencrypted key bundle using the static method `Client.exportKeyBundle`, save it somewhere secure, and then provide those keys at a later time to initialize a new client using the exported XMTP identity.
 
 ```js
-import { Client } from '@xmtp/xmtp-react-native'
+import { Client } from '@xmtp/react-native-sdk'
 // Get the keys using a valid Signer. Save them somewhere secure.
 const keys = await Client.exportKeyBundle()
 // Create a client using keys returned from getKeys
