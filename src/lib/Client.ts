@@ -162,7 +162,6 @@ export class Client<ContentTypes> {
    * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
    * @returns {Promise<boolean>}
    */
-
   static async canMessage(peerAddress: string, opts?: Partial<ClientOptions>): Promise<boolean> {
     const options = defaultOptions(opts);
     return await XMTPModule.staticCanMessage(peerAddress, options.env, options.appVersion);

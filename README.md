@@ -70,7 +70,7 @@ import { Client } from '@xmtp/react-native-sdk'
 import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native";
 
 // Create the client with your wallet. This will connect to the XMTP development network by default
-const xmtp = await XMTP.Client.create(useSigner());
+const xmtp = await Client.create(useSigner());
 // Start a conversation with XMTP
 const conversation = await xmtp.conversations.newConversation(
   '0x3F11b27F323b62B159D2642964fa27C46C841897'
@@ -275,8 +275,8 @@ If you would like to check and see if a blockchain address is registered on the 
 ```tsx
 import { Client } from '@xmtp/react-native-sdk'
 
-const isOnDevNetwork = await Client.canMessage(
-  '0x3F11b27F323b62B159D2642964fa27C46C841897'
+const isOnProdNetwork = await Client.canMessage(
+  '0x3F11b27F323b62B159D2642964fa27C46C841897', { env: 'production' }
 )
 ```
 
@@ -298,7 +298,7 @@ const { Client } = require('@xmtp/react-native-sdk')
 async function main() {
   //Create a random wallet for example purposes. On the frontend you should replace it with the user's wallet (metamask, rainbow, etc)
   //Initialize the xmtp client
-  const xmtp = await XMTP.Client.createRandom({ env: "dev" });
+  const xmtp = await Client.createRandom({ env: "dev" });
 
   //In this example we are going to broadcast to the GM_BOT wallet (already activated) and a random wallet (not activated)
   const GM_BOT = '0x937C0d4a6294cdfa575de17382c7076b579DC176'
@@ -306,7 +306,7 @@ async function main() {
   const broadcasts_array = [GM_BOT, test.address]
 
   //Querying the activation status of the wallets
-  const broadcasts_canMessage = await Client.canMessage(broadcasts_array)
+  const broadcasts_canMessage = await xmtp.canMessage(broadcasts_array)
   for (let i = 0; i < broadcasts_array.length; i++) {
     //Checking the activation status of each wallet
     const wallet = broadcasts_array[i]
@@ -331,7 +331,7 @@ To learn more about content types, see [Content types with XMTP](https://xmtp.or
 Support for other types of content can be added by registering additional `ContentCodecs` with the `Client`. Every codec is associated with a content type identifier, `ContentTypeId`, which is used to signal to the client which codec should be used to process the content that is being sent or received.
 For example, see the [Native Codecs](https://github.com/xmtp/xmtp-react-native/tree/main/src/lib/NativeCodecs) available in `xmtp-react-native`.
 
-```ts
+```tsx
 // Assuming we've loaded a fictional NumberCodec that can be used to encode numbers,
 // and is identified with ContentTypeNumber, we can use it as follows.
 
@@ -343,7 +343,7 @@ conversation.send(3.14, {
 
 Additional codecs can be configured through the `ClientOptions` parameter of `Client.create`. The `codecs` option is a list of codec instances that should be added to the default set of codecs (currently only the `TextCodec`). If a codec is added for a content type that is already in the default set, it will replace the original codec.
 
-```ts
+```tsx
 // Adding support for `xmtp.org/reaction` content type
 import { ReactionCodec } from '@xmtp/react-native-sdk'
 const xmtp = Client.create(wallet, { codecs: [new ReactionCodec()] })
