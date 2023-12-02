@@ -92,10 +92,10 @@ export async function canMessage(
 
 export async function staticCanMessage(
   peerAddress: string,
-  environment: "local" | "dev" | "production",
-  appVersion?: string | undefined,
+  environment: 'local' | 'dev' | 'production',
+  appVersion?: string | undefined
 ): Promise<boolean> {
-  return await XMTPModule.staticCanMessage(peerAddress, environment, appVersion);
+  return await XMTPModule.staticCanMessage(peerAddress, environment, appVersion)
 }
 
 export async function encryptAttachment(

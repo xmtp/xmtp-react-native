@@ -34,6 +34,7 @@ import {
 } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
+import { useXmtp } from './XmtpContext'
 import {
   useConversation,
   useMessage,
@@ -42,7 +43,6 @@ import {
   useLoadRemoteAttachment,
   usePrepareRemoteAttachment,
 } from './hooks'
-import { useXmtp } from './XmtpContext'
 
 type Attachment = {
   file?: DocumentPickerAsset

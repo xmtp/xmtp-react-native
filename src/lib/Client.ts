@@ -35,7 +35,7 @@ export class Client<ContentTypes> {
    * @param {Signer} signer - The signer object used for authentication and message signing.
    * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance.
-   * 
+   *
    * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
    */
   static async create<
@@ -155,16 +155,23 @@ export class Client<ContentTypes> {
 
   /**
    * Static method to determine if the address is currently in our network.
-   * 
+   *
    * This method checks if the specified peer has signed up for XMTP.
-   * 
+   *
    * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
    * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
    * @returns {Promise<boolean>}
    */
-  static async canMessage(peerAddress: string, opts?: Partial<ClientOptions>): Promise<boolean> {
-    const options = defaultOptions(opts);
-    return await XMTPModule.staticCanMessage(peerAddress, options.env, options.appVersion);
+  static async canMessage(
+    peerAddress: string, 
+    opts?: Partial<ClientOptions>
+  ): Promise<boolean> {
+    const options = defaultOptions(opts)
+    return await XMTPModule.staticCanMessage(
+      peerAddress, 
+      options.env, 
+      options.appVersion,
+    )
   }
 
   constructor(
