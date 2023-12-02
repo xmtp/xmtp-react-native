@@ -163,14 +163,14 @@ export class Client<ContentTypes> {
    * @returns {Promise<boolean>}
    */
   static async canMessage(
-    peerAddress: string, 
+    peerAddress: string,
     opts?: Partial<ClientOptions>
   ): Promise<boolean> {
     const options = defaultOptions(opts)
     return await XMTPModule.staticCanMessage(
-      peerAddress, 
-      options.env, 
-      options.appVersion,
+      peerAddress,
+      options.env,
+      options.appVersion
     )
   }
 
