@@ -512,19 +512,31 @@ public class XMTPModule: Module {
 			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
 				throw Error.conversationNotFound(conversationTopic)
 			}
-			switch await conversation.consentState() {
-			case .allowed: return "allowed"
-			case .denied: return "denied"
-			case .unknown: return "unknown"
-			}
+            return consentStateToString(state: await conversation.consentState())
 		}
+
+        AsyncFunction("consentList") { (clientAddress: String) -> [String] in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            let entries = await client.contacts.consentList.entries
+            return entries.map { "\($0.key): \(consentStateToString(state: $0.value))" }
+        }
 	}
 
 	//
 	// Helpers
 	//
 
-	func createClientConfig(env: String, appVersion: String?) -> XMTP.ClientOptions {
+    func consentStateToString(state: ConsentState) -> String {
+        switch state {
+            case .allowed: return "allowed"
+            case .denied: return "denied"
+            case .unknown: return "unknown"
+        }
+    }
+
+    func createClientConfig(env: String, appVersion: String?) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
 		switch env {
 		case "local":

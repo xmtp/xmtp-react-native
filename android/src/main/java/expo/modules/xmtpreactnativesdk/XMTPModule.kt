@@ -552,17 +552,26 @@ class XMTPModule : Module() {
         AsyncFunction("conversationConsentState") { clientAddress: String, conversationTopic: String ->
             val conversation = findConversation(clientAddress, conversationTopic)
                 ?: throw XMTPException("no conversation found for $conversationTopic")
-            when (conversation.consentState()) {
-                ConsentState.ALLOWED -> "allowed"
-                ConsentState.DENIED -> "denied"
-                ConsentState.UNKNOWN -> "unknown"
-            }
+            consentStateToString(conversation.consentState())
+        }
+
+        AsyncFunction("consentList") { clientAddress: String ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.consentList.entries.map { "${it.key}: ${consentStateToString(it.value)}" }
         }
     }
 
     //
     // Helpers
     //
+    private fun consentStateToString(state: ConsentState): String {
+        return when (state) {
+            ConsentState.ALLOWED -> "allowed"
+            ConsentState.DENIED -> "denied"
+            ConsentState.UNKNOWN -> "unknown"
+        }
+    }
+
     private fun findConversation(
         clientAddress: String,
         topic: String,
