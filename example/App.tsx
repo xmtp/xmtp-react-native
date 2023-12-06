@@ -1,6 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native'
 import React from 'react'
-import { Button } from 'react-native'
+import { Button, Platform } from 'react-native'
 import { QueryClient, QueryClientProvider } from 'react-query'
 
 import ConversationCreateScreen from './src/ConversationCreateScreen'
@@ -53,7 +53,7 @@ export default function App() {
                   <Button
                     onPress={() => navigation.navigate('conversationCreate')}
                     title="New"
-                    color="#fff"
+                    color={Platform.OS === 'ios' ? '#fff' : 'rgb(49 0 110)'}
                   />
                 ),
               })}
