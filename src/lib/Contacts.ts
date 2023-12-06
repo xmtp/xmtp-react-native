@@ -9,13 +9,11 @@ export default class Contacts {
   }
 
   async isAllowed(address: string): Promise<boolean> {
-    const result = await XMTPModule.isAllowed(this.client.address, address)
-    return result
+    return await XMTPModule.isAllowed(this.client.address, address)
   }
 
   async isDenied(address: string): Promise<boolean> {
-    const result = await XMTPModule.isDenied(this.client.address, address)
-    return result
+    return await XMTPModule.isDenied(this.client.address, address)
   }
 
   deny(addresses: string[]) {
@@ -28,5 +26,9 @@ export default class Contacts {
 
   refreshConsentList() {
     XMTPModule.refreshConsentList(this.client.address)
+  }
+
+  async consentList(): Promise<Map<string, 'allowed' | 'denied' | 'unknown'>> {
+    return await XMTPModule.consentList(this.client.address)
   }
 }
