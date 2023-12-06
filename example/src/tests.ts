@@ -672,6 +672,23 @@ test('canManagePreferences', async () => {
     )
   }
 
+  const boConsentList = await bo.contacts.consentList()
+  await delayToPropogate()
+
+  if (boConsentList.size !== 1) {
+    throw new Error(`consent list for bo should 1 not ${boConsentList.size}`)
+  }
+
+  const boConsentListState = boConsentList.get(
+    `address-${alixConversation.peerAddress.toLowerCase()}`
+  )
+
+  if (boConsentListState !== 'denied') {
+    throw new Error(
+      `conversations denied by bo should be denied in consent list not ${boConsentListState}`
+    )
+  }
+
   return true
 })
 

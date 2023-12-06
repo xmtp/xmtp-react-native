@@ -356,19 +356,12 @@ export function refreshConsentList(clientAddress: string) {
 export async function consentList(
   clientAddress: string
 ): Promise<Map<string, 'allowed' | 'denied' | 'unknown'>> {
-  return jsonArrayToMap(await XMTPModule.consentList(clientAddress))
-}
+  const consentList = await XMTPModule.consentList(clientAddress)
+  const result = new Map<string, 'allowed' | 'denied' | 'unknown'>()
 
-function jsonArrayToMap(jsonArray: string[]): Map<string, any> {
-  const result = new Map<string, any>()
-
-  jsonArray.forEach((jsonString) => {
-    const parsedObject = JSON.parse(jsonString)
-    if (parsedObject && parsedObject.key) {
-      result.set(parsedObject.key, parsedObject)
-    } else {
-      console.error('Invalid JSON structure:', jsonString)
-    }
+  consentList.forEach((item) => {
+    const [key, value] = item.split(':').map((str: string) => str.trim())
+    result.set(key.toLowerCase(), value)
   })
 
   return result
