@@ -18,13 +18,14 @@ Access the `xmtp-react-native` client SDK [reference documentation](https://xmtp
 
 ## Example app
 
-Use the [XMTP React Native example app](example) as a tool to start building an app with XMTP. This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with.
+Use the [XMTP React Native example app](example) as a tool to start building an app with XMTP. This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with. [See example/README.md](example/README.md) for more instructions.
+
+### Quickstart to use the example app:
 
 Follow the [React Native guide](https://reactnative.dev/docs/environment-setup) to set up a CLI environment.
 
-To use the example app, run:
-
 ```bash
+npm install
 cd example
 npm install --force
 npm run [ios or android]
