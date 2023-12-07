@@ -20,7 +20,7 @@
     "moment": "^2.29.4",
     "node-libs-browser": "^2.2.1",
     "react": "18.2.0",
-    "react-native": "0.71.8",
+    "react-native": "0.71.14",
     "react-native-blob-util": "^0.19.0",
     "react-native-crypto": "^2.2.0",
     "react-native-encrypted-storage": "^4.0.3",
