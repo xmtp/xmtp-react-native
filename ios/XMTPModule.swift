@@ -501,30 +501,41 @@ public class XMTPModule: Module {
 			try await client.contacts.allow(addresses: addresses)
 		}
 
-		AsyncFunction("refreshConsentList") { (clientAddress: String) in
+		AsyncFunction("refreshConsentList") { (clientAddress: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			try await client.contacts.refreshConsentList()
+			let consentList = try await client.contacts.refreshConsentList()
+            
+            return try consentList.entries.compactMap { entry in
+                try ConsentWrapper.encode(entry.value)
+            }
 		}
 
 		AsyncFunction("conversationConsentState") { (clientAddress: String, conversationTopic: String) -> String in
 			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
 				throw Error.conversationNotFound(conversationTopic)
 			}
-			switch await conversation.consentState() {
-			case .allowed: return "allowed"
-			case .denied: return "denied"
-			case .unknown: return "unknown"
-			}
+            return ConsentWrapper.consentStateToString(state: await conversation.consentState())
 		}
+
+        AsyncFunction("consentList") { (clientAddress: String) -> [String] in
+            guard let client = await clientsManager.getClient(key: clientAddress) else {
+                throw Error.noClient
+            }
+            let entries = await client.contacts.consentList.entries
+            
+            return try entries.compactMap { entry in
+                try ConsentWrapper.encode(entry.value)
+            }
+        }
 	}
 
 	//
 	// Helpers
 	//
 
-	func createClientConfig(env: String, appVersion: String?) -> XMTP.ClientOptions {
+    func createClientConfig(env: String, appVersion: String?) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
 		switch env {
 		case "local":
