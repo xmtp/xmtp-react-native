@@ -1,4 +1,4 @@
-# XMTP React Native Example App
+# XMTP React Native example app
 
 This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with.
 
