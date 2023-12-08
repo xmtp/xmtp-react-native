@@ -23,7 +23,7 @@ Running tests locally is useful when updating GitHub actions, or locally testing
     ```bash
     docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
     ```
-3. Verify XMTP server is running
+3. Verify the XMTP server is running
     ```bash
     docker-compose ls
 
