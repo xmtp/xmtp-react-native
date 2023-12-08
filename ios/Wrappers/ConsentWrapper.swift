@@ -1,7 +1,6 @@
 import Foundation
 import XMTP
 
-// Wrapper around XMTP.Conversation to allow passing these objects back into react native.
 struct ConsentWrapper {
     static func encodeToObj(_ entry: XMTP.ConsentListEntry) throws -> [String: Any] {
         return [
