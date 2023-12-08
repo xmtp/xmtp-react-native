@@ -17,7 +17,7 @@ npm run [ios or android]
 ## Run example app unit tests on local emulators
 Running tests locally is useful when updating GitHub actions, or locally testing between changes.
 
-1. [Install docker](https://docs.docker.com/get-docker/)
+1. [Install Docker](https://docs.docker.com/get-docker/)
 
 2. Start a local XMTP server (from example directory)
     ```bash
