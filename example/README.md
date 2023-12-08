@@ -2,7 +2,7 @@
 
 This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with.
 
-## Running the Example App
+## Run the example app
 Follow the [React Native guide](https://reactnative.dev/docs/environment-setup) to set up a CLI environment.
 
 To use the example app, run:
