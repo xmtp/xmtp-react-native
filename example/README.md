@@ -30,7 +30,7 @@ Running tests locally is useful when updating GitHub actions, or locally testing
     NAME                STATUS              CONFIG FILES
     xmtp                running(3)          <REPO_DIRECTORY>/xmtp-react-native/example/dev/local/docker-compose.yml
     ```
-4. You can now run Unit tests on your local emulators
+4. You can now run unit tests on your local emulators
 5. You can stop the local xmtp server with the following command
     ```bash
     docker-compose -p xmtp -f dev/local/docker-compose.yml down
