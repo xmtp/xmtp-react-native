@@ -1,5 +1,6 @@
 import { Client } from './Client'
 import * as XMTPModule from '../index'
+import { ConsentListEntry } from './ConsentListEntry'
 
 export default class Contacts {
   client: Client<any>
@@ -24,11 +25,11 @@ export default class Contacts {
     XMTPModule.allowContacts(this.client.address, addresses)
   }
 
-  refreshConsentList() {
-    XMTPModule.refreshConsentList(this.client.address)
+  async refreshConsentList(): Promise<ConsentListEntry[]> {
+    return await XMTPModule.refreshConsentList(this.client.address)
   }
 
-  async consentList(): Promise<Map<string, 'allowed' | 'denied' | 'unknown'>> {
+  async consentList(): Promise<ConsentListEntry[]> {
     return await XMTPModule.consentList(this.client.address)
   }
 }

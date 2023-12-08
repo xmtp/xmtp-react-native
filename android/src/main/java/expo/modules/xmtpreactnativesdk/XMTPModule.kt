@@ -548,7 +548,8 @@ class XMTPModule : Module() {
 
         AsyncFunction("refreshConsentList") { clientAddress: String ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.refreshConsentList()
+            val consentList = client.contacts.refreshConsentList()
+            consentList.entries.map { ConsentWrapper.encode(it.value) }
         }
 
         AsyncFunction("conversationConsentState") { clientAddress: String, conversationTopic: String ->

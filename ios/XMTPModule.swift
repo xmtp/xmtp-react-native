@@ -501,11 +501,15 @@ public class XMTPModule: Module {
 			try await client.contacts.allow(addresses: addresses)
 		}
 
-		AsyncFunction("refreshConsentList") { (clientAddress: String) in
+		AsyncFunction("refreshConsentList") { (clientAddress: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			try await client.contacts.refreshConsentList()
+			let consentList = try await client.contacts.refreshConsentList()
+            
+            return try consentList.entries.compactMap { entry in
+                try ConsentWrapper.encode(entry.value)
+            }
 		}
 
 		AsyncFunction("conversationConsentState") { (clientAddress: String, conversationTopic: String) -> String in
