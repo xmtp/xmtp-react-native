@@ -5,7 +5,7 @@ import XMTP
 struct ConsentWrapper {
     static func encodeToObj(_ entry: XMTP.ConsentListEntry) throws -> [String: Any] {
         return [
-            "type": entry.entryType,
+            "type": entry.entryType.rawValue,
             "value": entry.value,
             "state": consentStateToString(state: entry.consentType),
         ]

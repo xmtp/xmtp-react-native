@@ -4,7 +4,7 @@ import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 import { Client } from '.'
 import { ConversationContext } from './XMTP.types'
 import XMTPModule from './XMTPModule'
-import { ConsentListEntry } from './lib/ConsentListEntry'
+import { ConsentListEntry, ConsentState } from './lib/ConsentListEntry'
 import {
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
@@ -321,7 +321,7 @@ export async function decodeMessage(
 export async function conversationConsentState(
   clientAddress: string,
   conversationTopic: string
-): Promise<'allowed' | 'denied' | 'unknown'> {
+): Promise<ConsentState> {
   return await XMTPModule.conversationConsentState(
     clientAddress,
     conversationTopic

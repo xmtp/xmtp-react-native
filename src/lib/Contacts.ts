@@ -1,6 +1,6 @@
 import { Client } from './Client'
-import * as XMTPModule from '../index'
 import { ConsentListEntry } from './ConsentListEntry'
+import * as XMTPModule from '../index'
 
 export default class Contacts {
   client: Client<any>
