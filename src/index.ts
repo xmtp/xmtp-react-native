@@ -4,6 +4,7 @@ import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 import { Client } from '.'
 import { ConversationContext } from './XMTP.types'
 import XMTPModule from './XMTPModule'
+import { ConsentListEntry, ConsentState } from './lib/ConsentListEntry'
 import {
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
@@ -320,7 +321,7 @@ export async function decodeMessage(
 export async function conversationConsentState(
   clientAddress: string,
   conversationTopic: string
-): Promise<'allowed' | 'denied' | 'unknown'> {
+): Promise<ConsentState> {
   return await XMTPModule.conversationConsentState(
     clientAddress,
     conversationTopic
@@ -349,8 +350,24 @@ export function allowContacts(clientAddress: string, addresses: string[]) {
   XMTPModule.allowContacts(clientAddress, addresses)
 }
 
-export function refreshConsentList(clientAddress: string) {
-  XMTPModule.refreshConsentList(clientAddress)
+export async function refreshConsentList(
+  clientAddress: string
+): Promise<ConsentListEntry[]> {
+  const consentList = await XMTPModule.refreshConsentList(clientAddress)
+
+  return consentList.map((json: string) => {
+    return ConsentListEntry.from(json)
+  })
+}
+
+export async function consentList(
+  clientAddress: string
+): Promise<ConsentListEntry[]> {
+  const consentList = await XMTPModule.consentList(clientAddress)
+
+  return consentList.map((json: string) => {
+    return ConsentListEntry.from(json)
+  })
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
@@ -362,3 +379,4 @@ export * from './XMTP.types'
 export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
 export { DecodedMessage }
+export { ConsentListEntry }

@@ -1,4 +1,5 @@
 import { Client } from './Client'
+import { ConsentListEntry } from './ConsentListEntry'
 import * as XMTPModule from '../index'
 
 export default class Contacts {
@@ -9,13 +10,11 @@ export default class Contacts {
   }
 
   async isAllowed(address: string): Promise<boolean> {
-    const result = await XMTPModule.isAllowed(this.client.address, address)
-    return result
+    return await XMTPModule.isAllowed(this.client.address, address)
   }
 
   async isDenied(address: string): Promise<boolean> {
-    const result = await XMTPModule.isDenied(this.client.address, address)
-    return result
+    return await XMTPModule.isDenied(this.client.address, address)
   }
 
   deny(addresses: string[]) {
@@ -26,7 +25,11 @@ export default class Contacts {
     XMTPModule.allowContacts(this.client.address, addresses)
   }
 
-  refreshConsentList() {
-    XMTPModule.refreshConsentList(this.client.address)
+  async refreshConsentList(): Promise<ConsentListEntry[]> {
+    return await XMTPModule.refreshConsentList(this.client.address)
+  }
+
+  async consentList(): Promise<ConsentListEntry[]> {
+    return await XMTPModule.consentList(this.client.address)
   }
 }

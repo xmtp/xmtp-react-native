@@ -9,6 +9,8 @@ import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
@@ -546,23 +548,26 @@ class XMTPModule : Module() {
 
         AsyncFunction("refreshConsentList") { clientAddress: String ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.refreshConsentList()
+            val consentList = client.contacts.refreshConsentList()
+            consentList.entries.map { ConsentWrapper.encode(it.value) }
         }
 
         AsyncFunction("conversationConsentState") { clientAddress: String, conversationTopic: String ->
             val conversation = findConversation(clientAddress, conversationTopic)
                 ?: throw XMTPException("no conversation found for $conversationTopic")
-            when (conversation.consentState()) {
-                ConsentState.ALLOWED -> "allowed"
-                ConsentState.DENIED -> "denied"
-                ConsentState.UNKNOWN -> "unknown"
-            }
+            consentStateToString(conversation.consentState())
+        }
+
+        AsyncFunction("consentList") { clientAddress: String ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.consentList.entries.map { ConsentWrapper.encode(it.value) }
         }
     }
 
     //
     // Helpers
     //
+
     private fun findConversation(
         clientAddress: String,
         topic: String,
