@@ -14,7 +14,7 @@ npm install --force
 npm run [ios or android]
 ```
 
-## Running Example App Unit tests on local emulators
+## Run example app unit tests on local emulators
 Running tests locally is useful when updating GitHub actions, or locally testing between changes.
 
 1. [Install docker](https://docs.docker.com/get-docker/)
