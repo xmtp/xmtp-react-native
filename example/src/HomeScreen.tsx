@@ -1,6 +1,6 @@
 import { NavigationContext } from '@react-navigation/native'
 import moment from 'moment'
-import React, { useContext, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import {
   Button,
   FlatList,
@@ -46,7 +46,7 @@ export default function HomeScreen() {
           }}
         >
           <Text style={{ fontSize: 14 }}>Connected as</Text>
-          <Text style={{ fontSize: 14, fontWeight: 'bold' }}>
+          <Text selectable style={{ fontSize: 14, fontWeight: 'bold' }}>
             {client?.address}
           </Text>
         </View>
@@ -67,10 +67,16 @@ function ConversationItem({
   const lastMessage = messages?.[0]
   const [getConsentState, setConsentState] = useState<string | undefined>()
 
-  conversation.consentState().then((result) => {
-    setConsentState(result)
-  })
-  const denyContact = () => client?.contacts.deny([conversation.peerAddress])
+  useEffect(() => {
+    conversation.consentState().then((result) => {
+      setConsentState(result)
+    })
+  }, [conversation])
+
+  const denyContact = () => {
+    client?.contacts.deny([conversation.peerAddress])
+    conversation.consentState().then(setConsentState)
+  }
 
   return (
     <Pressable
