@@ -10,68 +10,84 @@ import LaunchScreen from './src/LaunchScreen'
 import { Navigator } from './src/Navigation'
 import TestScreen from './src/TestScreen'
 import { XmtpContextProvider } from './src/XmtpContext'
+import { ThirdwebProvider, walletConnect } from "@thirdweb-dev/react-native";
 
 const queryClient = new QueryClient()
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <XmtpContextProvider>
-        <NavigationContainer>
-          <Navigator.Navigator>
-            <Navigator.Screen
-              name="launch"
-              component={LaunchScreen}
-              options={{
-                title: 'XMTP RN Example',
-                headerStyle: {
-                  backgroundColor: 'rgb(49 0 110)',
-                },
-                headerTintColor: '#fff',
-                headerTitleStyle: {
-                  fontWeight: 'bold',
-                },
-              }}
-            />
-            <Navigator.Screen
-              name="test"
-              component={TestScreen}
-              options={{ title: 'Unit Tests' }}
-            />
-            <Navigator.Screen
-              name="home"
-              component={HomeScreen}
-              options={({ navigation }) => ({
-                title: 'My Conversations',
-                headerStyle: {
-                  backgroundColor: 'rgb(49 0 110)',
-                },
-                headerTintColor: '#fff',
-                headerTitleStyle: {
-                  fontWeight: 'bold',
-                },
-                headerRight: () => (
-                  <Button
-                    onPress={() => navigation.navigate('conversationCreate')}
-                    title="New"
-                    color={Platform.OS === 'ios' ? '#fff' : 'rgb(49 0 110)'}
-                  />
-                ),
-              })}
-            />
-            <Navigator.Screen
-              name="conversation"
-              component={ConversationScreen}
-              options={{ title: 'Conversation' }}
-              initialParams={{ topic: '' }}
-            />
-            <Navigator.Screen
-              name="conversationCreate"
-              component={ConversationCreateScreen}
-              options={{ title: 'New Conversation' }}
-            />
-          </Navigator.Navigator>
-        </NavigationContainer>
-      </XmtpContextProvider>
-    </QueryClientProvider>
+    <ThirdwebProvider
+      activeChain={"ethereum"}
+      clientId={"<THIRD_WEB_CLIENT_ID_HERE>"}
+      dAppMeta={{
+        name: "XMTP Example",
+        description: "This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with.",
+        logoUrl: "https://pbs.twimg.com/profile_images/1668323456935510016/2c_Ue8dF_400x400.jpg",
+        url: "https://github.com/xmtp/xmtp-react-native",
+      }}
+      supportedWallets={[
+        walletConnect({
+          recommended: true,
+        })
+      ]}>
+      <QueryClientProvider client={queryClient}>
+        <XmtpContextProvider>
+          <NavigationContainer>
+            <Navigator.Navigator>
+              <Navigator.Screen
+                name="launch"
+                component={LaunchScreen}
+                options={{
+                  title: 'XMTP RN Example',
+                  headerStyle: {
+                    backgroundColor: 'rgb(49 0 110)',
+                  },
+                  headerTintColor: '#fff',
+                  headerTitleStyle: {
+                    fontWeight: 'bold',
+                  },
+                }}
+              />
+              <Navigator.Screen
+                name="test"
+                component={TestScreen}
+                options={{ title: 'Unit Tests' }}
+              />
+              <Navigator.Screen
+                name="home"
+                component={HomeScreen}
+                options={({ navigation }) => ({
+                  title: 'My Conversations',
+                  headerStyle: {
+                    backgroundColor: 'rgb(49 0 110)',
+                  },
+                  headerTintColor: '#fff',
+                  headerTitleStyle: {
+                    fontWeight: 'bold',
+                  },
+                  headerRight: () => (
+                    <Button
+                      onPress={() => navigation.navigate('conversationCreate')}
+                      title="New"
+                      color={Platform.OS === 'ios' ? '#fff' : 'rgb(49 0 110)'}
+                    />
+                  ),
+                })}
+              />
+              <Navigator.Screen
+                name="conversation"
+                component={ConversationScreen}
+                options={{ title: 'Conversation' }}
+                initialParams={{ topic: '' }}
+              />
+              <Navigator.Screen
+                name="conversationCreate"
+                component={ConversationCreateScreen}
+                options={{ title: 'New Conversation' }}
+              />
+            </Navigator.Navigator>
+          </NavigationContainer>
+        </XmtpContextProvider>
+      </QueryClientProvider>
+    </ThirdwebProvider>
   )
 }

@@ -1,7 +1,8 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
 import * as XMTP from 'xmtp-react-native-sdk'
+import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native"
 
 import { NavigationParamList } from './Navigation'
 import { useXmtp } from './XmtpContext'
@@ -20,6 +21,7 @@ const supportedCodecs = [
 export default function LaunchScreen({
   navigation,
 }: NativeStackScreenProps<NavigationParamList, 'launch'>) {
+  const signer = useSigner();
   const { setClient } = useXmtp()
   const savedKeys = useSavedKeys()
   const configureWallet = (
@@ -40,8 +42,21 @@ export default function LaunchScreen({
       })
       .catch((err) => console.log('Unable to connect XMTP client', label, err))
   }
+
+  useEffect(() => {
+    (async () => {
+      if (signer) {
+        configureWallet('dev', XMTP.Client.create(signer, {
+          env: 'dev',
+          appVersion,
+        }));
+      }
+    })();
+  }, [signer]);
+
   return (
     <ScrollView>
+      <ConnectWallet />
       <Text
         style={{
           fontSize: 16,
