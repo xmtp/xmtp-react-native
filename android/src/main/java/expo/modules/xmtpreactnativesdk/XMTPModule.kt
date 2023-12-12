@@ -167,7 +167,12 @@ class XMTPModule : Module() {
         AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String? ->
             try {
                 logV("createFromKeyBundle")
-                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+                val preEnableIdentityCallback: suspend () -> Unit = {
+                    sendEvent(
+                        "onPreEnableIdentityCallback"
+                    )
+                }
+                val options = ClientOptions(api = apiEnvironments(environment, appVersion), preEnableIdentityCallback)
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
                         Base64.decode(

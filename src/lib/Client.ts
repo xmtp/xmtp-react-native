@@ -132,6 +132,16 @@ export class Client<ContentTypes> {
     >
   > {
     const options = defaultOptions(opts)
+    if(opts?.preEnableIdentityCallback) {
+      XMTPModule.emitter.addListener(
+        'onPreEnableIdentityCallback',
+        async () => {
+          if(opts?.preEnableIdentityCallback) {
+            await opts.preEnableIdentityCallback()
+          }
+        })
+    }
+    
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
@@ -282,7 +292,7 @@ export class Client<ContentTypes> {
   }
 }
 
-export type ClientOptions = NetworkOptions
+export type ClientOptions = NetworkOptions & CallbackOptions;
 export type NetworkOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
@@ -299,6 +309,10 @@ export type NetworkOptions = {
    * SDK updates, including deprecations and required upgrades.
    */
   appVersion?: string
+}
+export type CallbackOptions = {
+  preCreateIdentityCallback?: () => Promise<void>;
+  preEnableIdentityCallback?: () => Promise<void>;
 }
 
 /**
