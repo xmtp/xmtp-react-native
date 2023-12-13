@@ -1,4 +1,5 @@
 import { Signer, utils } from 'ethers'
+import { Subscription } from 'expo-modules-core'
 
 import Contacts from './Contacts'
 import type {
@@ -49,6 +50,8 @@ export class Client<ContentTypes> {
     >
   > {
     const options = defaultOptions(opts)
+    const { enableSubscription, createSubscription } =
+      this.setupSubscriptions(options)
     return new Promise<
       Client<
         ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
@@ -84,6 +87,8 @@ export class Client<ContentTypes> {
           options.appVersion
         )
       })()
+      this.removeSubscription(enableSubscription)
+      this.removeSubscription(createSubscription)
     })
   }
 
@@ -103,11 +108,15 @@ export class Client<ContentTypes> {
     >
   > {
     const options = defaultOptions(opts)
-
+    const { enableSubscription, createSubscription } =
+      this.setupSubscriptions(options)
     const address = await XMTPModule.createRandom(
       options.env,
       options.appVersion
     )
+    this.removeSubscription(enableSubscription)
+    this.removeSubscription(createSubscription)
+
     return new Client(address, opts?.codecs || [])
   }
 
@@ -172,6 +181,61 @@ export class Client<ContentTypes> {
       options.env,
       options.appVersion
     )
+  }
+
+  private static addSubscription(
+    event: string,
+    opts: ClientOptions,
+    callback: () => Promise<void> | void
+  ): Subscription | undefined {
+    if (this.hasEventCallback(event, opts)) {
+      return XMTPModule.emitter.addListener(event, callback)
+    }
+    return undefined
+  }
+
+  private static async executeCallback(
+    callback?: () => Promise<void> | void
+  ): Promise<void> {
+    await callback?.()
+  }
+
+  private static hasEventCallback(
+    event: string,
+    opts: CallbackOptions
+  ): boolean {
+    return opts?.[event] !== undefined
+  }
+
+  private static async removeSubscription(
+    subscription?: Subscription
+  ): Promise<void> {
+    if (subscription) {
+      subscription.remove()
+    }
+  }
+
+  private static setupSubscriptions(opts: ClientOptions): {
+    enableSubscription?: Subscription
+    createSubscription?: Subscription
+  } {
+    const enableSubscription = this.addSubscription(
+      'preEnableIdentityCallback',
+      opts,
+      async () => {
+        await this.executeCallback(opts?.preEnableIdentityCallback)
+      }
+    )
+
+    const createSubscription = this.addSubscription(
+      'preCreateIdentityCallback',
+      opts,
+      async () => {
+        await this.executeCallback(opts?.preCreateIdentityCallback)
+      }
+    )
+
+    return { enableSubscription, createSubscription }
   }
 
   constructor(
@@ -282,7 +346,7 @@ export class Client<ContentTypes> {
   }
 }
 
-export type ClientOptions = NetworkOptions
+export type ClientOptions = NetworkOptions & CallbackOptions
 export type NetworkOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
@@ -299,6 +363,11 @@ export type NetworkOptions = {
    * SDK updates, including deprecations and required upgrades.
    */
   appVersion?: string
+}
+
+export type CallbackOptions = {
+  preCreateIdentityCallback?: () => Promise<void> | void
+  preEnableIdentityCallback?: () => Promise<void> | void
 }
 
 /**
