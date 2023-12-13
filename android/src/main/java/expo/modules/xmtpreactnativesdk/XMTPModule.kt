@@ -27,6 +27,7 @@ import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
+import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreparedMessage
 import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
@@ -146,10 +147,14 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
+            val preCreateIdentityCallback: PreEventCallback? =
+                preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
+            val preEnableIdentityCallback: PreEventCallback? =
+                preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
@@ -166,9 +171,14 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
+            val preCreateIdentityCallback: PreEventCallback? =
+                preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
+            val preEnableIdentityCallback: PreEventCallback? =
+                preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
