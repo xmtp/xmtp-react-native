@@ -128,7 +128,14 @@ class XMTPModule : Module() {
 
     override fun definition() = ModuleDefinition {
         Name("XMTP")
-        Events("sign", "authed", "conversation", "message", "preEnableIdentityCallback", "preCreateIdentityCallback")
+        Events(
+            "sign",
+            "authed",
+            "conversation",
+            "message",
+            "preEnableIdentityCallback",
+            "preCreateIdentityCallback"
+        )
 
         Function("address") { clientAddress: String ->
             logV("address")
@@ -143,7 +150,11 @@ class XMTPModule : Module() {
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
-            val options = ClientOptions(api = apiEnvironments(environment, appVersion), preCreateIdentityCallback = preCreateIdentityCallback, preEnableIdentityCallback = preEnableIdentityCallback)
+            val options = ClientOptions(
+                api = apiEnvironments(environment, appVersion),
+                preCreateIdentityCallback = preCreateIdentityCallback,
+                preEnableIdentityCallback = preEnableIdentityCallback
+            )
             clients[address] = Client().create(account = reactSigner, options = options)
             signer = null
             sendEvent("authed")
@@ -158,7 +169,11 @@ class XMTPModule : Module() {
         AsyncFunction("createRandom") { environment: String, appVersion: String? ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
-            val options = ClientOptions(api = apiEnvironments(environment, appVersion), preCreateIdentityCallback = preCreateIdentityCallback, preEnableIdentityCallback = preEnableIdentityCallback)
+            val options = ClientOptions(
+                api = apiEnvironments(environment, appVersion),
+                preCreateIdentityCallback = preCreateIdentityCallback,
+                preEnableIdentityCallback = preEnableIdentityCallback
+            )
             val randomClient = Client().create(account = privateKey, options = options)
             clients[randomClient.address] = randomClient
             randomClient.address
