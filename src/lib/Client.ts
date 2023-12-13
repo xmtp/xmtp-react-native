@@ -84,7 +84,9 @@ export class Client<ContentTypes> {
         XMTPModule.auth(
           await signer.getAddress(),
           options.env,
-          options.appVersion
+          options.appVersion,
+          Boolean(createSubscription),
+          Boolean(enableSubscription)
         )
       })()
       this.removeSubscription(enableSubscription)
@@ -112,7 +114,9 @@ export class Client<ContentTypes> {
       this.setupSubscriptions(options)
     const address = await XMTPModule.createRandom(
       options.env,
-      options.appVersion
+      options.appVersion,
+      Boolean(createSubscription),
+      Boolean(enableSubscription)
     )
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
