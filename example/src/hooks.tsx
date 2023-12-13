@@ -7,9 +7,9 @@ import {
   EncryptedLocalAttachment,
   ReactionContent,
   RemoteAttachmentContent,
+  useXmtp,
 } from 'xmtp-react-native-sdk'
 
-import { useXmtp } from './XmtpContext'
 import { downloadFile, uploadFile } from './storage'
 
 /**
