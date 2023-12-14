@@ -342,12 +342,18 @@ export async function isDenied(
   return await XMTPModule.isDenied(clientAddress, address)
 }
 
-export function denyContacts(clientAddress: string, addresses: string[]) {
-  XMTPModule.denyContacts(clientAddress, addresses)
+export async function denyContacts(
+  clientAddress: string,
+  addresses: string[]
+): Promise<void> {
+  return await XMTPModule.denyContacts(clientAddress, addresses)
 }
 
-export function allowContacts(clientAddress: string, addresses: string[]) {
-  XMTPModule.allowContacts(clientAddress, addresses)
+export async function allowContacts(
+  clientAddress: string,
+  addresses: string[]
+): Promise<void> {
+  return await XMTPModule.allowContacts(clientAddress, addresses)
 }
 
 export async function refreshConsentList(

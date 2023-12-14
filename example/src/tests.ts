@@ -648,7 +648,7 @@ test('canManagePreferences', async () => {
     )
   }
 
-  bo.contacts.deny([alixConversation.peerAddress])
+  await bo.contacts.deny([alixConversation.peerAddress])
   await delayToPropogate()
 
   const deniedState = await bo.contacts.isDenied(alixConversation.peerAddress)
