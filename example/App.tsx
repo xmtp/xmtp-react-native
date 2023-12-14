@@ -22,7 +22,7 @@ export default function App() {
         name: "XMTP Example",
         description: "This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with.",
         logoUrl: "https://pbs.twimg.com/profile_images/1668323456935510016/2c_Ue8dF_400x400.jpg",
-        url: "https://github.com/xmtp/xmtp-react-native",
+        url: "https://xmtp.org",
       }}
       supportedWallets={[
         walletConnect({
