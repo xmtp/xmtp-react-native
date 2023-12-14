@@ -56,7 +56,7 @@ export default function LaunchScreen({
 
   return (
     <ScrollView>
-      <ConnectWallet />
+      <ConnectWallet theme='dark'/>
       <Text
         style={{
           fontSize: 16,
