@@ -1,9 +1,9 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import React, { useState } from 'react'
 import { Button, ScrollView, Text, TextInput } from 'react-native'
+import { useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
-import { useXmtp } from './XmtpContext'
 
 export default function ConversationCreateScreen({
   route,

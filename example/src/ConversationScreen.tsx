@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker'
 import type { ImagePickerAsset } from 'expo-image-picker'
 import { PermissionStatus } from 'expo-modules-core'
 import moment from 'moment'
-import React, { useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   Button,
   FlatList,
@@ -30,11 +30,10 @@ import {
   DecodedMessage,
   StaticAttachmentContent,
   ReplyContent,
-  Client,
+  useClient,
 } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
-import { useXmtp } from './XmtpContext'
 import {
   useConversation,
   useMessage,
@@ -57,7 +56,7 @@ export default function ConversationScreen({
 }: NativeStackScreenProps<NavigationParamList, 'conversation'>) {
   const { topic } = route.params
   const messageListRef = useRef<FlatList>(null)
-  let {
+  const {
     data: messages,
     refetch: refreshMessages,
     isFetching,
@@ -74,10 +73,15 @@ export default function ConversationScreen({
     fileUri: attachment?.image?.uri || attachment?.file?.uri,
     mimeType: attachment?.file?.mimeType,
   })
-  messages = (messages || []).filter(
-    (message) => !hiddenMessageTypes.includes(message.contentTypeId)
+
+  const filteredMessages = useMemo(
+    () =>
+      (messages ?? [])?.filter(
+        (message) => !hiddenMessageTypes.includes(message.contentTypeId)
+      ),
+    [messages]
   )
-  // console.log("messages", JSON.stringify(messages, null, 2));
+
   const sendMessage = async (content: any) => {
     setSending(true)
     console.log('Sending message', content)
@@ -102,16 +106,22 @@ export default function ConversationScreen({
   const sendRemoteAttachmentMessage = () =>
     sendMessage({ remoteAttachment }).then(() => setAttachment(null))
   const sendTextMessage = () => sendMessage({ text }).then(() => setText(''))
-  const scrollToMessageId = (messageId: string) => {
-    const index = (messages || []).findIndex((m) => m.id === messageId)
-    if (index === -1) {
-      return
-    }
-    return messageListRef.current?.scrollToIndex({
-      index,
-      animated: true,
-    })
-  }
+  const scrollToMessageId = useCallback(
+    (messageId: string) => {
+      const index = (filteredMessages || []).findIndex(
+        (m) => m.id === messageId
+      )
+      if (index === -1) {
+        return
+      }
+      return messageListRef.current?.scrollToIndex({
+        index,
+        animated: true,
+      })
+    },
+    [filteredMessages]
+  )
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -142,7 +152,7 @@ export default function ConversationScreen({
             contentContainerStyle={{ paddingBottom: 100 }}
             refreshing={isFetching || isRefetching}
             onRefresh={refreshMessages}
-            data={messages}
+            data={filteredMessages}
             inverted
             keyboardDismissMode="none"
             keyExtractor={(message) => message.id}
@@ -154,9 +164,9 @@ export default function ConversationScreen({
                 onReply={() => setReplyingTo(message.id)}
                 onMessageReferencePress={scrollToMessageId}
                 showSender={
-                  index === (messages || []).length - 1 ||
-                  (index + 1 < (messages || []).length &&
-                    messages![index + 1].senderAddress !==
+                  index === (filteredMessages || []).length - 1 ||
+                  (index + 1 < (filteredMessages || []).length &&
+                    filteredMessages![index + 1].senderAddress !==
                       message.senderAddress)
                 }
               />
@@ -1046,7 +1056,7 @@ function MessageContents({
   contentTypeId: string
   content: any
 }) {
-  const { client }: { client: Client<any> } = useXmtp()
+  const { client } = useClient()
 
   if (contentTypeId === 'xmtp.org/text:1.0') {
     const text: string = content
@@ -1080,8 +1090,8 @@ function MessageContents({
   if (contentTypeId === 'xmtp.org/reply:1.0') {
     const replyContent: ReplyContent = content
     const replyContentType = replyContent.contentType
-    const codec = client.codecRegistry[replyContentType]
-    const actualReplyContent = codec.decode(replyContent.content)
+    const codec = client?.codecRegistry[replyContentType]
+    const actualReplyContent = codec?.decode(replyContent.content)
 
     return (
       <View>
