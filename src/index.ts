@@ -21,8 +21,6 @@ export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
 export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
 export { TextCodec } from './lib/NativeCodecs/TextCodec'
-export * from './hooks'
-export * from './context'
 
 const EncodedContent = content.EncodedContent
 

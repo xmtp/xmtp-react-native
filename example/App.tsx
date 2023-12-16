@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native'
+import React from 'react'
 import { Button, Platform } from 'react-native'
 import { QueryClient, QueryClientProvider } from 'react-query'
-import { XmtpProvider } from 'xmtp-react-native-sdk'
 
 import ConversationCreateScreen from './src/ConversationCreateScreen'
 import ConversationScreen from './src/ConversationScreen'
@@ -9,12 +9,13 @@ import HomeScreen from './src/HomeScreen'
 import LaunchScreen from './src/LaunchScreen'
 import { Navigator } from './src/Navigation'
 import TestScreen from './src/TestScreen'
+import { XmtpContextProvider } from './src/XmtpContext'
 
 const queryClient = new QueryClient()
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <XmtpProvider>
+      <XmtpContextProvider>
         <NavigationContainer>
           <Navigator.Navigator>
             <Navigator.Screen
@@ -70,7 +71,7 @@ export default function App() {
             />
           </Navigator.Navigator>
         </NavigationContainer>
-      </XmtpProvider>
+      </XmtpContextProvider>
     </QueryClientProvider>
   )
 }

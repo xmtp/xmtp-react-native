@@ -1,10 +1,10 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import React, { useCallback } from 'react'
+import React from 'react'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
 import * as XMTP from 'xmtp-react-native-sdk'
-import { useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
+import { useXmtp } from './XmtpContext'
 import { useSavedKeys } from './hooks'
 
 const appVersion = 'XMTP_RN_EX/0.0.1'
@@ -22,26 +22,24 @@ export default function LaunchScreen({
 }: NativeStackScreenProps<NavigationParamList, 'launch'>) {
   const { setClient } = useXmtp()
   const savedKeys = useSavedKeys()
-  const configureWallet = useCallback(
-    (label: string, configuring: Promise<XMTP.Client>) => {
-      console.log('Connecting XMTP client', label)
-      configuring
-        .then(async (client) => {
-          console.log('Connected XMTP client', label, {
-            address: client.address,
-          })
-          setClient(client)
-          navigation.navigate('home')
-          // Save the configured client keys for use in later sessions.
-          const keyBundle = await client.exportKeyBundle()
-          await savedKeys.save(keyBundle)
+  const configureWallet = (
+    label: string,
+    configuring: Promise<XMTP.Client>
+  ) => {
+    console.log('Connecting XMTP client', label)
+    configuring
+      .then(async (client) => {
+        console.log('Connected XMTP client', label, {
+          address: client.address,
         })
-        .catch((err) =>
-          console.log('Unable to connect XMTP client', label, err)
-        )
-    },
-    []
-  )
+        setClient(client)
+        navigation.navigate('home')
+        // Save the configured client keys for use in later sessions.
+        const keyBundle = await client.exportKeyBundle()
+        await savedKeys.save(keyBundle)
+      })
+      .catch((err) => console.log('Unable to connect XMTP client', label, err))
+  }
   return (
     <ScrollView>
       <Text
