@@ -21,6 +21,8 @@ export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
 export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
 export { TextCodec } from './lib/NativeCodecs/TextCodec'
+export * from './hooks'
+export * from './context'
 
 const EncodedContent = content.EncodedContent
 
@@ -357,12 +359,18 @@ export async function isDenied(
   return await XMTPModule.isDenied(clientAddress, address)
 }
 
-export function denyContacts(clientAddress: string, addresses: string[]) {
-  XMTPModule.denyContacts(clientAddress, addresses)
+export async function denyContacts(
+  clientAddress: string,
+  addresses: string[]
+): Promise<void> {
+  return await XMTPModule.denyContacts(clientAddress, addresses)
 }
 
-export function allowContacts(clientAddress: string, addresses: string[]) {
-  XMTPModule.allowContacts(clientAddress, addresses)
+export async function allowContacts(
+  clientAddress: string,
+  addresses: string[]
+): Promise<void> {
+  return await XMTPModule.allowContacts(clientAddress, addresses)
 }
 
 export async function refreshConsentList(

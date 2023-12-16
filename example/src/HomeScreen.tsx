@@ -9,9 +9,8 @@ import {
   Text,
   View,
 } from 'react-native'
-import { Conversation, Client } from 'xmtp-react-native-sdk'
+import { Conversation, Client, useXmtp } from 'xmtp-react-native-sdk'
 
-import { useXmtp } from './XmtpContext'
 import { useConversationList, useMessages } from './hooks'
 
 /// Show the user's list of conversations.

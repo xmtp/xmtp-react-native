@@ -161,6 +161,7 @@ class XMTPModule : Module() {
                 preEnableIdentityCallback = preEnableIdentityCallback
             )
             clients[address] = Client().create(account = reactSigner, options = options)
+            ContentJson.Companion
             signer = null
             sendEvent("authed")
         }
@@ -185,6 +186,7 @@ class XMTPModule : Module() {
                 preEnableIdentityCallback = preEnableIdentityCallback
             )
             val randomClient = Client().create(account = privateKey, options = options)
+            ContentJson.Companion
             clients[randomClient.address] = randomClient
             randomClient.address
         }
@@ -201,6 +203,7 @@ class XMTPModule : Module() {
                         )
                     )
                 val client = Client().buildFromBundle(bundle = bundle, options = options)
+                ContentJson.Companion
                 clients[client.address] = client
                 client.address
             } catch (e: Exception) {

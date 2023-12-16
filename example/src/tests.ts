@@ -74,6 +74,14 @@ test('can make a client', async () => {
     env: 'local',
     appVersion: 'Testing/0.0.0',
   })
+  client.register(new RemoteAttachmentCodec())
+  if (Object.keys(client.codecRegistry).length !== 2) {
+    throw new Error(
+      `Codecs length should be 2 not ${
+        Object.keys(client.codecRegistry).length
+      }`
+    )
+  }
   return client.address.length > 0
 })
 
@@ -648,7 +656,7 @@ test('canManagePreferences', async () => {
     )
   }
 
-  bo.contacts.deny([alixConversation.peerAddress])
+  await bo.contacts.deny([alixConversation.peerAddress])
   await delayToPropogate()
 
   const deniedState = await bo.contacts.isDenied(alixConversation.peerAddress)
