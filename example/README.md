@@ -8,10 +8,11 @@ Follow the [React Native guide](https://reactnative.dev/docs/environment-setup) 
 To use the example app, run:
 
 ```bash
-npm install
+yarn
 cd example
-npm install --force
-npm run [ios or android]
+yarn
+npx pod-install
+yarn run [ios or android]
 ```
 
 ## Run example app unit tests on local emulators
