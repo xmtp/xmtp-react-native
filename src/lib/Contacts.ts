@@ -17,12 +17,12 @@ export default class Contacts {
     return await XMTPModule.isDenied(this.client.address, address)
   }
 
-  async deny(addresses: string[]): Promise<void> {
-    return await XMTPModule.denyContacts(this.client.address, addresses)
+  deny(addresses: string[]) {
+    XMTPModule.denyContacts(this.client.address, addresses)
   }
 
-  async allow(addresses: string[]): Promise<void> {
-    return await XMTPModule.allowContacts(this.client.address, addresses)
+  allow(addresses: string[]) {
+    XMTPModule.allowContacts(this.client.address, addresses)
   }
 
   async refreshConsentList(): Promise<ConsentListEntry[]> {
