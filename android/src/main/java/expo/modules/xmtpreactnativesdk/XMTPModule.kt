@@ -145,6 +145,7 @@ class XMTPModule : Module() {
             signer = reactSigner
             val options = ClientOptions(api = apiEnvironments(environment, appVersion))
             clients[address] = Client().create(account = reactSigner, options = options)
+            ContentJson.Companion
             signer = null
             sendEvent("authed")
         }
@@ -160,6 +161,7 @@ class XMTPModule : Module() {
             val privateKey = PrivateKeyBuilder()
             val options = ClientOptions(api = apiEnvironments(environment, appVersion))
             val randomClient = Client().create(account = privateKey, options = options)
+            ContentJson.Companion
             clients[randomClient.address] = randomClient
             randomClient.address
         }
@@ -176,6 +178,7 @@ class XMTPModule : Module() {
                         )
                     )
                 val client = Client().buildFromBundle(bundle = bundle, options = options)
+                ContentJson.Companion
                 clients[client.address] = client
                 client.address
             } catch (e: Exception) {
