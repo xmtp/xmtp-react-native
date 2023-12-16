@@ -33,9 +33,17 @@ export function address(): string {
 export async function auth(
   address: string,
   environment: 'local' | 'dev' | 'production',
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  hasCreateIdentityCallback?: boolean | undefined,
+  hasEnableIdentityCallback?: boolean | undefined
 ) {
-  return await XMTPModule.auth(address, environment, appVersion)
+  return await XMTPModule.auth(
+    address,
+    environment,
+    appVersion,
+    hasCreateIdentityCallback,
+    hasEnableIdentityCallback
+  )
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
@@ -44,9 +52,16 @@ export async function receiveSignature(requestID: string, signature: string) {
 
 export async function createRandom(
   environment: 'local' | 'dev' | 'production',
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  hasCreateIdentityCallback?: boolean | undefined,
+  hasEnableIdentityCallback?: boolean | undefined
 ): Promise<string> {
-  return await XMTPModule.createRandom(environment, appVersion)
+  return await XMTPModule.createRandom(
+    environment,
+    appVersion,
+    hasCreateIdentityCallback,
+    hasEnableIdentityCallback
+  )
 }
 
 export async function createFromKeyBundle(

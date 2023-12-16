@@ -51,7 +51,7 @@ public class XMTPModule: Module {
 	public func definition() -> ModuleDefinition {
 		Name("XMTP")
 
-		Events("sign", "authed", "conversation", "message")
+		Events("sign", "authed", "conversation", "message", "preEnableIdentityCallback", "preCreateIdentityCallback")
 
 		AsyncFunction("address") { (clientAddress: String) -> String in
 			if let client = await clientsManager.getClient(key: clientAddress) {
@@ -64,10 +64,12 @@ public class XMTPModule: Module {
 		//
 		// Auth functions
 		//
-		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?) in
+		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) in
 			let signer = ReactNativeSigner(module: self, address: address)
 			self.signer = signer
-			let options = createClientConfig(env: environment, appVersion: appVersion)
+			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
+			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 			try await clientsManager.updateClient(key: address, client: await XMTP.Client.create(account: signer, options: options))
 			self.signer = nil
 			sendEvent("authed")
@@ -78,9 +80,12 @@ public class XMTPModule: Module {
 		}
 
 		// Generate a random wallet and set the client to that
-		AsyncFunction("createRandom") { (environment: String, appVersion: String?) -> String in
+		AsyncFunction("createRandom") { (environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) -> String in
 			let privateKey = try PrivateKey.generate()
-			let options = createClientConfig(env: environment, appVersion: appVersion)
+			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
+			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+
+			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 			let client = try await Client.create(account: privateKey, options: options)
 
 			await clientsManager.updateClient(key: client.address, client: client)
@@ -146,14 +151,14 @@ public class XMTPModule: Module {
 			return try await client.canMessage(peerAddress)
 		}
 
-        AsyncFunction("staticCanMessage") { (peerAddress: String, environment: String, appVersion: String?) -> Bool in
-            do {
-        		let options = createClientConfig(env: environment, appVersion: appVersion)
-              	return try await XMTP.Client.canMessage(peerAddress, options: options)
-            } catch {
-                throw Error.noClient
-            }
-        }
+		AsyncFunction("staticCanMessage") { (peerAddress: String, environment: String, appVersion: String?) -> Bool in
+			do {
+				let options = createClientConfig(env: environment, appVersion: appVersion)
+				return try await XMTP.Client.canMessage(peerAddress, options: options)
+			} catch {
+				throw Error.noClient
+			}
+		}
 
 		AsyncFunction("encryptAttachment") { (clientAddress: String, fileJson: String) -> String in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
@@ -506,36 +511,36 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			let consentList = try await client.contacts.refreshConsentList()
-            
-            return try consentList.entries.compactMap { entry in
-                try ConsentWrapper.encode(entry.value)
-            }
+
+			return try consentList.entries.compactMap { entry in
+				try ConsentWrapper.encode(entry.value)
+			}
 		}
 
 		AsyncFunction("conversationConsentState") { (clientAddress: String, conversationTopic: String) -> String in
 			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
 				throw Error.conversationNotFound(conversationTopic)
 			}
-            return ConsentWrapper.consentStateToString(state: await conversation.consentState())
+			return ConsentWrapper.consentStateToString(state: await conversation.consentState())
 		}
 
-        AsyncFunction("consentList") { (clientAddress: String) -> [String] in
-            guard let client = await clientsManager.getClient(key: clientAddress) else {
-                throw Error.noClient
-            }
-            let entries = await client.contacts.consentList.entries
-            
-            return try entries.compactMap { entry in
-                try ConsentWrapper.encode(entry.value)
-            }
-        }
+		AsyncFunction("consentList") { (clientAddress: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			let entries = await client.contacts.consentList.entries
+
+			return try entries.compactMap { entry in
+				try ConsentWrapper.encode(entry.value)
+			}
+		}
 	}
 
 	//
 	// Helpers
 	//
 
-    func createClientConfig(env: String, appVersion: String?) -> XMTP.ClientOptions {
+	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
 		switch env {
 		case "local":
@@ -543,19 +548,19 @@ public class XMTPModule: Module {
 				env: XMTP.XMTPEnvironment.local,
 				isSecure: false,
 				appVersion: appVersion
-			))
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 		case "production":
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
 				isSecure: true,
 				appVersion: appVersion
-			))
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 		default:
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
 				isSecure: true,
 				appVersion: appVersion
-			))
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 		}
 	}
 
@@ -664,5 +669,13 @@ public class XMTPModule: Module {
 
 	func getConversationsKey(clientAddress: String) -> String {
 		return "conversations:\(clientAddress)"
+	}
+
+	func preEnableIdentityCallback() {
+		sendEvent("preEnableIdentityCallback")
+	}
+
+	func preCreateIdentityCallback() {
+		sendEvent("preCreateIdentityCallback")
 	}
 }

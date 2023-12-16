@@ -27,6 +27,7 @@ import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
+import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreparedMessage
 import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
@@ -128,7 +129,14 @@ class XMTPModule : Module() {
 
     override fun definition() = ModuleDefinition {
         Name("XMTP")
-        Events("sign", "authed", "conversation", "message")
+        Events(
+            "sign",
+            "authed",
+            "conversation",
+            "message",
+            "preEnableIdentityCallback",
+            "preCreateIdentityCallback"
+        )
 
         Function("address") { clientAddress: String ->
             logV("address")
@@ -139,11 +147,19 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
-            val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+            val preCreateIdentityCallback: PreEventCallback? =
+                preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
+            val preEnableIdentityCallback: PreEventCallback? =
+                preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+            val options = ClientOptions(
+                api = apiEnvironments(environment, appVersion),
+                preCreateIdentityCallback = preCreateIdentityCallback,
+                preEnableIdentityCallback = preEnableIdentityCallback
+            )
             clients[address] = Client().create(account = reactSigner, options = options)
             ContentJson.Companion
             signer = null
@@ -156,10 +172,19 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
-            val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+            val preCreateIdentityCallback: PreEventCallback? =
+                preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
+            val preEnableIdentityCallback: PreEventCallback? =
+                preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+
+            val options = ClientOptions(
+                api = apiEnvironments(environment, appVersion),
+                preCreateIdentityCallback = preCreateIdentityCallback,
+                preEnableIdentityCallback = preEnableIdentityCallback
+            )
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
             clients[randomClient.address] = randomClient
@@ -686,6 +711,14 @@ class XMTPModule : Module() {
         if (isDebugEnabled) {
             Log.v("XMTPModule", msg)
         }
+    }
+
+    private val preEnableIdentityCallback: suspend () -> Unit = {
+        sendEvent("preEnableIdentityCallback")
+    }
+
+    private val preCreateIdentityCallback: suspend () -> Unit = {
+        sendEvent("preCreateIdentityCallback")
     }
 }
 

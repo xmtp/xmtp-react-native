@@ -751,3 +751,37 @@ test('register and use custom content types', async () => {
 
   return true
 })
+
+test('calls preCreateIdentityCallback when supplied', async () => {
+  let isCallbackCalled = false
+  const preCreateIdentityCallback = () => {
+    isCallbackCalled = true
+  }
+  await Client.createRandom({
+    env: 'local',
+    preCreateIdentityCallback,
+  })
+
+  if (!isCallbackCalled) {
+    throw new Error('preCreateIdentityCallback not called')
+  }
+
+  return isCallbackCalled
+})
+
+test('calls preEnableIdentityCallback when supplied', async () => {
+  let isCallbackCalled = false
+  const preEnableIdentityCallback = () => {
+    isCallbackCalled = true
+  }
+  await Client.createRandom({
+    env: 'local',
+    preEnableIdentityCallback,
+  })
+
+  if (!isCallbackCalled) {
+    throw new Error('preEnableIdentityCallback not called')
+  }
+
+  return isCallbackCalled
+})
