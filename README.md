@@ -52,7 +52,6 @@ yarn i @xmtp/react-native-sdk
 In the `ios` directory, update your `Podfile` file as follows:
 
 - Set this value: `platform :ios, '16.0'`. This is required by XMTP.
-- Add this line: `pod 'secp256k1.swift', :modular_headers => true`. This is required for web3.swift.
 
 ```bash
 npx pod-install
