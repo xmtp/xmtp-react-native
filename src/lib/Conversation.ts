@@ -229,7 +229,7 @@ export class Conversation<ContentTypes> {
   ): () => void {
     XMTP.subscribeToMessages(this.client.address, this.topic)
     const hasSeen = {}
-    XMTP.emitter.addListener(
+    const messageSubscription = XMTP.emitter.addListener(
       'message',
       async ({
         clientAddress,
@@ -253,6 +253,7 @@ export class Conversation<ContentTypes> {
     )
 
     return () => {
+      messageSubscription.remove()
       XMTP.unsubscribeFromMessages(this.client.address, this.topic)
     }
   }
