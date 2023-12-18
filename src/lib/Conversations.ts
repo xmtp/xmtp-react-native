@@ -63,8 +63,7 @@ export default class Conversations<ContentTypes> {
    * This method subscribes to conversations in real-time and listens for incoming conversation events.
    * When a new conversation is detected, the provided callback function is invoked with the details of the conversation.
    * @param {Function} callback - A callback function that will be invoked with the new Conversation when a conversation is started.
-   * @returns {Promise<void>} A Promise that resolves when the stream is set up.
-   * @warning This stream will continue infinitely. To end the stream, you can call {@linkcode Conversations.cancelStream | cancelStream()}.
+   * @returns {Promise<void>} A function that, when called, unsubscribes from the message stream and ends real-time updates..
    */
   async stream(
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>
@@ -101,7 +100,7 @@ export default class Conversations<ContentTypes> {
    *
    * This method subscribes to all conversations in real-time and listens for incoming and outgoing messages.
    * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
-   * @returns {Promise<void>} A Promise that resolves when the stream is set up.
+   * @returns {Promise<void>} A function that, when called, unsubscribes from all the messages stream and ends real-time updates.
    */
   async streamAllMessages(
     callback: (message: DecodedMessage) => Promise<void>
