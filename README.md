@@ -152,7 +152,7 @@ These conversations include all conversations for a user **regardless of which a
 You can also listen for new conversations being started in real-time. This will allow applications to display incoming messages from new contacts.
 
 > **Warning**  
-> This stream will continue infinitely. To end the stream you can call `cancelStream()`.
+> This stream will continue infinitely. To end the stream you can call the method returned by `conversations.stream()`.
 
 ```tsx
 const stream = await xmtp.conversations.stream()
@@ -222,7 +222,7 @@ You can listen for any new messages (incoming or outgoing) in a conversation by 
 
 A successfully received message (that makes it through the decoding and decryption without throwing) can be trusted to be authentic, i.e. that it was sent by the owner of the `message.senderAddress` wallet and that it wasn't modified in transit. The `message.sent` timestamp can be trusted to have been set by the sender.
 
-The Stream returned by the `stream` methods is an asynchronous iterator and as such usable by a for-await-of loop. Note however that it is by its nature infinite, so any looping construct used with it will not terminate, unless the termination is explicitly initiated by calling `cancelStreamMessages()`.
+The Stream returned by the `stream` methods is an asynchronous iterator and as such usable by a for-await-of loop. Note however that it is by its nature infinite, so any looping construct used with it will not terminate, unless the termination is explicitly initiated by calling the method returned by `conversation.streamMessages()`.
 
 ```tsx
 const conversation = await xmtp.conversations.newConversation(
@@ -245,7 +245,7 @@ To listen for any new messages from _all_ conversations, use `conversations.stre
 > There is a chance this stream can miss messages if multiple new conversations are received in the time it takes to update the stream to include a new conversation.
 
 > **Warning**  
-> This stream will continue infinitely. To end the stream you can call `cancelStreamAllMessages()`.
+> This stream will continue infinitely. To end the stream you can call the method returned by `conversations.streamAllMessages()`.
 
 ```tsx
 for await (const message of await xmtp.conversations.streamAllMessages()) {
