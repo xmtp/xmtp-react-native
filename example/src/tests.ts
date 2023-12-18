@@ -74,6 +74,14 @@ test('can make a client', async () => {
     env: 'local',
     appVersion: 'Testing/0.0.0',
   })
+  client.register(new RemoteAttachmentCodec())
+  if (Object.keys(client.codecRegistry).length !== 2) {
+    throw new Error(
+      `Codecs length should be 2 not ${
+        Object.keys(client.codecRegistry).length
+      }`
+    )
+  }
   return client.address.length > 0
 })
 
@@ -648,7 +656,7 @@ test('canManagePreferences', async () => {
     )
   }
 
-  bo.contacts.deny([alixConversation.peerAddress])
+  await bo.contacts.deny([alixConversation.peerAddress])
   await delayToPropogate()
 
   const deniedState = await bo.contacts.isDenied(alixConversation.peerAddress)
@@ -742,4 +750,38 @@ test('register and use custom content types', async () => {
   )
 
   return true
+})
+
+test('calls preCreateIdentityCallback when supplied', async () => {
+  let isCallbackCalled = false
+  const preCreateIdentityCallback = () => {
+    isCallbackCalled = true
+  }
+  await Client.createRandom({
+    env: 'local',
+    preCreateIdentityCallback,
+  })
+
+  if (!isCallbackCalled) {
+    throw new Error('preCreateIdentityCallback not called')
+  }
+
+  return isCallbackCalled
+})
+
+test('calls preEnableIdentityCallback when supplied', async () => {
+  let isCallbackCalled = false
+  const preEnableIdentityCallback = () => {
+    isCallbackCalled = true
+  }
+  await Client.createRandom({
+    env: 'local',
+    preEnableIdentityCallback,
+  })
+
+  if (!isCallbackCalled) {
+    throw new Error('preEnableIdentityCallback not called')
+  }
+
+  return isCallbackCalled
 })

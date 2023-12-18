@@ -2,7 +2,6 @@
   "name": "xmtp-react-native-sdk-example",
   "version": "1.0.0",
   "scripts": {
-    "preinstall": "npm install --package-lock-only --ignore-scripts && npx npm-force-resolutions",
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -60,7 +59,10 @@
   "private": true,
   "expo": {
     "autolinking": {
-      "nativeModulesDir": ".."
+      "nativeModulesDir": "..",
+      "exclude": [
+        "expo-file-system"
+      ]
     }
   }
 }

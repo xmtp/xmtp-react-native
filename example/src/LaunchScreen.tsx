@@ -1,11 +1,11 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import React, { useEffect } from 'react'
-import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
-import * as XMTP from 'xmtp-react-native-sdk'
 import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native"
+import React, { useCallback, useEffect } from 'react'
+import * as XMTP from 'xmtp-react-native-sdk'
+import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
-import { useXmtp } from './XmtpContext'
 import { useSavedKeys } from './hooks'
 
 const appVersion = 'XMTP_RN_EX/0.0.1'
@@ -24,34 +24,35 @@ export default function LaunchScreen({
   const signer = useSigner();
   const { setClient } = useXmtp()
   const savedKeys = useSavedKeys()
-  const configureWallet = (
-    label: string,
-    configuring: Promise<XMTP.Client>
-  ) => {
-    console.log('Connecting XMTP client', label)
-    configuring
-      .then(async (client) => {
-        console.log('Connected XMTP client', label, {
-          address: client.address,
+  const configureWallet = useCallback(
+    (label: string, configuring: Promise<XMTP.Client>) => {
+      console.log('Connecting XMTP client', label)
+      configuring
+        .then(async (client) => {
+          console.log('Connected XMTP client', label, {
+            address: client.address,
+          })
+          setClient(client)
+          navigation.navigate('home')
+          // Save the configured client keys for use in later sessions.
+          const keyBundle = await client.exportKeyBundle()
+          await savedKeys.save(keyBundle)
         })
-        setClient(client)
-        navigation.navigate('home')
-        // Save the configured client keys for use in later sessions.
-        const keyBundle = await client.exportKeyBundle()
-        await savedKeys.save(keyBundle)
-      })
-      .catch((err) => console.log('Unable to connect XMTP client', label, err))
-  }
-
+        .catch((err) =>
+          console.log('Unable to connect XMTP client', label, err)
+        )
+    },
+    []
+  )
   useEffect(() => {
     (async () => {
       if (signer) {
         configureWallet('dev', XMTP.Client.create(signer, {
           env: 'dev',
           appVersion,
-        }));
+        }))
       }
-    })();
+    })()
   }, [signer]);
 
   return (

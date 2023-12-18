@@ -21,6 +21,8 @@ export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
 export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
 export { TextCodec } from './lib/NativeCodecs/TextCodec'
+export * from './hooks'
+export * from './context'
 
 const EncodedContent = content.EncodedContent
 
@@ -31,9 +33,17 @@ export function address(): string {
 export async function auth(
   address: string,
   environment: 'local' | 'dev' | 'production',
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  hasCreateIdentityCallback?: boolean | undefined,
+  hasEnableIdentityCallback?: boolean | undefined
 ) {
-  return await XMTPModule.auth(address, environment, appVersion)
+  return await XMTPModule.auth(
+    address,
+    environment,
+    appVersion,
+    hasCreateIdentityCallback,
+    hasEnableIdentityCallback
+  )
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
@@ -42,9 +52,16 @@ export async function receiveSignature(requestID: string, signature: string) {
 
 export async function createRandom(
   environment: 'local' | 'dev' | 'production',
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  hasCreateIdentityCallback?: boolean | undefined,
+  hasEnableIdentityCallback?: boolean | undefined
 ): Promise<string> {
-  return await XMTPModule.createRandom(environment, appVersion)
+  return await XMTPModule.createRandom(
+    environment,
+    appVersion,
+    hasCreateIdentityCallback,
+    hasEnableIdentityCallback
+  )
 }
 
 export async function createFromKeyBundle(
@@ -342,12 +359,18 @@ export async function isDenied(
   return await XMTPModule.isDenied(clientAddress, address)
 }
 
-export function denyContacts(clientAddress: string, addresses: string[]) {
-  XMTPModule.denyContacts(clientAddress, addresses)
+export async function denyContacts(
+  clientAddress: string,
+  addresses: string[]
+): Promise<void> {
+  return await XMTPModule.denyContacts(clientAddress, addresses)
 }
 
-export function allowContacts(clientAddress: string, addresses: string[]) {
-  XMTPModule.allowContacts(clientAddress, addresses)
+export async function allowContacts(
+  clientAddress: string,
+  addresses: string[]
+): Promise<void> {
+  return await XMTPModule.allowContacts(clientAddress, addresses)
 }
 
 export async function refreshConsentList(

@@ -25,10 +25,10 @@ Use the [XMTP React Native example app](example) as a tool to start building an 
 Follow the [React Native guide](https://reactnative.dev/docs/environment-setup) to set up a CLI environment.
 
 ```bash
-npm install
+yarn
 cd example
-npm install --force
-npm run [ios or android]
+yarn
+yarn run [ios or android]
 ```
 
 ## Install in a managed Expo project
@@ -41,10 +41,10 @@ npx expo prebuild
 
 For bare React Native projects, [install and configure the `expo` package](https://docs.expo.dev/bare/installing-expo-modules/) before continuing.
 
-### Add the package to your npm dependencies
+### Add the package to your yarn dependencies
 
 ```bash
-npm i @xmtp/react-native-sdk
+yarn i @xmtp/react-native-sdk
 ```
 
 ### Configure for iOS
@@ -55,7 +55,7 @@ In the `ios` directory, update your `Podfile` file as follows:
 - Add this line: `pod 'secp256k1.swift', :modular_headers => true`. This is required for web3.swift.
 
 ```bash
-npm pod-install
+npx pod-install
 ```
 
 ### Configure for Android
