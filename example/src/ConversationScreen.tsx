@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker'
 import type { ImagePickerAsset } from 'expo-image-picker'
 import { PermissionStatus } from 'expo-modules-core'
 import moment from 'moment'
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import {
   Button,
   FlatList,
@@ -31,6 +31,7 @@ import {
   StaticAttachmentContent,
   ReplyContent,
   useClient,
+  unsubscribeFromMessages
 } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
@@ -121,6 +122,23 @@ export default function ConversationScreen({
     },
     [filteredMessages]
   )
+
+  const handleNewMessage = async (message: DecodedMessage) => {
+    // await refreshMessages();
+    console.log(message);
+  };
+
+  useEffect(() => {
+    // Subscribe to messages when the component mounts
+    let unsubscribe = conversation!.streamMessages(handleNewMessage);
+
+    // Unsubscribe from messages when the component unmounts
+    return () => {
+      if(conversation) {
+        unsubscribe()
+      }
+    };
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
