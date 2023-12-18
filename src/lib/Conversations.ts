@@ -68,9 +68,9 @@ export default class Conversations<ContentTypes> {
    */
   async stream(
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>
-  ) {
+  ): Promise<() => void> {
     XMTPModule.subscribeToConversations(this.client.address)
-    XMTPModule.emitter.addListener(
+    const conversationSubscription = XMTPModule.emitter.addListener(
       'conversation',
       async ({
         clientAddress,
@@ -90,6 +90,10 @@ export default class Conversations<ContentTypes> {
         await callback(new Conversation(this.client, conversation))
       }
     )
+    return () => {
+      conversationSubscription.remove()
+      XMTPModule.unsubscribeFromConversations(this.client.address)
+    }
   }
 
   /**
@@ -101,9 +105,9 @@ export default class Conversations<ContentTypes> {
    */
   async streamAllMessages(
     callback: (message: DecodedMessage) => Promise<void>
-  ): Promise<void> {
+  ): Promise<() => void> {
     XMTPModule.subscribeToAllMessages(this.client.address)
-    XMTPModule.emitter.addListener(
+    const messagesSubscription = XMTPModule.emitter.addListener(
       'message',
       async ({
         clientAddress,
@@ -123,19 +127,9 @@ export default class Conversations<ContentTypes> {
         await callback(DecodedMessage.fromObject(message, this.client))
       }
     )
-  }
-
-  /**
-   * Cancels the stream for new conversations.
-   */
-  cancelStream() {
-    XMTPModule.unsubscribeFromConversations(this.client.address)
-  }
-
-  /**
-   * Cancels the stream for new messages in all conversations.
-   */
-  cancelStreamAllMessages() {
-    XMTPModule.unsubscribeFromAllMessages(this.client.address)
+    return () => {
+      messagesSubscription.remove()
+      XMTPModule.unsubscribeFromAllMessages(this.client.address)
+    }
   }
 }

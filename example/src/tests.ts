@@ -361,15 +361,19 @@ test('can stream messages', async () => {
 
   // Record new conversation stream
   const allConversations: Conversation<any>[] = []
-  await alice.conversations.stream(async (conversation) => {
-    allConversations.push(conversation)
-  })
+  const cancelStream = await alice.conversations.stream(
+    async (conversation) => {
+      allConversations.push(conversation)
+    }
+  )
 
   // Record message stream across all conversations
   const allMessages: DecodedMessage[] = []
-  await alice.conversations.streamAllMessages(async (message) => {
-    allMessages.push(message)
-  })
+  const cancelStreamAllMessages = await alice.conversations.streamAllMessages(
+    async (message) => {
+      allMessages.push(message)
+    }
+  )
 
   // Start Bob starts a new conversation.
   const bobConvo = await bob.conversations.newConversation(alice.address, {
@@ -447,8 +451,8 @@ test('can stream messages', async () => {
       throw Error('Unexpected convo message topic ' + convoMessages[i].topic)
     }
   }
-  alice.conversations.cancelStream()
-  alice.conversations.cancelStreamAllMessages()
+  cancelStream()
+  cancelStreamAllMessages()
 
   return true
 })
@@ -586,9 +590,11 @@ test('can stream all messages', async () => {
 
   // Record message stream across all conversations
   const allMessages: DecodedMessage[] = []
-  await alix.conversations.streamAllMessages(async (message) => {
-    allMessages.push(message)
-  })
+  const cancelStreamAllMessages = await alix.conversations.streamAllMessages(
+    async (message) => {
+      allMessages.push(message)
+    }
+  )
 
   // Start Bob starts a new conversation.
   const boConvo = await bo.conversations.newConversation(alix.address)
@@ -617,7 +623,7 @@ test('can stream all messages', async () => {
     throw Error('Unexpected all messages count ' + allMessages.length)
   }
 
-  alix.conversations.cancelStreamAllMessages()
+  cancelStreamAllMessages()
 
   await alix.conversations.streamAllMessages(async (message) => {
     allMessages.push(message)
