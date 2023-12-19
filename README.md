@@ -155,14 +155,17 @@ You can also listen for new conversations being started in real-time. This will 
 > This stream will continue infinitely. To end the stream you can call the method returned by `conversations.stream()`.
 
 ```tsx
-const stream = await xmtp.conversations.stream()
-for await (const conversation of stream) {
-  console.log(`New conversation started with ${conversation.peerAddress}`)
-  // Say hello to your new friend
-  await conversation.send('Hi there!')
-  // Break from the loop to stop listening
-  break
-}
+const cancelStream = await xmtp.conversations.stream(
+  async (conversation) => {
+    console.log(`New conversation started with ${conversation.peerAddress}`)
+
+    // Say hello to your new friend
+    await conversation.send('Hi there!')
+  }
+)
+
+// To unsubscribe from the stream
+cancelStream()
 ```
 
 ### Start a new conversation
@@ -228,13 +231,16 @@ The Stream returned by the `stream` methods is an asynchronous iterator and as s
 const conversation = await xmtp.conversations.newConversation(
   '0x3F11b27F323b62B159D2642964fa27C46C841897'
 )
-for await (const message of await conversation.streamMessages()) {
+const cancelStream = await conversation.streamMessages(async (message) => {
   if (message.senderAddress === xmtp.address) {
     // This message was sent from me
     continue
   }
   console.log(`New message from ${message.senderAddress}: ${message.content}`)
-}
+})
+
+// To unsubscribe from the stream
+cancelStream()
 ```
 
 ### Listen for new messages in all conversations
@@ -248,13 +254,18 @@ To listen for any new messages from _all_ conversations, use `conversations.stre
 > This stream will continue infinitely. To end the stream you can call the method returned by `conversations.streamAllMessages()`.
 
 ```tsx
-for await (const message of await xmtp.conversations.streamAllMessages()) {
-  if (message.senderAddress === xmtp.address) {
-    // This message was sent from me
-    continue
+const cancelAllMessagesStream = await xmtp.conversations.streamAllMessages(
+  async (message) => {
+    if (message.senderAddress === xmtp.address) {
+      // This message was sent from me
+      continue
+    }
+    console.log(`New message from ${message.senderAddress}: ${message.content}`)
   }
-  console.log(`New message from ${message.senderAddress}: ${message.content}`)
-}
+)
+
+// To unsubscribe from the all messages stream
+cancelAllMessagesStream()
 ```
 
 ## Request and respect user consent
