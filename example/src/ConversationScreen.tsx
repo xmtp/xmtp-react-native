@@ -124,18 +124,18 @@ export default function ConversationScreen({
   )
 
   const handleNewMessage = async (message: DecodedMessage) => {
-    // await refreshMessages();
     console.log(message);
+    await refreshMessages();
   };
 
   useEffect(() => {
     // Subscribe to messages when the component mounts
-    let unsubscribe = conversation!.streamMessages(handleNewMessage);
+    let cancelStreamMessages = conversation!.streamMessages(handleNewMessage);
 
     // Unsubscribe from messages when the component unmounts
     return () => {
       if(conversation) {
-        unsubscribe()
+        cancelStreamMessages()
       }
     };
   }, []);
