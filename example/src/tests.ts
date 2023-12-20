@@ -281,6 +281,7 @@ test('can paginate batch messages', async () => {
     await bobConversation.send({ text: `Message ${i}` })
     await delayToPropogate()
   }
+  await bobConversation.send('')
 
   const messagesLimited: DecodedMessage[] = await alice.listBatchMessages([
     {
