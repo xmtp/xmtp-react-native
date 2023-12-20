@@ -86,11 +86,18 @@ export class DecodedMessage<ContentTypes = any> {
       const codec = this.client.codecRegistry[
         this.contentTypeId
       ] as JSContentCodec<ContentTypes>
-
+      if (!codec) {
+        throw new Error(
+          `no content type found ${JSON.stringify(this.contentTypeId)}`
+        )
+      }
       return codec.decode(encoded)
     } else {
       for (const codec of Object.values(this.client.codecRegistry)) {
-        if ('contentKey' in codec && this.nativeContent[codec.contentKey]) {
+        if (
+          ('contentKey' in codec && this.nativeContent[codec.contentKey]) ||
+          this.nativeContent.hasOwnProperty('text')
+        ) {
           return (codec as NativeContentCodec<ContentTypes>).decode(
             this.nativeContent
           )
