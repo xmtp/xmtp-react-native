@@ -304,6 +304,9 @@ test('can paginate batch messages', async () => {
     } as Query,
   ])
 
+  await bobConversation.send('')
+  await delayToPropogate()
+
   const messagesAsc: DecodedMessage[] = await alice.listBatchMessages([
     {
       contentTopic: bobConversation.topic,
@@ -315,8 +318,6 @@ test('can paginate batch messages', async () => {
     throw Error('Unexpected messagesLimited count ' + messagesLimited.length)
   }
 
-  const content: number = messagesLimited[0].content()
-  console.log('string', content)
   if (messagesLimited[0].content() !== 'Message 4') {
     throw Error(
       'Unexpected messagesLimited content ' + messagesLimited[0].content()
@@ -348,6 +349,10 @@ test('can paginate batch messages', async () => {
 
   if (messagesAsc[0].content() !== 'Initial Message') {
     throw Error('Unexpected messagesAsc content ' + messagesAsc[0].content())
+  }
+
+  if (messagesAsc[6].contentTypeId !== 'xmtp.org/text:1.0') {
+    throw Error('Unexpected messagesAsc content ' + messagesAsc[6].content())
   }
 
   return true
@@ -397,7 +402,6 @@ test('can stream messages', async () => {
     )
   }
   if (!bobConvo.createdAt) {
-    console.log('bobConvo', bobConvo)
     throw Error('Missing createdAt ' + bobConvo.createdAt)
   }
 

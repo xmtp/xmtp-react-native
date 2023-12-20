@@ -68,8 +68,6 @@ export class Conversation<ContentTypes> {
       | undefined
   ): Promise<DecodedMessage<ContentTypes>[]> {
     try {
-      console.log('message() client is', this.client)
-
       const messages = await XMTP.listMessages(
         this.client,
         this.topic,
