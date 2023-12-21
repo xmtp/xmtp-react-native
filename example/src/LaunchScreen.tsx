@@ -25,7 +25,7 @@ export default function LaunchScreen({
   const { setClient } = useXmtp()
   const savedKeys = useSavedKeys()
   const configureWallet = useCallback(
-    (label: string, configuring: Promise<XMTP.Client>) => {
+    (label: string, configuring: Promise<XMTP.Client<any>>) => {
       console.log('Connecting XMTP client', label)
       configuring
         .then(async (client) => {
@@ -44,12 +44,23 @@ export default function LaunchScreen({
     },
     []
   )
+
+  const preCreateIdentityCallback = () => {
+    console.log("Pre Create Identity Callback")
+  }
+
+  const preEnableIdentityCallback = () => {
+    console.log("Pre Enable Identity Callback")
+  }
+
   useEffect(() => {
     (async () => {
       if (signer) {
         configureWallet('dev', XMTP.Client.create(signer, {
           env: 'dev',
           appVersion,
+          preCreateIdentityCallback,
+          preEnableIdentityCallback,
         }))
       }
     })()
@@ -102,6 +113,8 @@ export default function LaunchScreen({
                 env: 'dev',
                 appVersion,
                 codecs: supportedCodecs,
+                preCreateIdentityCallback,
+                preEnableIdentityCallback,
               })
             )
           }}
@@ -118,6 +131,8 @@ export default function LaunchScreen({
                 env: 'local',
                 appVersion,
                 codecs: supportedCodecs,
+                preCreateIdentityCallback,
+                preEnableIdentityCallback,
               })
             )
           }}
