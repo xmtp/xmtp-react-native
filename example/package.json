@@ -12,11 +12,12 @@
     "@react-native-community/netinfo": "^11.2.0",
     "@react-navigation/native": "^6.1.6",
     "@react-navigation/native-stack": "^6.9.12",
-    "@thirdweb-dev/react-native": "^0.4",
-    "@thirdweb-dev/react-native-compat": "^0.4",
+    "@thirdweb-dev/react-native": "^0.5",
+    "@thirdweb-dev/react-native-compat": "^0.5",
     "ethers": "^5.7.2",
     "expo": "~48.0.18",
     "expo-document-picker": "^11.5.4",
+    "expo-file-system": "~15.2.2",
     "expo-image-picker": "^14.3.2",
     "expo-splash-screen": "~0.18.2",
     "expo-status-bar": "~1.4.4",
@@ -59,10 +60,7 @@
   "private": true,
   "expo": {
     "autolinking": {
-      "nativeModulesDir": "..",
-      "exclude": [
-        "expo-file-system"
-      ]
+      "nativeModulesDir": ".."
     }
   }
 }
