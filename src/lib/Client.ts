@@ -62,22 +62,32 @@ export class Client<ContentTypes> {
           'sign',
           async (message: { id: string; message: string }) => {
             const request: { id: string; message: string } = message
-            const signatureString = await signer.signMessage(request.message)
-            const eSig = utils.splitSignature(signatureString)
-            const r = hexToBytes(eSig.r)
-            const s = hexToBytes(eSig.s)
-            const sigBytes = new Uint8Array(65)
-            sigBytes.set(r)
-            sigBytes.set(s, r.length)
-            sigBytes[64] = eSig.recoveryParam
+            try {
+              const signatureString = await signer.signMessage(request.message)
+              const eSig = utils.splitSignature(signatureString)
+              const r = hexToBytes(eSig.r)
+              const s = hexToBytes(eSig.s)
+              const sigBytes = new Uint8Array(65)
+              sigBytes.set(r)
+              sigBytes.set(s, r.length)
+              sigBytes[64] = eSig.recoveryParam
 
-            const signature = Buffer.from(sigBytes).toString('base64')
+              const signature = Buffer.from(sigBytes).toString('base64')
 
-            XMTPModule.receiveSignature(request.id, signature)
+              XMTPModule.receiveSignature(request.id, signature)
+            } catch (e) {
+              const errorMessage = 'ERROR in create. User rejected signature'
+              console.info(errorMessage, e)
+              this.removeSubscription(enableSubscription)
+              this.removeSubscription(createSubscription)
+              reject(errorMessage)
+            }
           }
         )
 
         XMTPModule.emitter.addListener('authed', async () => {
+          this.removeSubscription(enableSubscription)
+          this.removeSubscription(createSubscription)
           const address = await signer.getAddress()
           resolve(new Client(address, opts?.codecs || []))
         })
@@ -89,8 +99,6 @@ export class Client<ContentTypes> {
           Boolean(enableSubscription)
         )
       })()
-      this.removeSubscription(enableSubscription)
-      this.removeSubscription(createSubscription)
     })
   }
 

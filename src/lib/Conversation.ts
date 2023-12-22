@@ -68,8 +68,6 @@ export class Conversation<ContentTypes> {
       | undefined
   ): Promise<DecodedMessage<ContentTypes>[]> {
     try {
-      console.log('message() client is', this.client)
-
       const messages = await XMTP.listMessages(
         this.client,
         this.topic,
@@ -229,7 +227,7 @@ export class Conversation<ContentTypes> {
   ): () => void {
     XMTP.subscribeToMessages(this.client.address, this.topic)
     const hasSeen = {}
-    XMTP.emitter.addListener(
+    const messageSubscription = XMTP.emitter.addListener(
       'message',
       async ({
         clientAddress,
@@ -253,6 +251,7 @@ export class Conversation<ContentTypes> {
     )
 
     return () => {
+      messageSubscription.remove()
       XMTP.unsubscribeFromMessages(this.client.address, this.topic)
     }
   }
