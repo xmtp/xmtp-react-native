@@ -236,6 +236,7 @@ export class Client<ContentTypes> {
       opts,
       async () => {
         await this.executeCallback(opts?.preEnableIdentityCallback)
+        XMTPModule.preEnableIdentityCallbackCompleted()
       }
     )
 
@@ -244,6 +245,7 @@ export class Client<ContentTypes> {
       opts,
       async () => {
         await this.executeCallback(opts?.preCreateIdentityCallback)
+        XMTPModule.preCreateIdentityCallbackCompleted()
       }
     )
 
