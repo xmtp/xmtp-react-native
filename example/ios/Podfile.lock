@@ -419,7 +419,6 @@ PODS:
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
     - MessagePacker
-    - secp256k1.swift
     - XMTP (= 0.7.3-alpha0)
   - XMTPRust (0.3.7-beta0)
   - Yoga (1.14.0)
@@ -477,6 +476,7 @@ DEPENDENCIES:
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
+  - secp256k1.swift
   - XMTPReactNative (from `../../ios`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -669,10 +669,10 @@ SPEC CHECKSUMS:
   SwiftProtobuf: b02b5075dcf60c9f5f403000b3b0c202a11b6ae1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
   XMTP: dc02c96b475e326a4a7b3d3912cc45cf3527bd0b
-  XMTPReactNative: f4acdf29845869a324d9b99e2021c7050f227d99
+  XMTPReactNative: 5c1111c5bd3456e75b3fa67d1ddccabb7a01df11
   XMTPRust: 8848a2ba761b2c961d666632f2ad27d1082faa93
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
-PODFILE CHECKSUM: bf49a4bdc3d11b67c441720989a50fa1e6be21f3
+PODFILE CHECKSUM: 522d88edc2d5fac4825e60a121c24abc18983367
 
-COCOAPODS: 1.14.3
+COCOAPODS: 1.13.0
