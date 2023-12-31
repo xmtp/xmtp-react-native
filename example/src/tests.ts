@@ -17,36 +17,6 @@ type ContentTypeId = content.ContentTypeId
 
 const { fs } = ReactNativeBlobUtil
 
-const ContentTypeNumber: ContentTypeId = {
-  authorityId: 'org',
-  typeId: 'number',
-  versionMajor: 1,
-  versionMinor: 0,
-}
-
-class NumberCodec implements JSContentCodec<number> {
-  contentType = ContentTypeNumber
-
-  // a completely absurd way of encoding number values
-  encode(content: number): EncodedContent {
-    return {
-      type: ContentTypeNumber,
-      parameters: {
-        number: JSON.stringify(content),
-      },
-      content: new Uint8Array(),
-    }
-  }
-
-  decode(encodedContent: EncodedContent): number {
-    return JSON.parse(encodedContent.parameters.number) as number
-  }
-
-  fallback(content: number): string | undefined {
-    return 'a billion'
-  }
-}
-
 export type Test = {
   name: string
   run: () => Promise<boolean>
@@ -724,6 +694,35 @@ test('is address on the XMTP network', async () => {
   return true
 })
 
+const ContentTypeNumber: ContentTypeId = {
+  authorityId: 'org',
+  typeId: 'number',
+  versionMajor: 1,
+  versionMinor: 0,
+}
+
+class NumberCodec implements JSContentCodec<number> {
+  contentType = ContentTypeNumber
+
+  // a completely absurd way of encoding number values
+  encode(content: number): EncodedContent {
+    return {
+      type: ContentTypeNumber,
+      parameters: {
+        number: JSON.stringify(content),
+      },
+      content: new Uint8Array(),
+    }
+  }
+
+  decode(encodedContent: EncodedContent): number {
+    return JSON.parse(encodedContent.parameters.number) as number
+  }
+
+  fallback(content: number): string | undefined {
+    return 'a billion'
+  }
+}
 test('register and use custom content types', async () => {
   const bob = await Client.createRandom({
     env: 'local',
@@ -756,6 +755,92 @@ test('register and use custom content types', async () => {
   return true
 })
 
+const ContentTypeMultiplyNumbers: ContentTypeId = {
+  authorityId: 'com.example',
+  typeId: 'multiplyNumbers',
+  versionMajor: 1,
+  versionMinor: 1,
+}
+class MultiplyNumbers {
+  public readonly num1: number
+  public readonly num2: number
+  public readonly result: number
+
+  constructor(num1: number, num2: number, result: number) {
+    this.num1 = num1
+    this.num2 = num2
+    this.result = result
+  }
+}
+
+class ContentTypeMultiplyNumberCodec
+  implements JSContentCodec<MultiplyNumbers>
+{
+  get contentType() {
+    return ContentTypeMultiplyNumbers
+  }
+
+  encode(decoded: MultiplyNumbers): EncodedContent {
+    return {
+      type: ContentTypeMultiplyNumbers,
+      parameters: {
+        num1: decoded.num1.toString(),
+        num2: decoded.num2.toString(),
+      },
+      content: new Uint8Array(),
+    }
+  }
+
+  decode(encoded: EncodedContent): MultiplyNumbers {
+    const num1 = parseFloat(encoded.parameters['num1'] ?? '0')
+    const num2 = parseFloat(encoded.parameters['num2'] ?? '0')
+    return new MultiplyNumbers(num1, num2, num1 * num2)
+  }
+
+  fallback(content: MultiplyNumbers): string {
+    return `MultiplyNumbersCodec is not supported`
+  }
+}
+
+test('register and use custom content type multiply number', async () => {
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [new ContentTypeMultiplyNumberCodec()],
+  })
+
+  const alice = await Client.createRandom({
+    env: 'local',
+    codecs: [new ContentTypeMultiplyNumberCodec()],
+  })
+
+  bob.register(new ContentTypeMultiplyNumberCodec())
+  alice.register(new ContentTypeMultiplyNumberCodec())
+
+  const bobConvo = await bob.conversations.newConversation(alice.address)
+  const aliceConvo = await alice.conversations.newConversation(bob.address)
+
+  const multiplyNumbers = new MultiplyNumbers(3, 7)
+  await bobConvo.send(multiplyNumbers, {
+    contentType: ContentTypeMultiplyNumbers,
+  })
+
+  const messages = await aliceConvo.messages()
+  console.log(messages.length)
+  assert(messages.length === 1, 'did not get messages')
+
+  const message = messages[0]
+  const messageContent = message.content()
+  assert(
+    messageContent.result === 21,
+    'did not get content properly: ' + JSON.stringify(messageContent)
+  )
+  console.log(ContentTypeMultiplyNumbers)
+  assert(
+    message.contentTypeId === 'com.example/multiplyNumbers:1.1',
+    'Content type is not MultiplyNumbers: ' + message.contentTypeId
+  )
+  return true
+})
 test('calls preCreateIdentityCallback when supplied', async () => {
   let isCallbackCalled = false
   const preCreateIdentityCallback = () => {
