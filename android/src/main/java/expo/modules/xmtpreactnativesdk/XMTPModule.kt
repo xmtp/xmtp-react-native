@@ -443,6 +443,40 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
+        AsyncFunction("prepareEncodedMessage") { clientAddress: String, conversationTopic: String, encodedContentData: List<Int> ->
+            logV("prepareEncodedMessage")
+            val conversation =
+                findConversation(
+                    clientAddress = clientAddress,
+                    topic = conversationTopic
+                )
+                    ?: throw XMTPException("no conversation found for $conversationTopic")
+
+            val encodedContentDataBytes =
+                encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
+                    a.apply {
+                        set(
+                            i,
+                            v.toByte()
+                        )
+                    }
+                }
+            val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
+    
+            val prepared = conversation.prepareMessage(
+                encodedContent = encodedContent,
+                options = SendOptions(contentType = sending.type)
+            )
+            val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
+            val preparedFile = File.createTempFile(prepared.messageId, null)
+            preparedFile.writeBytes(prepared.toSerializedData())
+            PreparedLocalMessage(
+                messageId = prepared.messageId,
+                preparedFileUri = preparedFile.toURI().toString(),
+                preparedAt = preparedAtMillis,
+            ).toJson()
+        }
+
         AsyncFunction("sendPreparedMessage") { clientAddress: String, preparedLocalMessageJson: String ->
             logV("sendPreparedMessage")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
