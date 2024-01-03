@@ -373,6 +373,30 @@ public class XMTPModule: Module {
 			).toJson()
 		}
 
+		AsyncFunction("prepareEncodedMessage") { (
+			clientAddress: String,
+			conversationTopic: String,
+			encodedContentData: [UInt8]
+		) -> String in
+			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
+				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
+			}
+            let encodedContent = try EncodedContent(serializedData: Data(encodedContentData))
+
+			let prepared = try await conversation.prepareMessage(
+				encodedContent: encodedContent
+			)
+			let preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
+			let preparedData = try prepared.serializedData()
+			let preparedFile = FileManager.default.temporaryDirectory.appendingPathComponent(prepared.messageID)
+			try preparedData.write(to: preparedFile)
+			return try PreparedLocalMessage(
+				messageId: prepared.messageID,
+				preparedFileUri: preparedFile.absoluteString,
+				preparedAt: preparedAtMillis
+			).toJson()
+		}
+
 		AsyncFunction("sendPreparedMessage") { (clientAddress: String, preparedLocalMessageJson: String) -> String in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
