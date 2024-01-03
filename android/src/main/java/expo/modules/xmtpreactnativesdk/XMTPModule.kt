@@ -465,7 +465,6 @@ class XMTPModule : Module() {
     
             val prepared = conversation.prepareMessage(
                 encodedContent = encodedContent,
-                options = SendOptions(contentType = sending.type)
             )
             val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
             val preparedFile = File.createTempFile(prepared.messageId, null)
