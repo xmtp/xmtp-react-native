@@ -413,6 +413,14 @@ export async function consentList(
   })
 }
 
+export function preEnableIdentityCallbackCompleted() {
+  XMTPModule.preEnableIdentityCallbackCompleted()
+}
+
+export function preCreateIdentityCallbackCompleted() {
+  XMTPModule.preCreateIdentityCallbackCompleted()
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 export * from './lib/ContentCodec'

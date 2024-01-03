@@ -17,6 +17,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -126,6 +127,9 @@ class XMTPModule : Module() {
     private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
     private val conversations: MutableMap<String, Conversation> = mutableMapOf()
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
+    private var preEnableIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
+    private var preCreateIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
+
 
     override fun definition() = ModuleDefinition {
         Name("XMTP")
@@ -151,6 +155,11 @@ class XMTPModule : Module() {
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
+
+            if (hasCreateIdentityCallback == true) 
+                preCreateIdentityCallbackDeferred = CompletableDeferred()
+            if (hasEnableIdentityCallback == true) 
+                preEnableIdentityCallbackDeferred = CompletableDeferred()
             val preCreateIdentityCallback: PreEventCallback? =
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
@@ -175,6 +184,11 @@ class XMTPModule : Module() {
         AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
+
+            if (hasCreateIdentityCallback == true) 
+                preCreateIdentityCallbackDeferred = CompletableDeferred()
+            if (hasEnableIdentityCallback == true) 
+                preEnableIdentityCallbackDeferred = CompletableDeferred()
             val preCreateIdentityCallback: PreEventCallback? =
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
@@ -623,6 +637,16 @@ class XMTPModule : Module() {
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             client.contacts.consentList.entries.map { ConsentWrapper.encode(it.value) }
         }
+
+        Function("preCreateIdentityCallbackCompleted") {
+            logV("preCreateIdentityCallbackCompleted")
+            preCreateIdentityCallbackDeferred?.complete(Unit)
+        }
+
+        Function("preEnableIdentityCallbackCompleted") { 
+            logV("preEnableIdentityCallbackCompleted")
+            preEnableIdentityCallbackDeferred?.complete(Unit)
+        }
     }
 
     //
@@ -748,10 +772,14 @@ class XMTPModule : Module() {
 
     private val preEnableIdentityCallback: suspend () -> Unit = {
         sendEvent("preEnableIdentityCallback")
+        preEnableIdentityCallbackDeferred?.await()
+        preCreateIdentityCallbackDeferred == null
     }
 
     private val preCreateIdentityCallback: suspend () -> Unit = {
         sendEvent("preCreateIdentityCallback")
+        preCreateIdentityCallbackDeferred?.await()
+        preCreateIdentityCallbackDeferred = null
     }
 }
 

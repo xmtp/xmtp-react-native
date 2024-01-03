@@ -28,6 +28,8 @@ public class XMTPModule: Module {
 	let clientsManager = ClientsManager()
 	let conversationsManager = IsolatedManager<Conversation>()
 	let subscriptionsManager = IsolatedManager<Task<Void, Never>>()
+	private var preEnableIdentityCallbackDeferred: DispatchSemaphore?
+	private var preCreateIdentityCallbackDeferred: DispatchSemaphore?
 
 	actor ClientsManager {
 		private var clients: [String: XMTP.Client] = [:]
@@ -67,6 +69,12 @@ public class XMTPModule: Module {
 		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) in
 			let signer = ReactNativeSigner(module: self, address: address)
 			self.signer = signer
+			if(hasCreateIdentityCallback ?? false) {
+				preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasEnableIdentityCallback ?? false) {
+				preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
 			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
@@ -82,6 +90,12 @@ public class XMTPModule: Module {
 		// Generate a random wallet and set the client to that
 		AsyncFunction("createRandom") { (environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) -> String in
 			let privateKey = try PrivateKey.generate()
+			if(hasCreateIdentityCallback ?? false) {
+				preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasEnableIdentityCallback ?? false) {
+				preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
 
@@ -558,6 +572,18 @@ public class XMTPModule: Module {
 				try ConsentWrapper.encode(entry.value)
 			}
 		}
+		
+		Function("preEnableIdentityCallbackCompleted") {
+			DispatchQueue.global().async {
+				self.preEnableIdentityCallbackDeferred?.signal()
+			}
+		}
+		
+		Function("preCreateIdentityCallbackCompleted") {
+			DispatchQueue.global().async {
+				self.preCreateIdentityCallbackDeferred?.signal()
+			}
+		}
 	}
 
 	//
@@ -697,9 +723,13 @@ public class XMTPModule: Module {
 
 	func preEnableIdentityCallback() {
 		sendEvent("preEnableIdentityCallback")
+		self.preEnableIdentityCallbackDeferred?.wait()
+		self.preCreateIdentityCallbackDeferred = nil
 	}
 
 	func preCreateIdentityCallback() {
 		sendEvent("preCreateIdentityCallback")
+		self.preCreateIdentityCallbackDeferred?.wait()
+		self.preEnableIdentityCallbackDeferred = nil
 	}
 }
