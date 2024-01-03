@@ -302,7 +302,7 @@ PODS:
   - React-jsinspector (0.71.14)
   - React-logger (0.71.14):
     - glog
-  - react-native-blob-util (0.19.4):
+  - react-native-blob-util (0.19.6):
     - React-Core
   - react-native-encrypted-storage (4.0.3):
     - React-Core
@@ -411,7 +411,7 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.7.3-alpha0):
+  - XMTP (0.7.4-alpha0):
     - Connect-Swift (= 0.3.0)
     - GzipSwift
     - web3.swift
@@ -419,7 +419,7 @@ PODS:
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
     - MessagePacker
-    - XMTP (= 0.7.3-alpha0)
+    - XMTP (= 0.7.4-alpha0)
   - XMTPRust (0.3.7-beta0)
   - Yoga (1.14.0)
 
@@ -646,7 +646,7 @@ SPEC CHECKSUMS:
   React-jsiexecutor: 94cfc1788637ceaf8841ef1f69b10cc0d62baadc
   React-jsinspector: 7bf923954b4e035f494b01ac16633963412660d7
   React-logger: 655ff5db8bd922acfbe76a4983ffab048916343e
-  react-native-blob-util: 30a6c9fd067aadf9177e61a998f2c7efb670598d
+  react-native-blob-util: d8fa1a7f726867907a8e43163fdd8b441d4489ea
   react-native-encrypted-storage: db300a3f2f0aba1e818417c1c0a6be549038deb7
   react-native-mmkv: e97c0c79403fb94577e5d902ab1ebd42b0715b43
   react-native-safe-area-context: 39c2d8be3328df5d437ac1700f4f3a4f75716acc
@@ -668,11 +668,11 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: b02b5075dcf60c9f5f403000b3b0c202a11b6ae1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: dc02c96b475e326a4a7b3d3912cc45cf3527bd0b
-  XMTPReactNative: 5c1111c5bd3456e75b3fa67d1ddccabb7a01df11
+  XMTP: 9ba94e797211aa4f7cbed9ed2a2f4c44d32c8d06
+  XMTPReactNative: 6f194a2f3ab388d2517f92feae01cff961ee88ab
   XMTPRust: 8848a2ba761b2c961d666632f2ad27d1082faa93
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 522d88edc2d5fac4825e60a121c24abc18983367
 
-COCOAPODS: 1.13.0
+COCOAPODS: 1.14.3
