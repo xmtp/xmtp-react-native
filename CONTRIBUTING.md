@@ -38,7 +38,7 @@ The table below shows example commits and the resulting release type for a `penc
 
 This is currently configured to use the [Angular Commit Message Conventions](https://github.com/angular/angular/blob/master/CONTRIBUTING.md#-commit-message-format). e.g. `feat: add message signing` would cause a minor release.
 
-If there are multiple commits within a single pull request, each commit will be listed as a separate bullet point in the [release notes](https://github.com/xmtp/xmtp-js/releases) and bundled together in a release of the highest increment type specified.
+If there are multiple commits within a single pull request, each commit will be listed as a separate bullet point in the [release notes](https://github.com/xmtp/xmtp-react-native/releases) and bundled together in a release of the highest increment type specified.
 
 If your commit messages are not to your liking, it is permitted to rewrite the history on your branch and force-push it before merging it. Make sure you are never force-pushing on `main`, and that the following is in your `~/.gitconfig` file.
 
