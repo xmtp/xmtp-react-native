@@ -576,12 +576,14 @@ public class XMTPModule: Module {
 		Function("preEnableIdentityCallbackCompleted") {
 			DispatchQueue.global().async {
 				self.preEnableIdentityCallbackDeferred?.signal()
+				self.preEnableIdentityCallbackDeferred = nil
 			}
 		}
 		
 		Function("preCreateIdentityCallbackCompleted") {
 			DispatchQueue.global().async {
 				self.preCreateIdentityCallbackDeferred?.signal()
+				self.preCreateIdentityCallbackDeferred = nil
 			}
 		}
 	}
@@ -724,12 +726,10 @@ public class XMTPModule: Module {
 	func preEnableIdentityCallback() {
 		sendEvent("preEnableIdentityCallback")
 		self.preEnableIdentityCallbackDeferred?.wait()
-		self.preCreateIdentityCallbackDeferred = nil
 	}
 
 	func preCreateIdentityCallback() {
 		sendEvent("preCreateIdentityCallback")
 		self.preCreateIdentityCallbackDeferred?.wait()
-		self.preEnableIdentityCallbackDeferred = nil
 	}
 }
