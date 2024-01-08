@@ -15,7 +15,12 @@ import com.facebook.soloader.SoLoader;
 import expo.modules.ApplicationLifecycleDispatcher;
 import expo.modules.ReactNativeHostWrapper;
 
+import com.ReactNativeBlobUtil.ReactNativeBlobUtilUtils;
+
+import java.security.cert.CertificateException;
 import java.util.List;
+
+import javax.net.ssl.X509TrustManager;
 
 public class MainApplication extends Application implements ReactApplication {
 
@@ -64,6 +69,21 @@ public class MainApplication extends Application implements ReactApplication {
       // If you opted-in for the New Architecture, we load the native entry point for this app.
       DefaultNewArchitectureEntryPoint.load();
     }
+    ReactNativeBlobUtilUtils.sharedTrustManager = new X509TrustManager() {
+      @Override
+      public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+      }
+
+      @Override
+      public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+      }
+
+      @Override
+      public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+          return new java.security.cert.X509Certificate[]{};
+      }
+    };
+
     ReactNativeFlipper.initializeFlipper(this, getReactNativeHost().getReactInstanceManager());
     ApplicationLifecycleDispatcher.onApplicationCreate(this);
   }
