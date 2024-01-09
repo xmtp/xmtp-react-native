@@ -41,10 +41,25 @@ npx expo prebuild
 
 For bare React Native projects, [install and configure the `expo` package](https://docs.expo.dev/bare/installing-expo-modules/) before continuing.
 
-### Add the package to your yarn dependencies
+then add the required babel plugin
+```bash
+yarn add @babel/plugin-proposal-export-namespace-from -D
+```
+then add the plugin to your babel.config.js
+```js
+module.exports = {
+  presets: ['module:@react-native/babel-preset'],
+  plugins: [
+    '@babel/plugin-proposal-export-namespace-from',
+    // ... other plugins
+  ],
+};
+```
+
+### Add the package to your dependencies
 
 ```bash
-yarn i @xmtp/react-native-sdk
+yarn add @xmtp/react-native-sdk
 ```
 
 ### Configure for iOS
