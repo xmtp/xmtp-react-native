@@ -47,6 +47,10 @@ If your commit messages are not to your liking, it is permitted to rewrite the h
 	default = simple
 ```
 
-### Pre-release Beta Branch
+### Pre-release beta branch
 
 A beta release of this package will be automatically published whenever there is a merge to the `beta` branch. For more information on the `beta` branch pre-release workflow, see [semantic-release pre-release workflow](https://semantic-release.gitbook.io/semantic-release/recipes/release-workflow/pre-releases).
+
+#### When to target PRs against the beta branch?
+
+We should only target the `beta` branch when new functionality would benefit from early testing by downstream clients. Otherwise, features and fixes that are easily testable without input from downstream clients should be targeted against the `main` branch as usual.
