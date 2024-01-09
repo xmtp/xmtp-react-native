@@ -276,6 +276,26 @@ export async function prepareMessage(
   return JSON.parse(preparedJson)
 }
 
+export async function prepareMessageWithContentType<T>(
+  clientAddress: string,
+  conversationTopic: string,
+  content: any,
+  codec: ContentCodec<T>
+): Promise<PreparedLocalMessage> {
+  if ('contentKey' in codec) {
+    return prepareMessage(clientAddress, conversationTopic, content)
+  }
+  const encodedContent = codec.encode(content)
+  encodedContent.fallback = codec.fallback(content)
+  const encodedContentData = EncodedContent.encode(encodedContent).finish()
+  const preparedJson = await XMTPModule.prepareEncodedMessage(
+    clientAddress,
+    conversationTopic,
+    Array.from(encodedContentData)
+  )
+  return JSON.parse(preparedJson)
+}
+
 export async function sendPreparedMessage(
   clientAddress: string,
   preparedLocalMessage: PreparedLocalMessage
@@ -391,6 +411,14 @@ export async function consentList(
   return consentList.map((json: string) => {
     return ConsentListEntry.from(json)
   })
+}
+
+export function preEnableIdentityCallbackCompleted() {
+  XMTPModule.preEnableIdentityCallbackCompleted()
+}
+
+export function preCreateIdentityCallbackCompleted() {
+  XMTPModule.preCreateIdentityCallbackCompleted()
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)

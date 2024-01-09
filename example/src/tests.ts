@@ -756,6 +756,42 @@ test('register and use custom content types', async () => {
   return true
 })
 
+test('register and use custom content types when preparing message', async () => {
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+  })
+  const alice = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+  })
+
+  bob.register(new NumberCodec())
+  alice.register(new NumberCodec())
+
+  const bobConvo = await bob.conversations.newConversation(alice.address)
+  const aliceConvo = await alice.conversations.newConversation(bob.address)
+
+  const prepped = await bobConvo.prepareMessage(12, {
+    contentType: ContentTypeNumber,
+  })
+
+  await bobConvo.sendPreparedMessage(prepped)
+
+  const messages = await aliceConvo.messages()
+  assert(messages.length === 1, 'did not get messages')
+
+  const message = messages[0]
+  const messageContent = message.content()
+
+  assert(
+    messageContent === 12,
+    'did not get content properly: ' + JSON.stringify(messageContent)
+  )
+
+  return true
+})
+
 test('calls preCreateIdentityCallback when supplied', async () => {
   let isCallbackCalled = false
   const preCreateIdentityCallback = () => {

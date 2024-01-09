@@ -131,6 +131,27 @@ export class Conversation<ContentTypes> {
     }
   }
 
+  private async _prepareWithJSCodec<T>(
+    content: T,
+    contentType: XMTP.ContentTypeId
+  ): Promise<PreparedLocalMessage> {
+    const codec =
+      this.client.codecRegistry[
+        `${contentType.authorityId}/${contentType.typeId}:${contentType.versionMajor}.${contentType.versionMinor}`
+      ]
+
+    if (!codec) {
+      throw new Error(`no codec found for: ${contentType}`)
+    }
+
+    return await XMTP.prepareMessageWithContentType(
+      this.client.address,
+      this.topic,
+      content,
+      codec,
+    )
+  }
+
   /**
    * Prepares a message to be sent, yielding a `PreparedLocalMessage` object.
    *
@@ -146,7 +167,13 @@ export class Conversation<ContentTypes> {
    * @returns {Promise<PreparedLocalMessage>} A Promise that resolves to a `PreparedLocalMessage` object.
    * @throws {Error} Throws an error if there is an issue with preparing the message.
    */
-  async prepareMessage(content: any): Promise<PreparedLocalMessage> {
+  async prepareMessage(
+    content: any,
+    opts?: SendOptions
+  ): Promise<PreparedLocalMessage> {
+    if (opts && opts.contentType) {
+      return await this._prepareWithJSCodec(content, opts.contentType)
+    }
     try {
       if (typeof content === 'string') {
         content = { text: content }
