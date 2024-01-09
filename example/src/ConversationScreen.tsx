@@ -132,9 +132,11 @@ export default function ConversationScreen({
         <View style={{ flex: 1 }}>
           <AttachmentModal
             visible={isShowingAttachmentModal}
-            onAttachedImageFromCamera={(image) =>
+            onAttachedImageFromCamera={(image) => {
               console.log('from camera', image)
-            }
+              setAttachment({ image })
+              setShowingAttachmentModal(false)
+            }}
             onAttachedImageFromLibrary={(image) => {
               setAttachment({ image })
               setShowingAttachmentModal(false)
