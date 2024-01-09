@@ -138,7 +138,6 @@ export default function ConversationScreen({
               setShowingAttachmentModal(false)
             }}
             onAttachedImageFromLibrary={(image) => {
-              console.log('from library', image)
               setAttachment({ image })
               setShowingAttachmentModal(false)
             }}
