@@ -31,7 +31,10 @@
   "release": {
     "branches": [
       "main",
-      "release"
+      {
+        "name": "beta",
+        "prerelease": true
+      }
     ]
   },
   "publishConfig": {
@@ -43,8 +46,7 @@
   "dependencies": {
     "@msgpack/msgpack": "^3.0.0-beta2",
     "@xmtp/proto": "^3.25.0",
-    "ethers": "^5.7.2",
-    "semantic-release": "^21.0.1"
+    "ethers": "^5.7.2"
   },
   "devDependencies": {
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
@@ -54,6 +56,7 @@
     "expo-module-scripts": "^3.0.4",
     "expo-modules-core": "^1.5.9",
     "prettier": "^3.1.0",
+    "semantic-release": "^22.0.12",
     "typedoc": "^0.25.2"
   },
   "peerDependencies": {
