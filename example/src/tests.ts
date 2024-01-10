@@ -1,6 +1,8 @@
 import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
+import { TextEncoder, TextDecoder } from "text-encoding";
+
 
 import {
   Query,
@@ -723,6 +725,68 @@ class NumberCodec implements JSContentCodec<number> {
     return 'a billion'
   }
 }
+export const ContentTypeTransactionReference: ContentTypeId = {
+  authorityId: "xmtp.org",
+  typeId: "transactionReference",
+  versionMajor: 1,
+  versionMinor: 0,
+};
+
+export type TransactionReference = {
+  /**
+   * The namespace for the networkId
+   */
+  namespace?: string;
+  /**
+   * The networkId for the transaction, in decimal or hexidecimal format
+   */
+  networkId: number | string;
+  /**
+   * The transaction hash
+   */
+  reference: string;
+  /**
+   * Optional metadata object
+   */
+  metadata?: {
+    transactionType: string;
+    currency: string;
+    amount: number;
+    fromAddress: string;
+    toAddress: string;
+  };
+};
+
+export class TransactionReferenceCodec
+  implements JSContentCodec<TransactionReference>
+{
+  get contentType(): ContentTypeId {
+    return ContentTypeTransactionReference;
+  }
+
+  encode(content: TransactionReference): EncodedContent {
+    const encoded = {
+      type: ContentTypeTransactionReference,
+      parameters: {},
+      content: new TextEncoder().encode(JSON.stringify(content)),
+    }
+    return encoded;
+  }
+
+  decode(encodedContent: EncodedContent): TransactionReference {
+    const uint8Array = encodedContent.content;
+    const contentReceived = JSON.parse(new TextDecoder().decode(uint8Array));
+    return contentReceived
+  }
+
+  fallback(content: TransactionReference): string | undefined {
+    if (content.reference) {
+      return `[Crypto transaction] Use a blockchain explorer to learn more using the transaction hash: ${content.reference}`;
+    } else {
+      return `Crypto transaction`;
+    }
+  }
+}
 test('register and use custom content types', async () => {
   const bob = await Client.createRandom({
     env: 'local',
@@ -841,6 +905,57 @@ test('register and use custom content type multiply number', async () => {
   )
   return true
 })
+
+function isTransactionReference(object: any): object is TransactionReference {
+  return 'reference' in object;
+}
+
+test('register and use custom content type transaction reference', async () => {
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [new TransactionReferenceCodec()],
+  })
+
+  const alice = await Client.createRandom({
+    env: 'local',
+    codecs: [new TransactionReferenceCodec()],
+  })
+
+  bob.register(new TransactionReferenceCodec())
+  alice.register(new TransactionReferenceCodec())
+
+  const bobConvo = await bob.conversations.newConversation(alice.address)
+  const aliceConvo = await alice.conversations.newConversation(bob.address)
+
+  const txRef: TransactionReference =  {
+    networkId: '1',
+    reference: '0x3e66bdd4e4c2694c4571563318857388b430a79c8b7c1c88837ea33b8ef5b338'
+  }
+  await bobConvo.send(txRef, {
+    contentType: ContentTypeTransactionReference,
+  })
+
+  const messages = await aliceConvo.messages()
+  console.log(messages.length)
+  assert(messages.length === 1, 'did not get messages')
+
+  const message = messages[0]
+  console.log(message)
+  if (isTransactionReference(message)) {
+    assert(
+      message?.reference === '0x3e66bdd4e4c2694c4571563318857388b430a79c8b7c1c88837ea33b8ef5b338',
+      'did not get content properly: ' + JSON.stringify(message)
+    )
+  }
+  
+  console.log(ContentTypeTransactionReference)
+  assert(
+    message.contentTypeId === 'xmtp.org/transactionReference:1.0',
+    'Content type is not TransactionReference: ' + message.contentTypeId
+  )
+  return true
+})
+
 test('calls preCreateIdentityCallback when supplied', async () => {
   let isCallbackCalled = false
   const preCreateIdentityCallback = () => {
