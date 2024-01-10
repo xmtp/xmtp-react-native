@@ -1,5 +1,7 @@
 import { content } from '@xmtp/proto'
+import { Buffer } from 'buffer'
 import ReactNativeBlobUtil from 'react-native-blob-util'
+import { TextEncoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
@@ -791,6 +793,131 @@ test('register and use custom content types when preparing message', async () =>
 
   return true
 })
+
+export const ContentTypeTransactionReference: ContentTypeId = {
+  authorityId: 'xmtp.org',
+  typeId: 'transactionReference',
+  versionMajor: 1,
+  versionMinor: 0,
+}
+
+export type TransactionReference = {
+  /**
+   * The namespace for the networkId
+   */
+  namespace?: string
+  /**
+   * The networkId for the transaction, in decimal or hexidecimal format
+   */
+  networkId: number | string
+  /**
+   * The transaction hash
+   */
+  reference: string
+  /**
+   * Optional metadata object
+   */
+  metadata?: {
+    transactionType: string
+    currency: string
+    amount: number
+    fromAddress: string
+    toAddress: string
+  }
+}
+
+export class TransactionReferenceCodec
+  implements JSContentCodec<TransactionReference>
+{
+  get contentType(): ContentTypeId {
+    return ContentTypeTransactionReference
+  }
+
+  encode(content: TransactionReference): EncodedContent {
+    const encoded = {
+      type: ContentTypeTransactionReference,
+      parameters: {},
+      content: new TextEncoder().encode(JSON.stringify(content)),
+    }
+    return encoded
+  }
+
+  decode(encodedContent: EncodedContent): TransactionReference {
+    const uint8Array = encodedContent.content
+    if (uint8Array === undefined) {
+      console.log('Only happens on Android')
+      console.log('Android encoded content: ' + JSON.stringify(encodedContent))
+    }
+    const buffer = Buffer.from(uint8Array)
+    const decodedString = base64DecodeNode(buffer.toString())
+    const contentReceived = JSON.parse(decodedString)
+    return contentReceived
+  }
+
+  fallback(content: TransactionReference): string | undefined {
+    if (content.reference) {
+      return `[Crypto transaction] Use a blockchain explorer to learn more using the transaction hash: ${content.reference}`
+    } else {
+      return `Crypto transaction`
+    }
+  }
+}
+
+function base64DecodeNode(encodedString: string): string {
+  return Buffer.from(encodedString, 'base64').toString('utf-8')
+}
+
+function isTransactionReference(object: any): object is TransactionReference {
+  return 'reference' in object
+}
+
+test('register and use custom content type transaction reference', async () => {
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [new TransactionReferenceCodec()],
+  })
+
+  const alice = await Client.createRandom({
+    env: 'local',
+    codecs: [new TransactionReferenceCodec()],
+  })
+
+  bob.register(new TransactionReferenceCodec())
+  alice.register(new TransactionReferenceCodec())
+
+  const bobConvo = await bob.conversations.newConversation(alice.address)
+  const aliceConvo = await alice.conversations.newConversation(bob.address)
+
+  const txRef: TransactionReference =  {
+    networkId: '1',
+    reference: '0x3e66bdd4e4c2694c4571563318857388b430a79c8b7c1c88837ea33b8ef5b338'
+  }
+  await bobConvo.send(txRef, {
+    contentType: ContentTypeTransactionReference,
+  })
+
+  const messages = await aliceConvo.messages()
+  assert(messages.length === 1, 'did not get messages')
+
+  const message = messages[0]
+  const messageContent = message.content()
+
+  assert(isTransactionReference(messageContent), 'messageContent does not contain reference')
+  if (isTransactionReference(messageContent)) {
+    console.log('Checking message content')
+    assert(
+      messageContent?.reference === '0x3e66bdd4e4c2694c4571563318857388b430a79c8b7c1c88837ea33b8ef5b338',
+      'did not get content properly: ' + JSON.stringify(messageContent)
+    )
+  }
+  
+  assert(
+    message.contentTypeId === 'xmtp.org/transactionReference:1.0',
+    'Content type is not TransactionReference: ' + message.contentTypeId
+  )
+  return true
+})
+
 
 test('calls preCreateIdentityCallback when supplied', async () => {
   let isCallbackCalled = false
