@@ -888,9 +888,10 @@ test('register and use custom content type transaction reference', async () => {
   const bobConvo = await bob.conversations.newConversation(alice.address)
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
-  const txRef: TransactionReference =  {
+  const txRef: TransactionReference = {
     networkId: '1',
-    reference: '0x3e66bdd4e4c2694c4571563318857388b430a79c8b7c1c88837ea33b8ef5b338'
+    reference:
+      '0x3e66bdd4e4c2694c4571563318857388b430a79c8b7c1c88837ea33b8ef5b338',
   }
   await bobConvo.send(txRef, {
     contentType: ContentTypeTransactionReference,
@@ -902,22 +903,25 @@ test('register and use custom content type transaction reference', async () => {
   const message = messages[0]
   const messageContent = message.content()
 
-  assert(isTransactionReference(messageContent), 'messageContent does not contain reference')
+  assert(
+    isTransactionReference(messageContent),
+    'messageContent does not contain reference'
+  )
   if (isTransactionReference(messageContent)) {
     console.log('Checking message content')
     assert(
-      messageContent?.reference === '0x3e66bdd4e4c2694c4571563318857388b430a79c8b7c1c88837ea33b8ef5b338',
+      messageContent?.reference ===
+        '0x3e66bdd4e4c2694c4571563318857388b430a79c8b7c1c88837ea33b8ef5b338',
       'did not get content properly: ' + JSON.stringify(messageContent)
     )
   }
-  
+
   assert(
     message.contentTypeId === 'xmtp.org/transactionReference:1.0',
     'Content type is not TransactionReference: ' + message.contentTypeId
   )
   return true
 })
-
 
 test('calls preCreateIdentityCallback when supplied', async () => {
   let isCallbackCalled = false
