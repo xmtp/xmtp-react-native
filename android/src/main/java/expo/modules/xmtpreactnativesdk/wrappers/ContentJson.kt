@@ -51,8 +51,6 @@ class ContentJson(
             Client.register(RemoteAttachmentCodec())
             Client.register(ReplyCodec())
             Client.register(ReadReceiptCodec())
-            // TODO:
-            //Client.register(CompositeCodec())
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -121,8 +119,8 @@ class ContentJson(
             return fromJsonObject(obj);
         }
 
-        fun bytesFrom64(bytes64: String): ByteArray = Base64.decode(bytes64, Base64.DEFAULT)
-        fun bytesTo64(bytes: ByteArray): String = Base64.encodeToString(bytes, Base64.DEFAULT)
+        fun bytesFrom64(bytes64: String): ByteArray = Base64.decode(bytes64, Base64.NO_WRAP)
+        fun bytesTo64(bytes: ByteArray): String = Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
     fun toJsonMap(): Map<String, Any> {
@@ -186,6 +184,8 @@ class ContentJson(
                     json.addProperty("fallback", encodedContent.fallback)
                     json.add("parameters", JsonParser.parseString(parameters))
                     json.add("type", typeJson)
+                    json.addProperty("content", bytesTo64(encodedContent.content.toByteArray()))
+
                 }
                 val encodedContentJSON = json.toString()
                 if (encodedContentJSON.isNotBlank()) {
