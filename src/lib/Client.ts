@@ -29,6 +29,9 @@ export class Client<ContentTypes> {
   conversations: Conversations<ContentTypes>
   contacts: Contacts
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
+  private static signSubscription: Subscription | null = null;
+  private static authSubscription: Subscription | null = null;
+
 
   /**
    * Creates a new instance of the Client class using the provided signer.
@@ -58,7 +61,7 @@ export class Client<ContentTypes> {
       >
     >((resolve, reject) => {
       ;(async () => {
-        XMTPModule.emitter.addListener(
+        this.signSubscription = XMTPModule.emitter.addListener(
           'sign',
           async (message: { id: string; message: string }) => {
             const request: { id: string; message: string } = message
@@ -80,14 +83,18 @@ export class Client<ContentTypes> {
               console.info(errorMessage, e)
               this.removeSubscription(enableSubscription)
               this.removeSubscription(createSubscription)
+              this.removeSignSubscription()
+              this.removeAuthSubscription()
               reject(errorMessage)
             }
           }
         )
 
-        XMTPModule.emitter.addListener('authed', async () => {
+        this.authSubscription = XMTPModule.emitter.addListener('authed', async () => {
           this.removeSubscription(enableSubscription)
           this.removeSubscription(createSubscription)
+          this.removeSignSubscription()
+          this.removeAuthSubscription()
           const address = await signer.getAddress()
           resolve(new Client(address, opts?.codecs || []))
         })
@@ -100,6 +107,20 @@ export class Client<ContentTypes> {
         )
       })()
     })
+  }
+
+  private static removeSignSubscription(): void {
+    if (this.signSubscription) {
+      this.signSubscription.remove();
+      this.signSubscription = null;
+    }
+  }
+
+  private static removeAuthSubscription(): void {
+    if (this.authSubscription) {
+      this.authSubscription.remove();
+      this.authSubscription = null;
+    }
   }
 
   /**
