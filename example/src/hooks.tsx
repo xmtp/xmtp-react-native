@@ -1,5 +1,6 @@
+import { useCallback, useEffect, useState } from 'react'
 import EncryptedStorage from 'react-native-encrypted-storage'
-import { useQuery, UseQueryResult } from 'react-query'
+import { useMutation, useQuery, UseQueryResult } from 'react-query'
 import {
   Conversation,
   DecodedMessage,
@@ -273,38 +274,71 @@ export function usePrepareRemoteAttachment({
 }): {
   remoteAttachment: RemoteAttachmentContent | undefined
 } {
+  const [remoteAttachment, setRemoteAttachment] = useState<
+    RemoteAttachmentContent | undefined
+  >(undefined)
   const { client } = useXmtp()
-  const { data: encrypted } = useQuery<EncryptedLocalAttachment>(
-    ['xmtp', 'remoteAttachment', 'local', fileUri, mimeType ?? ''],
-    () =>
+  const { mutateAsync: encryptAttachment } = useMutation<
+    EncryptedLocalAttachment,
+    unknown,
+    { fileUri?: string; mimeType?: string }
+  >(
+    ['xmtp', 'remoteAttachment', 'local'],
+    ({ fileUri, mimeType }) =>
       client!.encryptAttachment({
         fileUri: fileUri!,
         mimeType,
       }),
-    {
-      enabled: !!client && !!fileUri,
-    }
+    {}
   )
-  const { data: url } = useQuery<string>(
-    ['xmtp', 'remoteAttachment', 'upload', encrypted?.metadata?.contentDigest],
-    () =>
+  const { mutateAsync: uploadAttachment } = useMutation<
+    string,
+    unknown,
+    EncryptedLocalAttachment
+  >(
+    ['xmtp', 'remoteAttachment', 'upload'],
+    (attachement: EncryptedLocalAttachment) =>
       uploadFile(
-        encrypted!.encryptedLocalFileUri,
-        encrypted?.metadata?.contentDigest
-      ),
-    {
-      enabled: !!encrypted,
-    }
+        attachement!.encryptedLocalFileUri,
+        attachement?.metadata?.contentDigest
+      )
   )
-  return {
-    remoteAttachment: url
-      ? {
-          url,
+
+  const callback = useCallback(
+    async ({ fileUri, mimeType }: { fileUri: string; mimeType?: string }) => {
+      const encrypted = await encryptAttachment({
+        fileUri,
+        mimeType,
+      })
+      const url = await uploadAttachment(encrypted)
+      return {
+        url,
+        metadata: encrypted.metadata,
+      }
+    },
+    [encryptAttachment, uploadAttachment]
+  )
+
+  useEffect(() => {
+    console.log('Preparing remote attachment', { fileUri, mimeType })
+    if (!fileUri) {
+      setRemoteAttachment(undefined)
+      return
+    }
+    callback({ fileUri, mimeType })
+      .then((res) => {
+        setRemoteAttachment({
+          url: res.url,
           scheme: 'https://',
-          ...encrypted!.metadata,
-        }
-      : undefined,
-  }
+          ...res.metadata,
+        })
+      })
+      .catch((err) => {
+        console.log('Error preparing remote attachment', err)
+      })
+  }, [fileUri, mimeType, callback])
+
+  return { remoteAttachment }
 }
 
 /**
