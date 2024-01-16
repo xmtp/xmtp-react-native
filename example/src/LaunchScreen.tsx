@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native"
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import * as XMTP from 'xmtp-react-native-sdk'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useXmtp } from 'xmtp-react-native-sdk'
@@ -22,6 +22,7 @@ export default function LaunchScreen({
   navigation,
 }: NativeStackScreenProps<NavigationParamList, 'launch'>) {
   const signer = useSigner();
+  const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
   const { setClient } = useXmtp()
   const savedKeys = useSavedKeys()
   const configureWallet = useCallback(
@@ -56,12 +57,11 @@ export default function LaunchScreen({
   useEffect(() => {
     (async () => {
       if (signer) {
-        configureWallet('dev', XMTP.Client.create(signer, {
-          env: 'dev',
-          appVersion,
-          preCreateIdentityCallback,
-          preEnableIdentityCallback,
-        }))
+        const address = await signer.getAddress()
+        const addressDisplay = address.slice(0,6) + '...' + address.slice(-4)
+        setSignerAddressDisplay(addressDisplay)
+      } else {
+        setSignerAddressDisplay('loading...')
       }
     })()
   }, [signer]);
@@ -89,6 +89,57 @@ export default function LaunchScreen({
           accessibilityLabel="Unit-tests"
         />
       </View>
+      {signer && (
+        <>
+          <Divider key="divider-connected" />
+          <Text
+            style={{
+              fontSize: 16,
+              textAlign: 'right',
+              textTransform: 'uppercase',
+              color: '#333',
+              paddingHorizontal: 16,
+              marginHorizontal: 16,
+            }}
+          >
+            Connected Wallet ({signerAddressDisplay})
+          </Text>
+          <View key="connected-dev" style={{ margin: 16 }}>
+            <Button
+              title="Use Connected Wallet (dev)"
+              color="green"
+              onPress={() => {
+                configureWallet(
+                  'dev',
+                  XMTP.Client.create(signer, {
+                    env: 'dev',
+                    appVersion,
+                    preCreateIdentityCallback,
+                    preEnableIdentityCallback,
+                  })
+                )
+              }}
+            />
+          </View>
+          <View key="connected-local" style={{ margin: 16 }}>
+            <Button
+              title="Use Connected Wallet (local)"
+              color="purple"
+              onPress={() => {
+                configureWallet(
+                  'local',
+                  XMTP.Client.create(signer, {
+                    env: 'local',
+                    appVersion,
+                    preCreateIdentityCallback,
+                    preEnableIdentityCallback,
+                  })
+                )
+              }}
+            />
+          </View>
+        </>
+      )}
       <Divider key="divider-generated" />
       <Text
         style={{
