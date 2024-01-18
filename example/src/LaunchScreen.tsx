@@ -1,8 +1,8 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native"
+import { ConnectWallet, useSigner } from '@thirdweb-dev/react-native'
 import React, { useCallback, useEffect, useState } from 'react'
-import * as XMTP from 'xmtp-react-native-sdk'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
+import * as XMTP from 'xmtp-react-native-sdk'
 import { useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
@@ -21,7 +21,7 @@ const supportedCodecs = [
 export default function LaunchScreen({
   navigation,
 }: NativeStackScreenProps<NavigationParamList, 'launch'>) {
-  const signer = useSigner();
+  const signer = useSigner()
   const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
   const { setClient } = useXmtp()
   const savedKeys = useSavedKeys()
@@ -47,28 +47,28 @@ export default function LaunchScreen({
   )
 
   const preCreateIdentityCallback = () => {
-    console.log("Pre Create Identity Callback")
+    console.log('Pre Create Identity Callback')
   }
 
   const preEnableIdentityCallback = () => {
-    console.log("Pre Enable Identity Callback")
+    console.log('Pre Enable Identity Callback')
   }
 
   useEffect(() => {
-    (async () => {
+    ;(async () => {
       if (signer) {
         const address = await signer.getAddress()
-        const addressDisplay = address.slice(0,6) + '...' + address.slice(-4)
+        const addressDisplay = address.slice(0, 6) + '...' + address.slice(-4)
         setSignerAddressDisplay(addressDisplay)
       } else {
         setSignerAddressDisplay('loading...')
       }
     })()
-  }, [signer]);
+  }, [signer])
 
   return (
     <ScrollView>
-      <ConnectWallet theme='dark'/>
+      <ConnectWallet theme="dark" />
       <Text
         style={{
           fontSize: 16,
