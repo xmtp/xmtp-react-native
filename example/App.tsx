@@ -9,24 +9,28 @@ import HomeScreen from './src/HomeScreen'
 import LaunchScreen from './src/LaunchScreen'
 import { Navigator } from './src/Navigation'
 import TestScreen from './src/TestScreen'
-import { ThirdwebProvider, walletConnect } from "@thirdweb-dev/react-native";
+import { ThirdwebProvider, metamaskWallet, rainbowWallet } from "@thirdweb-dev/react-native"
+import { Ethereum } from "@thirdweb-dev/chains"
+import Config from 'react-native-config'
 
 const queryClient = new QueryClient()
+
 export default function App() {
+  // Uncomment below to ensure correct id loaded from .env
+  // console.log("Thirdweb client id: " + Config.THIRD_WEB_CLIENT_ID)
   return (
     <ThirdwebProvider
-      activeChain={"ethereum"}
-      clientId={"<THIRD_WEB_CLIENT_ID_HERE>"}
+      activeChain={ Ethereum }
+      supportedChains={ [ Ethereum ] }
+      clientId={ Config.THIRD_WEB_CLIENT_ID }
       dAppMeta={{
         name: "XMTP Example",
-        description: "This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with.",
+        description: "Example app from xmtp-react-native repo",
         logoUrl: "https://pbs.twimg.com/profile_images/1668323456935510016/2c_Ue8dF_400x400.jpg",
         url: "https://xmtp.org",
       }}
       supportedWallets={[
-        walletConnect({
-          recommended: true,
-        })
+        metamaskWallet(), rainbowWallet()
       ]}>
       <QueryClientProvider client={queryClient}>
         <XmtpProvider>
