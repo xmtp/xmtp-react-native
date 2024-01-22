@@ -44,10 +44,10 @@
   "license": "MIT",
   "homepage": "https://github.com/xmtp/xmtp-react-native#readme",
   "dependencies": {
+    "@ethersproject/bytes": "^5.7.0",
     "@msgpack/msgpack": "^3.0.0-beta2",
     "@xmtp/proto": "^3.25.0",
-    "buffer": "^6.0.3",
-    "ethers": "^5.7.2"
+    "buffer": "^6.0.3"
   },
   "devDependencies": {
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
@@ -58,7 +58,8 @@
     "expo-modules-core": "^1.5.9",
     "prettier": "^3.1.0",
     "semantic-release": "^21.0.1",
-    "typedoc": "^0.25.2"
+    "typedoc": "^0.25.2",
+    "viem": "^2.4.0"
   },
   "peerDependencies": {
     "expo": "*",
