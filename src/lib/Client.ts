@@ -1,6 +1,6 @@
 import { splitSignature } from '@ethersproject/bytes'
 import { Subscription } from 'expo-modules-core'
-import { WalletClient } from 'viem'
+import type { WalletClient } from 'viem'
 
 import Contacts from './Contacts'
 import type {
