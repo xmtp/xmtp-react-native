@@ -841,3 +841,31 @@ test('calls preEnableIdentityCallback when supplied', async () => {
 
   return isCallbackCalled
 })
+
+test('returns keyMaterial for conversations', async () => {
+  const bob = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  const alice = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  if (bob.address === alice.address) {
+    throw new Error('bob and alice should be different')
+  }
+
+  const bobConversation = await bob.conversations.newConversation(alice.address)
+  await delayToPropogate()
+
+  const aliceConversation = (await alice.conversations.list())[0]
+  if (!aliceConversation) {
+    throw new Error('aliceConversation should exist')
+  }
+
+  if (!aliceConversation.keyMaterial) {
+    throw new Error('aliceConversation keyMaterial should exist')
+  }
+
+  if (!bobConversation.keyMaterial) {
+    throw new Error('bobConversation keyMaterial should exist')
+  }
+
+  return true
+})
