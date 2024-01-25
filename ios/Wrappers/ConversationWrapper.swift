@@ -25,6 +25,7 @@ struct ConversationWrapper {
 			"peerAddress": conversation.peerAddress,
 			"version": conversation.version == .v1 ? "v1" : "v2",
 			"conversationID": conversation.conversationID ?? "",
+			"keyMaterial": conversation.keyMaterial?.base64EncodedString() ?? ""
 		]
 	}
 

@@ -1,5 +1,6 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
+import android.util.Base64
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Conversation
@@ -24,7 +25,8 @@ class ConversationWrapper {
                 "topic" to conversation.topic,
                 "peerAddress" to conversation.peerAddress,
                 "version" to if (conversation.version == Conversation.Version.V1) "v1" else "v2",
-                "conversationID" to (conversation.conversationId ?: "")
+                "conversationID" to (conversation.conversationId ?: ""),
+                "keyMaterial" to Base64.encodeToString(conversation.keyMaterial, Base64.NO_WRAP)
             )
         }
 
