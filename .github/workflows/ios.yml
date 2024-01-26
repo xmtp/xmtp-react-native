@@ -1,0 +1,22 @@
+name: iOS
+on:
+  pull_request:
+    # Uncomment once working
+    # files:
+    #   - 'ios/**'
+    #   - 'example/ios/**'
+    #   - 'example/package.json'
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+      - name: Build Example App
+        run: |
+          cd example
+          yarn
+          npx pod-install
+          yarn ios
