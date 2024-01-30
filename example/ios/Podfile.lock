@@ -56,7 +56,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.14)
   - hermes-engine/Pre-built (0.71.14)
   - libevent (2.1.12)
-  - LibXMTP (0.0.1-timeout0)
+  - LibXMTP (0.4.1)
   - Logging (1.0.0)
   - MessagePacker (0.4.7)
   - MMKV (1.3.3):
@@ -442,17 +442,16 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.7.6-alpha0):
+  - XMTP (0.7.7-alpha0):
     - Connect-Swift (= 0.3.0)
     - GzipSwift
-    - LibXMTP (= 0.0.1-timeout0)
+    - LibXMTP (= 0.4.1)
     - web3.swift
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
-    - LibXMTP (= 0.0.1-timeout0)
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 0.7.6-alpha0)
+    - XMTP (= 0.7.7-alpha0)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -477,7 +476,7 @@ DEPENDENCIES:
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - libevent (~> 2.1.12)
-  - LibXMTP (from `https://raw.githubusercontent.com/xmtp/libxmtp-swift/cv/staticlib/LibXMTP.podspec`)
+  - LibXMTP (from `https://raw.githubusercontent.com/xmtp/libxmtp-swift/8eec299e23caa2945dc30cc2cecdf0a95c1ff1c3/LibXMTP.podspec`)
   - OpenSSL-Universal (= 1.1.2200)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTRequired (from `../node_modules/react-native/Libraries/RCTRequired`)
@@ -520,7 +519,7 @@ DEPENDENCIES:
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
-  - XMTP (from `https://github.com/xmtp/xmtp-ios.git`, commit `08dde6aed8d4db71714c9690ce70d16e494e9251`)
+  - XMTP (from `https://github.com/xmtp/xmtp-ios.git`, commit `a82cc44d09d795f104cec85df1bc287cff826435`)
   - XMTPReactNative (from `../../ios`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -584,7 +583,7 @@ EXTERNAL SOURCES:
   hermes-engine:
     :podspec: "../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
   LibXMTP:
-    :podspec: https://raw.githubusercontent.com/xmtp/libxmtp-swift/cv/staticlib/LibXMTP.podspec
+    :podspec: https://raw.githubusercontent.com/xmtp/libxmtp-swift/8eec299e23caa2945dc30cc2cecdf0a95c1ff1c3/LibXMTP.podspec
   RCT-Folly:
     :podspec: "../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec"
   RCTRequired:
@@ -666,7 +665,7 @@ EXTERNAL SOURCES:
   RNSVG:
     :path: "../node_modules/react-native-svg"
   XMTP:
-    :commit: 08dde6aed8d4db71714c9690ce70d16e494e9251
+    :commit: a82cc44d09d795f104cec85df1bc287cff826435
     :git: https://github.com/xmtp/xmtp-ios.git
   XMTPReactNative:
     :path: "../../ios"
@@ -678,7 +677,7 @@ CHECKOUT OPTIONS:
     :commit: 58e80a641f45ed6b5033e220f982efeb5c3dbe86
     :git: https://github.com/xmtp/libxmtp-swift.git
   XMTP:
-    :commit: 08dde6aed8d4db71714c9690ce70d16e494e9251
+    :commit: a82cc44d09d795f104cec85df1bc287cff826435
     :git: https://github.com/xmtp/xmtp-ios.git
 
 SPEC CHECKSUMS:
@@ -709,7 +708,7 @@ SPEC CHECKSUMS:
   GzipSwift: 893f3e48e597a1a4f62fafcb6514220fcf8287fa
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  LibXMTP: 700256424096c766f72b190bfc096bd2cfbc8d76
+  LibXMTP: e705bcaaa64aaa89998f718e807662647cbc9d4b
   Logging: 9ef4ecb546ad3169398d5a723bc9bea1c46bef26
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: f902fb6719da13c2ab0965233d8963a59416f911
@@ -758,10 +757,10 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: b02b5075dcf60c9f5f403000b3b0c202a11b6ae1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 2dae903c8932f6ff7395808f6142f9e88b2ff466
-  XMTPReactNative: 2bda83a1b21efcfce157182395eed8725f5aafc4
+  XMTP: 6ad8ec5fe9e4ea6d7029f25ee3935e646227fa20
+  XMTPReactNative: 01231fe57639ea936b081f02a2a73abe78d4de35
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
-PODFILE CHECKSUM: cfb4315bae880f8da8c8588ef2ebe1ac1c93c94e
+PODFILE CHECKSUM: 735365d52debb37b1871b7e98cede3d9f187e907
 
-COCOAPODS: 1.14.3
+COCOAPODS: 1.14.2
