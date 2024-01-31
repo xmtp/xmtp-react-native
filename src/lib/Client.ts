@@ -235,7 +235,7 @@ export class Client<ContentTypes> {
 
   private static hasEventCallback(
     event: string,
-    opts: CallbackOptions
+    opts: ClientOptions
   ): boolean {
     return opts?.[event] !== undefined
   }
@@ -381,8 +381,7 @@ export class Client<ContentTypes> {
   }
 }
 
-export type ClientOptions = NetworkOptions & CallbackOptions
-export type NetworkOptions = {
+export type ClientOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
    */
@@ -398,11 +397,16 @@ export type NetworkOptions = {
    * SDK updates, including deprecations and required upgrades.
    */
   appVersion?: string
-}
 
-export type CallbackOptions = {
+  /**
+   * Set optional callbacks for handling identity setup
+   */
   preCreateIdentityCallback?: () => Promise<void> | void
   preEnableIdentityCallback?: () => Promise<void> | void
+  /**
+   * Specify whether to enable Alpha version of MLS (Group Chat)
+   */
+  enableAlphaMls?: Boolean
 }
 
 /**

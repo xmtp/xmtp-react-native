@@ -55,6 +55,7 @@ import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import uniffi.xmtpv3.LegacyIdentitySource
 
 class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
@@ -160,7 +161,7 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean? ->
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
@@ -176,7 +177,8 @@ class XMTPModule : Module() {
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback
+                preEnableIdentityCallback = preEnableIdentityCallback,
+                enableAlphaMls = enableAlphaMls == true
             )
             clients[address] = Client().create(account = reactSigner, options = options)
             ContentJson.Companion
@@ -190,7 +192,7 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean? ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
 
@@ -206,7 +208,8 @@ class XMTPModule : Module() {
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback
+                preEnableIdentityCallback = preEnableIdentityCallback,
+                enableAlphaMls = enableAlphaMls == true
             )
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
@@ -214,10 +217,13 @@ class XMTPModule : Module() {
             randomClient.address
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String? ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean? ->
             try {
                 logV("createFromKeyBundle")
-                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+                val options = ClientOptions(
+                    api = apiEnvironments(environment, appVersion),
+                    enableAlphaMls = enableAlphaMls == true
+                )
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
                         Base64.decode(
