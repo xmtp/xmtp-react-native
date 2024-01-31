@@ -22,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import org.xmtp.android.library.Client
@@ -76,16 +77,25 @@ class ReactNativeSigner(var module: XMTPModule, override var address: String) : 
         continuations.remove(id)
     }
 
-    override suspend fun sign(data: ByteArray): Signature {
-        val request = SignatureRequest(message = String(data, Charsets.UTF_8))
+    override suspend fun sign(data: ByteArray): Signature? {
+        val message = String(data, Charsets.UTF_8)
+        return signLegacy(message)
+    }
+
+    override suspend fun signLegacy(message: String): Signature {
+        val request = SignatureRequest(message = message)
         module.sendEvent("sign", mapOf("id" to request.id, "message" to request.message))
         return suspendCancellableCoroutine { continuation ->
             continuations[request.id] = continuation
         }
     }
 
-    override suspend fun sign(message: String): Signature =
-        sign(message.toByteArray())
+    override fun sign(message: String): ByteArray {
+        return runBlocking {
+            signLegacy(message).toByteArray()
+        }
+    }
+
 }
 
 data class SignatureRequest(
