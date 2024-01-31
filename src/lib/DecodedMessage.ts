@@ -7,6 +7,7 @@ import {
 } from './ContentCodec'
 import { ReplyCodec } from './NativeCodecs/ReplyCodec'
 import { TextCodec } from './NativeCodecs/TextCodec'
+import { Buffer } from 'buffer'
 
 export class DecodedMessage<ContentTypes = any> {
   client: Client<ContentTypes>
@@ -90,6 +91,9 @@ export class DecodedMessage<ContentTypes = any> {
         throw new Error(
           `no content type found ${JSON.stringify(this.contentTypeId)}`
         )
+      }
+      if (encoded.content) {
+        encoded.content = new Uint8Array(Buffer.from(encoded.content, 'base64'))
       }
       return codec.decode(encoded)
     } else {

@@ -14,6 +14,10 @@ export class Conversation<ContentTypes> {
   peerAddress: string
   version: string
   conversationID?: string | undefined
+  /**
+   * Base64 encoded key material for the conversation.
+   */
+  keyMaterial?: string | undefined
 
   constructor(
     client: XMTP.Client<ContentTypes>,
@@ -24,6 +28,7 @@ export class Conversation<ContentTypes> {
       peerAddress: string
       version: string
       conversationID?: string | undefined
+      keyMaterial?: string | undefined
     }
   ) {
     this.client = client
@@ -33,6 +38,7 @@ export class Conversation<ContentTypes> {
     this.peerAddress = params.peerAddress
     this.version = params.version
     this.conversationID = params.conversationID
+    this.keyMaterial = params.keyMaterial
   }
 
   get clientAddress(): string {
