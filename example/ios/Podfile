@@ -50,8 +50,6 @@ target 'xmtpreactnativesdkexample' do
 
   # See https://github.com/margelo/react-native-quick-crypto/issues/189#issuecomment-1711561970
   pod "OpenSSL-Universal", "1.1.2200"
-  pod "XMTP", :git => 'https://github.com/xmtp/xmtp-ios.git', :commit => '88995613060223bf9214418ad4230d07e767ead6'
-  pod 'LibXMTP', :podspec => 'https://raw.githubusercontent.com/xmtp/libxmtp-swift/476de4b3be970f7f7bd7a39066022e83b9fad455/LibXMTP.podspec'
 
   use_react_native!(
     :path => config[:reactNativePath],
