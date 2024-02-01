@@ -1,11 +1,11 @@
-import { Signer } from 'ethers'
 import { useCallback, useRef, useState } from 'react'
 
 import { useXmtp } from './useXmtp'
 import { Client, ClientOptions } from '../lib/Client'
+import { Signer } from '../lib/Signer'
 
 interface InitializeClientOptions {
-  signer: Signer
+  signer: Signer | null
   options?: ClientOptions
 }
 

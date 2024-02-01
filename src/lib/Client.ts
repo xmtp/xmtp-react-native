@@ -1,5 +1,6 @@
-import { Signer, utils } from 'ethers'
+import { splitSignature } from '@ethersproject/bytes'
 import { Subscription } from 'expo-modules-core'
+import type { WalletClient } from 'viem'
 
 import Contacts from './Contacts'
 import type {
@@ -11,6 +12,7 @@ import Conversations from './Conversations'
 import { DecodedMessage } from './DecodedMessage'
 import { TextCodec } from './NativeCodecs/TextCodec'
 import { Query } from './Query'
+import { Signer, getSigner } from './Signer'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
 
@@ -49,7 +51,7 @@ export class Client<ContentTypes> {
   static async create<
     ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
   >(
-    signer: Signer,
+    wallet: Signer | WalletClient | null,
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
   ): Promise<
     Client<
@@ -59,6 +61,10 @@ export class Client<ContentTypes> {
     const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
+    const signer = getSigner(wallet)
+    if (!signer) {
+      throw new Error('Signer is not configured')
+    }
     return new Promise<
       Client<
         ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
@@ -71,7 +77,7 @@ export class Client<ContentTypes> {
             const request: { id: string; message: string } = message
             try {
               const signatureString = await signer.signMessage(request.message)
-              const eSig = utils.splitSignature(signatureString)
+              const eSig = splitSignature(signatureString)
               const r = hexToBytes(eSig.r)
               const s = hexToBytes(eSig.s)
               const sigBytes = new Uint8Array(65)
