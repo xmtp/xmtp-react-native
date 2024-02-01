@@ -295,7 +295,7 @@ export class Client<ContentTypes> {
   }
 
   async sign(message: Uint8Array): Promise<Uint8Array> {
-    return XMTPModule.sign(message)
+    return XMTPModule.sign(this.address, message)
   }
 
   /**
