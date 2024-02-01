@@ -98,6 +98,20 @@ test('can make a client', async () => {
   return client.address.length > 0
 })
 
+test('can make a MLS V3 client', async () => {
+  const client = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true
+  })
+  const libXMTPClient = client.libXMTPClient
+  if (client.address.toLowerCase() != libXMTPClient?.accountAddress().toLowerCase()) {
+    throw new Error('did not receive correct address from libXMTPClient')
+  }
+
+  return true
+})
+
 test('can pass a custom filter date and receive message objects with expected dates', async () => {
   try {
     const bob = await Client.createRandom({ env: 'local' })

@@ -30,6 +30,10 @@ export function address(): string {
   return XMTPModule.address()
 }
 
+export function getLibXMTPClientAccountAddress(address: string): string {
+  return XMTPModule.getLibXMTPClientAccountAddress(address)
+}
+
 export async function auth(
   address: string,
   environment: 'local' | 'dev' | 'production',
@@ -54,13 +58,15 @@ export async function createRandom(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
-  hasEnableIdentityCallback?: boolean | undefined
+  hasEnableIdentityCallback?: boolean | undefined,
+  enableAlphaMls?: boolean | undefined
 ): Promise<string> {
   return await XMTPModule.createRandom(
     environment,
     appVersion,
     hasCreateIdentityCallback,
-    hasEnableIdentityCallback
+    hasEnableIdentityCallback,
+    enableAlphaMls
   )
 }
 

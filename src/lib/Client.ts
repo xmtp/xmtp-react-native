@@ -24,6 +24,10 @@ export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
   ? T
   : never
 
+export interface LibXMTPClient {
+   accountAddress(): string 
+}
+
 export class Client<ContentTypes> {
   address: string
   conversations: Conversations<ContentTypes>
@@ -31,6 +35,7 @@ export class Client<ContentTypes> {
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
   private static signSubscription: Subscription | null = null;
   private static authSubscription: Subscription | null = null;
+  libXMTPClient: LibXMTPClient | undefined
 
 
   /**
@@ -96,7 +101,12 @@ export class Client<ContentTypes> {
           this.removeSignSubscription()
           this.removeAuthSubscription()
           const address = await signer.getAddress()
-          resolve(new Client(address, opts?.codecs || []))
+          const libXMTPClient: LibXMTPClient = {
+            accountAddress: function (): string {
+              return XMTPModule.getLibXMTPClientAccountAddress(address)
+            }
+          } 
+          resolve(new Client(address, opts?.codecs || [], libXMTPClient))
         })
         XMTPModule.auth(
           await signer.getAddress(),
@@ -145,12 +155,18 @@ export class Client<ContentTypes> {
       options.env,
       options.appVersion,
       Boolean(createSubscription),
-      Boolean(enableSubscription)
+      Boolean(enableSubscription),
+      Boolean(options.enableAlphaMls)
     )
+    const libXMTPClient: LibXMTPClient = {
+      accountAddress: function (): string {
+        return XMTPModule.getLibXMTPClientAccountAddress(address)
+      }
+    } 
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
 
-    return new Client(address, opts?.codecs || [])
+    return new Client(address, opts?.codecs || [], libXMTPClient)
   }
 
   /**
@@ -179,7 +195,12 @@ export class Client<ContentTypes> {
       options.env,
       options.appVersion
     )
-    return new Client(address, opts?.codecs || [])
+    const libXMTPClient: LibXMTPClient = {
+      accountAddress: function (): string {
+        return XMTPModule.getLibXMTPClientAccountAddress(address)
+      }
+    } 
+    return new Client(address, opts?.codecs || [], libXMTPClient)
   }
 
   /**
@@ -275,12 +296,14 @@ export class Client<ContentTypes> {
 
   constructor(
     address: string,
-    codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
+    codecs: XMTPModule.ContentCodec<ContentTypes>[] = [],
+    libXMTPClient: LibXMTPClient | undefined = undefined
   ) {
     this.address = address
     this.conversations = new Conversations(this)
     this.contacts = new Contacts(this)
     this.codecRegistry = {}
+    this.libXMTPClient = libXMTPClient
 
     this.register(new TextCodec())
 
@@ -417,6 +440,7 @@ export type ClientOptions = {
 export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
   const _defaultOptions: ClientOptions = {
     env: 'dev',
+    enableAlphaMls: false
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions

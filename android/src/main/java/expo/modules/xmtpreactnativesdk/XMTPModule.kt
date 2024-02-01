@@ -1,5 +1,6 @@
 package expo.modules.xmtpreactnativesdk
 
+import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import android.util.Base64.NO_WRAP
@@ -7,6 +8,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
+import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
@@ -55,7 +57,6 @@ import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import uniffi.xmtpv3.LegacyIdentitySource
 
 class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
@@ -109,6 +110,10 @@ fun Conversation.cacheKey(clientAddress: String): String {
 }
 
 class XMTPModule : Module() {
+
+    val context: Context
+        get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+
     private fun apiEnvironments(env: String, appVersion: String?): ClientOptions.Api {
         return when (env) {
             "local" -> ClientOptions.Api(
@@ -205,11 +210,13 @@ class XMTPModule : Module() {
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
 
+            val context = if (enableAlphaMls == true) context else null
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
                 preEnableIdentityCallback = preEnableIdentityCallback,
-                enableAlphaMls = enableAlphaMls == true
+                enableAlphaMls = enableAlphaMls == true,
+                appContext = context
             )
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
@@ -238,6 +245,13 @@ class XMTPModule : Module() {
             } catch (e: Exception) {
                 throw XMTPException("Failed to create client: $e")
             }
+        }
+
+        Function("getLibXMTPClientAccountAddress") { clientAddress: String -> String
+            logV("getLibXMTPClientAccountAddress")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val libXMTPClient = client.libXMTPClient ?: throw XMTPException("No libxmtp client")
+            return@Function libXMTPClient.accountAddress()
         }
 
         AsyncFunction("exportKeyBundle") { clientAddress: String ->
