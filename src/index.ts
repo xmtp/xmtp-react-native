@@ -14,6 +14,7 @@ import {
 import { Conversation } from './lib/Conversation'
 import { DecodedMessage } from './lib/DecodedMessage'
 import type { Query } from './lib/Query'
+import { getAddress } from './utils/address'
 
 export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
 export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
@@ -105,7 +106,7 @@ export async function canMessage(
   clientAddress: string,
   peerAddress: string
 ): Promise<boolean> {
-  return await XMTPModule.canMessage(clientAddress, peerAddress)
+  return await XMTPModule.canMessage(clientAddress, getAddress(peerAddress))
 }
 
 export async function staticCanMessage(
@@ -113,7 +114,11 @@ export async function staticCanMessage(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined
 ): Promise<boolean> {
-  return await XMTPModule.staticCanMessage(peerAddress, environment, appVersion)
+  return await XMTPModule.staticCanMessage(
+    getAddress(peerAddress),
+    environment,
+    appVersion
+  )
 }
 
 export async function encryptAttachment(
@@ -212,7 +217,7 @@ export async function createConversation<ContentTypes>(
     JSON.parse(
       await XMTPModule.createConversation(
         client.address,
-        peerAddress,
+        getAddress(peerAddress),
         JSON.stringify(context || {})
       )
     )

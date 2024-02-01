@@ -869,3 +869,26 @@ test('returns keyMaterial for conversations', async () => {
 
   return true
 })
+
+test('correctly handles lowercase addresses', async () => {
+  const bob = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  const alice = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  if (bob.address === alice.address) {
+    throw new Error('bob and alice should be different')
+  }
+
+  const bobConversation = await bob.conversations.newConversation(
+    alice.address.toLocaleLowerCase()
+  )
+  await delayToPropogate()
+  if (!bobConversation) {
+    throw new Error('bobConversation should exist')
+  }
+  const aliceConversation = (await alice.conversations.list())[0]
+  if (!aliceConversation) {
+    throw new Error('aliceConversation should exist')
+  }
+  return true
+})
