@@ -225,7 +225,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("sign") { message: List<Int> ->
+        AsyncFunction("sign") { clientAddress: String, message: List<Int> ->
             logV("sign")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val messageBytes =
@@ -237,9 +237,8 @@ class XMTPModule : Module() {
                         )
                     }
                 }
-            client.privateKeyBundleV1.identityKey
             val signature = runBlocking {
-                PrivateKeyBuilder(identity).sign(messageBytes)
+                PrivateKeyBuilder(client.privateKeyBundleV1.identityKey).sign(messageBytes)
             }
             signature.toByteArray().map { it.toInt() and 0xFF }
         }
