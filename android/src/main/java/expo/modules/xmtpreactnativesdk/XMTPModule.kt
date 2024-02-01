@@ -179,11 +179,14 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+            val context = if (enableAlphaMls == true) context else null
+            
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
                 preEnableIdentityCallback = preEnableIdentityCallback,
-                enableAlphaMls = enableAlphaMls == true
+                enableAlphaMls = enableAlphaMls == true,
+                appContext = context
             )
             clients[address] = Client().create(account = reactSigner, options = options)
             ContentJson.Companion
@@ -209,8 +212,8 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-
             val context = if (enableAlphaMls == true) context else null
+
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
@@ -227,9 +230,11 @@ class XMTPModule : Module() {
         AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean? ->
             try {
                 logV("createFromKeyBundle")
+                val context = if (enableAlphaMls == true) context else null
                 val options = ClientOptions(
                     api = apiEnvironments(environment, appVersion),
-                    enableAlphaMls = enableAlphaMls == true
+                    enableAlphaMls = enableAlphaMls == true,
+                    appContext = context
                 )
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(

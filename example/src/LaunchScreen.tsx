@@ -138,6 +138,24 @@ export default function LaunchScreen({
               }}
             />
           </View>
+          <View key="connected-groups-local" style={{ margin: 16 }}>
+            <Button
+              title="Use Connected Wallet with Groups (local)"
+              color="purple"
+              onPress={() => {
+                configureWallet(
+                  'local',
+                  XMTP.Client.create(signer, {
+                    env: 'local',
+                    appVersion,
+                    preCreateIdentityCallback,
+                    preEnableIdentityCallback,
+                    enableAlphaMls: true,
+                  })
+                )
+              }}
+            />
+          </View>
         </>
       )}
       <Divider key="divider-generated" />
