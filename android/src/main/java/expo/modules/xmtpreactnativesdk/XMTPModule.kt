@@ -224,6 +224,13 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("sign") { message: List<Int> ->
+            logV("exportKeyBundle")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            Base64.encodeToString(client.privateKeyBundle.toByteArray(), NO_WRAP)
+        }
+
+
         AsyncFunction("exportKeyBundle") { clientAddress: String ->
             logV("exportKeyBundle")
             val client = clients[clientAddress] ?: throw XMTPException("No client")

@@ -302,6 +302,10 @@ export class Client<ContentTypes> {
     this.codecRegistry[id] = contentCodec
   }
 
+  async sign(message: Uint8Array): Promise<Uint8Array> {
+    return XMTPModule.sign(message)
+  }
+
   /**
    * Exports the key bundle associated with the current XMTP address.
    *
