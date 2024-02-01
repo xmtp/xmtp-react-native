@@ -22,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import org.xmtp.android.library.Client
@@ -225,9 +226,22 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("sign") { message: List<Int> ->
-            logV("exportKeyBundle")
+            logV("sign")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            Base64.encodeToString(client.privateKeyBundle.toByteArray(), NO_WRAP)
+            val messageBytes =
+                message.foldIndexed(ByteArray(message.size)) { i, a, v ->
+                    a.apply {
+                        set(
+                            i,
+                            v.toByte()
+                        )
+                    }
+                }
+            client.privateKeyBundleV1.identityKey
+            val signature = runBlocking {
+                PrivateKeyBuilder(identity).sign(messageBytes)
+            }
+            signature.toByteArray().map { it.toInt() and 0xFF }
         }
 
 
