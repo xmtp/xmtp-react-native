@@ -25,7 +25,7 @@ export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
   : never
 
 export interface LibXMTPClient {
-   accountAddress(): string 
+  accountAddress(): string
 }
 
 export class Client<ContentTypes> {
@@ -33,10 +33,9 @@ export class Client<ContentTypes> {
   conversations: Conversations<ContentTypes>
   contacts: Contacts
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
-  private static signSubscription: Subscription | null = null;
-  private static authSubscription: Subscription | null = null;
+  private static signSubscription: Subscription | null = null
+  private static authSubscription: Subscription | null = null
   libXMTPClient: LibXMTPClient | undefined
-
 
   /**
    * Creates a new instance of the Client class using the provided signer.
@@ -95,19 +94,22 @@ export class Client<ContentTypes> {
           }
         )
 
-        this.authSubscription = XMTPModule.emitter.addListener('authed', async () => {
-          this.removeSubscription(enableSubscription)
-          this.removeSubscription(createSubscription)
-          this.removeSignSubscription()
-          this.removeAuthSubscription()
-          const address = await signer.getAddress()
-          const libXMTPClient: LibXMTPClient = {
-            accountAddress: function (): string {
-              return XMTPModule.getLibXMTPClientAccountAddress(address)
+        this.authSubscription = XMTPModule.emitter.addListener(
+          'authed',
+          async () => {
+            this.removeSubscription(enableSubscription)
+            this.removeSubscription(createSubscription)
+            this.removeSignSubscription()
+            this.removeAuthSubscription()
+            const address = await signer.getAddress()
+            const libXMTPClient: LibXMTPClient = {
+              accountAddress(): string {
+                return XMTPModule.getLibXMTPClientAccountAddress(address)
+              },
             }
-          } 
-          resolve(new Client(address, opts?.codecs || [], libXMTPClient))
-        })
+            resolve(new Client(address, opts?.codecs || [], libXMTPClient))
+          }
+        )
         XMTPModule.auth(
           await signer.getAddress(),
           options.env,
@@ -121,15 +123,15 @@ export class Client<ContentTypes> {
 
   private static removeSignSubscription(): void {
     if (this.signSubscription) {
-      this.signSubscription.remove();
-      this.signSubscription = null;
+      this.signSubscription.remove()
+      this.signSubscription = null
     }
   }
 
   private static removeAuthSubscription(): void {
     if (this.authSubscription) {
-      this.authSubscription.remove();
-      this.authSubscription = null;
+      this.authSubscription.remove()
+      this.authSubscription = null
     }
   }
 
@@ -159,10 +161,10 @@ export class Client<ContentTypes> {
       Boolean(options.enableAlphaMls)
     )
     const libXMTPClient: LibXMTPClient = {
-      accountAddress: function (): string {
+      accountAddress(): string {
         return XMTPModule.getLibXMTPClientAccountAddress(address)
-      }
-    } 
+      },
+    }
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
 
@@ -196,10 +198,10 @@ export class Client<ContentTypes> {
       options.appVersion
     )
     const libXMTPClient: LibXMTPClient = {
-      accountAddress: function (): string {
+      accountAddress(): string {
         return XMTPModule.getLibXMTPClientAccountAddress(address)
-      }
-    } 
+      },
+    }
     return new Client(address, opts?.codecs || [], libXMTPClient)
   }
 
@@ -254,10 +256,7 @@ export class Client<ContentTypes> {
     await callback?.()
   }
 
-  private static hasEventCallback(
-    event: string,
-    opts: ClientOptions
-  ): boolean {
+  private static hasEventCallback(event: string, opts: ClientOptions): boolean {
     return opts?.[event] !== undefined
   }
 
@@ -429,7 +428,7 @@ export type ClientOptions = {
   /**
    * Specify whether to enable Alpha version of MLS (Group Chat)
    */
-  enableAlphaMls?: Boolean
+  enableAlphaMls?: boolean
 }
 
 /**
@@ -440,7 +439,7 @@ export type ClientOptions = {
 export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
   const _defaultOptions: ClientOptions = {
     env: 'dev',
-    enableAlphaMls: false
+    enableAlphaMls: false,
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions
