@@ -883,3 +883,59 @@ test('returns keyMaterial for conversations', async () => {
 
   return true
 })
+
+test('correctly handles lowercase addresses', async () => {
+  const bob = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  const alice = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  if (bob.address === alice.address) {
+    throw new Error('bob and alice should be different')
+  }
+
+  const bobConversation = await bob.conversations.newConversation(
+    alice.address.toLocaleLowerCase()
+  )
+  await delayToPropogate()
+  if (!bobConversation) {
+    throw new Error('bobConversation should exist')
+  }
+  const aliceConversation = (await alice.conversations.list())[0]
+  if (!aliceConversation) {
+    throw new Error('aliceConversation should exist')
+  }
+
+  await bob.contacts.deny([aliceConversation.peerAddress.toLocaleLowerCase()])
+  await delayToPropogate()
+  const deniedState = await bob.contacts.isDenied(aliceConversation.peerAddress)
+  const allowedState = await bob.contacts.isAllowed(
+    aliceConversation.peerAddress
+  )
+  if (!deniedState) {
+    throw new Error(`contacts denied by bo should be denied not ${deniedState}`)
+  }
+
+  if (allowedState) {
+    throw new Error(
+      `contacts denied by bo should be denied not ${allowedState}`
+    )
+  }
+  const deniedLowercaseState = await bob.contacts.isDenied(
+    aliceConversation.peerAddress.toLocaleLowerCase()
+  )
+  const allowedLowercaseState = await bob.contacts.isAllowed(
+    aliceConversation.peerAddress.toLocaleLowerCase()
+  )
+  if (!deniedLowercaseState) {
+    throw new Error(
+      `contacts denied by bo should be denied not ${deniedLowercaseState}`
+    )
+  }
+
+  if (allowedLowercaseState) {
+    throw new Error(
+      `contacts denied by bo should be denied not ${allowedLowercaseState}`
+    )
+  }
+  return true
+})
