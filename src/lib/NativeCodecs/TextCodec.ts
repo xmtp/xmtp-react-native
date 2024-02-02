@@ -27,4 +27,8 @@ export class TextCodec implements NativeContentCodec<string> {
   fallback(content: string): string | undefined {
     return content
   }
+
+  shouldPush(content: string): boolean {
+    return true
+  }
 }

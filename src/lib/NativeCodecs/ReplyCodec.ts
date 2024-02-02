@@ -36,4 +36,8 @@ export class ReplyCodec implements NativeContentCodec<ReplyContent> {
     }
     return 'Replied to an earlier message'
   }
+
+  shouldPush(content: ReplyContent): boolean {
+    return true
+  }
 }

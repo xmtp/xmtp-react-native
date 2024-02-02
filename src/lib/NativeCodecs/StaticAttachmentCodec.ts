@@ -30,4 +30,8 @@ export class StaticAttachmentCodec
   fallback(content: StaticAttachmentContent): string | undefined {
     return `Can’t display "${content.filename}". This app doesn’t support attachments.`
   }
+
+  shouldPush(content: StaticAttachmentContent): boolean {
+    return true
+  }
 }
