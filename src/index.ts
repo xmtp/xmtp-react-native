@@ -78,11 +78,15 @@ export async function createFromKeyBundle(
 
 export async function sign(
   clientAddress: string,
-  message: Uint8Array
+  digest: Uint8Array,
+  keyType: string,
+  preKeyIndex?: number | 0
 ): Promise<Uint8Array> {
   const signatureArray = await XMTPModule.sign(
     clientAddress,
-    Array.from(message)
+    Array.from(digest),
+    keyType,
+    preKeyIndex
   )
   return new Uint8Array(signatureArray)
 }

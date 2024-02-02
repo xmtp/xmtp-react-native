@@ -302,8 +302,13 @@ export class Client<ContentTypes> {
     this.codecRegistry[id] = contentCodec
   }
 
-  async sign(message: Uint8Array): Promise<Uint8Array> {
-    return XMTPModule.sign(this.address, message)
+  async sign(digest: Uint8Array, keyType: KeyType): Promise<Uint8Array> {
+    return XMTPModule.sign(
+      this.address,
+      digest,
+      keyType.kind,
+      keyType.prekeyIndex
+    )
   }
 
   /**
@@ -410,6 +415,11 @@ export type NetworkOptions = {
    * SDK updates, including deprecations and required upgrades.
    */
   appVersion?: string
+}
+
+export type KeyType = {
+  kind: 'identity' | 'prekey'
+  prekeyIndex?: number
 }
 
 export type CallbackOptions = {
