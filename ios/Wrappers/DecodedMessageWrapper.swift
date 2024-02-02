@@ -13,6 +13,7 @@ struct DecodedMessageWrapper {
 			"senderAddress": model.senderAddress,
 			"sent": UInt64(model.sentAt.timeIntervalSince1970 * 1000),
 			"fallback": model.encodedContent.fallback,
+			"shouldPush": model.shouldPush
 		]
 	}
 
