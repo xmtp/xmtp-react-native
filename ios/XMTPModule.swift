@@ -124,9 +124,32 @@ public class XMTPModule: Module {
 				throw error
 			}
 		}
+		
+		AsyncFunction("sign") { (clientAddress: String, digest: [UInt8], keyType: String, preKeyIndex: Int) -> [UInt8] in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			
+			let privateKeyBundle = client.privateKeyBundle
+			let key = if (keyType == "prekey") {
+				privateKeyBundle.v2.preKeys[preKeyIndex]
+			} else {
+				privateKeyBundle.v2.identityKey
+			}
+			let signature = await PrivateKey(key).sign(Data(digest))
+			return Array(Data(signature))
+		}
+		
+		AsyncFunction("exportKeyBundle") { (clientAddress: String) -> [UInt8] in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			let bundle = try client.publicKeyBundle.serializedData()
+			return Array(bundle)
+		}
 
 		// Export the client's serialized key bundle.
-		AsyncFunction("exportKeyBundle") { (clientAddress: String) -> String in
+		AsyncFunction("exportPublicKeyBundle") { (clientAddress: String) -> String in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
