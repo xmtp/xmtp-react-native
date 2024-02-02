@@ -18,6 +18,7 @@ export class DecodedMessage<ContentTypes = any> {
   sent: number // timestamp in milliseconds
   nativeContent: NativeMessageContent
   fallback: string | undefined
+  shouldPush: boolean
 
   static from<ContentTypes>(
     json: string,
@@ -32,7 +33,8 @@ export class DecodedMessage<ContentTypes = any> {
       decoded.senderAddress,
       decoded.sent,
       decoded.content,
-      decoded.fallback
+      decoded.fallback,
+      decoded.shouldPush
     )
   }
 
@@ -45,6 +47,7 @@ export class DecodedMessage<ContentTypes = any> {
       sent: number // timestamp in milliseconds
       content: any
       fallback: string | undefined
+      shouldPush: boolean
     },
     client: Client<ContentTypes>
   ): DecodedMessage<ContentTypes> {
@@ -56,7 +59,8 @@ export class DecodedMessage<ContentTypes = any> {
       object.senderAddress,
       object.sent,
       object.content,
-      object.fallback
+      object.fallback,
+      object.shouldPush
     )
   }
 
@@ -68,7 +72,8 @@ export class DecodedMessage<ContentTypes = any> {
     senderAddress: string,
     sent: number,
     content: any,
-    fallback: string | undefined
+    fallback: string | undefined,
+    shouldPush: boolean
   ) {
     this.client = client
     this.id = id
@@ -78,6 +83,7 @@ export class DecodedMessage<ContentTypes = any> {
     this.sent = sent
     this.nativeContent = content
     this.fallback = fallback
+    this.shouldPush = shouldPush
   }
 
   content(): ContentTypes {
