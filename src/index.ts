@@ -235,12 +235,14 @@ export async function sendWithContentType<T>(
   } else {
     const encodedContent = codec.encode(content)
     encodedContent.fallback = codec.fallback(content)
+    const shouldPush = codec.shouldPush(content)
     const encodedContentData = EncodedContent.encode(encodedContent).finish()
 
     return await XMTPModule.sendEncodedContent(
       clientAddress,
       conversationTopic,
-      Array.from(encodedContentData)
+      Array.from(encodedContentData),
+      shouldPush
     )
   }
 }
@@ -287,11 +289,13 @@ export async function prepareMessageWithContentType<T>(
   }
   const encodedContent = codec.encode(content)
   encodedContent.fallback = codec.fallback(content)
+  const shouldPush = codec.shouldPush(content)
   const encodedContentData = EncodedContent.encode(encodedContent).finish()
   const preparedJson = await XMTPModule.prepareEncodedMessage(
     clientAddress,
     conversationTopic,
-    Array.from(encodedContentData)
+    Array.from(encodedContentData),
+    shouldPush
   )
   return JSON.parse(preparedJson)
 }
