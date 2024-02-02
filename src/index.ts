@@ -15,6 +15,8 @@ import { Conversation } from './lib/Conversation'
 import { DecodedMessage } from './lib/DecodedMessage'
 import { Group } from './lib/Group'
 import type { Query } from './lib/Query'
+import { ConversationSendPayload } from './lib/types'
+import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { getAddress } from './utils/address'
 
 export * from './context'
@@ -184,7 +186,9 @@ export async function exportConversationTopicData(
   )
 }
 
-export async function importConversationTopicData<ContentTypes>(
+export async function importConversationTopicData<
+  ContentTypes extends ContentCodec<unknown>[],
+>(
   client: Client<ContentTypes>,
   topicData: string
 ): Promise<Conversation<ContentTypes>> {
@@ -238,9 +242,9 @@ export async function decryptAttachment(
   return JSON.parse(fileJson)
 }
 
-export async function listConversations<ContentTypes>(
-  client: Client<ContentTypes>
-): Promise<Conversation<ContentTypes>[]> {
+export async function listConversations<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(client: Client<ContentTypes>): Promise<Conversation<ContentTypes>[]> {
   return (await XMTPModule.listConversations(client.address)).map(
     (json: string) => {
       return new Conversation(client, JSON.parse(json))
@@ -248,7 +252,9 @@ export async function listConversations<ContentTypes>(
   )
 }
 
-export async function listMessages<ContentTypes>(
+export async function listMessages<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
   client: Client<ContentTypes>,
   conversationTopic: string,
   limit?: number | undefined,
@@ -258,7 +264,7 @@ export async function listMessages<ContentTypes>(
     | 'SORT_DIRECTION_ASCENDING'
     | 'SORT_DIRECTION_DESCENDING'
     | undefined
-): Promise<DecodedMessage[]> {
+): Promise<DecodedMessage<ContentTypes>[]> {
   const messages = await XMTPModule.loadMessages(
     client.address,
     conversationTopic,
@@ -273,10 +279,12 @@ export async function listMessages<ContentTypes>(
   })
 }
 
-export async function listBatchMessages<ContentTypes>(
+export async function listBatchMessages<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
   client: Client<ContentTypes>,
   queries: Query[]
-): Promise<DecodedMessage[]> {
+): Promise<DecodedMessage<ContentTypes>[]> {
   const topics = queries.map((item) => {
     return JSON.stringify({
       limit: item.pageSize || 0,
@@ -300,7 +308,9 @@ export async function listBatchMessages<ContentTypes>(
 }
 
 // TODO: support conversation ID
-export async function createConversation<ContentTypes>(
+export async function createConversation<
+  ContentTypes extends ContentCodec<any>[],
+>(
   client: Client<ContentTypes>,
   peerAddress: string,
   context?: ConversationContext
@@ -343,10 +353,12 @@ export async function sendWithContentType<T>(
   }
 }
 
-export async function sendMessage(
+export async function sendMessage<
+  SendContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
   clientAddress: string,
   conversationTopic: string,
-  content: any
+  content: ConversationSendPayload<SendContentTypes>
 ): Promise<string> {
   // TODO: consider eager validating of `MessageContent` here
   //       instead of waiting for native code to validate
@@ -358,10 +370,12 @@ export async function sendMessage(
   )
 }
 
-export async function prepareMessage(
+export async function prepareMessage<
+  PrepareContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
   clientAddress: string,
   conversationTopic: string,
-  content: any
+  content: ConversationSendPayload<PrepareContentTypes>
 ): Promise<PreparedLocalMessage> {
   // TODO: consider eager validating of `MessageContent` here
   //       instead of waiting for native code to validate
@@ -451,11 +465,13 @@ export function subscribePushTopics(topics: string[]) {
   return XMTPModule.subscribePushTopics(topics)
 }
 
-export async function decodeMessage(
+export async function decodeMessage<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
   clientAddress: string,
   topic: string,
   encryptedMessage: string
-): Promise<DecodedMessage> {
+): Promise<DecodedMessage<ContentTypes>> {
   return JSON.parse(
     await XMTPModule.decodeMessage(clientAddress, topic, encryptedMessage)
   )

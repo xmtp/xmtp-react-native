@@ -1284,7 +1284,10 @@ test('register and use custom content types', async () => {
   const bobConvo = await bob.conversations.newConversation(alice.address)
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
-  await bobConvo.send(12, { contentType: ContentTypeNumber })
+  await bobConvo.send(
+    { topNumber: { bottomNumber: 12 } },
+    { contentType: ContentTypeNumber }
+  )
 
   const messages = await aliceConvo.messages()
   assert(messages.length === 1, 'did not get messages')
@@ -1293,7 +1296,9 @@ test('register and use custom content types', async () => {
   const messageContent = message.content()
 
   assert(
-    messageContent === 12,
+    typeof messageContent === 'object' &&
+      'topNumber' in messageContent &&
+      messageContent.topNumber.bottomNumber === 1,
     'did not get content properly: ' + JSON.stringify(messageContent)
   )
 

@@ -11,6 +11,7 @@ import {
   useXmtp,
 } from 'xmtp-react-native-sdk'
 
+import { SupportedContentTypes } from './contentTypes/contentTypes'
 import { downloadFile, uploadFile } from './storage'
 
 /**
@@ -18,12 +19,12 @@ import { downloadFile, uploadFile } from './storage'
  *
  * Note: this is better done with a DB, but we're using react-query for now.
  */
-export function useConversationList<ContentTypes>(): UseQueryResult<
-  Conversation<ContentTypes>[]
+export function useConversationList(): UseQueryResult<
+  Conversation<SupportedContentTypes>[]
 > {
   const { client } = useXmtp()
   client?.contacts.refreshConsentList()
-  return useQuery<Conversation<ContentTypes>[]>(
+  return useQuery<Conversation<SupportedContentTypes>[]>(
     ['xmtp', 'conversations', client?.address],
     () => client!.conversations.list(),
     {
@@ -37,17 +38,17 @@ export function useConversationList<ContentTypes>(): UseQueryResult<
  *
  * Note: this is better done with a DB, but we're using react-query for now.
  */
-export function useConversation<ContentTypes>({
+export function useConversation({
   topic,
 }: {
   topic: string
-}): UseQueryResult<Conversation<ContentTypes> | undefined> {
+}): UseQueryResult<Conversation<SupportedContentTypes> | undefined> {
   const { client } = useXmtp()
   // TODO: use a DB instead of scanning the cached conversation list
   return useQuery<
-    Conversation<ContentTypes>[],
+    Conversation<SupportedContentTypes>[],
     unknown,
-    Conversation<ContentTypes> | undefined
+    Conversation<SupportedContentTypes> | undefined
   >(
     ['xmtp', 'conversations', client?.address, topic],
     () => client!.conversations.list(),
@@ -67,10 +68,10 @@ export function useMessages({
   topic,
 }: {
   topic: string
-}): UseQueryResult<DecodedMessage[]> {
+}): UseQueryResult<DecodedMessage<SupportedContentTypes>[]> {
   const { client } = useXmtp()
   const { data: conversation } = useConversation({ topic })
-  return useQuery<DecodedMessage[]>(
+  return useQuery<DecodedMessage<SupportedContentTypes>[]>(
     ['xmtp', 'messages', client?.address, conversation?.topic],
     () => conversation!.messages(),
     {
@@ -91,7 +92,7 @@ export function useMessage({
   topic: string
   messageId: string
 }): {
-  message: DecodedMessage | undefined
+  message: DecodedMessage<SupportedContentTypes> | undefined
   isSenderMe: boolean
   performReaction:
     | undefined
@@ -137,8 +138,7 @@ export function useConversationReactions({ topic }: { topic: string }) {
   const { client } = useXmtp()
   const { data: messages } = useMessages({ topic })
   const reactions = (messages || []).filter(
-    (message: DecodedMessage) =>
-      message.contentTypeId === 'xmtp.org/reaction:1.0'
+    (message) => message.contentTypeId === 'xmtp.org/reaction:1.0'
   )
   return useQuery<{
     [messageId: string]: {
@@ -157,9 +157,9 @@ export function useConversationReactions({ topic }: { topic: string }) {
       reactions
         .slice()
         .reverse()
-        .forEach((message: DecodedMessage) => {
+        .forEach((message) => {
           const { senderAddress } = message
-          const reaction: ReactionContent = message.content()
+          const reaction = message.content() as ReactionContent
           const messageId = reaction!.reference
           const reactionText = reaction!.content
           const v = byId[messageId] || ({} as { [reaction: string]: string[] })

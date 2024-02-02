@@ -11,7 +11,7 @@ export type ReplyContent = {
 }
 
 export class ReplyCodec implements NativeContentCodec<ReplyContent> {
-  contentKey: string = 'reply'
+  contentKey: 'reply' = 'reply'
 
   contentType: ContentTypeId = {
     authorityId: 'xmtp.org',

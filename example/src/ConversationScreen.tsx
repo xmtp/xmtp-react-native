@@ -32,8 +32,10 @@ import {
   ReplyContent,
   useClient,
 } from 'xmtp-react-native-sdk'
+import { ConversationSendPayload } from 'xmtp-react-native-sdk/lib/types'
 
 import { NavigationParamList } from './Navigation'
+import { SupportedContentTypes } from './contentTypes/contentTypes'
 import {
   useConversation,
   useMessage,
@@ -82,7 +84,9 @@ export default function ConversationScreen({
     [messages]
   )
 
-  const sendMessage = async (content: any) => {
+  const sendMessage = async (
+    content: ConversationSendPayload<SupportedContentTypes>
+  ) => {
     setSending(true)
     console.log('Sending message', content)
     try {
@@ -91,6 +95,7 @@ export default function ConversationScreen({
             reply: {
               reference: replyingTo,
               content,
+              contentType: '',
             },
           }
         : content
@@ -103,8 +108,11 @@ export default function ConversationScreen({
       setSending(false)
     }
   }
-  const sendRemoteAttachmentMessage = () =>
-    sendMessage({ remoteAttachment }).then(() => setAttachment(null))
+  const sendRemoteAttachmentMessage = () => {
+    if (remoteAttachment) {
+      sendMessage({ remoteAttachment }).then(() => setAttachment(null))
+    }
+  }
   const sendTextMessage = () => sendMessage({ text }).then(() => setText(''))
   const scrollToMessageId = useCallback(
     (messageId: string) => {
