@@ -80,7 +80,7 @@ export async function sign(
   clientAddress: string,
   digest: Uint8Array,
   keyType: string,
-  preKeyIndex?: number | 0
+  preKeyIndex: number = 0
 ): Promise<Uint8Array> {
   const signatureArray = await XMTPModule.sign(
     clientAddress,

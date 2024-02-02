@@ -173,6 +173,20 @@ test('canMessage', async () => {
   return canMessage
 })
 
+test('fetch a public key bundle and sign a digest', async () => {
+  const bob = await Client.createRandom({ env: 'local' })
+  const bytes = new Uint8Array([1, 2, 3])
+  const signature = await bob.sign(bytes, { kind: 'identity' })
+  if (signature.length === 0) {
+    throw new Error('signature was not returned')
+  }
+  const keyBundle = await bob.exportPublicKeyBundle()
+  if (keyBundle.length === 0) {
+    throw new Error('key bundle was not returned')
+  }
+  return true
+})
+
 test('createFromKeyBundle throws error for non string value', async () => {
   try {
     const bytes = [1, 2, 3]
