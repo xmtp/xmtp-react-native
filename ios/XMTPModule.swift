@@ -140,7 +140,7 @@ public class XMTPModule: Module {
 			return Array(Data(signature))
 		}
 		
-		AsyncFunction("exportKeyBundle") { (clientAddress: String) -> [UInt8] in
+		AsyncFunction("exportPublicKeyBundle") { (clientAddress: String) -> [UInt8] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
@@ -149,7 +149,7 @@ public class XMTPModule: Module {
 		}
 
 		// Export the client's serialized key bundle.
-		AsyncFunction("exportPublicKeyBundle") { (clientAddress: String) -> String in
+		AsyncFunction("exportKeyBundle") { (clientAddress: String) -> String in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
