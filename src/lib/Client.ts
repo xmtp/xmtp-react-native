@@ -311,6 +311,10 @@ export class Client<ContentTypes> {
     )
   }
 
+  async exportPublicKeyBundle(): Promise<Uint8Array> {
+    return XMTPModule.exportPublicKeyBundle(this.address)
+  }
+
   /**
    * Exports the key bundle associated with the current XMTP address.
    *

@@ -249,6 +249,11 @@ class XMTPModule : Module() {
             signature.toByteArray().map { it.toInt() and 0xFF }
         }
 
+        AsyncFunction("exportPublicKeyBundle") { clientAddress: String ->
+            logV("exportPublicKeyBundle")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.privateKeyBundleV1.toPublicKeyBundle().toByteArray().map { it.toInt() and 0xFF }
+        }
 
         AsyncFunction("exportKeyBundle") { clientAddress: String ->
             logV("exportKeyBundle")

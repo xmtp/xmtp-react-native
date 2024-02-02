@@ -91,6 +91,14 @@ export async function sign(
   return new Uint8Array(signatureArray)
 }
 
+export async function exportPublicKeyBundle(
+  clientAddress: string
+): Promise<Uint8Array> {
+  const publicBundleArray =
+    await XMTPModule.exportPublicKeyBundle(clientAddress)
+  return new Uint8Array(publicBundleArray)
+}
+
 export async function exportKeyBundle(clientAddress: string): Promise<string> {
   return await XMTPModule.exportKeyBundle(clientAddress)
 }
