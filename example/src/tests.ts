@@ -883,3 +883,17 @@ test('returns keyMaterial for conversations', async () => {
 
   return true
 })
+
+test('make a MLS V3 client not local throws error', async () => {
+  try {
+    const client = await Client.createRandom({
+      env: 'dev',
+      appVersion: 'Testing/0.0.0',
+      enableAlphaMls: true
+    })
+  } catch (error: any) {
+    return error.message.endsWith("Environment must be \"local\" to enable alpha MLS")
+  }
+  throw new Error('should throw error on MLS V3 client create when environment is not local')
+
+})
