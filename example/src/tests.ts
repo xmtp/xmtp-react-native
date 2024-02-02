@@ -58,6 +58,10 @@ class NumberCodec implements JSContentCodec<NumberRef> {
   fallback(content: NumberRef): string | undefined {
     return 'a billion'
   }
+
+  shouldPush(content: NumberRef): boolean {
+    return false
+  }
 }
 
 export type Test = {
@@ -804,6 +808,46 @@ test('register and use custom content types when preparing message', async () =>
     messageContent.topNumber.bottomNumber === 12,
     'did not get content properly: ' + JSON.stringify(messageContent)
   )
+
+  return true
+})
+
+test('shouldPush for content types', async () => {
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+  })
+  const alice = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+  })
+
+  bob.register(new NumberCodec())
+  alice.register(new NumberCodec())
+
+  const bobConvo = await bob.conversations.newConversation(alice.address)
+  const aliceConvo = await alice.conversations.newConversation(bob.address)
+
+  await bobConvo.send('hi')
+
+  const messages = await aliceConvo.messages()
+
+  const message = messages[0]
+  assert(message.shouldPush === true, 'shouldPush should be true')
+
+  const prepped = await bobConvo.prepareMessage(
+    { topNumber: { bottomNumber: 12 } },
+    {
+      contentType: ContentTypeNumber,
+    }
+  )
+
+  await bobConvo.sendPreparedMessage(prepped)
+
+  const messages2 = await aliceConvo.messages()
+  const message2 = messages2[0]
+
+  assert(message2.shouldPush === false, 'shouldPush should be false')
 
   return true
 })
