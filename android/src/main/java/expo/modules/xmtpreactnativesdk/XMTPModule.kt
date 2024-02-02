@@ -225,11 +225,11 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("sign") { clientAddress: String, message: List<Int> ->
+        AsyncFunction("sign") { clientAddress: String, digest: List<Int>, keyType: String, preKeyIndex: Int ->
             logV("sign")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val messageBytes =
-                message.foldIndexed(ByteArray(message.size)) { i, a, v ->
+            val digestBytes =
+                digest.foldIndexed(ByteArray(digest.size)) { i, a, v ->
                     a.apply {
                         set(
                             i,
@@ -237,8 +237,14 @@ class XMTPModule : Module() {
                         )
                     }
                 }
+            val privateKeyBundle = client.privateKeyBundleV1
+            val key = if (keyType == "prekey") {
+                privateKeyBundle.preKeysList[preKeyIndex]
+            } else {
+                privateKeyBundle.identityKey
+            }
             val signature = runBlocking {
-                PrivateKeyBuilder(client.privateKeyBundleV1.identityKey).sign(messageBytes)
+                PrivateKeyBuilder(key).sign(digestBytes)
             }
             signature.toByteArray().map { it.toInt() and 0xFF }
         }
