@@ -112,6 +112,100 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
+test('can message in a group', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true
+  })
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true
+  })
+
+  // Alice's num groups start at 0
+  let aliceGroups = await aliceClient.conversations.listGroups()
+  if (aliceGroups.length != 0) {
+    throw new Error('num groups should be 0')
+  }
+
+  // Alice creates a group
+  const aliceGroup = await aliceClient.conversations.newGroup(
+    [bobClient.address, camClient.address]
+  )
+
+  // Alice's num groups == 1
+  aliceGroups = await aliceClient.conversations.listGroups()
+  if (aliceGroups.length != 1) {
+    throw new Error('num groups should be 1')
+  }
+
+  // Alice can confirm memberAddresses
+  let memberAddresses = await aliceGroup.memberAddresses()
+  if (memberAddresses.length != 3) {
+    throw new Error('num group members should be 3')
+  }
+  const lowercasedAddresses: string[] = memberAddresses.map(s => s.toLowerCase());
+  if (!(lowercasedAddresses.includes(aliceClient.address.toLowerCase())
+      && lowercasedAddresses.includes(bobClient.address.toLowerCase())
+      && lowercasedAddresses.includes(camClient.address.toLowerCase()))) {
+        throw new Error('missing address')
+      }
+
+  // Alice can send messages
+  aliceGroup.send("hello, world")
+  aliceGroup.send("gm")
+
+  // Bob's num groups == 1
+  await bobClient.conversations.syncGroups()
+  let bobGroups = await bobClient.conversations.listGroups()
+  if (bobGroups.length != 1) {
+    throw new Error('num groups for bob should be 1, but it is' + bobGroups.length)
+  }
+
+  // Bob can read messages from Alice
+  await bobGroups[0].sync()
+  let bobMessages: DecodedMessage[] = await bobGroups[0].messages()
+  if (bobMessages.length != 2) {
+    throw new Error('num messages for bob should be 2, but it is' + bobMessages.length)
+  }
+  let messageString: string = JSON.stringify(bobMessages[0])
+  if (!messageString.includes("gm")) {
+    throw new Error('newest Message should include gm')
+  }
+  let messageString2: string = JSON.stringify(bobMessages[1])
+  if (!messageString2.includes("hello, world")) {
+    throw new Error('newest Message should include gm')
+  }
+  // Bob can send a message
+  bobGroups[0].send("hey guys!")
+
+  // Cam's num groups == 1
+  await camClient.conversations.syncGroups()
+  let camGroups = await camClient.conversations.listGroups()
+  if (camGroups.length != 1) {
+    throw new Error('num groups for cam should be 1, but it is' + camGroups.length)
+  }
+
+  // Cam can read messages from Alice and Bob
+  await camGroups[0].sync()
+  let camMessages = await camGroups[0].messages()
+  let messageString3: string = JSON.stringify(camMessages[1])
+  if (!messageString3.includes("gm")) {
+    throw new Error('second Message should include gm')
+  }
+  let messageString4: string = JSON.stringify(camMessages[0])
+  if (!messageString4.includes("hey guys!")) {
+    throw new Error('newest Message should include hey guys!')
+  }
+
+  return true
+})
+
 test('can pass a custom filter date and receive message objects with expected dates', async () => {
   try {
     const bob = await Client.createRandom({ env: 'local' })
@@ -776,7 +870,7 @@ test('register and use custom content types', async () => {
   const messageContent = message.content()
 
   assert(
-    messageContent === 12,
+     messageContent === 12,
     'did not get content properly: ' + JSON.stringify(messageContent)
   )
 

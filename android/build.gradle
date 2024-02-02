@@ -112,5 +112,5 @@ dependencies {
   implementation 'org.web3j:crypto:5.0.0'
   implementation "net.java.dev.jna:jna:5.13.0@aar"
   implementation 'com.google.protobuf:protobuf-kotlin-lite:3.22.3'
-  implementation 'org.xmtp:proto-kotlin:3.31.0'
+  implementation 'org.xmtp:proto-kotlin:3.40.1'
 }
