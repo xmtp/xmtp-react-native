@@ -102,11 +102,11 @@ export async function listGroups<ContentTypes>(
   })
 }
 
-export async function listMembers<ContentTypes>(
+export async function listMemberAddresses<ContentTypes>(
   client: Client<ContentTypes>,
   id: string
 ): Promise<string[]> {
-  return XMTPModule.listMembers(client.address, id)
+  return XMTPModule.listMemberAddresses(client.address, id)
 }
 
 export async function sendMessageToGroup(

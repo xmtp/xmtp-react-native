@@ -27,7 +27,7 @@ export class Group<ContentTypes> {
   }
 
   async memberAddresses(): Promise<string[]> {
-    return XMTP.listMembers(this.client, this.id)
+    return XMTP.listMemberAddresses(this.client, this.id)
   }
 
   /**

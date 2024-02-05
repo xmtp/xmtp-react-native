@@ -623,7 +623,7 @@ class XMTPModule : Module() {
             return@AsyncFunction encodedGroup
         }
 
-        AsyncFunction("listMembers") { clientAddress: String, groupId: String ->
+        AsyncFunction("listMemberAddresses") { clientAddress: String, groupId: String ->
             logV("listMembers")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             if (client.libXMTPClient == null) {
