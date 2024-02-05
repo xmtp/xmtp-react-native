@@ -13,9 +13,9 @@ import {
 } from './lib/ContentCodec'
 import { Conversation } from './lib/Conversation'
 import { DecodedMessage } from './lib/DecodedMessage'
+import { Group } from './lib/Group'
 import type { Query } from './lib/Query'
 import { getAddress } from './utils/address'
-import { Group } from './lib/Group'
 
 export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
 export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
@@ -84,35 +84,28 @@ export async function createFromKeyBundle(
   )
 }
 
-
 export async function createGroup<ContentTypes>(
   client: Client<ContentTypes>,
-  peerAddresses: string[],
+  peerAddresses: string[]
 ): Promise<Group<ContentTypes>> {
   return new Group(
     client,
-    JSON.parse(
-      await XMTPModule.createGroup(
-        client.address,
-        peerAddresses,
-      )
-    )
+    JSON.parse(await XMTPModule.createGroup(client.address, peerAddresses))
   )
 }
 
 export async function listGroups<ContentTypes>(
   client: Client<ContentTypes>
 ): Promise<Group<ContentTypes>[]> {
-  return (await XMTPModule.listGroups(client.address)).map(
-    (json: string) => {
-      return new Group(client, JSON.parse(json))
-    }
-  )
+  return (await XMTPModule.listGroups(client.address)).map((json: string) => {
+    return new Group(client, JSON.parse(json))
+  })
 }
 
 export async function listMembers<ContentTypes>(
   client: Client<ContentTypes>,
-  id: string): Promise<string[]> {
+  id: string
+): Promise<string[]> {
   return XMTPModule.listMembers(client.address, id)
 }
 
@@ -121,7 +114,6 @@ export async function sendMessageToGroup(
   groupId: string,
   content: any
 ): Promise<string> {
-
   const contentJson = JSON.stringify(content)
   return await XMTPModule.sendMessageToGroup(
     clientAddress,
@@ -130,7 +122,10 @@ export async function sendMessageToGroup(
   )
 }
 
-export async function groupMessages(clientAddress: string, id: string): Promise<DecodedMessage[]> {
+export async function groupMessages(
+  clientAddress: string,
+  id: string
+): Promise<DecodedMessage[]> {
   return await XMTPModule.groupMessages(clientAddress, id)
 }
 
