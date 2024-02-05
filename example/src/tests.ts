@@ -1,5 +1,6 @@
 import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
+import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
@@ -24,25 +25,37 @@ const ContentTypeNumber: ContentTypeId = {
   versionMinor: 0,
 }
 
-class NumberCodec implements JSContentCodec<number> {
+export type NumberRef = {
+  topNumber: {
+    bottomNumber: number
+  }
+}
+
+class NumberCodec implements JSContentCodec<NumberRef> {
   contentType = ContentTypeNumber
 
   // a completely absurd way of encoding number values
-  encode(content: number): EncodedContent {
+  encode(content: NumberRef): EncodedContent {
     return {
       type: ContentTypeNumber,
       parameters: {
-        number: JSON.stringify(content),
+        test: 'test',
       },
-      content: new Uint8Array(),
+      content: new TextEncoder().encode(JSON.stringify(content)),
     }
   }
 
-  decode(encodedContent: EncodedContent): number {
-    return JSON.parse(encodedContent.parameters.number) as number
+  decode(encodedContent: EncodedContent): NumberRef {
+    if (encodedContent.parameters.test !== 'test') {
+      throw new Error(`parameters should parse ${encodedContent.parameters}`)
+    }
+    const contentReceived = JSON.parse(
+      new TextDecoder().decode(encodedContent.content)
+    ) as NumberRef
+    return contentReceived
   }
 
-  fallback(content: number): string | undefined {
+  fallback(content: NumberRef): string | undefined {
     return 'a billion'
   }
 }
@@ -772,9 +785,12 @@ test('register and use custom content types when preparing message', async () =>
   const bobConvo = await bob.conversations.newConversation(alice.address)
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
-  const prepped = await bobConvo.prepareMessage(12, {
-    contentType: ContentTypeNumber,
-  })
+  const prepped = await bobConvo.prepareMessage(
+    { topNumber: { bottomNumber: 12 } },
+    {
+      contentType: ContentTypeNumber,
+    }
+  )
 
   await bobConvo.sendPreparedMessage(prepped)
 
@@ -782,10 +798,10 @@ test('register and use custom content types when preparing message', async () =>
   assert(messages.length === 1, 'did not get messages')
 
   const message = messages[0]
-  const messageContent = message.content()
+  const messageContent = message.content() as NumberRef
 
   assert(
-    messageContent === 12,
+    messageContent.topNumber.bottomNumber === 12,
     'did not get content properly: ' + JSON.stringify(messageContent)
   )
 
@@ -824,4 +840,88 @@ test('calls preEnableIdentityCallback when supplied', async () => {
   }
 
   return isCallbackCalled
+})
+
+test('returns keyMaterial for conversations', async () => {
+  const bob = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  const alice = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  if (bob.address === alice.address) {
+    throw new Error('bob and alice should be different')
+  }
+
+  const bobConversation = await bob.conversations.newConversation(alice.address)
+  await delayToPropogate()
+
+  const aliceConversation = (await alice.conversations.list())[0]
+  if (!aliceConversation) {
+    throw new Error('aliceConversation should exist')
+  }
+
+  if (!aliceConversation.keyMaterial) {
+    throw new Error('aliceConversation keyMaterial should exist')
+  }
+
+  if (!bobConversation.keyMaterial) {
+    throw new Error('bobConversation keyMaterial should exist')
+  }
+
+  return true
+})
+
+test('correctly handles lowercase addresses', async () => {
+  const bob = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  const alice = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  if (bob.address === alice.address) {
+    throw new Error('bob and alice should be different')
+  }
+
+  const bobConversation = await bob.conversations.newConversation(
+    alice.address.toLocaleLowerCase()
+  )
+  await delayToPropogate()
+  if (!bobConversation) {
+    throw new Error('bobConversation should exist')
+  }
+  const aliceConversation = (await alice.conversations.list())[0]
+  if (!aliceConversation) {
+    throw new Error('aliceConversation should exist')
+  }
+
+  await bob.contacts.deny([aliceConversation.peerAddress.toLocaleLowerCase()])
+  await delayToPropogate()
+  const deniedState = await bob.contacts.isDenied(aliceConversation.peerAddress)
+  const allowedState = await bob.contacts.isAllowed(
+    aliceConversation.peerAddress
+  )
+  if (!deniedState) {
+    throw new Error(`contacts denied by bo should be denied not ${deniedState}`)
+  }
+
+  if (allowedState) {
+    throw new Error(
+      `contacts denied by bo should be denied not ${allowedState}`
+    )
+  }
+  const deniedLowercaseState = await bob.contacts.isDenied(
+    aliceConversation.peerAddress.toLocaleLowerCase()
+  )
+  const allowedLowercaseState = await bob.contacts.isAllowed(
+    aliceConversation.peerAddress.toLocaleLowerCase()
+  )
+  if (!deniedLowercaseState) {
+    throw new Error(
+      `contacts denied by bo should be denied not ${deniedLowercaseState}`
+    )
+  }
+
+  if (allowedLowercaseState) {
+    throw new Error(
+      `contacts denied by bo should be denied not ${allowedLowercaseState}`
+    )
+  }
+  return true
 })

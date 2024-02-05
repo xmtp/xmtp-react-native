@@ -26,7 +26,6 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
-import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreparedMessage
@@ -156,9 +155,9 @@ class XMTPModule : Module() {
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
 
-            if (hasCreateIdentityCallback == true) 
+            if (hasCreateIdentityCallback == true)
                 preCreateIdentityCallbackDeferred = CompletableDeferred()
-            if (hasEnableIdentityCallback == true) 
+            if (hasEnableIdentityCallback == true)
                 preEnableIdentityCallbackDeferred = CompletableDeferred()
             val preCreateIdentityCallback: PreEventCallback? =
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
@@ -185,9 +184,9 @@ class XMTPModule : Module() {
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
 
-            if (hasCreateIdentityCallback == true) 
+            if (hasCreateIdentityCallback == true)
                 preCreateIdentityCallbackDeferred = CompletableDeferred()
-            if (hasEnableIdentityCallback == true) 
+            if (hasEnableIdentityCallback == true)
                 preEnableIdentityCallbackDeferred = CompletableDeferred()
             val preCreateIdentityCallback: PreEventCallback? =
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
@@ -476,7 +475,7 @@ class XMTPModule : Module() {
                     }
                 }
             val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
-    
+
             val prepared = conversation.prepareMessage(
                 encodedContent = encodedContent,
             )
@@ -643,7 +642,7 @@ class XMTPModule : Module() {
             preCreateIdentityCallbackDeferred?.complete(Unit)
         }
 
-        Function("preEnableIdentityCallbackCompleted") { 
+        Function("preEnableIdentityCallbackCompleted") {
             logV("preEnableIdentityCallbackCompleted")
             preEnableIdentityCallbackDeferred?.complete(Unit)
         }
