@@ -262,13 +262,6 @@ class XMTPModule : Module() {
             }
         }
 
-        Function("getLibXMTPClientAccountAddress") { clientAddress: String -> String
-            logV("getLibXMTPClientAccountAddress")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val libXMTPClient = client.libXMTPClient ?: throw XMTPException("No libxmtp client")
-            return@Function libXMTPClient.accountAddress()
-        }
-
         AsyncFunction("exportKeyBundle") { clientAddress: String ->
             logV("exportKeyBundle")
             val client = clients[clientAddress] ?: throw XMTPException("No client")

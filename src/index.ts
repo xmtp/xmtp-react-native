@@ -32,10 +32,6 @@ export function address(): string {
   return XMTPModule.address()
 }
 
-export function getLibXMTPClientAccountAddress(address: string): string {
-  return XMTPModule.getLibXMTPClientAccountAddress(address)
-}
-
 export async function auth(
   address: string,
   environment: 'local' | 'dev' | 'production',
