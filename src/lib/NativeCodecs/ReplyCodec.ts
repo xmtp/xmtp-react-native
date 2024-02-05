@@ -1,12 +1,16 @@
+import { TextCodec } from './TextCodec'
 import {
   ContentTypeId,
   NativeContentCodec,
   NativeMessageContent,
 } from '../ContentCodec'
+import { DefaultContentTypes } from '../types/DefaultContentType'
 
-export type ReplyContent = {
+export type ReplyContent<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+> = {
   reference: string
-  content: any
+  content: [...ContentTypes, TextCodec][number] | string
   contentType: string
 }
 

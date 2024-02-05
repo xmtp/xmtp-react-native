@@ -90,7 +90,9 @@ export class DecodedMessage<
       const encoded = JSON.parse(encodedJSON)
       const codec = this.client.codecRegistry[
         this.contentTypeId
-      ] as JSContentCodec<ExtractDecodedType<ContentTypes[number]>>
+      ] as JSContentCodec<
+        ExtractDecodedType<[...ContentTypes, TextCodec][number]>
+      >
       if (!codec) {
         throw new Error(
           `no content type found ${JSON.stringify(this.contentTypeId)}`
@@ -108,7 +110,7 @@ export class DecodedMessage<
         ) {
           return (
             codec as NativeContentCodec<
-              ExtractDecodedType<ContentTypes[number]>
+              ExtractDecodedType<[...ContentTypes, TextCodec][number]>
             >
           ).decode(this.nativeContent)
         }
