@@ -3,6 +3,7 @@ import { Conversation } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
+import { getAddress } from '../utils/address'
 import { Group } from './Group'
 
 export default class Conversations<ContentTypes> {
@@ -51,9 +52,10 @@ export default class Conversations<ContentTypes> {
     peerAddress: string,
     context?: ConversationContext
   ): Promise<Conversation<ContentTypes>> {
+    const checksumAddress = getAddress(peerAddress)
     return await XMTPModule.createConversation(
       this.client,
-      peerAddress,
+      checksumAddress,
       context
     )
   }
