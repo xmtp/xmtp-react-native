@@ -10,6 +10,7 @@ import {
   RemoteAttachmentContent,
   useXmtp,
 } from 'xmtp-react-native-sdk'
+import { Group } from 'xmtp-react-native-sdk/lib/Group'
 
 import { SupportedContentTypes } from './contentTypes/contentTypes'
 import { downloadFile, uploadFile } from './storage'
@@ -28,6 +29,42 @@ export function useConversationList(): UseQueryResult<
     ['xmtp', 'conversations', client?.address],
     () => client!.conversations.list(),
     {
+      enabled: !!client,
+    }
+  )
+}
+
+export function useGroupsList<ContentTypes>(): UseQueryResult<
+  Group<ContentTypes>[]
+> {
+  const { client } = useXmtp()
+  return useQuery<Group<ContentTypes>[]>(
+    ['xmtp', 'groups', client?.address],
+    async () => (await client?.conversations.listGroups()) || [],
+    {
+      enabled: !!client,
+    }
+  )
+}
+
+export function useGroup<ContentTypes>({
+  groupId,
+}: {
+  groupId: string
+}): UseQueryResult<Group<ContentTypes> | undefined> {
+  const { client } = useXmtp()
+  return useQuery<
+    Group<ContentTypes>[],
+    unknown,
+    Group<ContentTypes> | undefined
+  >(
+    ['xmtp', 'group', client?.address, groupId],
+    async () => {
+      const groups = await client?.conversations.listGroups()
+      return groups || []
+    },
+    {
+      select: (groups) => groups.find((g) => g.id === groupId),
       enabled: !!client,
     }
   )
