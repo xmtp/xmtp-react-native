@@ -166,7 +166,7 @@ class XMTPModule : Module() {
         //
         AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean? ->
             logV("auth")
-            requireLocalEnvForAlphaMLS(enableAlphaMls, environment)
+            requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
 
@@ -201,7 +201,7 @@ class XMTPModule : Module() {
         // Generate a random wallet and set the client to that
         AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean? ->
             logV("createRandom")
-            requireLocalEnvForAlphaMLS(enableAlphaMls, environment)
+            requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val privateKey = PrivateKeyBuilder()
 
             if (hasCreateIdentityCallback == true)
@@ -229,7 +229,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean? ->
             logV("createFromKeyBundle")
-            requireLocalEnvForAlphaMLS(enableAlphaMls, environment)
+            requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             try {
                 val context = if (enableAlphaMls == true) context else null
                 val options = ClientOptions(
@@ -907,9 +907,9 @@ class XMTPModule : Module() {
         preCreateIdentityCallbackDeferred = null
     }
 
-    private fun requireLocalEnvForAlphaMLS(enableAlphaMls: Boolean?, environment: String) {
-        if (enableAlphaMls == true && environment != "local") {
-            throw XMTPException("Environment must be \"local\" to enable alpha MLS")
+    private fun requireNotProductionEnvForAlphaMLS(enableAlphaMls: Boolean?, environment: String) {
+        if (enableAlphaMls == true && (environment == "production" )) {
+            throw XMTPException("Environment must be \"local\" or \"dev\" to enable alpha MLS")
         }
     }
 }

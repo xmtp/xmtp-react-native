@@ -101,7 +101,7 @@ dependencies {
   implementation 'com.google.code.gson:gson:2.10.1'
   implementation 'com.facebook.react:react-native:0.71.3'
   implementation "com.daveanthonythomas.moshipack:moshipack:1.0.1"
-  implementation "org.xmtp:android:0.7.9"
+  implementation "org.xmtp:android:0.7.10"
   // xmtp-android local testing setup below (comment org.xmtp:android above)
   // implementation files('<PATH TO XMTP-ANDROID>/xmtp-android/library/build/outputs/aar/library-debug.aar')
   // implementation 'com.google.crypto.tink:tink-android:1.7.0'
