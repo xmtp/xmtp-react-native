@@ -81,25 +81,16 @@ class ReactNativeSigner(var module: XMTPModule, override var address: String) : 
         continuations.remove(id)
     }
 
-    override suspend fun sign(data: ByteArray): Signature? {
-        val message = String(data, Charsets.UTF_8)
-        return signLegacy(message)
-    }
-
-    override suspend fun signLegacy(message: String): Signature {
-        val request = SignatureRequest(message = message)
+    override suspend fun sign(data: ByteArray): Signature {
+        val request = SignatureRequest(message = String(data, Charsets.UTF_8))
         module.sendEvent("sign", mapOf("id" to request.id, "message" to request.message))
         return suspendCancellableCoroutine { continuation ->
             continuations[request.id] = continuation
         }
     }
 
-    override fun sign(message: String): ByteArray {
-        return runBlocking {
-            signLegacy(message).toByteArray()
-        }
-    }
-
+    override suspend fun sign(message: String): Signature =
+        sign(message.toByteArray())
 }
 
 data class SignatureRequest(
