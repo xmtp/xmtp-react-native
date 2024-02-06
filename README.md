@@ -437,3 +437,7 @@ The `env` parameter accepts one of three valid values: `dev`, `production`, or `
 - `local`: Use to have a client communicate with an XMTP node you are running locally. For example, an XMTP node developer can set `env` to `local` to generate client traffic to test a node running locally.
 
 The `production` network is configured to store messages indefinitely. XMTP may occasionally delete messages and keys from the `dev` network, and will provide advance notice in the [XMTP Discord community](https://discord.gg/xmtp).
+
+## Enabling group chat
+
+Coming soon...
