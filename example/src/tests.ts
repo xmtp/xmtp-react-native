@@ -108,16 +108,7 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
-test('non-local MLS V3 client creation throws error', async () => {
-  try {
-    const client = await Client.createRandom({
-      env: 'dev',
-      appVersion: 'Testing/0.0.0',
-      enableAlphaMls: true
-    })
-  } catch (error: any) {
-    return error.message.endsWith("Environment must be \"local\" to enable alpha MLS")
-  }
+test('production MLS V3 client creation throws error', async () => {
   try {
     const client = await Client.createRandom({
       env: 'production',
@@ -125,7 +116,7 @@ test('non-local MLS V3 client creation throws error', async () => {
       enableAlphaMls: true
     })
   } catch (error: any) {
-    return error.message.endsWith("Environment must be \"local\" to enable alpha MLS")
+    return error.message.endsWith("Environment must be \"local\" or \"dev\" to enable alpha MLS")
   }
   throw new Error('should throw error on MLS V3 client create when environment is not local')
 })
