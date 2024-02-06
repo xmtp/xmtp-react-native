@@ -138,6 +138,24 @@ export default function LaunchScreen({
               }}
             />
           </View>
+          <View key="connected-groups-local" style={{ margin: 16 }}>
+            <Button
+              title="Use Connected Wallet with Groups (local)"
+              color="purple"
+              onPress={() => {
+                configureWallet(
+                  'local',
+                  XMTP.Client.create(signer, {
+                    env: 'local',
+                    appVersion,
+                    preCreateIdentityCallback,
+                    preEnableIdentityCallback,
+                    enableAlphaMls: true,
+                  })
+                )
+              }}
+            />
+          </View>
         </>
       )}
       <Divider key="divider-generated" />
@@ -189,6 +207,25 @@ export default function LaunchScreen({
           }}
         />
       </View>
+      <View key="generated-groups-local" style={{ margin: 16 }}>
+        <Button
+          title="Use Generated Wallet with Groups (local)"
+          color="purple"
+          onPress={() => {
+            configureWallet(
+              'local',
+              XMTP.Client.createRandom({
+                enableAlphaMls: true,
+                env: 'local',
+                appVersion,
+                codecs: supportedCodecs,
+                preCreateIdentityCallback,
+                preEnableIdentityCallback,
+              })
+            )
+          }}
+        />
+      </View>
       {!!savedKeys.keyBundle && (
         <>
           <Divider key="divider-saved" />
@@ -228,6 +265,23 @@ export default function LaunchScreen({
                 configureWallet(
                   'local',
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
+                    env: 'local',
+                    appVersion,
+                    codecs: supportedCodecs,
+                  })
+                )
+              }}
+            />
+          </View>
+          <View key="saved-groups-local" style={{ margin: 16 }}>
+            <Button
+              title="Use Saved Wallet with Groups (local)"
+              color="purple"
+              onPress={() => {
+                configureWallet(
+                  'local',
+                  XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
+                    enableAlphaMls: true,
                     env: 'local',
                     appVersion,
                     codecs: supportedCodecs,

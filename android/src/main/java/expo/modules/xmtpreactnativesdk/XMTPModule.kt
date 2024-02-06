@@ -1,5 +1,6 @@
 package expo.modules.xmtpreactnativesdk
 
+import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import android.util.Base64.NO_WRAP
@@ -7,6 +8,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
+import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
@@ -16,17 +18,20 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.Conversation
+import org.xmtp.android.library.Group
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreparedMessage
 import org.xmtp.android.library.SendOptions
@@ -97,7 +102,15 @@ fun Conversation.cacheKey(clientAddress: String): String {
     return "${clientAddress}:${topic}"
 }
 
+fun Group.cacheKey(clientAddress: String): String {
+    return "${clientAddress}:${id}"
+}
+
 class XMTPModule : Module() {
+
+    val context: Context
+        get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+
     private fun apiEnvironments(env: String, appVersion: String?): ClientOptions.Api {
         return when (env) {
             "local" -> ClientOptions.Api(
@@ -125,6 +138,7 @@ class XMTPModule : Module() {
     private var signer: ReactNativeSigner? = null
     private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
     private val conversations: MutableMap<String, Conversation> = mutableMapOf()
+    private val groups: MutableMap<String, Group> = mutableMapOf()
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
     private var preEnableIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
     private var preCreateIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
@@ -150,8 +164,9 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean? ->
             logV("auth")
+            requireLocalEnvForAlphaMLS(enableAlphaMls, environment)
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
 
@@ -163,10 +178,14 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+            val context = if (enableAlphaMls == true) context else null
+            
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback
+                preEnableIdentityCallback = preEnableIdentityCallback,
+                enableAlphaMls = enableAlphaMls == true,
+                appContext = context
             )
             clients[address] = Client().create(account = reactSigner, options = options)
             ContentJson.Companion
@@ -180,8 +199,9 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean? ->
             logV("createRandom")
+            requireLocalEnvForAlphaMLS(enableAlphaMls, environment)
             val privateKey = PrivateKeyBuilder()
 
             if (hasCreateIdentityCallback == true)
@@ -192,11 +212,14 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+            val context = if (enableAlphaMls == true) context else null
 
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback
+                preEnableIdentityCallback = preEnableIdentityCallback,
+                enableAlphaMls = enableAlphaMls == true,
+                appContext = context
             )
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
@@ -204,10 +227,16 @@ class XMTPModule : Module() {
             randomClient.address
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String? ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean? ->
+            logV("createFromKeyBundle")
+            requireLocalEnvForAlphaMLS(enableAlphaMls, environment)
             try {
-                logV("createFromKeyBundle")
-                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+                val context = if (enableAlphaMls == true) context else null
+                val options = ClientOptions(
+                    api = apiEnvironments(environment, appVersion),
+                    enableAlphaMls = enableAlphaMls == true,
+                    appContext = context
+                )
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
                         Base64.decode(
@@ -352,6 +381,16 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("listGroups") { clientAddress: String ->
+            logV("listGroups")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val groupList = client.conversations.listGroups()
+            groupList.map { group ->
+                groups[group.cacheKey(clientAddress)] = group
+                GroupWrapper.encode(client, group)
+            }
+        }
+
         AsyncFunction("loadMessages") { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
             logV("loadMessages")
             val conversation =
@@ -371,6 +410,16 @@ class XMTPModule : Module() {
                 )
             )
                 .map { DecodedMessageWrapper.encode(it) }
+        }
+
+        AsyncFunction("groupMessages") { clientAddress: String, id: String ->
+            logV("groupMessages")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            if (client.libXMTPClient == null) {
+                throw XMTPException("Create client with enableAlphaMLS true in order to synch groups")
+            }
+            val group = findGroup(clientAddress, id)
+            group?.decryptedMessages()?.map { DecodedMessageWrapper.encode(it) }
         }
 
         AsyncFunction("loadBatchMessages") { clientAddress: String, topics: List<String> ->
@@ -432,6 +481,21 @@ class XMTPModule : Module() {
                 options = SendOptions(contentType = sending.type)
             )
         }
+
+       AsyncFunction("sendMessageToGroup") { clientAddress: String, idString: String, contentJson: String ->
+           logV("sendMessageToGroup")
+           val group =
+               findGroup(
+                   clientAddress = clientAddress,
+                   idString = idString
+               )
+                   ?: throw XMTPException("no group found for $idString")
+           val sending = ContentJson.fromJson(contentJson)
+           group.send(
+               content = sending.content,
+               options = SendOptions(contentType = sending.type)
+           )
+       }
 
         AsyncFunction("prepareMessage") { clientAddress: String, conversationTopic: String, contentJson: String ->
             logV("prepareMessage")
@@ -529,6 +593,47 @@ class XMTPModule : Module() {
                 )
             )
             ConversationWrapper.encode(client, conversation)
+        }
+
+        AsyncFunction("createGroup") { clientAddress: String, peerAddresses: List<String> ->
+            logV("createGroup")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            if (client.libXMTPClient == null) {
+                throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
+            }
+            val group = client.conversations.newGroup(peerAddresses)
+            logV("id after creating group: " + Base64.encodeToString(group.id, NO_WRAP))
+            val encodedGroup = GroupWrapper.encode(client, group)
+            return@AsyncFunction encodedGroup
+        }
+
+        AsyncFunction("listMemberAddresses") { clientAddress: String, groupId: String ->
+            logV("listMembers")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            if (client.libXMTPClient == null) {
+                throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
+            }
+            val group = findGroup(clientAddress, groupId)
+            return@AsyncFunction group?.memberAddresses()
+        }
+
+        AsyncFunction("syncGroups") { clientAddress: String ->
+            logV("syncGroups")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            if (client.libXMTPClient == null) {
+                throw XMTPException("Create client with enableAlphaMLS true in order to synch groups")
+            }
+            runBlocking { client.conversations.syncGroups() }
+        }
+
+        AsyncFunction("syncGroup") { clientAddress: String, id: String ->
+            logV("syncGroup")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            if (client.libXMTPClient == null) {
+                throw XMTPException("Create client with enableAlphaMLS true in order to synch groups")
+            }
+            val group = findGroup(clientAddress, id)
+            runBlocking { group?.sync() }
         }
 
         Function("subscribeToConversations") { clientAddress: String ->
@@ -673,6 +778,27 @@ class XMTPModule : Module() {
         return null
     }
 
+   private fun findGroup(
+       clientAddress: String,
+       idString: String,
+   ): Group? {
+       val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+       val cacheKey = "${clientAddress}:${idString}"
+       val cacheGroup = groups[cacheKey]
+       if (cacheGroup != null) {
+           return cacheGroup
+       } else {
+           val group = client.conversations.listGroups()
+               .firstOrNull { Base64.encodeToString(it.id, NO_WRAP) == idString }
+           if (group != null) {
+               groups[group.cacheKey(clientAddress)] = group
+               return group
+           }
+       }
+       return null
+   }
+
     private fun subscribeToConversations(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
@@ -779,6 +905,12 @@ class XMTPModule : Module() {
         sendEvent("preCreateIdentityCallback")
         preCreateIdentityCallbackDeferred?.await()
         preCreateIdentityCallbackDeferred = null
+    }
+
+    private fun requireLocalEnvForAlphaMLS(enableAlphaMls: Boolean?, environment: String) {
+        if (enableAlphaMls == true && environment != "local") {
+            throw XMTPException("Environment must be \"local\" to enable alpha MLS")
+        }
     }
 }
 

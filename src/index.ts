@@ -13,6 +13,7 @@ import {
 } from './lib/ContentCodec'
 import { Conversation } from './lib/Conversation'
 import { DecodedMessage } from './lib/DecodedMessage'
+import { Group } from './lib/Group'
 import type { Query } from './lib/Query'
 import { getAddress } from './utils/address'
 
@@ -55,13 +56,15 @@ export async function createRandom(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
-  hasEnableIdentityCallback?: boolean | undefined
+  hasEnableIdentityCallback?: boolean | undefined,
+  enableAlphaMls?: boolean | undefined
 ): Promise<string> {
   return await XMTPModule.createRandom(
     environment,
     appVersion,
     hasCreateIdentityCallback,
-    hasEnableIdentityCallback
+    hasEnableIdentityCallback,
+    enableAlphaMls
   )
 }
 
@@ -75,6 +78,59 @@ export async function createFromKeyBundle(
     environment,
     appVersion
   )
+}
+
+export async function createGroup<ContentTypes>(
+  client: Client<ContentTypes>,
+  peerAddresses: string[]
+): Promise<Group<ContentTypes>> {
+  return new Group(
+    client,
+    JSON.parse(await XMTPModule.createGroup(client.address, peerAddresses))
+  )
+}
+
+export async function listGroups<ContentTypes>(
+  client: Client<ContentTypes>
+): Promise<Group<ContentTypes>[]> {
+  return (await XMTPModule.listGroups(client.address)).map((json: string) => {
+    return new Group(client, JSON.parse(json))
+  })
+}
+
+export async function listMemberAddresses<ContentTypes>(
+  client: Client<ContentTypes>,
+  id: string
+): Promise<string[]> {
+  return XMTPModule.listMemberAddresses(client.address, id)
+}
+
+export async function sendMessageToGroup(
+  clientAddress: string,
+  groupId: string,
+  content: any
+): Promise<string> {
+  const contentJson = JSON.stringify(content)
+  return await XMTPModule.sendMessageToGroup(
+    clientAddress,
+    groupId,
+    contentJson
+  )
+}
+
+export async function groupMessages(
+  clientAddress: string,
+  id: string
+): Promise<DecodedMessage[]> {
+  return await XMTPModule.groupMessages(clientAddress, id)
+}
+
+export async function syncGroups(clientAddress: string) {
+  await XMTPModule.syncGroups(clientAddress)
+}
+
+export async function syncGroup(clientAddress: string, id: string) {
+  await XMTPModule.syncGroup(clientAddress, id)
 }
 
 export async function exportKeyBundle(clientAddress: string): Promise<string> {
