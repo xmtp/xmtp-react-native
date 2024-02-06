@@ -37,6 +37,7 @@
     "react-native-safe-area-context": "4.5.0",
     "react-native-screens": "~3.20.0",
     "react-native-svg": "^13.9.0",
+    "react-native-toggle-element": "^2.0.1",
     "react-native-url-polyfill": "^2.0.0",
     "react-query": "^3.39.3",
     "stream-browserify": "^3.0.0",

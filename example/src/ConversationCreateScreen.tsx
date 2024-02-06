@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import React, { useState } from 'react'
 import { Button, ScrollView, Text, TextInput } from 'react-native'
+import Toggle from 'react-native-toggle-element'
 import { useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
@@ -13,6 +14,8 @@ export default function ConversationCreateScreen({
   const [alert, setAlert] = useState<string>('')
   const [isCreating, setCreating] = useState<boolean>(false)
   const { client } = useXmtp()
+  const [groupsEnabled, setGroupsEnabled] = useState(false)
+
   const startNewConversation = async (toAddress: string) => {
     if (!client) {
       setAlert('Client not initialized')
@@ -23,9 +26,15 @@ export default function ConversationCreateScreen({
       setAlert(`${toAddress} is not on the XMTP network yet`)
       return
     }
-    const convo = await client.conversations.newConversation(toAddress)
-    navigation.navigate('conversation', { topic: convo.topic })
+    if (groupsEnabled) {
+      const group = await client.conversations.newGroup([toAddress])
+      navigation.navigate('group', { id: group.id })
+    } else {
+      const convo = await client.conversations.newConversation(toAddress)
+      navigation.navigate('conversation', { topic: convo.topic })
+    }
   }
+
   return (
     <>
       <ScrollView>
@@ -47,6 +56,11 @@ export default function ConversationCreateScreen({
             flexGrow: 1,
             opacity: isCreating ? 0.5 : 1,
           }}
+        />
+        <Toggle
+          value={groupsEnabled}
+          onPress={(newState) => setGroupsEnabled(!newState)}
+          leftTitle="Group"
         />
         <Button
           title="Start conversation"
