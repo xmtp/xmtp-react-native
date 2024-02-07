@@ -68,4 +68,48 @@ export class Group<ContentTypes> {
   async sync() {
     await XMTP.syncGroup(this.client.address, this.id)
   }
+
+  /**
+   * Sets up a real-time message stream for the current group.
+   *
+   * This method subscribes to incoming messages in real-time and listens for new message events.
+   * When a new message is detected, the provided callback function is invoked with the details of the message.
+   * Additionally, this method returns a function that can be called to unsubscribe and end the message stream.
+   *
+   * @param {Function} callback - A callback function that will be invoked with the new DecodedMessage when a message is received.
+   * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
+   */
+  streamGroupMessages(
+    callback: (message: DecodedMessage) => Promise<void>
+  ): () => void {
+    XMTP.subscribeToGroupMessages(this.client.address, this.id)
+    const hasSeen = {}
+    const messageSubscription = XMTP.emitter.addListener(
+      'message',
+      async ({
+        clientAddress,
+        message,
+      }: {
+        clientAddress: string
+        message: DecodedMessage
+      }) => {
+        if (clientAddress !== this.client.address) {
+          return
+        }
+        if (hasSeen[message.id]) {
+          return
+        }
+
+        hasSeen[message.id] = true
+
+        message.client = this.client
+        await callback(DecodedMessage.fromObject(message, this.client))
+      }
+    )
+    return () => {
+      messageSubscription.remove()
+      XMTP.unsubscribeFromGroupMessages(this.client.address, this.id)
+    }
+  }
+
 }
