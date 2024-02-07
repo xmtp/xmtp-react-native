@@ -209,6 +209,13 @@ export async function canMessage(
   return await XMTPModule.canMessage(clientAddress, getAddress(peerAddress))
 }
 
+export async function canGroupMessage(
+  clientAddress: string,
+  peerAddresses: string[]
+): Promise<boolean[]> {
+  return await XMTPModule.canGroupMessage(clientAddress, peerAddresses)
+}
+
 export async function staticCanMessage(
   peerAddress: string,
   environment: 'local' | 'dev' | 'production',

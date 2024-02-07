@@ -21,15 +21,20 @@ export default function ConversationCreateScreen({
       setAlert('Client not initialized')
       return
     }
-    const canMessage = await client.canMessage(toAddress)
-    if (!canMessage) {
-      setAlert(`${toAddress} is not on the XMTP network yet`)
-      return
-    }
     if (groupsEnabled) {
+      const canMessage = (await client.canGroupMessage([toAddress]))[0]
+      if (!canMessage) {
+        setAlert(`${toAddress} cannot be added to a group conversation yet`)
+        return
+      }
       const group = await client.conversations.newGroup([toAddress])
       navigation.navigate('group', { id: group.id })
     } else {
+      const canMessage = await client.canMessage(toAddress)
+      if (!canMessage) {
+        setAlert(`${toAddress} is not on the XMTP network yet`)
+        return
+      }
       const convo = await client.conversations.newConversation(toAddress)
       navigation.navigate('conversation', { topic: convo.topic })
     }

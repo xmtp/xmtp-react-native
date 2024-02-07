@@ -179,7 +179,7 @@ export class Client<
   }
 
   /**
-   * Determines whether the current user can send messages to a specified peer.
+   * Determines whether the current user can send messages to a specified peer over 1:1 conversations.
    *
    * This method checks if the specified peer has signed up for XMTP
    * and ensures that the message is not addressed to the sender (no self-messaging).
@@ -189,6 +189,18 @@ export class Client<
    */
   async canMessage(peerAddress: string): Promise<boolean> {
     return await XMTPModule.canMessage(this.address, peerAddress)
+  }
+
+  /**
+   * Determines whether the current user can send messages to the specified peers over groups.
+   *
+   * This method checks if the specified peers are using clients that support group messaging.
+   *
+   * @param {string[]} addresses - The addresses of the peers to check for messaging eligibility.
+   * @returns {Promise<boolean[]>} A Promise resolving to true for peers where group messaging is allowed, and false otherwise.
+   */
+  async canGroupMessage(addresses: string[]): Promise<boolean[]> {
+    return await XMTPModule.canGroupMessage(this.address, addresses)
   }
 
   /**
