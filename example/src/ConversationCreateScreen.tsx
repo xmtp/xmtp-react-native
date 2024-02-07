@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import React, { useState } from 'react'
-import { Button, ScrollView, Text, TextInput } from 'react-native'
+import { Button, ScrollView, Switch, Text, TextInput, View } from 'react-native'
 import Toggle from 'react-native-toggle-element'
 import { useXmtp } from 'xmtp-react-native-sdk'
 
@@ -62,11 +62,15 @@ export default function ConversationCreateScreen({
             opacity: isCreating ? 0.5 : 1,
           }}
         />
-        <Toggle
-          value={groupsEnabled}
-          onPress={(newState) => setGroupsEnabled(!newState)}
-          leftTitle="Group"
-        />
+        <View>
+          <Switch
+            value={groupsEnabled}
+            onValueChange={() =>
+              setGroupsEnabled((previousState) => !previousState)
+            }
+          />
+          <Text>Create Group: {groupsEnabled ? 'ON' : 'OFF'}</Text>
+        </View>
         <Button
           title="Start conversation"
           onPress={() => {
