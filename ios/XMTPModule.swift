@@ -108,21 +108,16 @@ public class XMTPModule: Module {
 
 		// Create a client using its serialized key bundle.
 		AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?) -> String in
-			do {
-				guard let keyBundleData = Data(base64Encoded: keyBundle),
-				      let bundle = try? PrivateKeyBundle(serializedData: keyBundleData)
-				else {
-					throw Error.invalidKeyBundle
-				}
+			// Data from hex: 0836200ffafa17a3cb8b54f22d6afa60b13da48726543241adc5c250dbb0e0cd
+      		// aka 2k many convo test wallet
+      		let privateKeyData = Data([8,54,32,15,250,250,23,163,203,139,84,242,45,106,250,96,177,61,164,135,38,84,50,65,173,197,194,80,219,176,224,205])
+			let privateKey = try PrivateKey(privateKeyData)
+      		// Use hardcoded privateKey for testing
+			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			let client = try await Client.create(account: privateKey, options: options)
 
-				let options = createClientConfig(env: environment, appVersion: appVersion)
-				let client = try await Client.from(bundle: bundle, options: options)
-				await clientsManager.updateClient(key: client.address, client: client)
-				return client.address
-			} catch {
-				print("ERRO! Failed to create client: \(error)")
-				throw error
-			}
+			await clientsManager.updateClient(key: client.address, client: client)
+			return client.address
 		}
 
 		// Export the client's serialized key bundle.
