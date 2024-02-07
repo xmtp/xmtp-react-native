@@ -34,7 +34,8 @@
       {
         "name": "beta",
         "prerelease": true
-      }
+      },
+      "+([0-9])?(.{+([0-9]),x}).x"
     ]
   },
   "publishConfig": {
