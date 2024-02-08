@@ -182,13 +182,11 @@ test('can message in a group', async () => {
   if (bobMessages.length != 2) {
     throw new Error('num messages for bob should be 2, but it is' + bobMessages.length)
   }
-  let messageString: string = JSON.stringify(bobMessages[0])
-  if (!messageString.includes("gm")) {
-    throw new Error('newest Message should include gm')
+  if (bobMessages[0].content() != "gm") {
+    throw new Error('newest message should be \'gm\'')
   }
-  let messageString2: string = JSON.stringify(bobMessages[1])
-  if (!messageString2.includes("hello, world")) {
-    throw new Error('newest Message should include gm')
+  if (bobMessages[1].content() != "hello, world") {
+    throw new Error('newest message should be \'hello, world\'')
   }
   // Bob can send a message
   bobGroups[0].send("hey guys!")
@@ -203,13 +201,11 @@ test('can message in a group', async () => {
   // Cam can read messages from Alice and Bob
   await camGroups[0].sync()
   let camMessages = await camGroups[0].messages()
-  let messageString3: string = JSON.stringify(camMessages[1])
-  if (!messageString3.includes("gm")) {
-    throw new Error('second Message should include gm')
+  if (camMessages[1].content() != "gm") {
+    throw new Error('second Message should be \'gm\'')
   }
-  let messageString4: string = JSON.stringify(camMessages[0])
-  if (!messageString4.includes("hey guys!")) {
-    throw new Error('newest Message should include hey guys!')
+  if (camMessages[0].content() != "hey guys!") {
+    throw new Error('newest Message should be \'hey guys!\'')
   }
 
   return true
