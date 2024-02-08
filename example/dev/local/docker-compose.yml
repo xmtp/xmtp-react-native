@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 services:
   wakunode:
     image: xmtp/node-go:latest
@@ -18,7 +18,7 @@ services:
     depends_on:
       - db
     healthcheck:
-      test: [ "CMD", "lsof", "-i", ":5556" ]
+      test: ['CMD', 'lsof', '-i', ':5556']
       interval: 3s
       timeout: 10s
       retries: 5
@@ -42,8 +42,8 @@ services:
   caddy:
     image: caddy:latest
     ports:
-      - "443:443"
+      - '443:443'
     volumes:
       - ./upload-service/Caddyfile:/etc/caddy/Caddyfile
-      - ./upload-service/data/data:/data
-      - ./upload-service/data/config:/config
+      # - ./upload-service/data/data:/data
+      # - ./upload-service/data/config:/config
