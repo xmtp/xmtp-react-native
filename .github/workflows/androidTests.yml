@@ -44,7 +44,7 @@ jobs:
         run: npm i -g react-native-cli --force
 
       - name: Install docker
-        run: brew install docker docker-compose
+        run: brew install docker docker-compose colima
 
       - name: Start colima
         run: colima start
