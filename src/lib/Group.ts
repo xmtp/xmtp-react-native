@@ -1,8 +1,11 @@
 import { SendOptions } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
+import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
 
-export class Group<ContentTypes> {
+export class Group<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+> {
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number

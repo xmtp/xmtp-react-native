@@ -86,7 +86,9 @@ export async function createFromKeyBundle(
   )
 }
 
-export async function createGroup<ContentTypes>(
+export async function createGroup<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
   client: Client<ContentTypes>,
   peerAddresses: string[]
 ): Promise<Group<ContentTypes>> {
@@ -96,18 +98,17 @@ export async function createGroup<ContentTypes>(
   )
 }
 
-export async function listGroups<ContentTypes>(
-  client: Client<ContentTypes>
-): Promise<Group<ContentTypes>[]> {
+export async function listGroups<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(client: Client<ContentTypes>): Promise<Group<ContentTypes>[]> {
   return (await XMTPModule.listGroups(client.address)).map((json: string) => {
     return new Group(client, JSON.parse(json))
   })
 }
 
-export async function listMemberAddresses<ContentTypes>(
-  client: Client<ContentTypes>,
-  id: string
-): Promise<string[]> {
+export async function listMemberAddresses<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(client: Client<ContentTypes>, id: string): Promise<string[]> {
   return XMTPModule.listMemberAddresses(client.address, id)
 }
 
