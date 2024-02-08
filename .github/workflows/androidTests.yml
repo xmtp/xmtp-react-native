@@ -17,7 +17,7 @@ defaults:
 jobs:
   android-tests:
     name: Android Tests
-    runs-on: macos-latest
+    runs-on: warp-macos-latest-arm64-6x
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v3
