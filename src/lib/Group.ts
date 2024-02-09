@@ -111,5 +111,4 @@ export class Group<ContentTypes> {
       XMTP.unsubscribeFromGroupMessages(this.client.address, this.id)
     }
   }
-
 }

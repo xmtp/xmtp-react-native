@@ -102,7 +102,7 @@ test('can make a MLS V3 client', async () => {
   const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true
+    enableAlphaMls: true,
   })
 
   return true
@@ -113,27 +113,31 @@ test('production MLS V3 client creation throws error', async () => {
     const client = await Client.createRandom({
       env: 'production',
       appVersion: 'Testing/0.0.0',
-      enableAlphaMls: true
+      enableAlphaMls: true,
     })
   } catch (error: any) {
-    return error.message.endsWith("Environment must be \"local\" or \"dev\" to enable alpha MLS")
+    return error.message.endsWith(
+      'Environment must be "local" or "dev" to enable alpha MLS'
+    )
   }
-  throw new Error('should throw error on MLS V3 client create when environment is not local')
+  throw new Error(
+    'should throw error on MLS V3 client create when environment is not local'
+  )
 })
 
 test('can message in a group', async () => {
   // Create three MLS enabled Clients
   const aliceClient = await Client.createRandom({
     env: 'local',
-    enableAlphaMls: true
+    enableAlphaMls: true,
   })
   const bobClient = await Client.createRandom({
     env: 'local',
-    enableAlphaMls: true
+    enableAlphaMls: true,
   })
   const camClient = await Client.createRandom({
     env: 'local',
-    enableAlphaMls: true
+    enableAlphaMls: true,
   })
 
   // Alice's num groups start at 0
@@ -143,9 +147,10 @@ test('can message in a group', async () => {
   }
 
   // Alice creates a group
-  const aliceGroup = await aliceClient.conversations.newGroup(
-    [bobClient.address, camClient.address]
-  )
+  const aliceGroup = await aliceClient.conversations.newGroup([
+    bobClient.address,
+    camClient.address,
+  ])
 
   // Alice's num groups == 1
   aliceGroups = await aliceClient.conversations.listGroups()
@@ -154,61 +159,73 @@ test('can message in a group', async () => {
   }
 
   // Alice can confirm memberAddresses
-  let memberAddresses = await aliceGroup.memberAddresses()
+  const memberAddresses = await aliceGroup.memberAddresses()
   if (memberAddresses.length != 3) {
     throw new Error('num group members should be 3')
   }
-  const lowercasedAddresses: string[] = memberAddresses.map(s => s.toLowerCase());
-  if (!(lowercasedAddresses.includes(aliceClient.address.toLowerCase())
-      && lowercasedAddresses.includes(bobClient.address.toLowerCase())
-      && lowercasedAddresses.includes(camClient.address.toLowerCase()))) {
-        throw new Error('missing address')
-      }
+  const lowercasedAddresses: string[] = memberAddresses.map((s) =>
+    s.toLowerCase()
+  )
+  if (
+    !(
+      lowercasedAddresses.includes(aliceClient.address.toLowerCase()) &&
+      lowercasedAddresses.includes(bobClient.address.toLowerCase()) &&
+      lowercasedAddresses.includes(camClient.address.toLowerCase())
+    )
+  ) {
+    throw new Error('missing address')
+  }
 
   // Alice can send messages
-  aliceGroup.send("hello, world")
-  aliceGroup.send("gm")
+  aliceGroup.send('hello, world')
+  aliceGroup.send('gm')
 
   // Bob's num groups == 1
   await bobClient.conversations.syncGroups()
-  let bobGroups = await bobClient.conversations.listGroups()
+  const bobGroups = await bobClient.conversations.listGroups()
   if (bobGroups.length != 1) {
-    throw new Error('num groups for bob should be 1, but it is' + bobGroups.length)
+    throw new Error(
+      'num groups for bob should be 1, but it is' + bobGroups.length
+    )
   }
 
   // Bob can read messages from Alice
   await bobGroups[0].sync()
-  let bobMessages: DecodedMessage[] = await bobGroups[0].messages()
+  const bobMessages: DecodedMessage[] = await bobGroups[0].messages()
   if (bobMessages.length != 2) {
-    throw new Error('num messages for bob should be 2, but it is' + bobMessages.length)
+    throw new Error(
+      'num messages for bob should be 2, but it is' + bobMessages.length
+    )
   }
-  let messageString: string = JSON.stringify(bobMessages[0])
-  if (!messageString.includes("gm")) {
+  const messageString: string = JSON.stringify(bobMessages[0])
+  if (!messageString.includes('gm')) {
     throw new Error('newest Message should include gm')
   }
-  let messageString2: string = JSON.stringify(bobMessages[1])
-  if (!messageString2.includes("hello, world")) {
+  const messageString2: string = JSON.stringify(bobMessages[1])
+  if (!messageString2.includes('hello, world')) {
     throw new Error('newest Message should include gm')
   }
   // Bob can send a message
-  bobGroups[0].send("hey guys!")
+  bobGroups[0].send('hey guys!')
 
   // Cam's num groups == 1
   await camClient.conversations.syncGroups()
-  let camGroups = await camClient.conversations.listGroups()
+  const camGroups = await camClient.conversations.listGroups()
   if (camGroups.length != 1) {
-    throw new Error('num groups for cam should be 1, but it is' + camGroups.length)
+    throw new Error(
+      'num groups for cam should be 1, but it is' + camGroups.length
+    )
   }
 
   // Cam can read messages from Alice and Bob
   await camGroups[0].sync()
-  let camMessages = await camGroups[0].messages()
-  let messageString3: string = JSON.stringify(camMessages[1])
-  if (!messageString3.includes("gm")) {
+  const camMessages = await camGroups[0].messages()
+  const messageString3: string = JSON.stringify(camMessages[1])
+  if (!messageString3.includes('gm')) {
     throw new Error('second Message should include gm')
   }
-  let messageString4: string = JSON.stringify(camMessages[0])
-  if (!messageString4.includes("hey guys!")) {
+  const messageString4: string = JSON.stringify(camMessages[0])
+  if (!messageString4.includes('hey guys!')) {
     throw new Error('newest Message should include hey guys!')
   }
 
@@ -591,32 +608,34 @@ test('can stream group messages', async () => {
   // Create three MLS enabled Clients
   const aliceClient = await Client.createRandom({
     env: 'local',
-    enableAlphaMls: true
+    enableAlphaMls: true,
   })
   const bobClient = await Client.createRandom({
     env: 'local',
-    enableAlphaMls: true
+    enableAlphaMls: true,
   })
   const camClient = await Client.createRandom({
     env: 'local',
-    enableAlphaMls: true
+    enableAlphaMls: true,
   })
 
   // Alice creates a group
-  const aliceGroup = await aliceClient.conversations.newGroup(
-    [bobClient.address, camClient.address]
-  )
+  const aliceGroup = await aliceClient.conversations.newGroup([
+    bobClient.address,
+    camClient.address,
+  ])
 
   // Record message stream for this group
   const groupMessages: DecodedMessage[] = []
-  const cancelGroupMessageStream = await aliceGroup.streamGroupMessages(async (message) => {
-    groupMessages.push(message)
-  })
+  const cancelGroupMessageStream = await aliceGroup.streamGroupMessages(
+    async (message) => {
+      groupMessages.push(message)
+    }
+  )
 
   // Bob's num groups == 1
   await bobClient.conversations.syncGroups()
-  let bobGroup = (await bobClient.conversations.listGroups())[0]
-  
+  const bobGroup = (await bobClient.conversations.listGroups())[0]
 
   for (let i = 0; i < 5; i++) {
     await bobGroup.send({ text: `Message ${i}` })
@@ -628,7 +647,9 @@ test('can stream group messages', async () => {
   }
   for (let i = 0; i < 5; i++) {
     if (groupMessages[i].content() !== `Message ${i}`) {
-      throw Error('Unexpected group message content ' + groupMessages[i].content())
+      throw Error(
+        'Unexpected group message content ' + groupMessages[i].content()
+      )
     }
   }
 
@@ -936,7 +957,7 @@ test('register and use custom content types', async () => {
   const messageContent = message.content()
 
   assert(
-     messageContent === 12,
+    messageContent === 12,
     'did not get content properly: ' + JSON.stringify(messageContent)
   )
 
