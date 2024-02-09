@@ -248,11 +248,11 @@ test('can message in a group', async () => {
       'num messages for bob should be 2, but it is' + bobMessages.length
     )
   }
-  if (bobMessages[0].content() != "gm") {
-    throw new Error('newest message should be \'gm\'')
+  if (bobMessages[0].content() != 'gm') {
+    throw new Error("newest message should be 'gm'")
   }
-  if (bobMessages[1].content() != "hello, world") {
-    throw new Error('newest message should be \'hello, world\'')
+  if (bobMessages[1].content() != 'hello, world') {
+    throw new Error("newest message should be 'hello, world'")
   }
   // Bob can send a message
   bobGroups[0].send('hey guys!')
@@ -268,12 +268,12 @@ test('can message in a group', async () => {
 
   // Cam can read messages from Alice and Bob
   await camGroups[0].sync()
-  let camMessages = await camGroups[0].messages()
-  if (camMessages[1].content() != "gm") {
-    throw new Error('second Message should be \'gm\'')
+  const camMessages = await camGroups[0].messages()
+  if (camMessages[1].content() != 'gm') {
+    throw new Error("second Message should be 'gm'")
   }
-  if (camMessages[0].content() != "hey guys!") {
-    throw new Error('newest Message should be \'hey guys!\'')
+  if (camMessages[0].content() != 'hey guys!') {
+    throw new Error("newest Message should be 'hey guys!'")
   }
 
   return true
