@@ -11,6 +11,15 @@ extension Conversation {
 	}
 }
 
+extension XMTP.Group {
+	static func cacheKeyForId(clientAddress: String, id: String) -> String {
+		return "\(clientAddress):\(id)"
+	
+	func cacheKey(_ clientAddress: String) -> String {
+		return XMTP.Group.cacheKeyForId(clientAddress: clientAddress, id: id)
+	}
+}
+
 actor IsolatedManager<T> {
 	private var map: [String: T] = [:]
 
@@ -27,6 +36,7 @@ public class XMTPModule: Module {
 	var signer: ReactNativeSigner?
 	let clientsManager = ClientsManager()
 	let conversationsManager = IsolatedManager<Conversation>()
+	let groupsManager = IsolatedManager<XMTP.Group>()
 	let subscriptionsManager = IsolatedManager<Task<Void, Never>>()
 	private var preEnableIdentityCallbackDeferred: DispatchSemaphore?
 	private var preCreateIdentityCallbackDeferred: DispatchSemaphore?
@@ -265,6 +275,28 @@ public class XMTPModule: Module {
 				return results
 			}
 		}
+		
+		AsyncFunction("listGroups") { (clientAddress: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			let groupList = client.conversations.listGroups()
+			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
+				for group in groupList {
+					taskGroup.addTask {
+						await self.groupManager.set(group.cacheKey(clientAddress), group)
+						return try GroupWrapper.encode(group, client: client)
+					}
+				}
+
+				var results: [String] = []
+				for try await result in group {
+					results.append(result)
+				}
+
+				return results
+			}
+		}
 
 		AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
 			let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil
@@ -289,6 +321,31 @@ public class XMTPModule: Module {
 
 			print("GOT HERE AGAIN", decryptedMessages)
 
+			return decryptedMessages.compactMap { msg in
+				do {
+					return try DecodedMessageWrapper.encode(msg, client: client)
+				} catch {
+					print("discarding message, unable to encode wrapper \(msg.id)")
+					return nil
+				}
+			}
+		}
+		
+		AsyncFunction("groupMessages") { (clientAddress: String, id: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+			let decryptedMessages = try await group.decryptedMessages(
+				limit: limit,
+				before: beforeDate,
+				after: afterDate,
+				direction: PagingInfoSortDirection(rawValue: sortDirection)
+			)
+			
 			return decryptedMessages.compactMap { msg in
 				do {
 					return try DecodedMessageWrapper.encode(msg, client: client)
@@ -366,6 +423,21 @@ public class XMTPModule: Module {
 			return try await conversation.send(
 				content: sending.content,
 				options: SendOptions(contentType: sending.type)
+			)
+		}
+		
+		AsyncFunction("sendMessageToGroup") { clientAddress: String, idString: String, contentJson: String ->
+			logV("sendMessageToGroup")
+			val group =
+				findGroup(
+					clientAddress = clientAddress,
+					idString = idString
+				)
+					?: throw XMTPException("no group found for $idString")
+			val sending = ContentJson.fromJson(contentJson)
+			group.send(
+				content = sending.content,
+				options = SendOptions(contentType = sending.type)
 			)
 		}
 
@@ -458,6 +530,69 @@ public class XMTPModule: Module {
 				print("ERRRO!: \(error.localizedDescription)")
 				throw error
 			}
+		}
+		
+		AsyncFunction("createGroup") { clientAddress: String, peerAddresses: List<String> ->
+			logV("createGroup")
+			val client = clients[clientAddress] ?: throw XMTPException("No client")
+			if (client.libXMTPClient == null) {
+				throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
+			}
+			val group = client.conversations.newGroup(peerAddresses)
+			logV("id after creating group: " + Base64.encodeToString(group.id, NO_WRAP))
+			val encodedGroup = GroupWrapper.encode(client, group)
+			return@AsyncFunction encodedGroup
+		}
+		
+		AsyncFunction("listMemberAddresses") { clientAddress: String, groupId: String ->
+			logV("listMembers")
+			val client = clients[clientAddress] ?: throw XMTPException("No client")
+			if (client.libXMTPClient == null) {
+				throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
+			}
+			val group = findGroup(clientAddress, groupId)
+			return@AsyncFunction group?.memberAddresses()
+		}
+		
+		AsyncFunction("syncGroups") { clientAddress: String ->
+			logV("syncGroups")
+			val client = clients[clientAddress] ?: throw XMTPException("No client")
+			if (client.libXMTPClient == null) {
+				throw XMTPException("Create client with enableAlphaMLS true in order to synch groups")
+			}
+			runBlocking { client.conversations.syncGroups() }
+		}
+
+		AsyncFunction("syncGroup") { clientAddress: String, id: String ->
+			logV("syncGroup")
+			val client = clients[clientAddress] ?: throw XMTPException("No client")
+			if (client.libXMTPClient == null) {
+				throw XMTPException("Create client with enableAlphaMLS true in order to synch groups")
+			}
+			val group = findGroup(clientAddress, id)
+			runBlocking { group?.sync() }
+		}
+
+		AsyncFunction("addGroupMembers") { clientAddress: String, id: String, peerAddresses: List<String> ->
+			logV("addGroupMembers")
+			val client = clients[clientAddress] ?: throw XMTPException("No client")
+			if (client.libXMTPClient == null) {
+				throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
+			}
+			val group = findGroup(clientAddress, id)
+
+			runBlocking { group?.addMembers(peerAddresses) }
+		}
+
+		AsyncFunction("removeGroupMembers") { clientAddress: String, id: String, peerAddresses: List<String> ->
+			logV("removeGroupMembers")
+			val client = clients[clientAddress] ?: throw XMTPException("No client")
+			if (client.libXMTPClient == null) {
+				throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
+			}
+			val group = findGroup(clientAddress, id)
+
+			runBlocking { group?.removeMembers(peerAddresses) }
 		}
 
 		AsyncFunction("subscribeToConversations") { (clientAddress: String) in
@@ -637,6 +772,23 @@ public class XMTPModule: Module {
 
 		return nil
 	}
+	
+	func findGroup(clientAddress: String, id: String) async throws -> XMTP.Group? {
+		guard let client = await clientsManager.getClient(key: clientAddress) else {
+			throw Error.noClient
+		}
+
+		let cacheKey = Group.cacheKeyForTopic(clientAddress: clientAddress, id: id)
+		if let group = await groupsManager.get(cacheKey) {
+			return group
+		} else if let group = try await client.conversations.groups().first(where: { $0.id == id }) {
+			await groupsManager.set(cacheKey, group)
+			return group
+		}
+
+		return nil
+	}
+
 
 	func subscribeToConversations(clientAddress: String) async throws {
 		guard let client = await clientsManager.getClient(key: clientAddress) else {
