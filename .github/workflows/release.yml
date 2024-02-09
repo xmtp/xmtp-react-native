@@ -4,6 +4,12 @@ on:
     branches:
       - main
       - beta
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch name'
+        required: true
+        default: 'main'
 jobs:
   release:
     name: Release

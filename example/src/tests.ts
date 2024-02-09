@@ -279,6 +279,215 @@ test('can message in a group', async () => {
   return true
 })
 
+test('can add members to a group', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  // Alice's num groups start at 0
+  let aliceGroups = await aliceClient.conversations.listGroups()
+  if (aliceGroups.length !== 0) {
+    throw new Error('num groups should be 0')
+  }
+
+  // Bob's num groups start at 0
+  let bobGroups = await bobClient.conversations.listGroups()
+  if (bobGroups.length !== 0) {
+    throw new Error('num groups should be 0')
+  }
+
+  // Cam's num groups start at 0
+  let camGroups = await camClient.conversations.listGroups()
+  if (camGroups.length !== 0) {
+    throw new Error('num groups should be 0')
+  }
+
+  // Alice creates a group
+  const aliceGroup = await aliceClient.conversations.newGroup([
+    bobClient.address,
+  ])
+
+  // Alice's num groups == 1
+  aliceGroups = await aliceClient.conversations.listGroups()
+  if (aliceGroups.length !== 1) {
+    throw new Error('num groups should be 1')
+  }
+
+  // Alice can confirm memberAddresses
+  const memberAddresses = await aliceGroup.memberAddresses()
+  if (memberAddresses.length !== 2) {
+    throw new Error('num group members should be 2')
+  }
+  const lowercasedAddresses: string[] = memberAddresses.map((s) =>
+    s.toLowerCase()
+  )
+  if (
+    !(
+      lowercasedAddresses.includes(aliceClient.address.toLowerCase()) &&
+      lowercasedAddresses.includes(bobClient.address.toLowerCase())
+    )
+  ) {
+    throw new Error('missing address')
+  }
+
+  // Alice can send messages
+  aliceGroup.send('hello, world')
+  aliceGroup.send('gm')
+
+  // Bob's num groups == 1
+  await bobClient.conversations.syncGroups()
+  bobGroups = await bobClient.conversations.listGroups()
+  if (bobGroups.length !== 1) {
+    throw new Error(
+      'num groups for bob should be 1, but it is' + bobGroups.length
+    )
+  }
+
+  await aliceGroup.addMembers([camClient.address])
+
+  // Cam's num groups == 1
+  await camClient.conversations.syncGroups()
+  camGroups = await camClient.conversations.listGroups()
+  if (camGroups.length !== 1) {
+    throw new Error(
+      'num groups for cam should be 1, but it is' + camGroups.length
+    )
+  }
+  const camMessages = await camGroups[0].messages()
+  if (camMessages.length !== 0) {
+    throw new Error('num messages for cam should be 0')
+  }
+
+  await bobGroups[0].sync()
+  const bobGroupMembers = await bobGroups[0].memberAddresses()
+  if (bobGroupMembers.length !== 3) {
+    throw new Error('num group members should be 3')
+  }
+
+  return true
+})
+
+test('can remove members from a group', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  // Alice's num groups start at 0
+  let aliceGroups = await aliceClient.conversations.listGroups()
+  if (aliceGroups.length !== 0) {
+    throw new Error('num groups should be 0')
+  }
+
+  // Bob's num groups start at 0
+  let bobGroups = await bobClient.conversations.listGroups()
+  if (bobGroups.length !== 0) {
+    throw new Error('num groups should be 0')
+  }
+
+  // Cam's num groups start at 0
+  let camGroups = await camClient.conversations.listGroups()
+  if (camGroups.length !== 0) {
+    throw new Error('num groups should be 0')
+  }
+
+  // Alice creates a group
+  const aliceGroup = await aliceClient.conversations.newGroup([
+    bobClient.address,
+    camClient.address,
+  ])
+
+  // Alice's num groups == 1
+  aliceGroups = await aliceClient.conversations.listGroups()
+  if (aliceGroups.length !== 1) {
+    throw new Error('num groups should be 1')
+  }
+
+  // Alice can confirm memberAddresses
+  const memberAddresses = await aliceGroup.memberAddresses()
+  if (memberAddresses.length !== 3) {
+    throw new Error('num group members should be 3')
+  }
+  const lowercasedAddresses: string[] = memberAddresses.map((s) =>
+    s.toLowerCase()
+  )
+  if (
+    !(
+      lowercasedAddresses.includes(aliceClient.address.toLowerCase()) &&
+      lowercasedAddresses.includes(bobClient.address.toLowerCase())
+    )
+  ) {
+    throw new Error('missing address')
+  }
+
+  // Alice can send messages
+  await aliceGroup.send('hello, world')
+  await aliceGroup.send('gm')
+
+  // Bob's num groups == 1
+  await bobClient.conversations.syncGroups()
+  bobGroups = await bobClient.conversations.listGroups()
+  if (bobGroups.length !== 1) {
+    throw new Error(
+      'num groups for bob should be 1, but it is' + bobGroups.length
+    )
+  }
+
+  // Cam's num groups == 1
+  await camClient.conversations.syncGroups()
+  camGroups = await camClient.conversations.listGroups()
+  if (camGroups.length !== 1) {
+    throw new Error(
+      'num groups for cam should be 1, but it is' + camGroups.length
+    )
+  }
+
+  await aliceGroup.removeMembers([bobClient.address])
+  await aliceGroup.sync()
+  const aliceGroupMembers = await aliceGroup.memberAddresses()
+  if (aliceGroupMembers.length !== 2) {
+    throw new Error('num group members should be 2')
+  }
+
+  // await bobClient.conversations.syncGroups()
+
+  // bobGroups = await bobClient.conversations.listGroups()
+  // await bobGroups[0].sync()
+  // const bobGroupMessages = await bobGroups[0].messages()
+  // if (bobGroups.length !== 0) {
+  //   throw new Error(
+  //     'num groups for bob should be 0, but it is ' + bobGroups.length
+  //   )
+  // }
+
+  await camGroups[0].sync()
+  const camGroupMembers = await camGroups[0].memberAddresses()
+  if (camGroupMembers.length !== 2) {
+    throw new Error('num group members should be 2')
+  }
+
+  return true
+})
+
 test('can pass a custom filter date and receive message objects with expected dates', async () => {
   try {
     const bob = await Client.createRandom({ env: 'local' })

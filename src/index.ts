@@ -37,14 +37,16 @@ export async function auth(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
-  hasEnableIdentityCallback?: boolean | undefined
+  hasEnableIdentityCallback?: boolean | undefined,
+  enableAlphaMls?: boolean | undefined
 ) {
   return await XMTPModule.auth(
     address,
     environment,
     appVersion,
     hasCreateIdentityCallback,
-    hasEnableIdentityCallback
+    hasEnableIdentityCallback,
+    enableAlphaMls
   )
 }
 
@@ -150,6 +152,22 @@ export async function unsubscribeFromGroupMessages(
   id: string
 ) {
   return await XMTPModule.unsubscribeFromGroupMessages(clientAddress, id)
+}
+
+export async function addGroupMembers(
+  clientAddress: string,
+  id: string,
+  addresses: string[]
+): Promise<void> {
+  return XMTPModule.addGroupMembers(clientAddress, id, addresses)
+}
+
+export async function removeGroupMembers(
+  clientAddress: string,
+  id: string,
+  addresses: string[]
+): Promise<void> {
+  return XMTPModule.removeGroupMembers(clientAddress, id, addresses)
 }
 
 export async function exportKeyBundle(clientAddress: string): Promise<string> {
@@ -510,3 +528,4 @@ export { Conversation } from './lib/Conversation'
 export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
 export { ConsentListEntry, DecodedMessage }
+export { Group } from './lib/Group'
