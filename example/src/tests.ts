@@ -73,7 +73,7 @@ function assert(condition: boolean, msg: string) {
   }
 }
 
-function delayToPropogate(): Promise<void> {
+async function delayToPropogate(): Promise<void> {
   // delay 1s to avoid clobbering
   return new Promise((r) => setTimeout(r, 100))
 }
@@ -99,6 +99,7 @@ test('can make a client', async () => {
 })
 
 test('can make a MLS V3 client', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
@@ -161,6 +162,7 @@ test('can make a MLS V3 client from bundle', async () => {
 
 test('production MLS V3 client creation throws error', async () => {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const client = await Client.createRandom({
       env: 'production',
       appVersion: 'Testing/0.0.0',
@@ -193,7 +195,7 @@ test('can message in a group', async () => {
 
   // Alice's num groups start at 0
   let aliceGroups = await aliceClient.conversations.listGroups()
-  if (aliceGroups.length != 0) {
+  if (aliceGroups.length !== 0) {
     throw new Error('num groups should be 0')
   }
 
@@ -205,13 +207,13 @@ test('can message in a group', async () => {
 
   // Alice's num groups == 1
   aliceGroups = await aliceClient.conversations.listGroups()
-  if (aliceGroups.length != 1) {
+  if (aliceGroups.length !== 1) {
     throw new Error('num groups should be 1')
   }
 
   // Alice can confirm memberAddresses
   const memberAddresses = await aliceGroup.memberAddresses()
-  if (memberAddresses.length != 3) {
+  if (memberAddresses.length !== 3) {
     throw new Error('num group members should be 3')
   }
   const lowercasedAddresses: string[] = memberAddresses.map((s) =>
@@ -234,7 +236,7 @@ test('can message in a group', async () => {
   // Bob's num groups == 1
   await bobClient.conversations.syncGroups()
   const bobGroups = await bobClient.conversations.listGroups()
-  if (bobGroups.length != 1) {
+  if (bobGroups.length !== 1) {
     throw new Error(
       'num groups for bob should be 1, but it is' + bobGroups.length
     )
@@ -243,15 +245,15 @@ test('can message in a group', async () => {
   // Bob can read messages from Alice
   await bobGroups[0].sync()
   const bobMessages: DecodedMessage[] = await bobGroups[0].messages()
-  if (bobMessages.length != 2) {
+  if (bobMessages.length !== 2) {
     throw new Error(
       'num messages for bob should be 2, but it is' + bobMessages.length
     )
   }
-  if (bobMessages[0].content() != 'gm') {
+  if (bobMessages[0].content() !== 'gm') {
     throw new Error("newest message should be 'gm'")
   }
-  if (bobMessages[1].content() != 'hello, world') {
+  if (bobMessages[1].content() !== 'hello, world') {
     throw new Error("newest message should be 'hello, world'")
   }
   // Bob can send a message
@@ -260,7 +262,7 @@ test('can message in a group', async () => {
   // Cam's num groups == 1
   await camClient.conversations.syncGroups()
   const camGroups = await camClient.conversations.listGroups()
-  if (camGroups.length != 1) {
+  if (camGroups.length !== 1) {
     throw new Error(
       'num groups for cam should be 1, but it is' + camGroups.length
     )
@@ -269,10 +271,10 @@ test('can message in a group', async () => {
   // Cam can read messages from Alice and Bob
   await camGroups[0].sync()
   const camMessages = await camGroups[0].messages()
-  if (camMessages[1].content() != 'gm') {
+  if (camMessages[1].content() !== 'gm') {
     throw new Error("second Message should be 'gm'")
   }
-  if (camMessages[0].content() != 'hey guys!') {
+  if (camMessages[0].content() !== 'hey guys!') {
     throw new Error("newest Message should be 'hey guys!'")
   }
 
@@ -856,6 +858,67 @@ test('can stream messages', async () => {
   }
   alice.conversations.cancelStream()
   alice.conversations.cancelStreamAllMessages()
+
+  return true
+})
+
+test('can stream group messages', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  // Alice creates a group
+  const aliceGroup = await aliceClient.conversations.newGroup([
+    bobClient.address,
+    camClient.address,
+  ])
+
+  // Record message stream for this group
+  const groupMessages: DecodedMessage[] = []
+  const cancelGroupMessageStream = await aliceGroup.streamGroupMessages(
+    async (message) => {
+      groupMessages.push(message)
+    }
+  )
+
+  // Bob's num groups == 1
+  await bobClient.conversations.syncGroups()
+  const bobGroup = (await bobClient.conversations.listGroups())[0]
+
+  for (let i = 0; i < 5; i++) {
+    await bobGroup.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  if (groupMessages.length !== 5) {
+    throw Error('Unexpected convo messages count ' + groupMessages.length)
+  }
+  for (let i = 0; i < 5; i++) {
+    if (groupMessages[i].content() !== `Message ${i}`) {
+      throw Error(
+        'Unexpected group message content ' + groupMessages[i].content()
+      )
+    }
+  }
+
+  cancelGroupMessageStream()
+  for (let i = 0; i < 5; i++) {
+    await bobGroup.send({ text: `Message ${i}` })
+  }
+
+  if (groupMessages.length !== 5) {
+    throw Error('Unexpected convo messages count ' + groupMessages.length)
+  }
 
   return true
 })

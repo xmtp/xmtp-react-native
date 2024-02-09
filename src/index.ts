@@ -140,6 +140,20 @@ export async function syncGroup(clientAddress: string, id: string) {
   await XMTPModule.syncGroup(clientAddress, id)
 }
 
+export async function subscribeToGroupMessages(
+  clientAddress: string,
+  id: string
+) {
+  return await XMTPModule.subscribeToGroupMessages(clientAddress, id)
+}
+
+export async function unsubscribeFromGroupMessages(
+  clientAddress: string,
+  id: string
+) {
+  return await XMTPModule.unsubscribeFromGroupMessages(clientAddress, id)
+}
+
 export async function addGroupMembers(
   clientAddress: string,
   id: string,
