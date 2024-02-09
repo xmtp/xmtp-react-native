@@ -71,12 +71,14 @@ export async function createRandom(
 export async function createFromKeyBundle(
   keyBundle: string,
   environment: 'local' | 'dev' | 'production',
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  enableAlphaMls?: boolean | undefined
 ): Promise<string> {
   return await XMTPModule.createFromKeyBundle(
     keyBundle,
     environment,
-    appVersion
+    appVersion,
+    enableAlphaMls
   )
 }
 

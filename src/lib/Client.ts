@@ -186,7 +186,8 @@ export class Client<ContentTypes> {
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
-      options.appVersion
+      options.appVersion,
+      Boolean(options.enableAlphaMls)
     )
     return new Client(address, opts?.codecs || [])
   }
