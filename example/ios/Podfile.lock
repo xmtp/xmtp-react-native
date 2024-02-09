@@ -442,7 +442,7 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.8.0):
+  - XMTP (0.8.2):
     - Connect-Swift (= 0.3.0)
     - GzipSwift
     - LibXMTP (= 0.4.1-beta1)
@@ -451,7 +451,7 @@ PODS:
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 0.8.0)
+    - XMTP (= 0.8.2)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -518,6 +518,7 @@ DEPENDENCIES:
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
+  - XMTP (from `https://github.com/xmtp/xmtp-ios.git`, commit `e1ada39688563501aaa7e78042ef09098af0e25e`)
   - XMTPReactNative (from `../../ios`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -539,7 +540,6 @@ SPEC REPOS:
     - secp256k1.swift
     - SwiftProtobuf
     - web3.swift
-    - XMTP
 
 EXTERNAL SOURCES:
   boost:
@@ -662,10 +662,18 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-screens"
   RNSVG:
     :path: "../node_modules/react-native-svg"
+  XMTP:
+    :commit: e1ada39688563501aaa7e78042ef09098af0e25e
+    :git: https://github.com/xmtp/xmtp-ios.git
   XMTPReactNative:
     :path: "../../ios"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
+
+CHECKOUT OPTIONS:
+  XMTP:
+    :commit: e1ada39688563501aaa7e78042ef09098af0e25e
+    :git: https://github.com/xmtp/xmtp-ios.git
 
 SPEC CHECKSUMS:
   BigInt: 74b4d88367b0e819d9f77393549226d36faeb0d8
@@ -744,10 +752,10 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: b02b5075dcf60c9f5f403000b3b0c202a11b6ae1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 9296a8e8dc53a033d5ca38207d5ed05843e657b6
-  XMTPReactNative: 808e9937e815f506a84ace93af6f84df7e3fb038
+  XMTP: 18cc0e42dbb8cadc743665b5c7921b006e7bd5a2
+  XMTPReactNative: b8e421d2d086eef7266fce2e2760765b0567f554
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
-PODFILE CHECKSUM: 95d6ace79946933ecf80684613842ee553dd76a2
+PODFILE CHECKSUM: f8517eee34c96e5f85f15759d299bcccd2887e89
 
-COCOAPODS: 1.14.2
+COCOAPODS: 1.15.2
