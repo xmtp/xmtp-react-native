@@ -114,7 +114,7 @@ public class XMTPModule: Module {
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
 
-			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: enableAlphaMls == true)
 			let client = try await Client.create(account: privateKey, options: options)
 
 			await clientsManager.updateClient(key: client.address, client: client)
@@ -132,7 +132,7 @@ public class XMTPModule: Module {
 					throw Error.invalidKeyBundle
 				}
 
-				let options = createClientConfig(env: environment, appVersion: appVersion)
+				let options = createClientConfig(env: environment, appVersion: appVersion, mlsAlpha: enableAlphaMls == true)
 				let client = try await Client.from(bundle: bundle, options: options)
 				await clientsManager.updateClient(key: client.address, client: client)
 				return client.address
