@@ -140,6 +140,22 @@ export async function syncGroup(clientAddress: string, id: string) {
   await XMTPModule.syncGroup(clientAddress, id)
 }
 
+export async function addGroupMembers(
+  clientAddress: string,
+  id: string,
+  addresses: string[]
+): Promise<void> {
+  return XMTPModule.addGroupMembers(clientAddress, id, addresses)
+}
+
+export async function removeGroupMembers(
+  clientAddress: string,
+  id: string,
+  addresses: string[]
+): Promise<void> {
+  return XMTPModule.removeGroupMembers(clientAddress, id, addresses)
+}
+
 export async function exportKeyBundle(clientAddress: string): Promise<string> {
   return await XMTPModule.exportKeyBundle(clientAddress)
 }
@@ -498,3 +514,4 @@ export { Conversation } from './lib/Conversation'
 export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
 export { ConsentListEntry, DecodedMessage }
+export { Group } from './lib/Group'

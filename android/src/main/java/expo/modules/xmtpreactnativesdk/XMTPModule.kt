@@ -636,6 +636,28 @@ class XMTPModule : Module() {
             runBlocking { group?.sync() }
         }
 
+        AsyncFunction("addGroupMembers") { clientAddress: String, id: String, peerAddresses: List<String> ->
+            logV("addGroupMembers")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            if (client.libXMTPClient == null) {
+                throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
+            }
+            val group = findGroup(clientAddress, id)
+
+            runBlocking { group?.addMembers(peerAddresses) }
+        }
+
+        AsyncFunction("removeGroupMembers") { clientAddress: String, id: String, peerAddresses: List<String> ->
+            logV("removeGroupMembers")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            if (client.libXMTPClient == null) {
+                throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
+            }
+            val group = findGroup(clientAddress, id)
+
+            runBlocking { group?.removeMembers(peerAddresses) }
+        }
+
         Function("subscribeToConversations") { clientAddress: String ->
             logV("subscribeToConversations")
             subscribeToConversations(clientAddress = clientAddress)
