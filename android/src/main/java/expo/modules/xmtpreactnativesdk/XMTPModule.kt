@@ -482,14 +482,14 @@ class XMTPModule : Module() {
             )
         }
 
-       AsyncFunction("sendMessageToGroup") { clientAddress: String, idString: String, contentJson: String ->
+       AsyncFunction("sendMessageToGroup") { clientAddress: String, id: String, contentJson: String ->
            logV("sendMessageToGroup")
            val group =
                findGroup(
                    clientAddress = clientAddress,
-                   idString = idString
+                   id = id
                )
-                   ?: throw XMTPException("no group found for $idString")
+                   ?: throw XMTPException("no group found for $id")
            val sending = ContentJson.fromJson(contentJson)
            group.send(
                content = sending.content,
@@ -676,6 +676,14 @@ class XMTPModule : Module() {
             )
         }
 
+        AsyncFunction("subscribeToGroupMessages") { clientAddress: String, id: String ->
+            logV("subscribeToGroupMessages")
+            subscribeToGroupMessages(
+                clientAddress = clientAddress,
+                id = id
+            )
+        }
+
         Function("unsubscribeFromConversations") { clientAddress: String ->
             logV("unsubscribeFromConversations")
             subscriptions[getConversationsKey(clientAddress)]?.cancel()
@@ -691,6 +699,14 @@ class XMTPModule : Module() {
             unsubscribeFromMessages(
                 clientAddress = clientAddress,
                 topic = topic
+            )
+        }
+
+        AsyncFunction("unsubscribeFromGroupMessages") { clientAddress: String, id: String ->
+            logV("unsubscribeFromGroupMessages")
+            unsubscribeFromGroupMessages(
+                clientAddress = clientAddress,
+                id = id
             )
         }
 
@@ -802,17 +818,17 @@ class XMTPModule : Module() {
 
    private fun findGroup(
        clientAddress: String,
-       idString: String,
+       id: String,
    ): Group? {
        val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-       val cacheKey = "${clientAddress}:${idString}"
+       val cacheKey = "${clientAddress}:${id}"
        val cacheGroup = groups[cacheKey]
        if (cacheGroup != null) {
            return cacheGroup
        } else {
            val group = client.conversations.listGroups()
-               .firstOrNull { Base64.encodeToString(it.id, NO_WRAP) == idString }
+               .firstOrNull { Base64.encodeToString(it.id, NO_WRAP) == id }
            if (group != null) {
                groups[group.cacheKey(clientAddress)] = group
                return group
@@ -891,6 +907,33 @@ class XMTPModule : Module() {
             }
     }
 
+    private fun subscribeToGroupMessages(clientAddress: String, id: String) {
+        val group =
+            findGroup(
+                clientAddress = clientAddress,
+                id = id
+            ) ?: return
+        subscriptions[group.cacheKey(clientAddress)]?.cancel()
+        subscriptions[group.cacheKey(clientAddress)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    group.streamDecryptedMessages().collect { message ->
+                        logV("Group Message before encoding" + message.toString())
+                        sendEvent(
+                            "message",
+                            mapOf(
+                                "clientAddress" to clientAddress,
+                                "message" to DecodedMessageWrapper.encodeMap(message),
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e("XMTPModule", "Error in messages subscription: $e")
+                    subscriptions[group.cacheKey(clientAddress)]?.cancel()
+                }
+            }
+    }
+
     private fun getMessagesKey(clientAddress: String): String {
         return "messages:$clientAddress"
     }
@@ -907,6 +950,18 @@ class XMTPModule : Module() {
             findConversation(
                 clientAddress = clientAddress,
                 topic = topic
+            ) ?: return
+        subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+    }
+
+    private fun unsubscribeFromGroupMessages(
+        clientAddress: String,
+        id: String,
+    ) {
+        val conversation =
+            findGroup(
+                clientAddress = clientAddress,
+                id = id
             ) ?: return
         subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
     }
