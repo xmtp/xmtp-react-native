@@ -108,6 +108,24 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
+test('can make a MLS V3 client from bundle', async () => {
+  const client = await Client.createRandom({
+    env: 'dev',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true
+  })
+
+  const bundle = await client.exportKeyBundle()
+
+  const client2 = await Client.createFromKeyBundle(bundle, {
+    env: 'dev',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true
+  })
+
+  return client.address === client2.address
+})
+
 test('production MLS V3 client creation throws error', async () => {
   try {
     const client = await Client.createRandom({
