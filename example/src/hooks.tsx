@@ -101,6 +101,7 @@ export function useMessage({
   const { data: conversation } = useConversation({ topic })
   const { data: messages, refetch: refreshMessages } = useMessages({ topic })
   const message = messages?.find(({ id }) => id === messageId)
+
   const performReaction =
     conversation &&
     message &&
