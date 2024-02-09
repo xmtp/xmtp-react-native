@@ -14,9 +14,10 @@ extension Conversation {
 extension XMTP.Group {
 	static func cacheKeyForId(clientAddress: String, id: String) -> String {
 		return "\(clientAddress):\(id)"
+	}
 	
 	func cacheKey(_ clientAddress: String) -> String {
-		return XMTP.Group.cacheKeyForId(clientAddress: clientAddress, id: id)
+		return XMTP.Group.cacheKeyForId(clientAddress: clientAddress, id: id.toHex)
 	}
 }
 
@@ -280,17 +281,17 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			let groupList = client.conversations.listGroups()
+			let groupList = try await client.conversations.groups()
 			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
 				for group in groupList {
 					taskGroup.addTask {
-						await self.groupManager.set(group.cacheKey(clientAddress), group)
+						await self.groupsManager.set(group.cacheKey(clientAddress), group)
 						return try GroupWrapper.encode(group, client: client)
 					}
 				}
 
 				var results: [String] = []
-				for try await result in group {
+				for try await result in taskGroup {
 					results.append(result)
 				}
 
@@ -339,12 +340,7 @@ public class XMTPModule: Module {
 			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
-			let decryptedMessages = try await group.decryptedMessages(
-				limit: limit,
-				before: beforeDate,
-				after: afterDate,
-				direction: PagingInfoSortDirection(rawValue: sortDirection)
-			)
+			let decryptedMessages = try await group.decryptedMessages()
 			
 			return decryptedMessages.compactMap { msg in
 				do {
@@ -431,11 +427,12 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 
-			let sending = ContentJson.fromJson(contentJson)
-			return try await group.send(
+			let sending = try ContentJson.fromJson(contentJson)
+			try await group.send(
 				content: sending.content,
 				options: SendOptions(contentType: sending.type)
 			)
+			return group.id.toHex
 		}
 
 		AsyncFunction("prepareMessage") { (
@@ -534,7 +531,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			do {
-				let group = client.conversations.newGroup(peerAddresses)
+				let group = try await client.conversations.newGroup(with: peerAddresses)
 				return try GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -547,17 +544,17 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
+			guard let group = try await findGroup(clientAddress: clientAddress, id: groupId) else {
+				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
-			return group?.memberAddresses()
+			return group.memberAddresses
 		}
 		
 		AsyncFunction("syncGroups") { (clientAddress: String) in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			try await client.conversations.syncGroups()
+			try await client.conversations.sync()
 		}
 
 		AsyncFunction("syncGroup") { (clientAddress: String, id: String) in
@@ -579,7 +576,7 @@ public class XMTPModule: Module {
 			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
-			try await group.addMembers(peerAddresses)
+			try await group.addMembers(addresses: peerAddresses)
 		}
 
 		AsyncFunction("removeGroupMembers") { (clientAddress: String, id: String, peerAddresses: [String]) in
@@ -591,7 +588,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 
-			try await group.removeMembers(peerAddresses)
+			try await group.removeMembers(addresses: peerAddresses)
 		}
 
 		AsyncFunction("subscribeToConversations") { (clientAddress: String) in
@@ -777,7 +774,7 @@ public class XMTPModule: Module {
 			throw Error.noClient
 		}
 
-		let cacheKey = Group.cacheKeyForId(clientAddress: clientAddress, id: id)
+		let cacheKey = XMTP.Group.cacheKeyForId(clientAddress: clientAddress, id: id)
 		if let group = await groupsManager.get(cacheKey) {
 			return group
 		} else if let group = try await client.conversations.groups().first(where: { $0.id.toHex == id }) {

@@ -442,7 +442,7 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.8.2):
+  - XMTP (0.8.3):
     - Connect-Swift (= 0.3.0)
     - GzipSwift
     - LibXMTP (= 0.4.1-beta2)
@@ -451,7 +451,7 @@ PODS:
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 0.8.2)
+    - XMTP (= 0.8.3)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -744,8 +744,8 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: b02b5075dcf60c9f5f403000b3b0c202a11b6ae1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: b70e7b864e38d430d2b55e813f33eec775ed0f0d
-  XMTPReactNative: b8e421d2d086eef7266fce2e2760765b0567f554
+  XMTP: fe691b332f135ea91bd513f4d582834a1dd35fd0
+  XMTPReactNative: 63e3bd0608db2a06c5a6e4be8a106486ef6b51b3
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 95d6ace79946933ecf80684613842ee553dd76a2
