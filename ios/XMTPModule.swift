@@ -47,7 +47,7 @@ public class XMTPModule: Module {
 	}
 
 	enum Error: Swift.Error {
-		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String)
+		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String), mlsNotEnabled
 	}
 
 	public func definition() -> ModuleDefinition {
@@ -66,7 +66,9 @@ public class XMTPModule: Module {
 		//
 		// Auth functions
 		//
-		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) in
+		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, enableAlphaMls: Bool?) in
+			try requireNotProductionEnvForAlphaMLS(enableAlphaMls: enableAlphaMls, environment: environment)
+			
 			let signer = ReactNativeSigner(module: self, address: address)
 			self.signer = signer
 			if(hasCreateIdentityCallback ?? false) {
@@ -77,7 +79,7 @@ public class XMTPModule: Module {
 			}
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
-			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: enableAlphaMls == true)
 			try await clientsManager.updateClient(key: address, client: await XMTP.Client.create(account: signer, options: options))
 			self.signer = nil
 			sendEvent("authed")
@@ -88,7 +90,9 @@ public class XMTPModule: Module {
 		}
 
 		// Generate a random wallet and set the client to that
-		AsyncFunction("createRandom") { (environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) -> String in
+		AsyncFunction("createRandom") { (environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, enableAlphaMls: Bool?) -> String in
+			try requireNotProductionEnvForAlphaMLS(enableAlphaMls: enableAlphaMls, environment: environment)
+
 			let privateKey = try PrivateKey.generate()
 			if(hasCreateIdentityCallback ?? false) {
 				preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
@@ -107,7 +111,9 @@ public class XMTPModule: Module {
 		}
 
 		// Create a client using its serialized key bundle.
-		AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?) -> String in
+		AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Bool?) -> String in
+			try requireNotProductionEnvForAlphaMLS(enableAlphaMls: enableAlphaMls, environment: environment)
+
 			do {
 				guard let keyBundleData = Data(base64Encoded: keyBundle),
 				      let bundle = try? PrivateKeyBundle(serializedData: keyBundleData)
@@ -592,7 +598,7 @@ public class XMTPModule: Module {
 	// Helpers
 	//
 
-	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil) -> XMTP.ClientOptions {
+	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, mlsAlpha: Bool = false) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
 		switch env {
 		case "local":
@@ -600,19 +606,19 @@ public class XMTPModule: Module {
 				env: XMTP.XMTPEnvironment.local,
 				isSecure: false,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: mlsAlpha)
 		case "production":
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
 				isSecure: true,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: false)
 		default:
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
 				isSecure: true,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: mlsAlpha)
 		}
 	}
 
@@ -731,5 +737,11 @@ public class XMTPModule: Module {
 	func preCreateIdentityCallback() {
 		sendEvent("preCreateIdentityCallback")
 		self.preCreateIdentityCallbackDeferred?.wait()
+	}
+	
+	func requireNotProductionEnvForAlphaMLS(enableAlphaMls: Bool?, environment: String) throws {
+		if (enableAlphaMls == true && environment == "production") {
+			throw Error.mlsNotEnabled
+		}
 	}
 }
