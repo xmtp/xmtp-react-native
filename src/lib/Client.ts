@@ -153,7 +153,8 @@ export class Client<ContentTypes> {
       options.env,
       options.appVersion,
       Boolean(createSubscription),
-      Boolean(enableSubscription)
+      Boolean(enableSubscription),
+      Boolean(options.enableAlphaMls)
     )
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
@@ -185,7 +186,8 @@ export class Client<ContentTypes> {
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
-      options.appVersion
+      options.appVersion,
+      Boolean(options.enableAlphaMls)
     )
     return new Client(address, opts?.codecs || [])
   }
@@ -241,10 +243,7 @@ export class Client<ContentTypes> {
     await callback?.()
   }
 
-  private static hasEventCallback(
-    event: string,
-    opts: CallbackOptions
-  ): boolean {
+  private static hasEventCallback(event: string, opts: ClientOptions): boolean {
     return opts?.[event] !== undefined
   }
 
@@ -389,8 +388,7 @@ export class Client<ContentTypes> {
   }
 }
 
-export type ClientOptions = NetworkOptions & CallbackOptions
-export type NetworkOptions = {
+export type ClientOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
    */
@@ -406,11 +404,16 @@ export type NetworkOptions = {
    * SDK updates, including deprecations and required upgrades.
    */
   appVersion?: string
-}
 
-export type CallbackOptions = {
+  /**
+   * Set optional callbacks for handling identity setup
+   */
   preCreateIdentityCallback?: () => Promise<void> | void
   preEnableIdentityCallback?: () => Promise<void> | void
+  /**
+   * Specify whether to enable Alpha version of MLS (Group Chat)
+   */
+  enableAlphaMls?: boolean
 }
 
 /**
@@ -421,6 +424,7 @@ export type CallbackOptions = {
 export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
   const _defaultOptions: ClientOptions = {
     env: 'dev',
+    enableAlphaMls: false,
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions

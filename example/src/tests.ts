@@ -98,6 +98,170 @@ test('can make a client', async () => {
   return client.address.length > 0
 })
 
+test('can make a MLS V3 client', async () => {
+  const client = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  return true
+})
+
+test('can make a MLS V3 client from bundle', async () => {
+  const client = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const anotherClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const group1 = await client.conversations.newGroup([anotherClient.address])
+
+  if (group1.clientAddress !== client.address) {
+    throw new Error(
+      `clients dont match ${client.address} and ${group1.clientAddress}`
+    )
+  }
+  const bundle = await client.exportKeyBundle()
+
+  const client2 = await Client.createFromKeyBundle(bundle, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  if (client.address !== client2.address) {
+    throw new Error(
+      `clients dont match ${client2.address} and ${client.address}`
+    )
+  }
+
+  const randomClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const group = await client2.conversations.newGroup([randomClient.address])
+
+  if (group.clientAddress !== client2.address) {
+    throw new Error(
+      `clients dont match ${client2.address} and ${group.clientAddress}`
+    )
+  }
+
+  return true
+})
+
+test('production MLS V3 client creation throws error', async () => {
+  try {
+    const client = await Client.createRandom({
+      env: 'production',
+      appVersion: 'Testing/0.0.0',
+      enableAlphaMls: true
+    })
+  } catch (error: any) {
+    return error.message.endsWith("Environment must be \"local\" or \"dev\" to enable alpha MLS")
+  }
+  throw new Error('should throw error on MLS V3 client create when environment is not local')
+})
+
+test('can message in a group', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true
+  })
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true
+  })
+
+  // Alice's num groups start at 0
+  let aliceGroups = await aliceClient.conversations.listGroups()
+  if (aliceGroups.length != 0) {
+    throw new Error('num groups should be 0')
+  }
+
+  // Alice creates a group
+  const aliceGroup = await aliceClient.conversations.newGroup(
+    [bobClient.address, camClient.address]
+  )
+
+  // Alice's num groups == 1
+  aliceGroups = await aliceClient.conversations.listGroups()
+  if (aliceGroups.length != 1) {
+    throw new Error('num groups should be 1')
+  }
+
+  // Alice can confirm memberAddresses
+  let memberAddresses = await aliceGroup.memberAddresses()
+  if (memberAddresses.length != 3) {
+    throw new Error('num group members should be 3')
+  }
+  const lowercasedAddresses: string[] = memberAddresses.map(s => s.toLowerCase());
+  if (!(lowercasedAddresses.includes(aliceClient.address.toLowerCase())
+      && lowercasedAddresses.includes(bobClient.address.toLowerCase())
+      && lowercasedAddresses.includes(camClient.address.toLowerCase()))) {
+        throw new Error('missing address')
+      }
+
+  // Alice can send messages
+  aliceGroup.send("hello, world")
+  aliceGroup.send("gm")
+
+  // Bob's num groups == 1
+  await bobClient.conversations.syncGroups()
+  let bobGroups = await bobClient.conversations.listGroups()
+  if (bobGroups.length != 1) {
+    throw new Error('num groups for bob should be 1, but it is' + bobGroups.length)
+  }
+
+  // Bob can read messages from Alice
+  await bobGroups[0].sync()
+  let bobMessages: DecodedMessage[] = await bobGroups[0].messages()
+  if (bobMessages.length != 2) {
+    throw new Error('num messages for bob should be 2, but it is' + bobMessages.length)
+  }
+  if (bobMessages[0].content() != "gm") {
+    throw new Error('newest message should be \'gm\'')
+  }
+  if (bobMessages[1].content() != "hello, world") {
+    throw new Error('newest message should be \'hello, world\'')
+  }
+  // Bob can send a message
+  bobGroups[0].send("hey guys!")
+
+  // Cam's num groups == 1
+  await camClient.conversations.syncGroups()
+  let camGroups = await camClient.conversations.listGroups()
+  if (camGroups.length != 1) {
+    throw new Error('num groups for cam should be 1, but it is' + camGroups.length)
+  }
+
+  // Cam can read messages from Alice and Bob
+  await camGroups[0].sync()
+  let camMessages = await camGroups[0].messages()
+  if (camMessages[1].content() != "gm") {
+    throw new Error('second Message should be \'gm\'')
+  }
+  if (camMessages[0].content() != "hey guys!") {
+    throw new Error('newest Message should be \'hey guys!\'')
+  }
+
+  return true
+})
+
 test('can pass a custom filter date and receive message objects with expected dates', async () => {
   try {
     const bob = await Client.createRandom({ env: 'local' })
@@ -762,7 +926,7 @@ test('register and use custom content types', async () => {
   const messageContent = message.content()
 
   assert(
-    messageContent === 12,
+     messageContent === 12,
     'did not get content properly: ' + JSON.stringify(messageContent)
   )
 

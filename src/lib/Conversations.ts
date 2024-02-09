@@ -1,6 +1,7 @@
 import { Client } from './Client'
 import { Conversation } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
+import { Group } from './Group'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { getAddress } from '../utils/address'
@@ -57,6 +58,37 @@ export default class Conversations<ContentTypes> {
       checksumAddress,
       context
     )
+  }
+
+  /**
+   * This method returns a list of all groups that the client is a member of.
+   *
+   * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
+   */
+  async listGroups(): Promise<Group<ContentTypes>[]> {
+    const result = await XMTPModule.listGroups(this.client)
+
+    for (const group of result) {
+      this.known[group.id] = true
+    }
+
+    return result
+  }
+
+  /**
+   * Creates a new group.
+   *
+   * This method creates a new conversation with the specified peer address and context.
+   *
+   * @param {string[]} peerAddresses - The addresses of the peers to create a group with.
+   * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
+   */
+  async newGroup(peerAddresses: string[]): Promise<Group<ContentTypes>> {
+    return await XMTPModule.createGroup(this.client, peerAddresses)
+  }
+
+  async syncGroups() {
+    await XMTPModule.syncGroups(this.client.address)
   }
 
   /**

@@ -6,24 +6,25 @@ import { ConversationContext } from './XMTP.types'
 import XMTPModule from './XMTPModule'
 import { ConsentListEntry, ConsentState } from './lib/ConsentListEntry'
 import {
+  ContentCodec,
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
   PreparedLocalMessage,
-  ContentCodec,
 } from './lib/ContentCodec'
 import { Conversation } from './lib/Conversation'
 import { DecodedMessage } from './lib/DecodedMessage'
+import { Group } from './lib/Group'
 import type { Query } from './lib/Query'
 import { getAddress } from './utils/address'
 
-export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
-export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
-export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
-export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
-export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
-export { TextCodec } from './lib/NativeCodecs/TextCodec'
-export * from './hooks'
 export * from './context'
+export * from './hooks'
+export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
+export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
+export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
+export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
+export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
+export { TextCodec } from './lib/NativeCodecs/TextCodec'
 
 const EncodedContent = content.EncodedContent
 
@@ -55,26 +56,86 @@ export async function createRandom(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
-  hasEnableIdentityCallback?: boolean | undefined
+  hasEnableIdentityCallback?: boolean | undefined,
+  enableAlphaMls?: boolean | undefined
 ): Promise<string> {
   return await XMTPModule.createRandom(
     environment,
     appVersion,
     hasCreateIdentityCallback,
-    hasEnableIdentityCallback
+    hasEnableIdentityCallback,
+    enableAlphaMls
   )
 }
 
 export async function createFromKeyBundle(
   keyBundle: string,
   environment: 'local' | 'dev' | 'production',
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  enableAlphaMls?: boolean | undefined
 ): Promise<string> {
   return await XMTPModule.createFromKeyBundle(
     keyBundle,
     environment,
-    appVersion
+    appVersion,
+    enableAlphaMls
   )
+}
+
+export async function createGroup<ContentTypes>(
+  client: Client<ContentTypes>,
+  peerAddresses: string[]
+): Promise<Group<ContentTypes>> {
+  return new Group(
+    client,
+    JSON.parse(await XMTPModule.createGroup(client.address, peerAddresses))
+  )
+}
+
+export async function listGroups<ContentTypes>(
+  client: Client<ContentTypes>
+): Promise<Group<ContentTypes>[]> {
+  return (await XMTPModule.listGroups(client.address)).map((json: string) => {
+    return new Group(client, JSON.parse(json))
+  })
+}
+
+export async function listMemberAddresses<ContentTypes>(
+  client: Client<ContentTypes>,
+  id: string
+): Promise<string[]> {
+  return XMTPModule.listMemberAddresses(client.address, id)
+}
+
+export async function sendMessageToGroup(
+  clientAddress: string,
+  groupId: string,
+  content: any
+): Promise<string> {
+  const contentJson = JSON.stringify(content)
+  return await XMTPModule.sendMessageToGroup(
+    clientAddress,
+    groupId,
+    contentJson
+  )
+}
+
+export async function groupMessages(
+  client: Client<any>,
+  id: string
+): Promise<DecodedMessage[]> {
+  const messages = await XMTPModule.groupMessages(client.address, id)
+  return messages.map((json: string) => {
+    return DecodedMessage.from(json, client)
+  })
+}
+
+export async function syncGroups(clientAddress: string) {
+  await XMTPModule.syncGroups(clientAddress)
+}
+
+export async function syncGroup(clientAddress: string, id: string) {
+  await XMTPModule.syncGroup(clientAddress, id)
 }
 
 export async function exportKeyBundle(clientAddress: string): Promise<string> {
@@ -428,11 +489,10 @@ export function preCreateIdentityCallbackCompleted() {
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
-export * from './lib/ContentCodec'
-export { Client } from './lib/Client'
-export { Conversation } from './lib/Conversation'
 export * from './XMTP.types'
+export { Client } from './lib/Client'
+export * from './lib/ContentCodec'
+export { Conversation } from './lib/Conversation'
 export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
-export { DecodedMessage }
-export { ConsentListEntry }
+export { ConsentListEntry, DecodedMessage }
