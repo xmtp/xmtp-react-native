@@ -56,7 +56,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.14)
   - hermes-engine/Pre-built (0.71.14)
   - libevent (2.1.12)
-  - LibXMTP (0.4.1-beta1)
+  - LibXMTP (0.4.1-beta2)
   - Logging (1.0.0)
   - MessagePacker (0.4.7)
   - MMKV (1.3.3):
@@ -445,7 +445,7 @@ PODS:
   - XMTP (0.8.2):
     - Connect-Swift (= 0.3.0)
     - GzipSwift
-    - LibXMTP (= 0.4.1-beta1)
+    - LibXMTP (= 0.4.1-beta2)
     - web3.swift
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
@@ -518,7 +518,7 @@ DEPENDENCIES:
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
-  - XMTP (from `https://github.com/xmtp/xmtp-ios.git`, commit `e1ada39688563501aaa7e78042ef09098af0e25e`)
+  - XMTP (from `https://github.com/xmtp/xmtp-ios.git`, commit `c8b6b3c4958e3bd907b097cbc256059281950056`)
   - XMTPReactNative (from `../../ios`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -663,7 +663,7 @@ EXTERNAL SOURCES:
   RNSVG:
     :path: "../node_modules/react-native-svg"
   XMTP:
-    :commit: e1ada39688563501aaa7e78042ef09098af0e25e
+    :commit: c8b6b3c4958e3bd907b097cbc256059281950056
     :git: https://github.com/xmtp/xmtp-ios.git
   XMTPReactNative:
     :path: "../../ios"
@@ -672,7 +672,7 @@ EXTERNAL SOURCES:
 
 CHECKOUT OPTIONS:
   XMTP:
-    :commit: e1ada39688563501aaa7e78042ef09098af0e25e
+    :commit: c8b6b3c4958e3bd907b097cbc256059281950056
     :git: https://github.com/xmtp/xmtp-ios.git
 
 SPEC CHECKSUMS:
@@ -703,7 +703,7 @@ SPEC CHECKSUMS:
   GzipSwift: 893f3e48e597a1a4f62fafcb6514220fcf8287fa
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  LibXMTP: 01d1797089db5fe7e0a39c524261f460a0f183c9
+  LibXMTP: a9c3d09126ad70443c991f439283dc95224a46ff
   Logging: 9ef4ecb546ad3169398d5a723bc9bea1c46bef26
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: f902fb6719da13c2ab0965233d8963a59416f911
@@ -752,10 +752,10 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: b02b5075dcf60c9f5f403000b3b0c202a11b6ae1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 18cc0e42dbb8cadc743665b5c7921b006e7bd5a2
+  XMTP: b70e7b864e38d430d2b55e813f33eec775ed0f0d
   XMTPReactNative: b8e421d2d086eef7266fce2e2760765b0567f554
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
-PODFILE CHECKSUM: f8517eee34c96e5f85f15759d299bcccd2887e89
+PODFILE CHECKSUM: 26bb9e7baf77af9eec83e664baa9beb4ebba0a17
 
 COCOAPODS: 1.15.2
