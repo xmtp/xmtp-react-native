@@ -68,4 +68,12 @@ export class Group<ContentTypes> {
   async sync() {
     await XMTP.syncGroup(this.client.address, this.id)
   }
+
+  async addMembers(addresses: string[]): Promise<void> {
+    return XMTP.addGroupMembers(this.client.address, this.id, addresses)
+  }
+
+  async removeMembers(addresses: string[]): Promise<void> {
+    return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
+  }
 }
