@@ -37,14 +37,16 @@ export async function auth(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
-  hasEnableIdentityCallback?: boolean | undefined
+  hasEnableIdentityCallback?: boolean | undefined,
+  enableAlphaMls?: boolean | undefined
 ) {
   return await XMTPModule.auth(
     address,
     environment,
     appVersion,
     hasCreateIdentityCallback,
-    hasEnableIdentityCallback
+    hasEnableIdentityCallback,
+    enableAlphaMls
   )
 }
 

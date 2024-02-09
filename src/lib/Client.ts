@@ -111,7 +111,8 @@ export class Client<ContentTypes> {
           options.env,
           options.appVersion,
           Boolean(createSubscription),
-          Boolean(enableSubscription)
+          Boolean(enableSubscription),
+          Boolean(options.enableAlphaMls)
         )
       })()
     })
