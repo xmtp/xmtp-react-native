@@ -9,10 +9,10 @@ import org.xmtp.android.library.Group
 class GroupWrapper {
 
     companion object {
-        private fun encodeToObj(client: Client, group: Group, idString: String): Map<String, Any> {
+        private fun encodeToObj(client: Client, group: Group, id: String): Map<String, Any> {
             return mapOf(
                 "clientAddress" to client.address,
-                "id" to idString,
+                "id" to id,
                 "createdAt" to group.createdAt.time,
                 "peerAddresses" to group.memberAddresses(),
                 
