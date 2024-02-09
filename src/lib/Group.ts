@@ -62,7 +62,7 @@ export class Group<ContentTypes> {
   }
 
   async messages(): Promise<DecodedMessage[]> {
-    return await XMTP.groupMessages(this.client.address, this.id)
+    return await XMTP.groupMessages(this.client, this.id)
   }
 
   async sync() {

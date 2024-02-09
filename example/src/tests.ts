@@ -108,6 +108,57 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
+test('can make a MLS V3 client from bundle', async () => {
+  const client = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const anotherClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const group1 = await client.conversations.newGroup([anotherClient.address])
+
+  if (group1.clientAddress !== client.address) {
+    throw new Error(
+      `clients dont match ${client.address} and ${group1.clientAddress}`
+    )
+  }
+  const bundle = await client.exportKeyBundle()
+
+  const client2 = await Client.createFromKeyBundle(bundle, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  if (client.address !== client2.address) {
+    throw new Error(
+      `clients dont match ${client2.address} and ${client.address}`
+    )
+  }
+
+  const randomClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const group = await client2.conversations.newGroup([randomClient.address])
+
+  if (group.clientAddress !== client2.address) {
+    throw new Error(
+      `clients dont match ${client2.address} and ${group.clientAddress}`
+    )
+  }
+
+  return true
+})
+
 test('production MLS V3 client creation throws error', async () => {
   try {
     const client = await Client.createRandom({
@@ -197,13 +248,11 @@ test('can message in a group', async () => {
       'num messages for bob should be 2, but it is' + bobMessages.length
     )
   }
-  const messageString: string = JSON.stringify(bobMessages[0])
-  if (!messageString.includes('gm')) {
-    throw new Error('newest Message should include gm')
+  if (bobMessages[0].content() != "gm") {
+    throw new Error('newest message should be \'gm\'')
   }
-  const messageString2: string = JSON.stringify(bobMessages[1])
-  if (!messageString2.includes('hello, world')) {
-    throw new Error('newest Message should include gm')
+  if (bobMessages[1].content() != "hello, world") {
+    throw new Error('newest message should be \'hello, world\'')
   }
   // Bob can send a message
   bobGroups[0].send('hey guys!')
@@ -219,14 +268,12 @@ test('can message in a group', async () => {
 
   // Cam can read messages from Alice and Bob
   await camGroups[0].sync()
-  const camMessages = await camGroups[0].messages()
-  const messageString3: string = JSON.stringify(camMessages[1])
-  if (!messageString3.includes('gm')) {
-    throw new Error('second Message should include gm')
+  let camMessages = await camGroups[0].messages()
+  if (camMessages[1].content() != "gm") {
+    throw new Error('second Message should be \'gm\'')
   }
-  const messageString4: string = JSON.stringify(camMessages[0])
-  if (!messageString4.includes('hey guys!')) {
-    throw new Error('newest Message should include hey guys!')
+  if (camMessages[0].content() != "hey guys!") {
+    throw new Error('newest Message should be \'hey guys!\'')
   }
 
   return true
