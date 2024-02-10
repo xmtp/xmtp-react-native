@@ -409,6 +409,10 @@ export function subscribeToConversations(clientAddress: string) {
   return XMTPModule.subscribeToConversations(clientAddress)
 }
 
+export function subscribeToGroups(clientAddress: string) {
+  return XMTPModule.subscribeToGroups(clientAddress)
+}
+
 export function subscribeToAllMessages(clientAddress: string) {
   return XMTPModule.subscribeToAllMessages(clientAddress)
 }
@@ -422,6 +426,10 @@ export async function subscribeToMessages(
 
 export function unsubscribeFromConversations(clientAddress: string) {
   return XMTPModule.unsubscribeFromConversations(clientAddress)
+}
+
+export function unsubscribeFromGroups(clientAddress: string) {
+  return XMTPModule.unsubscribeFromGroups(clientAddress)
 }
 
 export function unsubscribeFromAllMessages(clientAddress: string) {

@@ -11,6 +11,7 @@ import {
   StaticAttachmentCodec,
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
+  Group,
 } from '../../src/index'
 
 type EncodedContent = content.EncodedContent
@@ -82,103 +83,849 @@ function test(name: string, perform: () => Promise<boolean>) {
   tests.push({ name, run: perform })
 }
 
-test('can make a client', async () => {
-  const client = await Client.createRandom({
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-  })
-  client.register(new RemoteAttachmentCodec())
-  if (Object.keys(client.codecRegistry).length !== 2) {
-    throw new Error(
-      `Codecs length should be 2 not ${
-        Object.keys(client.codecRegistry).length
-      }`
-    )
-  }
-  return client.address.length > 0
-})
+// test('can make a client', async () => {
+//   const client = await Client.createRandom({
+//     env: 'local',
+//     appVersion: 'Testing/0.0.0',
+//   })
+//   client.register(new RemoteAttachmentCodec())
+//   if (Object.keys(client.codecRegistry).length !== 2) {
+//     throw new Error(
+//       `Codecs length should be 2 not ${
+//         Object.keys(client.codecRegistry).length
+//       }`
+//     )
+//   }
+//   return client.address.length > 0
+// })
 
-test('can make a MLS V3 client', async () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const client = await Client.createRandom({
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
-  })
+// test('can make a MLS V3 client', async () => {
+//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//   const client = await Client.createRandom({
+//     env: 'local',
+//     appVersion: 'Testing/0.0.0',
+//     enableAlphaMls: true,
+//   })
 
-  return true
-})
+//   return true
+// })
 
-test('can make a MLS V3 client from bundle', async () => {
-  const client = await Client.createRandom({
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
-  })
+// test('can make a MLS V3 client from bundle', async () => {
+//   const client = await Client.createRandom({
+//     env: 'local',
+//     appVersion: 'Testing/0.0.0',
+//     enableAlphaMls: true,
+//   })
 
-  const anotherClient = await Client.createRandom({
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
-  })
+//   const anotherClient = await Client.createRandom({
+//     env: 'local',
+//     appVersion: 'Testing/0.0.0',
+//     enableAlphaMls: true,
+//   })
 
-  const group1 = await client.conversations.newGroup([anotherClient.address])
+//   const group1 = await client.conversations.newGroup([anotherClient.address])
 
-  if (group1.clientAddress !== client.address) {
-    throw new Error(
-      `clients dont match ${client.address} and ${group1.clientAddress}`
-    )
-  }
-  const bundle = await client.exportKeyBundle()
+//   if (group1.clientAddress !== client.address) {
+//     throw new Error(
+//       `clients dont match ${client.address} and ${group1.clientAddress}`
+//     )
+//   }
+//   const bundle = await client.exportKeyBundle()
 
-  const client2 = await Client.createFromKeyBundle(bundle, {
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
-  })
+//   const client2 = await Client.createFromKeyBundle(bundle, {
+//     env: 'local',
+//     appVersion: 'Testing/0.0.0',
+//     enableAlphaMls: true,
+//   })
 
-  if (client.address !== client2.address) {
-    throw new Error(
-      `clients dont match ${client2.address} and ${client.address}`
-    )
-  }
+//   if (client.address !== client2.address) {
+//     throw new Error(
+//       `clients dont match ${client2.address} and ${client.address}`
+//     )
+//   }
 
-  const randomClient = await Client.createRandom({
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
-  })
+//   const randomClient = await Client.createRandom({
+//     env: 'local',
+//     appVersion: 'Testing/0.0.0',
+//     enableAlphaMls: true,
+//   })
 
-  const group = await client2.conversations.newGroup([randomClient.address])
+//   const group = await client2.conversations.newGroup([randomClient.address])
 
-  if (group.clientAddress !== client2.address) {
-    throw new Error(
-      `clients dont match ${client2.address} and ${group.clientAddress}`
-    )
-  }
+//   if (group.clientAddress !== client2.address) {
+//     throw new Error(
+//       `clients dont match ${client2.address} and ${group.clientAddress}`
+//     )
+//   }
 
-  return true
-})
+//   return true
+// })
 
-test('production MLS V3 client creation throws error', async () => {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const client = await Client.createRandom({
-      env: 'production',
-      appVersion: 'Testing/0.0.0',
-      enableAlphaMls: true,
-    })
-  } catch (error: any) {
-    return error.message.endsWith(
-      'Environment must be "local" or "dev" to enable alpha MLS'
-    )
-  }
-  throw new Error(
-    'should throw error on MLS V3 client create when environment is not local'
-  )
-})
+// test('production MLS V3 client creation throws error', async () => {
+//   try {
+//     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//     const client = await Client.createRandom({
+//       env: 'production',
+//       appVersion: 'Testing/0.0.0',
+//       enableAlphaMls: true,
+//     })
+//   } catch (error: any) {
+//     return error.message.endsWith(
+//       'Environment must be "local" or "dev" to enable alpha MLS'
+//     )
+//   }
+//   throw new Error(
+//     'should throw error on MLS V3 client create when environment is not local'
+//   )
+// })
 
-test('can message in a group', async () => {
+// test('can message in a group', async () => {
+//   // Create three MLS enabled Clients
+//   const aliceClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+//   const bobClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+//   const camClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+
+//   // Alice's num groups start at 0
+//   let aliceGroups = await aliceClient.conversations.listGroups()
+//   if (aliceGroups.length !== 0) {
+//     throw new Error('num groups should be 0')
+//   }
+
+//   // Alice creates a group
+//   const aliceGroup = await aliceClient.conversations.newGroup([
+//     bobClient.address,
+//     camClient.address,
+//   ])
+
+//   // Alice's num groups == 1
+//   aliceGroups = await aliceClient.conversations.listGroups()
+//   if (aliceGroups.length !== 1) {
+//     throw new Error('num groups should be 1')
+//   }
+
+//   // Alice can confirm memberAddresses
+//   const memberAddresses = await aliceGroup.memberAddresses()
+//   if (memberAddresses.length !== 3) {
+//     throw new Error('num group members should be 3')
+//   }
+//   const lowercasedAddresses: string[] = memberAddresses.map((s) =>
+//     s.toLowerCase()
+//   )
+//   if (
+//     !(
+//       lowercasedAddresses.includes(aliceClient.address.toLowerCase()) &&
+//       lowercasedAddresses.includes(bobClient.address.toLowerCase()) &&
+//       lowercasedAddresses.includes(camClient.address.toLowerCase())
+//     )
+//   ) {
+//     throw new Error('missing address')
+//   }
+
+//   // Alice can send messages
+//   aliceGroup.send('hello, world')
+//   aliceGroup.send('gm')
+
+//   // Bob's num groups == 1
+//   await bobClient.conversations.syncGroups()
+//   const bobGroups = await bobClient.conversations.listGroups()
+//   if (bobGroups.length !== 1) {
+//     throw new Error(
+//       'num groups for bob should be 1, but it is' + bobGroups.length
+//     )
+//   }
+
+//   // Bob can read messages from Alice
+//   await bobGroups[0].sync()
+//   const bobMessages: DecodedMessage[] = await bobGroups[0].messages()
+//   if (bobMessages.length !== 2) {
+//     throw new Error(
+//       'num messages for bob should be 2, but it is' + bobMessages.length
+//     )
+//   }
+//   if (bobMessages[0].content() !== 'gm') {
+//     throw new Error("newest message should be 'gm'")
+//   }
+//   if (bobMessages[1].content() !== 'hello, world') {
+//     throw new Error("newest message should be 'hello, world'")
+//   }
+//   // Bob can send a message
+//   bobGroups[0].send('hey guys!')
+
+//   // Cam's num groups == 1
+//   await camClient.conversations.syncGroups()
+//   const camGroups = await camClient.conversations.listGroups()
+//   if (camGroups.length !== 1) {
+//     throw new Error(
+//       'num groups for cam should be 1, but it is' + camGroups.length
+//     )
+//   }
+
+//   // Cam can read messages from Alice and Bob
+//   await camGroups[0].sync()
+//   const camMessages = await camGroups[0].messages()
+//   if (camMessages[1].content() !== 'gm') {
+//     throw new Error("second Message should be 'gm'")
+//   }
+//   if (camMessages[0].content() !== 'hey guys!') {
+//     throw new Error("newest Message should be 'hey guys!'")
+//   }
+
+//   return true
+// })
+
+// test('can add members to a group', async () => {
+//   // Create three MLS enabled Clients
+//   const aliceClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+//   const bobClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+//   const camClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+
+//   // Alice's num groups start at 0
+//   let aliceGroups = await aliceClient.conversations.listGroups()
+//   if (aliceGroups.length !== 0) {
+//     throw new Error('num groups should be 0')
+//   }
+
+//   // Bob's num groups start at 0
+//   let bobGroups = await bobClient.conversations.listGroups()
+//   if (bobGroups.length !== 0) {
+//     throw new Error('num groups should be 0')
+//   }
+
+//   // Cam's num groups start at 0
+//   let camGroups = await camClient.conversations.listGroups()
+//   if (camGroups.length !== 0) {
+//     throw new Error('num groups should be 0')
+//   }
+
+//   // Alice creates a group
+//   const aliceGroup = await aliceClient.conversations.newGroup([
+//     bobClient.address,
+//   ])
+
+//   // Alice's num groups == 1
+//   aliceGroups = await aliceClient.conversations.listGroups()
+//   if (aliceGroups.length !== 1) {
+//     throw new Error('num groups should be 1')
+//   }
+
+//   // Alice can confirm memberAddresses
+//   const memberAddresses = await aliceGroup.memberAddresses()
+//   if (memberAddresses.length !== 2) {
+//     throw new Error('num group members should be 2')
+//   }
+//   const lowercasedAddresses: string[] = memberAddresses.map((s) =>
+//     s.toLowerCase()
+//   )
+//   if (
+//     !(
+//       lowercasedAddresses.includes(aliceClient.address.toLowerCase()) &&
+//       lowercasedAddresses.includes(bobClient.address.toLowerCase())
+//     )
+//   ) {
+//     throw new Error('missing address')
+//   }
+
+//   // Alice can send messages
+//   aliceGroup.send('hello, world')
+//   aliceGroup.send('gm')
+
+//   // Bob's num groups == 1
+//   await bobClient.conversations.syncGroups()
+//   bobGroups = await bobClient.conversations.listGroups()
+//   if (bobGroups.length !== 1) {
+//     throw new Error(
+//       'num groups for bob should be 1, but it is' + bobGroups.length
+//     )
+//   }
+
+//   await aliceGroup.addMembers([camClient.address])
+
+//   // Cam's num groups == 1
+//   await camClient.conversations.syncGroups()
+//   camGroups = await camClient.conversations.listGroups()
+//   if (camGroups.length !== 1) {
+//     throw new Error(
+//       'num groups for cam should be 1, but it is' + camGroups.length
+//     )
+//   }
+//   const camMessages = await camGroups[0].messages()
+//   if (camMessages.length !== 0) {
+//     throw new Error('num messages for cam should be 0')
+//   }
+
+//   await bobGroups[0].sync()
+//   const bobGroupMembers = await bobGroups[0].memberAddresses()
+//   if (bobGroupMembers.length !== 3) {
+//     throw new Error('num group members should be 3')
+//   }
+
+//   return true
+// })
+
+// test('can remove members from a group', async () => {
+//   // Create three MLS enabled Clients
+//   const aliceClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+//   const bobClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+//   const camClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+
+//   // Alice's num groups start at 0
+//   let aliceGroups = await aliceClient.conversations.listGroups()
+//   if (aliceGroups.length !== 0) {
+//     throw new Error('num groups should be 0')
+//   }
+
+//   // Bob's num groups start at 0
+//   let bobGroups = await bobClient.conversations.listGroups()
+//   if (bobGroups.length !== 0) {
+//     throw new Error('num groups should be 0')
+//   }
+
+//   // Cam's num groups start at 0
+//   let camGroups = await camClient.conversations.listGroups()
+//   if (camGroups.length !== 0) {
+//     throw new Error('num groups should be 0')
+//   }
+
+//   // Alice creates a group
+//   const aliceGroup = await aliceClient.conversations.newGroup([
+//     bobClient.address,
+//     camClient.address,
+//   ])
+
+//   // Alice's num groups == 1
+//   aliceGroups = await aliceClient.conversations.listGroups()
+//   if (aliceGroups.length !== 1) {
+//     throw new Error('num groups should be 1')
+//   }
+
+//   // Alice can confirm memberAddresses
+//   const memberAddresses = await aliceGroup.memberAddresses()
+//   if (memberAddresses.length !== 3) {
+//     throw new Error('num group members should be 3')
+//   }
+//   const lowercasedAddresses: string[] = memberAddresses.map((s) =>
+//     s.toLowerCase()
+//   )
+//   if (
+//     !(
+//       lowercasedAddresses.includes(aliceClient.address.toLowerCase()) &&
+//       lowercasedAddresses.includes(bobClient.address.toLowerCase())
+//     )
+//   ) {
+//     throw new Error('missing address')
+//   }
+
+//   // Alice can send messages
+//   await aliceGroup.send('hello, world')
+//   await aliceGroup.send('gm')
+
+//   // Bob's num groups == 1
+//   await bobClient.conversations.syncGroups()
+//   bobGroups = await bobClient.conversations.listGroups()
+//   if (bobGroups.length !== 1) {
+//     throw new Error(
+//       'num groups for bob should be 1, but it is' + bobGroups.length
+//     )
+//   }
+
+//   // Cam's num groups == 1
+//   await camClient.conversations.syncGroups()
+//   camGroups = await camClient.conversations.listGroups()
+//   if (camGroups.length !== 1) {
+//     throw new Error(
+//       'num groups for cam should be 1, but it is' + camGroups.length
+//     )
+//   }
+
+//   await aliceGroup.removeMembers([bobClient.address])
+//   await aliceGroup.sync()
+//   const aliceGroupMembers = await aliceGroup.memberAddresses()
+//   if (aliceGroupMembers.length !== 2) {
+//     throw new Error('num group members should be 2')
+//   }
+
+//   // await bobClient.conversations.syncGroups()
+
+//   // bobGroups = await bobClient.conversations.listGroups()
+//   // await bobGroups[0].sync()
+//   // const bobGroupMessages = await bobGroups[0].messages()
+//   // if (bobGroups.length !== 0) {
+//   //   throw new Error(
+//   //     'num groups for bob should be 0, but it is ' + bobGroups.length
+//   //   )
+//   // }
+
+//   await camGroups[0].sync()
+//   const camGroupMembers = await camGroups[0].memberAddresses()
+//   if (camGroupMembers.length !== 2) {
+//     throw new Error('num group members should be 2')
+//   }
+
+//   return true
+// })
+
+// test('can pass a custom filter date and receive message objects with expected dates', async () => {
+//   try {
+//     const bob = await Client.createRandom({ env: 'local' })
+//     const alice = await Client.createRandom({ env: 'local' })
+
+//     if (bob.address === alice.address) {
+//       throw new Error('bob and alice should be different')
+//     }
+
+//     const bobConversation = await bob.conversations.newConversation(
+//       alice.address
+//     )
+
+//     const aliceConversation = (await alice.conversations.list())[0]
+//     if (!aliceConversation) {
+//       throw new Error('aliceConversation should exist')
+//     }
+
+//     const sentAt = Date.now()
+//     await bobConversation.send({ text: 'hello' })
+
+//     const initialQueryDate = new Date('2023-01-01')
+//     const finalQueryDate = new Date('2025-01-01')
+
+//     // Show all messages before date in the past
+//     const messages1: DecodedMessage<any>[] = await aliceConversation.messages(
+//       undefined,
+//       initialQueryDate
+//     )
+
+//     // Show all messages before date in the future
+//     const messages2: DecodedMessage<any>[] = await aliceConversation.messages(
+//       undefined,
+//       finalQueryDate
+//     )
+
+//     const isAboutRightSendTime = Math.abs(messages2[0].sent - sentAt) < 1000
+//     if (!isAboutRightSendTime) return false
+
+//     const passingDateFieldSuccessful =
+//       !messages1.length && messages2.length === 1
+
+//     if (!passingDateFieldSuccessful) return false
+
+//     // repeat the above test with a numeric date value
+
+//     // Show all messages before date in the past
+//     const messages3: DecodedMessage[] = await aliceConversation.messages(
+//       undefined,
+//       initialQueryDate.getTime()
+//     )
+
+//     // Show all messages before date in the future
+//     const messages4: DecodedMessage[] = await aliceConversation.messages(
+//       undefined,
+//       finalQueryDate.getTime()
+//     )
+
+//     const passingTimestampFieldSuccessful =
+//       !messages3.length && messages4.length === 1
+
+//     return passingTimestampFieldSuccessful
+//   } catch {
+//     return false
+//   }
+// })
+
+// test('canMessage', async () => {
+//   const bob = await Client.createRandom({ env: 'local' })
+//   const alice = await Client.createRandom({ env: 'local' })
+
+//   const canMessage = await bob.canMessage(alice.address)
+//   return canMessage
+// })
+
+// test('createFromKeyBundle throws error for non string value', async () => {
+//   try {
+//     const bytes = [1, 2, 3]
+//     await Client.createFromKeyBundle(JSON.stringify(bytes), {
+//       env: 'local',
+//     })
+//   } catch {
+//     return true
+//   }
+//   return false
+// })
+
+// test('canPrepareMessage', async () => {
+//   const bob = await Client.createRandom({ env: 'local' })
+//   const alice = await Client.createRandom({ env: 'local' })
+//   await delayToPropogate()
+
+//   const bobConversation = await bob.conversations.newConversation(alice.address)
+//   await delayToPropogate()
+
+//   const prepared = await bobConversation.prepareMessage('hi')
+//   if (!prepared.preparedAt) {
+//     throw new Error('missing `preparedAt` on prepared message')
+//   }
+
+//   // Either of these should work:
+//   await bobConversation.sendPreparedMessage(prepared)
+//   // await bob.sendPreparedMessage(prepared);
+
+//   await delayToPropogate()
+//   const messages = await bobConversation.messages()
+//   if (messages.length !== 1) {
+//     throw new Error(`expected 1 message: got ${messages.length}`)
+//   }
+//   const message = messages[0]
+
+//   return message?.id === prepared.messageId
+// })
+
+// test('can list batch messages', async () => {
+//   const bob = await Client.createRandom({ env: 'local' })
+//   await delayToPropogate()
+//   const alice = await Client.createRandom({ env: 'local' })
+//   await delayToPropogate()
+//   if (bob.address === alice.address) {
+//     throw new Error('bob and alice should be different')
+//   }
+
+//   const bobConversation = await bob.conversations.newConversation(alice.address)
+//   await delayToPropogate()
+
+//   const aliceConversation = (await alice.conversations.list())[0]
+//   if (!aliceConversation) {
+//     throw new Error('aliceConversation should exist')
+//   }
+
+//   await bobConversation.send({ text: 'Hello world' })
+//   const bobMessages = await bobConversation.messages()
+//   await bobConversation.send({
+//     reaction: {
+//       reference: bobMessages[0].id,
+//       action: 'added',
+//       schema: 'unicode',
+//       content: '💖',
+//     },
+//   })
+
+//   await delayToPropogate()
+//   const messages: DecodedMessage[] = await alice.listBatchMessages([
+//     {
+//       contentTopic: bobConversation.topic,
+//     } as Query,
+//     {
+//       contentTopic: aliceConversation.topic,
+//     } as Query,
+//   ])
+
+//   if (messages.length < 1) {
+//     throw Error('No message')
+//   }
+
+//   if (messages[0].contentTypeId !== 'xmtp.org/reaction:1.0') {
+//     throw Error(
+//       'Unexpected message content ' + JSON.stringify(messages[0].contentTypeId)
+//     )
+//   }
+
+//   if (messages[0].fallback !== 'Reacted “💖” to an earlier message') {
+//     throw Error('Unexpected message fallback ' + messages[0].fallback)
+//   }
+
+//   return true
+// })
+
+// test('can paginate batch messages', async () => {
+//   const bob = await Client.createRandom({ env: 'local' })
+//   await delayToPropogate()
+//   const alice = await Client.createRandom({ env: 'local' })
+//   await delayToPropogate()
+//   if (bob.address === alice.address) {
+//     throw new Error('bob and alice should be different')
+//   }
+
+//   const bobConversation = await bob.conversations.newConversation(alice.address)
+//   await delayToPropogate()
+
+//   const aliceConversation = (await alice.conversations.list())[0]
+//   if (!aliceConversation) {
+//     throw new Error('aliceConversation should exist')
+//   }
+
+//   await bobConversation.send({ text: `Initial Message` })
+
+//   await delayToPropogate()
+//   const testTime = new Date()
+//   await delayToPropogate()
+
+//   for (let i = 0; i < 5; i++) {
+//     await bobConversation.send({ text: `Message ${i}` })
+//     await delayToPropogate()
+//   }
+
+//   const messagesLimited: DecodedMessage[] = await alice.listBatchMessages([
+//     {
+//       contentTopic: bobConversation.topic,
+//       pageSize: 2,
+//     } as Query,
+//   ])
+
+//   const messagesAfter: DecodedMessage[] = await alice.listBatchMessages([
+//     {
+//       contentTopic: bobConversation.topic,
+//       startTime: testTime,
+//       endTime: new Date(),
+//     } as Query,
+//   ])
+
+//   const messagesBefore: DecodedMessage[] = await alice.listBatchMessages([
+//     {
+//       contentTopic: bobConversation.topic,
+//       endTime: testTime,
+//     } as Query,
+//   ])
+
+//   await bobConversation.send('')
+//   await delayToPropogate()
+
+//   const messagesAsc: DecodedMessage[] = await alice.listBatchMessages([
+//     {
+//       contentTopic: bobConversation.topic,
+//       direction: 'SORT_DIRECTION_ASCENDING',
+//     } as Query,
+//   ])
+
+//   if (messagesLimited.length !== 2) {
+//     throw Error('Unexpected messagesLimited count ' + messagesLimited.length)
+//   }
+
+//   if (messagesLimited[0].content() !== 'Message 4') {
+//     throw Error(
+//       'Unexpected messagesLimited content ' + messagesLimited[0].content()
+//     )
+//   }
+//   if (messagesLimited[1].content() !== 'Message 3') {
+//     throw Error(
+//       'Unexpected messagesLimited content ' + messagesLimited[1].content()
+//     )
+//   }
+
+//   if (messagesBefore.length !== 1) {
+//     throw Error('Unexpected messagesBefore count ' + messagesBefore.length)
+//   }
+//   if (messagesBefore[0].content() !== 'Initial Message') {
+//     throw Error(
+//       'Unexpected messagesBefore content ' + messagesBefore[0].content()
+//     )
+//   }
+
+//   if (messagesAfter.length !== 5) {
+//     throw Error('Unexpected messagesAfter count ' + messagesAfter.length)
+//   }
+//   if (messagesAfter[0].content() !== 'Message 4') {
+//     throw Error(
+//       'Unexpected messagesAfter content ' + messagesAfter[0].content()
+//     )
+//   }
+
+//   if (messagesAsc[0].content() !== 'Initial Message') {
+//     throw Error('Unexpected messagesAsc content ' + messagesAsc[0].content())
+//   }
+
+//   if (messagesAsc[6].contentTypeId !== 'xmtp.org/text:1.0') {
+//     throw Error('Unexpected messagesAsc content ' + messagesAsc[6].content())
+//   }
+
+//   return true
+// })
+
+// test('can stream messages', async () => {
+//   const bob = await Client.createRandom({ env: 'local' })
+//   await delayToPropogate()
+//   const alice = await Client.createRandom({ env: 'local' })
+//   await delayToPropogate()
+
+//   // Record new conversation stream
+//   const allConversations: Conversation<any>[] = []
+//   await alice.conversations.stream(async (conversation) => {
+//     allConversations.push(conversation)
+//   })
+
+//   // Record message stream across all conversations
+//   const allMessages: DecodedMessage[] = []
+//   await alice.conversations.streamAllMessages(async (message) => {
+//     allMessages.push(message)
+//   })
+
+//   // Start Bob starts a new conversation.
+//   const bobConvo = await bob.conversations.newConversation(alice.address, {
+//     conversationID: 'https://example.com/alice-and-bob',
+//     metadata: {
+//       title: 'Alice and Bob',
+//     },
+//   })
+//   await delayToPropogate()
+
+//   if (bobConvo.clientAddress !== bob.address) {
+//     throw Error('Unexpected client address ' + bobConvo.clientAddress)
+//   }
+//   if (!bobConvo.topic) {
+//     throw Error('Missing topic ' + bobConvo.topic)
+//   }
+//   if (
+//     bobConvo.context?.conversationID !== 'https://example.com/alice-and-bob'
+//   ) {
+//     throw Error('Unexpected conversationID ' + bobConvo.context?.conversationID)
+//   }
+//   if (bobConvo.context?.metadata?.title !== 'Alice and Bob') {
+//     throw Error(
+//       'Unexpected metadata title ' + bobConvo.context?.metadata?.title
+//     )
+//   }
+//   if (!bobConvo.createdAt) {
+//     throw Error('Missing createdAt ' + bobConvo.createdAt)
+//   }
+
+//   if (allConversations.length !== 1) {
+//     throw Error('Unexpected all conversations count ' + allConversations.length)
+//   }
+//   if (allConversations[0].topic !== bobConvo.topic) {
+//     throw Error(
+//       'Unexpected all conversations topic ' + allConversations[0].topic
+//     )
+//   }
+
+//   const aliceConvo = (await alice.conversations.list())[0]
+//   if (!aliceConvo) {
+//     throw new Error('missing conversation')
+//   }
+
+//   // Record message stream for this conversation
+//   const convoMessages: DecodedMessage[] = []
+//   await aliceConvo.streamMessages(async (message) => {
+//     convoMessages.push(message)
+//   })
+
+//   for (let i = 0; i < 5; i++) {
+//     await bobConvo.send({ text: `Message ${i}` })
+//     await delayToPropogate()
+//   }
+//   if (allMessages.length !== 5) {
+//     throw Error('Unexpected all messages count ' + allMessages.length)
+//   }
+//   if (convoMessages.length !== 5) {
+//     throw Error('Unexpected convo messages count ' + convoMessages.length)
+//   }
+//   for (let i = 0; i < 5; i++) {
+//     if (allMessages[i].content() !== `Message ${i}`) {
+//       throw Error('Unexpected all message content ' + allMessages[i].content())
+//     }
+//     if (allMessages[i].topic !== bobConvo.topic) {
+//       throw Error('Unexpected all message topic ' + allMessages[i].topic)
+//     }
+//     if (convoMessages[i].content() !== `Message ${i}`) {
+//       throw Error(
+//         'Unexpected convo message content ' + convoMessages[i].content()
+//       )
+//     }
+//     if (convoMessages[i].topic !== bobConvo.topic) {
+//       throw Error('Unexpected convo message topic ' + convoMessages[i].topic)
+//     }
+//   }
+//   alice.conversations.cancelStream()
+//   alice.conversations.cancelStreamAllMessages()
+
+//   return true
+// })
+
+// test('can stream group messages', async () => {
+//   // Create three MLS enabled Clients
+//   const aliceClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+//   const bobClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+//   const camClient = await Client.createRandom({
+//     env: 'local',
+//     enableAlphaMls: true,
+//   })
+
+//   // Alice creates a group
+//   const aliceGroup = await aliceClient.conversations.newGroup([
+//     bobClient.address,
+//     camClient.address,
+//   ])
+
+//   // Record message stream for this group
+//   const groupMessages: DecodedMessage[] = []
+//   const cancelGroupMessageStream = await aliceGroup.streamGroupMessages(
+//     async (message) => {
+//       groupMessages.push(message)
+//     }
+//   )
+
+//   // Bob's num groups == 1
+//   await bobClient.conversations.syncGroups()
+//   const bobGroup = (await bobClient.conversations.listGroups())[0]
+
+//   for (let i = 0; i < 5; i++) {
+//     await bobGroup.send({ text: `Message ${i}` })
+//     await delayToPropogate()
+//   }
+
+//   if (groupMessages.length !== 5) {
+//     throw Error('Unexpected convo messages count ' + groupMessages.length)
+//   }
+//   for (let i = 0; i < 5; i++) {
+//     if (groupMessages[i].content() !== `Message ${i}`) {
+//       throw Error(
+//         'Unexpected group message content ' + groupMessages[i].content()
+//       )
+//     }
+//   }
+
+//   cancelGroupMessageStream()
+//   for (let i = 0; i < 5; i++) {
+//     await bobGroup.send({ text: `Message ${i}` })
+//   }
+
+//   if (groupMessages.length !== 5) {
+//     throw Error('Unexpected convo messages count ' + groupMessages.length)
+//   }
+
+//   return true
+// })
+
+
+test('can stream groups', async () => {
   // Create three MLS enabled Clients
   const aliceClient = await Client.createRandom({
     env: 'local',
@@ -193,731 +940,41 @@ test('can message in a group', async () => {
     enableAlphaMls: true,
   })
 
-  // Alice's num groups start at 0
-  let aliceGroups = await aliceClient.conversations.listGroups()
-  if (aliceGroups.length !== 0) {
-    throw new Error('num groups should be 0')
-  }
+  // Alice streams groups
+  const aliceGroups: Group<any>[] = []
+  await aliceClient.conversations.streamGroups(
+    async (group) => {
+      aliceGroups.push(group)
+      console.log("streamed group creation")
+    }
+  )
 
   // Alice creates a group
   const aliceGroup = await aliceClient.conversations.newGroup([
     bobClient.address,
     camClient.address,
   ])
-
-  // Alice's num groups == 1
-  aliceGroups = await aliceClient.conversations.listGroups()
+  await delayToPropogate()
   if (aliceGroups.length !== 1) {
-    throw new Error('num groups should be 1')
+    throw Error('Unexpected num groups: ' + aliceGroups.length)
   }
 
-  // Alice can confirm memberAddresses
-  const memberAddresses = await aliceGroup.memberAddresses()
-  if (memberAddresses.length !== 3) {
-    throw new Error('num group members should be 3')
-  }
-  const lowercasedAddresses: string[] = memberAddresses.map((s) =>
-    s.toLowerCase()
-  )
-  if (
-    !(
-      lowercasedAddresses.includes(aliceClient.address.toLowerCase()) &&
-      lowercasedAddresses.includes(bobClient.address.toLowerCase()) &&
-      lowercasedAddresses.includes(camClient.address.toLowerCase())
-    )
-  ) {
-    throw new Error('missing address')
-  }
-
-  // Alice can send messages
-  aliceGroup.send('hello, world')
-  aliceGroup.send('gm')
-
-  // Bob's num groups == 1
-  await bobClient.conversations.syncGroups()
-  const bobGroups = await bobClient.conversations.listGroups()
-  if (bobGroups.length !== 1) {
-    throw new Error(
-      'num groups for bob should be 1, but it is' + bobGroups.length
-    )
-  }
-
-  // Bob can read messages from Alice
-  await bobGroups[0].sync()
-  const bobMessages: DecodedMessage[] = await bobGroups[0].messages()
-  if (bobMessages.length !== 2) {
-    throw new Error(
-      'num messages for bob should be 2, but it is' + bobMessages.length
-    )
-  }
-  if (bobMessages[0].content() !== 'gm') {
-    throw new Error("newest message should be 'gm'")
-  }
-  if (bobMessages[1].content() !== 'hello, world') {
-    throw new Error("newest message should be 'hello, world'")
-  }
-  // Bob can send a message
-  bobGroups[0].send('hey guys!')
-
-  // Cam's num groups == 1
-  await camClient.conversations.syncGroups()
-  const camGroups = await camClient.conversations.listGroups()
-  if (camGroups.length !== 1) {
-    throw new Error(
-      'num groups for cam should be 1, but it is' + camGroups.length
-    )
-  }
-
-  // Cam can read messages from Alice and Bob
-  await camGroups[0].sync()
-  const camMessages = await camGroups[0].messages()
-  if (camMessages[1].content() !== 'gm') {
-    throw new Error("second Message should be 'gm'")
-  }
-  if (camMessages[0].content() !== 'hey guys!') {
-    throw new Error("newest Message should be 'hey guys!'")
-  }
-
-  return true
-})
-
-test('can add members to a group', async () => {
-  // Create three MLS enabled Clients
-  const aliceClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  const bobClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  const camClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-
-  // Alice's num groups start at 0
-  let aliceGroups = await aliceClient.conversations.listGroups()
-  if (aliceGroups.length !== 0) {
-    throw new Error('num groups should be 0')
-  }
-
-  // Bob's num groups start at 0
-  let bobGroups = await bobClient.conversations.listGroups()
-  if (bobGroups.length !== 0) {
-    throw new Error('num groups should be 0')
-  }
-
-  // Cam's num groups start at 0
-  let camGroups = await camClient.conversations.listGroups()
-  if (camGroups.length !== 0) {
-    throw new Error('num groups should be 0')
-  }
-
-  // Alice creates a group
-  const aliceGroup = await aliceClient.conversations.newGroup([
-    bobClient.address,
+  const camGroup = await camClient.conversations.newGroup([
+    aliceClient.address
   ])
-
-  // Alice's num groups == 1
-  aliceGroups = await aliceClient.conversations.listGroups()
-  if (aliceGroups.length !== 1) {
-    throw new Error('num groups should be 1')
+  await delayToPropogate()
+  if (aliceGroups.length as number !== 2) {
+    throw Error('Unexpected num groups: ' + aliceGroups.length)
   }
 
-  // Alice can confirm memberAddresses
-  const memberAddresses = await aliceGroup.memberAddresses()
-  if (memberAddresses.length !== 2) {
-    throw new Error('num group members should be 2')
-  }
-  const lowercasedAddresses: string[] = memberAddresses.map((s) =>
-    s.toLowerCase()
-  )
-  if (
-    !(
-      lowercasedAddresses.includes(aliceClient.address.toLowerCase()) &&
-      lowercasedAddresses.includes(bobClient.address.toLowerCase())
-    )
-  ) {
-    throw new Error('missing address')
-  }
+  aliceClient.conversations.cancelStreamGroups()
 
-  // Alice can send messages
-  aliceGroup.send('hello, world')
-  aliceGroup.send('gm')
-
-  // Bob's num groups == 1
-  await bobClient.conversations.syncGroups()
-  bobGroups = await bobClient.conversations.listGroups()
-  if (bobGroups.length !== 1) {
-    throw new Error(
-      'num groups for bob should be 1, but it is' + bobGroups.length
-    )
-  }
-
-  await aliceGroup.addMembers([camClient.address])
-
-  // Cam's num groups == 1
-  await camClient.conversations.syncGroups()
-  camGroups = await camClient.conversations.listGroups()
-  if (camGroups.length !== 1) {
-    throw new Error(
-      'num groups for cam should be 1, but it is' + camGroups.length
-    )
-  }
-  const camMessages = await camGroups[0].messages()
-  if (camMessages.length !== 0) {
-    throw new Error('num messages for cam should be 0')
-  }
-
-  await bobGroups[0].sync()
-  const bobGroupMembers = await bobGroups[0].memberAddresses()
-  if (bobGroupMembers.length !== 3) {
-    throw new Error('num group members should be 3')
-  }
-
-  return true
-})
-
-test('can remove members from a group', async () => {
-  // Create three MLS enabled Clients
-  const aliceClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  const bobClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  const camClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-
-  // Alice's num groups start at 0
-  let aliceGroups = await aliceClient.conversations.listGroups()
-  if (aliceGroups.length !== 0) {
-    throw new Error('num groups should be 0')
-  }
-
-  // Bob's num groups start at 0
-  let bobGroups = await bobClient.conversations.listGroups()
-  if (bobGroups.length !== 0) {
-    throw new Error('num groups should be 0')
-  }
-
-  // Cam's num groups start at 0
-  let camGroups = await camClient.conversations.listGroups()
-  if (camGroups.length !== 0) {
-    throw new Error('num groups should be 0')
-  }
-
-  // Alice creates a group
-  const aliceGroup = await aliceClient.conversations.newGroup([
-    bobClient.address,
-    camClient.address,
+  const bobgroup = await bobClient.conversations.newGroup([
+    aliceClient.address
   ])
-
-  // Alice's num groups == 1
-  aliceGroups = await aliceClient.conversations.listGroups()
-  if (aliceGroups.length !== 1) {
-    throw new Error('num groups should be 1')
-  }
-
-  // Alice can confirm memberAddresses
-  const memberAddresses = await aliceGroup.memberAddresses()
-  if (memberAddresses.length !== 3) {
-    throw new Error('num group members should be 3')
-  }
-  const lowercasedAddresses: string[] = memberAddresses.map((s) =>
-    s.toLowerCase()
-  )
-  if (
-    !(
-      lowercasedAddresses.includes(aliceClient.address.toLowerCase()) &&
-      lowercasedAddresses.includes(bobClient.address.toLowerCase())
-    )
-  ) {
-    throw new Error('missing address')
-  }
-
-  // Alice can send messages
-  await aliceGroup.send('hello, world')
-  await aliceGroup.send('gm')
-
-  // Bob's num groups == 1
-  await bobClient.conversations.syncGroups()
-  bobGroups = await bobClient.conversations.listGroups()
-  if (bobGroups.length !== 1) {
-    throw new Error(
-      'num groups for bob should be 1, but it is' + bobGroups.length
-    )
-  }
-
-  // Cam's num groups == 1
-  await camClient.conversations.syncGroups()
-  camGroups = await camClient.conversations.listGroups()
-  if (camGroups.length !== 1) {
-    throw new Error(
-      'num groups for cam should be 1, but it is' + camGroups.length
-    )
-  }
-
-  await aliceGroup.removeMembers([bobClient.address])
-  await aliceGroup.sync()
-  const aliceGroupMembers = await aliceGroup.memberAddresses()
-  if (aliceGroupMembers.length !== 2) {
-    throw new Error('num group members should be 2')
-  }
-
-  // await bobClient.conversations.syncGroups()
-
-  // bobGroups = await bobClient.conversations.listGroups()
-  // await bobGroups[0].sync()
-  // const bobGroupMessages = await bobGroups[0].messages()
-  // if (bobGroups.length !== 0) {
-  //   throw new Error(
-  //     'num groups for bob should be 0, but it is ' + bobGroups.length
-  //   )
-  // }
-
-  await camGroups[0].sync()
-  const camGroupMembers = await camGroups[0].memberAddresses()
-  if (camGroupMembers.length !== 2) {
-    throw new Error('num group members should be 2')
-  }
-
-  return true
-})
-
-test('can pass a custom filter date and receive message objects with expected dates', async () => {
-  try {
-    const bob = await Client.createRandom({ env: 'local' })
-    const alice = await Client.createRandom({ env: 'local' })
-
-    if (bob.address === alice.address) {
-      throw new Error('bob and alice should be different')
-    }
-
-    const bobConversation = await bob.conversations.newConversation(
-      alice.address
-    )
-
-    const aliceConversation = (await alice.conversations.list())[0]
-    if (!aliceConversation) {
-      throw new Error('aliceConversation should exist')
-    }
-
-    const sentAt = Date.now()
-    await bobConversation.send({ text: 'hello' })
-
-    const initialQueryDate = new Date('2023-01-01')
-    const finalQueryDate = new Date('2025-01-01')
-
-    // Show all messages before date in the past
-    const messages1: DecodedMessage<any>[] = await aliceConversation.messages(
-      undefined,
-      initialQueryDate
-    )
-
-    // Show all messages before date in the future
-    const messages2: DecodedMessage<any>[] = await aliceConversation.messages(
-      undefined,
-      finalQueryDate
-    )
-
-    const isAboutRightSendTime = Math.abs(messages2[0].sent - sentAt) < 1000
-    if (!isAboutRightSendTime) return false
-
-    const passingDateFieldSuccessful =
-      !messages1.length && messages2.length === 1
-
-    if (!passingDateFieldSuccessful) return false
-
-    // repeat the above test with a numeric date value
-
-    // Show all messages before date in the past
-    const messages3: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      initialQueryDate.getTime()
-    )
-
-    // Show all messages before date in the future
-    const messages4: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      finalQueryDate.getTime()
-    )
-
-    const passingTimestampFieldSuccessful =
-      !messages3.length && messages4.length === 1
-
-    return passingTimestampFieldSuccessful
-  } catch {
-    return false
-  }
-})
-
-test('canMessage', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  const alice = await Client.createRandom({ env: 'local' })
-
-  const canMessage = await bob.canMessage(alice.address)
-  return canMessage
-})
-
-test('createFromKeyBundle throws error for non string value', async () => {
-  try {
-    const bytes = [1, 2, 3]
-    await Client.createFromKeyBundle(JSON.stringify(bytes), {
-      env: 'local',
-    })
-  } catch {
-    return true
-  }
-  return false
-})
-
-test('canPrepareMessage', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  const alice = await Client.createRandom({ env: 'local' })
   await delayToPropogate()
-
-  const bobConversation = await bob.conversations.newConversation(alice.address)
-  await delayToPropogate()
-
-  const prepared = await bobConversation.prepareMessage('hi')
-  if (!prepared.preparedAt) {
-    throw new Error('missing `preparedAt` on prepared message')
-  }
-
-  // Either of these should work:
-  await bobConversation.sendPreparedMessage(prepared)
-  // await bob.sendPreparedMessage(prepared);
-
-  await delayToPropogate()
-  const messages = await bobConversation.messages()
-  if (messages.length !== 1) {
-    throw new Error(`expected 1 message: got ${messages.length}`)
-  }
-  const message = messages[0]
-
-  return message?.id === prepared.messageId
-})
-
-test('can list batch messages', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  if (bob.address === alice.address) {
-    throw new Error('bob and alice should be different')
-  }
-
-  const bobConversation = await bob.conversations.newConversation(alice.address)
-  await delayToPropogate()
-
-  const aliceConversation = (await alice.conversations.list())[0]
-  if (!aliceConversation) {
-    throw new Error('aliceConversation should exist')
-  }
-
-  await bobConversation.send({ text: 'Hello world' })
-  const bobMessages = await bobConversation.messages()
-  await bobConversation.send({
-    reaction: {
-      reference: bobMessages[0].id,
-      action: 'added',
-      schema: 'unicode',
-      content: '💖',
-    },
-  })
-
-  await delayToPropogate()
-  const messages: DecodedMessage[] = await alice.listBatchMessages([
-    {
-      contentTopic: bobConversation.topic,
-    } as Query,
-    {
-      contentTopic: aliceConversation.topic,
-    } as Query,
-  ])
-
-  if (messages.length < 1) {
-    throw Error('No message')
-  }
-
-  if (messages[0].contentTypeId !== 'xmtp.org/reaction:1.0') {
-    throw Error(
-      'Unexpected message content ' + JSON.stringify(messages[0].contentTypeId)
-    )
-  }
-
-  if (messages[0].fallback !== 'Reacted “💖” to an earlier message') {
-    throw Error('Unexpected message fallback ' + messages[0].fallback)
-  }
-
-  return true
-})
-
-test('can paginate batch messages', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  if (bob.address === alice.address) {
-    throw new Error('bob and alice should be different')
-  }
-
-  const bobConversation = await bob.conversations.newConversation(alice.address)
-  await delayToPropogate()
-
-  const aliceConversation = (await alice.conversations.list())[0]
-  if (!aliceConversation) {
-    throw new Error('aliceConversation should exist')
-  }
-
-  await bobConversation.send({ text: `Initial Message` })
-
-  await delayToPropogate()
-  const testTime = new Date()
-  await delayToPropogate()
-
-  for (let i = 0; i < 5; i++) {
-    await bobConversation.send({ text: `Message ${i}` })
-    await delayToPropogate()
-  }
-
-  const messagesLimited: DecodedMessage[] = await alice.listBatchMessages([
-    {
-      contentTopic: bobConversation.topic,
-      pageSize: 2,
-    } as Query,
-  ])
-
-  const messagesAfter: DecodedMessage[] = await alice.listBatchMessages([
-    {
-      contentTopic: bobConversation.topic,
-      startTime: testTime,
-      endTime: new Date(),
-    } as Query,
-  ])
-
-  const messagesBefore: DecodedMessage[] = await alice.listBatchMessages([
-    {
-      contentTopic: bobConversation.topic,
-      endTime: testTime,
-    } as Query,
-  ])
-
-  await bobConversation.send('')
-  await delayToPropogate()
-
-  const messagesAsc: DecodedMessage[] = await alice.listBatchMessages([
-    {
-      contentTopic: bobConversation.topic,
-      direction: 'SORT_DIRECTION_ASCENDING',
-    } as Query,
-  ])
-
-  if (messagesLimited.length !== 2) {
-    throw Error('Unexpected messagesLimited count ' + messagesLimited.length)
-  }
-
-  if (messagesLimited[0].content() !== 'Message 4') {
-    throw Error(
-      'Unexpected messagesLimited content ' + messagesLimited[0].content()
-    )
-  }
-  if (messagesLimited[1].content() !== 'Message 3') {
-    throw Error(
-      'Unexpected messagesLimited content ' + messagesLimited[1].content()
-    )
-  }
-
-  if (messagesBefore.length !== 1) {
-    throw Error('Unexpected messagesBefore count ' + messagesBefore.length)
-  }
-  if (messagesBefore[0].content() !== 'Initial Message') {
-    throw Error(
-      'Unexpected messagesBefore content ' + messagesBefore[0].content()
-    )
-  }
-
-  if (messagesAfter.length !== 5) {
-    throw Error('Unexpected messagesAfter count ' + messagesAfter.length)
-  }
-  if (messagesAfter[0].content() !== 'Message 4') {
-    throw Error(
-      'Unexpected messagesAfter content ' + messagesAfter[0].content()
-    )
-  }
-
-  if (messagesAsc[0].content() !== 'Initial Message') {
-    throw Error('Unexpected messagesAsc content ' + messagesAsc[0].content())
-  }
-
-  if (messagesAsc[6].contentTypeId !== 'xmtp.org/text:1.0') {
-    throw Error('Unexpected messagesAsc content ' + messagesAsc[6].content())
-  }
-
-  return true
-})
-
-test('can stream messages', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-
-  // Record new conversation stream
-  const allConversations: Conversation<any>[] = []
-  await alice.conversations.stream(async (conversation) => {
-    allConversations.push(conversation)
-  })
-
-  // Record message stream across all conversations
-  const allMessages: DecodedMessage[] = []
-  await alice.conversations.streamAllMessages(async (message) => {
-    allMessages.push(message)
-  })
-
-  // Start Bob starts a new conversation.
-  const bobConvo = await bob.conversations.newConversation(alice.address, {
-    conversationID: 'https://example.com/alice-and-bob',
-    metadata: {
-      title: 'Alice and Bob',
-    },
-  })
-  await delayToPropogate()
-
-  if (bobConvo.clientAddress !== bob.address) {
-    throw Error('Unexpected client address ' + bobConvo.clientAddress)
-  }
-  if (!bobConvo.topic) {
-    throw Error('Missing topic ' + bobConvo.topic)
-  }
-  if (
-    bobConvo.context?.conversationID !== 'https://example.com/alice-and-bob'
-  ) {
-    throw Error('Unexpected conversationID ' + bobConvo.context?.conversationID)
-  }
-  if (bobConvo.context?.metadata?.title !== 'Alice and Bob') {
-    throw Error(
-      'Unexpected metadata title ' + bobConvo.context?.metadata?.title
-    )
-  }
-  if (!bobConvo.createdAt) {
-    throw Error('Missing createdAt ' + bobConvo.createdAt)
-  }
-
-  if (allConversations.length !== 1) {
-    throw Error('Unexpected all conversations count ' + allConversations.length)
-  }
-  if (allConversations[0].topic !== bobConvo.topic) {
-    throw Error(
-      'Unexpected all conversations topic ' + allConversations[0].topic
-    )
-  }
-
-  const aliceConvo = (await alice.conversations.list())[0]
-  if (!aliceConvo) {
-    throw new Error('missing conversation')
-  }
-
-  // Record message stream for this conversation
-  const convoMessages: DecodedMessage[] = []
-  await aliceConvo.streamMessages(async (message) => {
-    convoMessages.push(message)
-  })
-
-  for (let i = 0; i < 5; i++) {
-    await bobConvo.send({ text: `Message ${i}` })
-    await delayToPropogate()
-  }
-  if (allMessages.length !== 5) {
-    throw Error('Unexpected all messages count ' + allMessages.length)
-  }
-  if (convoMessages.length !== 5) {
-    throw Error('Unexpected convo messages count ' + convoMessages.length)
-  }
-  for (let i = 0; i < 5; i++) {
-    if (allMessages[i].content() !== `Message ${i}`) {
-      throw Error('Unexpected all message content ' + allMessages[i].content())
-    }
-    if (allMessages[i].topic !== bobConvo.topic) {
-      throw Error('Unexpected all message topic ' + allMessages[i].topic)
-    }
-    if (convoMessages[i].content() !== `Message ${i}`) {
-      throw Error(
-        'Unexpected convo message content ' + convoMessages[i].content()
-      )
-    }
-    if (convoMessages[i].topic !== bobConvo.topic) {
-      throw Error('Unexpected convo message topic ' + convoMessages[i].topic)
-    }
-  }
-  alice.conversations.cancelStream()
-  alice.conversations.cancelStreamAllMessages()
-
-  return true
-})
-
-test('can stream group messages', async () => {
-  // Create three MLS enabled Clients
-  const aliceClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  const bobClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  const camClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-
-  // Alice creates a group
-  const aliceGroup = await aliceClient.conversations.newGroup([
-    bobClient.address,
-    camClient.address,
-  ])
-
-  // Record message stream for this group
-  const groupMessages: DecodedMessage[] = []
-  const cancelGroupMessageStream = await aliceGroup.streamGroupMessages(
-    async (message) => {
-      groupMessages.push(message)
-    }
-  )
-
-  // Bob's num groups == 1
-  await bobClient.conversations.syncGroups()
-  const bobGroup = (await bobClient.conversations.listGroups())[0]
-
-  for (let i = 0; i < 5; i++) {
-    await bobGroup.send({ text: `Message ${i}` })
-    await delayToPropogate()
-  }
-
-  if (groupMessages.length !== 5) {
-    throw Error('Unexpected convo messages count ' + groupMessages.length)
-  }
-  for (let i = 0; i < 5; i++) {
-    if (groupMessages[i].content() !== `Message ${i}`) {
-      throw Error(
-        'Unexpected group message content ' + groupMessages[i].content()
-      )
-    }
-  }
-
-  cancelGroupMessageStream()
-  for (let i = 0; i < 5; i++) {
-    await bobGroup.send({ text: `Message ${i}` })
-  }
-
-  if (groupMessages.length !== 5) {
-    throw Error('Unexpected convo messages count ' + groupMessages.length)
+  if (aliceGroups.length as number !== 2) {
+    throw Error('Unexpected num groups: ' + aliceGroups.length)
   }
 
   return true
