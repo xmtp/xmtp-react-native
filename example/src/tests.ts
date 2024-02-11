@@ -924,7 +924,6 @@ function test(name: string, perform: () => Promise<boolean>) {
 //   return true
 // })
 
-
 test('can stream groups', async () => {
   // Create three MLS enabled Clients
   const aliceClient = await Client.createRandom({
@@ -942,12 +941,10 @@ test('can stream groups', async () => {
 
   // Alice streams groups
   const aliceGroups: Group<any>[] = []
-  await aliceClient.conversations.streamGroups(
-    async (group) => {
-      aliceGroups.push(group)
-      console.log("streamed group creation")
-    }
-  )
+  await aliceClient.conversations.streamGroups(async (group) => {
+    aliceGroups.push(group)
+    console.log('streamed group creation')
+  })
 
   // Alice creates a group
   const aliceGroup = await aliceClient.conversations.newGroup([
@@ -959,21 +956,17 @@ test('can stream groups', async () => {
     throw Error('Unexpected num groups: ' + aliceGroups.length)
   }
 
-  const camGroup = await camClient.conversations.newGroup([
-    aliceClient.address
-  ])
+  const camGroup = await camClient.conversations.newGroup([aliceClient.address])
   await delayToPropogate()
-  if (aliceGroups.length as number !== 2) {
+  if ((aliceGroups.length as number) !== 2) {
     throw Error('Unexpected num groups: ' + aliceGroups.length)
   }
 
   aliceClient.conversations.cancelStreamGroups()
 
-  const bobgroup = await bobClient.conversations.newGroup([
-    aliceClient.address
-  ])
+  const bobgroup = await bobClient.conversations.newGroup([aliceClient.address])
   await delayToPropogate()
-  if (aliceGroups.length as number !== 2) {
+  if ((aliceGroups.length as number) !== 2) {
     throw Error('Unexpected num groups: ' + aliceGroups.length)
   }
 
