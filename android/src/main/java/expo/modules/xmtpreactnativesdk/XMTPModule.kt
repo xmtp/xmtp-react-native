@@ -884,7 +884,7 @@ class XMTPModule : Module() {
                     )
                 }
             } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in conversations subscription: $e")
+                Log.e("XMTPModule", "Error in group subscription: $e")
                 subscriptions[getGroupsKey(clientAddress)]?.cancel()
             }
         }

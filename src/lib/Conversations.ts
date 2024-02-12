@@ -96,7 +96,6 @@ export default class Conversations<ContentTypes> {
         if (this.known[group.id]) {
           return
         }
-
         this.known[group.id] = true
         await callback(new Group(this.client, group))
       }
