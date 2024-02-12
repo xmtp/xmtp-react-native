@@ -603,9 +603,7 @@ class XMTPModule : Module() {
                 throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
             }
             val group = client.conversations.newGroup(peerAddresses)
-            logV("id after creating group: " + Base64.encodeToString(group.id, NO_WRAP))
-            val encodedGroup = GroupWrapper.encode(client, group)
-            return@AsyncFunction encodedGroup
+            GroupWrapper.encode(client, group)
         }
 
         AsyncFunction("listMemberAddresses") { clientAddress: String, groupId: String ->
@@ -615,7 +613,7 @@ class XMTPModule : Module() {
                 throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
             }
             val group = findGroup(clientAddress, groupId)
-            return@AsyncFunction group?.memberAddresses()
+            group?.memberAddresses()
         }
 
         AsyncFunction("syncGroups") { clientAddress: String ->
@@ -881,7 +879,7 @@ class XMTPModule : Module() {
                         "group",
                         mapOf(
                             "clientAddress" to clientAddress,
-                            "group" to GroupWrapper.encode(client, group)
+                            "group" to GroupWrapper.encodeToObj(client, group, Base64.encodeToString(group.id, NO_WRAP))
                         )
                     )
                 }

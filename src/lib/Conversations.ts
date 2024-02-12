@@ -80,31 +80,32 @@ export default class Conversations<ContentTypes> {
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
-    async streamGroups(
-      callback: (group: Group<ContentTypes>) => Promise<void>
-      ) {
-        XMTPModule.subscribeToGroups(this.client.address)
-        XMTPModule.emitter.addListener(
-          'group',
-          async ({
-            clientAddress,
-            group,
-          }: {
-            clientAddress: string
-            group: Group<ContentTypes>
-          }) => {
-            if (clientAddress !== this.client.address) {
-              return
-            }
-            if (this.known[group.id]) {
-              return
-            }
-    
-            this.known[group.id] = true
-            await callback(new Group(this.client, group))
-          }
-        )
+  async streamGroups(
+    callback: (group: Group<ContentTypes>) => Promise<void>
+  ): Promise<() => void> {
+    XMTPModule.subscribeToGroups(this.client.address)
+    const groupsSubscription = XMTPModule.emitter.addListener(
+      'group',
+      async ({
+        clientAddress,
+        group,
+      }: {
+        clientAddress: string
+        group: Group<ContentTypes>
+      }) => {
+        if (this.known[group.id]) {
+          return
+        }
+
+        this.known[group.id] = true
+        await callback(new Group(this.client, group))
+      }
+    )
+    return () => {
+      groupsSubscription.remove()
+      XMTPModule.unsubscribeFromGroups(this.client.address)
     }
+  }
 
   /**
    * Creates a new group.
