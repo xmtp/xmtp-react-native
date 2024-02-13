@@ -125,10 +125,12 @@ export async function sendMessageToGroup(
   )
 }
 
-export async function groupMessages(
-  client: Client<any>,
+export async function groupMessages<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
   id: string
-): Promise<DecodedMessage[]> {
+): Promise<DecodedMessage<ContentTypes>[]> {
   const messages = await XMTPModule.groupMessages(client.address, id)
   return messages.map((json: string) => {
     return DecodedMessage.from(json, client)

@@ -76,7 +76,7 @@ export class Group<
     }
   }
 
-  async messages(): Promise<DecodedMessage[]> {
+  async messages(): Promise<DecodedMessage<ContentTypes>[]> {
     return await XMTP.groupMessages(this.client, this.id)
   }
 
