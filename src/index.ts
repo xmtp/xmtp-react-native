@@ -424,6 +424,10 @@ export function subscribeToConversations(clientAddress: string) {
   return XMTPModule.subscribeToConversations(clientAddress)
 }
 
+export function subscribeToAll(clientAddress: string) {
+  return XMTPModule.subscribeToAll(clientAddress)
+}
+
 export function subscribeToGroups(clientAddress: string) {
   return XMTPModule.subscribeToGroups(clientAddress)
 }

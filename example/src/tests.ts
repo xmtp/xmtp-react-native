@@ -2,6 +2,7 @@ import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
+import { IConversation } from 'xmtp-react-native-sdk/lib/IConversation'
 
 import {
   Query,
@@ -553,6 +554,76 @@ test('can stream groups', async () => {
   }
 
   cancelStreamGroups()
+  await delayToPropogate()
+
+  // Creating a group should no longer trigger stream groups
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const camSecond = await camClient.conversations.newGroup([
+    aliceClient.address,
+  ])
+  await delayToPropogate()
+  if ((groups.length as number) !== 3) {
+    throw Error('Unexpected num groups (should be 3): ' + groups.length)
+  }
+
+  return true
+})
+
+test('can stream groups and conversations', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  // Start streaming groups
+  const groups: IConversation<any>[] = []
+  const cancelStreamAll = await aliceClient.conversations.streamAll(
+    async (iConversation: IConversation<any>) => {
+      groups.push(iConversation)
+    }
+  )
+
+  // Cam creates a group with Alice, so stream callback is fired
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const camGroup = await camClient.conversations.newGroup([aliceClient.address])
+  await delayToPropogate()
+  if ((groups.length as number) !== 1) {
+    throw Error('Unexpected num groups (should be 1): ' + groups.length)
+  }
+
+  // Bob creates a v2 Conversation with Alice so a stream callback is fired
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const bobConversation = await bobClient.conversations.newConversation(
+    aliceClient.address
+  )
+  await delayToPropogate()
+  if ((groups.length as number) !== 2) {
+    throw Error('Unexpected num groups (should be 2): ' + groups.length)
+  }
+
+  // * Note Alice creating a v2 Conversation does trigger alice conversations
+  // stream.
+
+  // Alice creates a V2 Conversationgroup
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const aliceConversation = await aliceClient.conversations.newConversation(
+    camClient.address
+  )
+  await delayToPropogate()
+  if (groups.length !== 3) {
+    throw Error('Expected group length 3 but it is: ' + groups.length)
+  }
+
+  cancelStreamAll()
   await delayToPropogate()
 
   // Creating a group should no longer trigger stream groups

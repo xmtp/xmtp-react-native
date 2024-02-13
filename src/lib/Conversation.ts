@@ -1,4 +1,8 @@
-import { ContentTypeId } from './types/ContentCodec'
+import {
+  ConversationVersion,
+  IConversation,
+  SendOptions,
+} from './IConversation'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
@@ -8,17 +12,15 @@ import {
   PreparedLocalMessage,
 } from '../index'
 
-export type SendOptions = {
-  contentType?: ContentTypeId
-}
-
-export class Conversation<ContentTypes extends DefaultContentTypes> {
+export class Conversation<ContentTypes extends DefaultContentTypes>
+  implements IConversation<ContentTypes>
+{
   client: XMTP.Client<ContentTypes>
   createdAt: number
   context?: ConversationContext
   topic: string
   peerAddress: string
-  version: string
+  version: ConversationVersion
   conversationID?: string | undefined
   /**
    * Base64 encoded key material for the conversation.
@@ -32,7 +34,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes> {
       context?: ConversationContext
       topic: string
       peerAddress: string
-      version: string
+      version: ConversationVersion
       conversationID?: string | undefined
       keyMaterial?: string | undefined
     }
@@ -300,5 +302,9 @@ export class Conversation<ContentTypes extends DefaultContentTypes> {
       messageSubscription.remove()
       XMTP.unsubscribeFromMessages(this.client.address, this.topic)
     }
+  }
+
+  isGroup(): boolean {
+    return false
   }
 }
