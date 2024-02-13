@@ -58,7 +58,7 @@ public class XMTPModule: Module {
 	}
 
 	enum Error: Swift.Error {
-		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String), mlsNotEnabled
+		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String), mlsNotEnabled(String)
 	}
 
 	public func definition() -> ModuleDefinition {
@@ -887,7 +887,7 @@ public class XMTPModule: Module {
 	
 	func requireNotProductionEnvForAlphaMLS(enableAlphaMls: Bool?, environment: String) throws {
 		if (enableAlphaMls == true && environment == "production") {
-			throw Error.mlsNotEnabled
+			throw Error.mlsNotEnabled("Environment must be \"local\" or \"dev\" to enable alpha MLS")
 		}
 	}
 }

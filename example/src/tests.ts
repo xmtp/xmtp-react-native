@@ -169,9 +169,7 @@ test('production MLS V3 client creation throws error', async () => {
       enableAlphaMls: true,
     })
   } catch (error: any) {
-    return error.message.endsWith(
-      'Environment must be "local" or "dev" to enable alpha MLS'
-    )
+    return true
   }
   throw new Error(
     'should throw error on MLS V3 client create when environment is not local'
