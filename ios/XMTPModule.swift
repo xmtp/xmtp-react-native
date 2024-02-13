@@ -320,8 +320,6 @@ public class XMTPModule: Module {
 				direction: PagingInfoSortDirection(rawValue: sortDirection)
 			)
 
-			print("GOT HERE AGAIN", decryptedMessages)
-
 			return decryptedMessages.compactMap { msg in
 				do {
 					return try DecodedMessageWrapper.encode(msg, client: client)
