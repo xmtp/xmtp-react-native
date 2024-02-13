@@ -544,9 +544,8 @@ export function preCreateIdentityCallbackCompleted() {
   XMTPModule.preCreateIdentityCallbackCompleted()
 }
 
-export function isGroupActive(clientAddress: string,
-  id: string): boolean {
-    return XMTPModule.isGroupActive(clientAddress, id)
+export function isGroupActive(clientAddress: string, id: string): boolean {
+  return XMTPModule.isGroupActive(clientAddress, id)
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
