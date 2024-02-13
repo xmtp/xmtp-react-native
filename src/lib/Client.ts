@@ -51,7 +51,7 @@ export class Client<
   >(
     wallet: Signer | WalletClient | null,
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
-  ): Promise<Client<DefaultContentTypes>> {
+  ): Promise<Client<ContentCodecs>> {
     const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
@@ -59,7 +59,7 @@ export class Client<
     if (!signer) {
       throw new Error('Signer is not configured')
     }
-    return new Promise<Client<DefaultContentTypes>>((resolve, reject) => {
+    return new Promise<Client<ContentCodecs>>((resolve, reject) => {
       ;(async () => {
         this.signSubscription = XMTPModule.emitter.addListener(
           'sign',
