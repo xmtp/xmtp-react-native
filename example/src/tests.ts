@@ -2,7 +2,7 @@ import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
-import { IConversation } from 'xmtp-react-native-sdk/lib/IConversation'
+import { ConversationContainer } from 'xmtp-react-native-sdk/lib/ConversationContainer'
 
 import {
   Query,
@@ -585,10 +585,10 @@ test('can stream groups and conversations', async () => {
   })
 
   // Start streaming groups
-  const groups: IConversation<any>[] = []
+  const groups: ConversationContainer<any>[] = []
   const cancelStreamAll = await aliceClient.conversations.streamAll(
-    async (iConversation: IConversation<any>) => {
-      groups.push(iConversation)
+    async (conversationContainer: ConversationContainer<any>) => {
+      groups.push(conversationContainer)
     }
   )
 
@@ -1352,7 +1352,10 @@ test('register and use custom content types', async () => {
   bob.register(new NumberCodec())
   alice.register(new NumberCodec())
 
+  delayToPropogate()
+
   const bobConvo = await bob.conversations.newConversation(alice.address)
+  delayToPropogate()
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
   await bobConvo.send(

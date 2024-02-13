@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Conversation
 
-class IConversationWrapper {
+class ConversationContainerWrapper {
 
     companion object {
         fun encodeToObj(client: Client, conversation: Conversation): Map<String, Any> {

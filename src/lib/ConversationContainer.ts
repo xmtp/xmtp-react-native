@@ -12,7 +12,7 @@ export enum ConversationVersion {
   GROUP = 'group',
 }
 
-export interface IConversation<ContentTypes extends DefaultContentTypes> {
+export interface ConversationContainer<ContentTypes extends DefaultContentTypes> {
   client: XMTP.Client<ContentTypes>
   createdAt: number
   version: ConversationVersion

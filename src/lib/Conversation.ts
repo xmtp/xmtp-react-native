@@ -1,8 +1,8 @@
 import {
   ConversationVersion,
-  IConversation,
+  ConversationContainer,
   SendOptions,
-} from './IConversation'
+} from './ConversationContainer'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
@@ -13,7 +13,7 @@ import {
 } from '../index'
 
 export class Conversation<ContentTypes extends DefaultContentTypes>
-  implements IConversation<ContentTypes>
+  implements ConversationContainer<ContentTypes>
 {
   client: XMTP.Client<ContentTypes>
   createdAt: number

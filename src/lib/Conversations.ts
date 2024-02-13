@@ -2,7 +2,7 @@ import { Client } from './Client'
 import { Conversation } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Group } from './Group'
-import { ConversationVersion, IConversation } from './IConversation'
+import { ConversationVersion, ConversationContainer } from './ConversationContainer'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
@@ -171,36 +171,36 @@ export default class Conversations<
    * @warning This stream will continue infinitely. To end the stream, you can call the function returned by this streamAll.
    */
   async streamAll(
-    callback: (conversation: IConversation<ContentTypes>) => Promise<void>
+    callback: (conversation: ConversationContainer<ContentTypes>) => Promise<void>
   ) {
     XMTPModule.subscribeToAll(this.client.address)
     const subscription = XMTPModule.emitter.addListener(
-      'IConversation',
+      'conversationContainer',
       async ({
         clientAddress,
-        iConversation,
+        conversationContainer,
       }: {
         clientAddress: string
-        iConversation: IConversation<ContentTypes>
+        conversationContainer: ConversationContainer<ContentTypes>
       }) => {
-        if (this.known[iConversation.topic]) {
+        if (this.known[conversationContainer.topic]) {
           return
         }
 
-        this.known[iConversation.topic] = true
+        this.known[conversationContainer.topic] = true
         console.log(
           'Version on emitter call: ' +
-            JSON.stringify({ clientAddress, iConversation })
+            JSON.stringify({ clientAddress, conversationContainer })
         )
-        if (iConversation.version === ConversationVersion.GROUP) {
+        if (conversationContainer.version === ConversationVersion.GROUP) {
           return await callback(
-            new Group(this.client, iConversation as Group<ContentTypes>)
+            new Group(this.client, conversationContainer as Group<ContentTypes>)
           )
         } else {
           return await callback(
             new Conversation(
               this.client,
-              iConversation as Conversation<ContentTypes>
+              conversationContainer as Conversation<ContentTypes>
             )
           )
         }

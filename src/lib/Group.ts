@@ -2,15 +2,15 @@ import { DecodedMessage } from './DecodedMessage'
 import {
   SendOptions,
   ConversationVersion,
-  IConversation,
-} from './IConversation'
+  ConversationContainer,
+} from './ConversationContainer'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
 
 export class Group<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
-> implements IConversation<ContentTypes>
+> implements ConversationContainer<ContentTypes>
 {
   client: XMTP.Client<ContentTypes>
   id: string

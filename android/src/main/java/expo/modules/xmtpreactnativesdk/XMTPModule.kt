@@ -19,7 +19,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.IConversationWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -151,7 +151,7 @@ class XMTPModule : Module() {
             "sign",
             "authed",
             "conversation",
-            "IConversation",
+            "conversationContainer",
             "group",
             "message",
             "preEnableIdentityCallback",
@@ -905,10 +905,10 @@ class XMTPModule : Module() {
             try {
                 client.conversations.streamAll().collect { conversation ->
                     sendEvent(
-                        "IConversation",
+                        "conversationContainer",
                         mapOf(
                             "clientAddress" to clientAddress,
-                            "iConversation" to IConversationWrapper.encodeToObj(client, conversation)
+                            "conversationContainer" to ConversationContainerWrapper.encodeToObj(client, conversation)
                         )
                     )
                 }
