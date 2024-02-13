@@ -9,12 +9,13 @@ import type {
   PreparedLocalMessage,
 } from './ContentCodec'
 import Conversations from './Conversations'
-import { DecodedMessage } from './DecodedMessage'
 import { TextCodec } from './NativeCodecs/TextCodec'
 import { Query } from './Query'
 import { Signer, getSigner } from './Signer'
+import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
+import { DecodedMessage } from '../index'
 
 declare const Buffer
 
@@ -26,7 +27,9 @@ export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
   ? T
   : never
 
-export class Client<ContentTypes> {
+export class Client<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+> {
   address: string
   conversations: Conversations<ContentTypes>
   contacts: Contacts
@@ -44,15 +47,11 @@ export class Client<ContentTypes> {
    * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
    */
   static async create<
-    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
+    ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
     wallet: Signer | WalletClient | null,
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
-  ): Promise<
-    Client<
-      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
-    >
-  > {
+  ): Promise<Client<DefaultContentTypes>> {
     const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
@@ -60,11 +59,7 @@ export class Client<ContentTypes> {
     if (!signer) {
       throw new Error('Signer is not configured')
     }
-    return new Promise<
-      Client<
-        ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
-      >
-    >((resolve, reject) => {
+    return new Promise<Client<DefaultContentTypes>>((resolve, reject) => {
       ;(async () => {
         this.signSubscription = XMTPModule.emitter.addListener(
           'sign',
@@ -138,15 +133,9 @@ export class Client<ContentTypes> {
    * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance with a random address.
    */
-  static async createRandom<
-    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
-  >(
-    opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
-  ): Promise<
-    Client<
-      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
-    >
-  > {
+  static async createRandom<ContentTypes extends DefaultContentTypes>(
+    opts?: Partial<ClientOptions> & { codecs?: ContentTypes }
+  ): Promise<Client<ContentTypes>> {
     const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
@@ -174,15 +163,11 @@ export class Client<ContentTypes> {
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance based on the provided key bundle.
    */
   static async createFromKeyBundle<
-    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
+    ContentCodecs extends DefaultContentTypes = [],
   >(
     keyBundle: string,
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
-  ): Promise<
-    Client<
-      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
-    >
-  > {
+  ): Promise<Client<DefaultContentTypes>> {
     const options = defaultOptions(opts)
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
@@ -328,9 +313,11 @@ export class Client<ContentTypes> {
    * @returns {Promise<DecodedMessage[]>} A Promise that resolves to a list of batch messages.
    * @throws {Error} The error is logged, and the method gracefully returns an empty array.
    */
-  async listBatchMessages(queries: Query[]): Promise<DecodedMessage[]> {
+  async listBatchMessages(
+    queries: Query[]
+  ): Promise<DecodedMessage<ContentTypes>[]> {
     try {
-      return await XMTPModule.listBatchMessages(this, queries)
+      return await XMTPModule.listBatchMessages<ContentTypes>(this, queries)
     } catch (e) {
       console.info('ERROR in listBatchMessages', e)
       return []

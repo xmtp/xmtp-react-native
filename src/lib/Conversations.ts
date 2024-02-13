@@ -4,9 +4,12 @@ import { DecodedMessage } from './DecodedMessage'
 import { Group } from './Group'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
+import { ContentCodec } from '../index'
 import { getAddress } from '../utils/address'
 
-export default class Conversations<ContentTypes> {
+export default class Conversations<
+  ContentTypes extends ContentCodec<any>[] = [],
+> {
   client: Client<ContentTypes>
   private known = {} as { [topic: string]: boolean }
 
@@ -76,6 +79,37 @@ export default class Conversations<ContentTypes> {
   }
 
   /**
+   * This method streams groups that the client is a member of.
+   *
+   * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
+   */
+  async streamGroups(
+    callback: (group: Group<ContentTypes>) => Promise<void>
+  ): Promise<() => void> {
+    XMTPModule.subscribeToGroups(this.client.address)
+    const groupsSubscription = XMTPModule.emitter.addListener(
+      'group',
+      async ({
+        clientAddress,
+        group,
+      }: {
+        clientAddress: string
+        group: Group<ContentTypes>
+      }) => {
+        if (this.known[group.id]) {
+          return
+        }
+        this.known[group.id] = true
+        await callback(new Group(this.client, group))
+      }
+    )
+    return () => {
+      groupsSubscription.remove()
+      XMTPModule.unsubscribeFromGroups(this.client.address)
+    }
+  }
+
+  /**
    * Creates a new group.
    *
    * This method creates a new conversation with the specified peer address and context.
@@ -134,7 +168,7 @@ export default class Conversations<ContentTypes> {
    * @returns {Promise<void>} A Promise that resolves when the stream is set up.
    */
   async streamAllMessages(
-    callback: (message: DecodedMessage) => Promise<void>
+    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(this.client.address)
     XMTPModule.emitter.addListener(
@@ -164,6 +198,13 @@ export default class Conversations<ContentTypes> {
    */
   cancelStream() {
     XMTPModule.unsubscribeFromConversations(this.client.address)
+  }
+
+  /**
+   * Cancels the stream for new conversations.
+   */
+  cancelStreamGroups() {
+    XMTPModule.unsubscribeFromGroups(this.client.address)
   }
 
   /**

@@ -32,8 +32,10 @@ import {
   ReplyContent,
   useClient,
 } from 'xmtp-react-native-sdk'
+import { ConversationSendPayload } from 'xmtp-react-native-sdk/lib/types'
 
 import { NavigationParamList } from './Navigation'
+import { SupportedContentTypes } from './contentTypes/contentTypes'
 import {
   useConversation,
   useMessage,
@@ -82,17 +84,19 @@ export default function ConversationScreen({
     [messages]
   )
 
-  const sendMessage = async (content: any) => {
+  const sendMessage = async (
+    content: ConversationSendPayload<SupportedContentTypes>
+  ) => {
     setSending(true)
     console.log('Sending message', content)
     try {
       content = replyingTo
-        ? {
+        ? ({
             reply: {
               reference: replyingTo,
               content,
             },
-          }
+          } as ConversationSendPayload<SupportedContentTypes>)
         : content
       await conversation!.send(content)
       await refreshMessages()
@@ -103,8 +107,11 @@ export default function ConversationScreen({
       setSending(false)
     }
   }
-  const sendRemoteAttachmentMessage = () =>
-    sendMessage({ remoteAttachment }).then(() => setAttachment(null))
+  const sendRemoteAttachmentMessage = () => {
+    if (remoteAttachment) {
+      sendMessage({ remoteAttachment }).then(() => setAttachment(null))
+    }
+  }
   const sendTextMessage = () => sendMessage({ text }).then(() => setText(''))
   const scrollToMessageId = useCallback(
     (messageId: string) => {
@@ -804,6 +811,7 @@ function ReplyMessageHeader({
       />
     )
   }
+  const content = message.content()
   return (
     <TouchableHighlight onPress={onPress} underlayColor="#eee">
       <View
@@ -856,13 +864,13 @@ function ReplyMessageHeader({
             {message.senderAddress.slice(0, 6)}…
             {message.senderAddress.slice(-4)}
           </Text>
-          {message.content().text ? (
+          {typeof content !== 'string' && 'text' in content && content.text ? (
             <Text
               style={{ fontSize: 12, color: 'gray' }}
               ellipsizeMode="tail"
               numberOfLines={1}
             >
-              {message.content().text}
+              {content.text as string}
             </Text>
           ) : (
             <Text style={{ fontSize: 12, color: 'gray', fontStyle: 'italic' }}>
@@ -898,9 +906,10 @@ function MessageItem({
     return null
   }
   let content = message.content()
-  const replyingTo = content.reply?.reference
-  if (content.reply) {
-    content = content.reply.content
+  const replyingTo = (content as ReplyContent)?.reference
+  if (replyingTo) {
+    const replyContent = (content as ReplyContent).content
+    content = replyContent as typeof content
   }
   showSender = !!(replyingTo || showSender)
   return (
@@ -1058,7 +1067,7 @@ function MessageContents({
   contentTypeId: string
   content: any
 }) {
-  const { client } = useClient()
+  const { client } = useClient<SupportedContentTypes>()
 
   if (contentTypeId === 'xmtp.org/text:1.0') {
     const text: string = content
