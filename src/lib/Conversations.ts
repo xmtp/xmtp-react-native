@@ -4,9 +4,12 @@ import { DecodedMessage } from './DecodedMessage'
 import { Group } from './Group'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
+import { ContentCodec } from '../index'
 import { getAddress } from '../utils/address'
 
-export default class Conversations<ContentTypes> {
+export default class Conversations<
+  ContentTypes extends ContentCodec<any>[] = [],
+> {
   client: Client<ContentTypes>
   private known = {} as { [topic: string]: boolean }
 
@@ -165,7 +168,7 @@ export default class Conversations<ContentTypes> {
    * @returns {Promise<void>} A Promise that resolves when the stream is set up.
    */
   async streamAllMessages(
-    callback: (message: DecodedMessage) => Promise<void>
+    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(this.client.address)
     XMTPModule.emitter.addListener(

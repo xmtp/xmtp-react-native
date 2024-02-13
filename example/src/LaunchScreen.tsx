@@ -6,16 +6,10 @@ import * as XMTP from 'xmtp-react-native-sdk'
 import { useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
+import { supportedCodecs } from './contentTypes/contentTypes'
 import { useSavedKeys } from './hooks'
 
 const appVersion = 'XMTP_RN_EX/0.0.1'
-
-const supportedCodecs = [
-  new XMTP.ReactionCodec(),
-  new XMTP.ReplyCodec(),
-  new XMTP.RemoteAttachmentCodec(),
-  new XMTP.StaticAttachmentCodec(),
-]
 
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
 export default function LaunchScreen({
