@@ -1,8 +1,8 @@
 import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
-import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 import { ConversationContainer } from 'xmtp-react-native-sdk/lib/ConversationContainer'
+import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
   Query,

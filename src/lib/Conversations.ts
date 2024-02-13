@@ -1,8 +1,11 @@
 import { Client } from './Client'
 import { Conversation } from './Conversation'
+import {
+  ConversationVersion,
+  ConversationContainer,
+} from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { Group } from './Group'
-import { ConversationVersion, ConversationContainer } from './ConversationContainer'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
@@ -171,7 +174,9 @@ export default class Conversations<
    * @warning This stream will continue infinitely. To end the stream, you can call the function returned by this streamAll.
    */
   async streamAll(
-    callback: (conversation: ConversationContainer<ContentTypes>) => Promise<void>
+    callback: (
+      conversation: ConversationContainer<ContentTypes>
+    ) => Promise<void>
   ) {
     XMTPModule.subscribeToAll(this.client.address)
     const subscription = XMTPModule.emitter.addListener(

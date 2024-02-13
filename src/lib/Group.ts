@@ -1,9 +1,9 @@
-import { DecodedMessage } from './DecodedMessage'
 import {
   SendOptions,
   ConversationVersion,
   ConversationContainer,
 } from './ConversationContainer'
+import { DecodedMessage } from './DecodedMessage'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
