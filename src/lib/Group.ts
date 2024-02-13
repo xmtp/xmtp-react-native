@@ -1,5 +1,6 @@
 import { SendOptions } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
+import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
 
@@ -42,7 +43,10 @@ export class Group<
    *
    * @todo Support specifying a conversation ID in future implementations.
    */
-  async send(content: any, opts?: SendOptions): Promise<string> {
+  async send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
+    content: ConversationSendPayload<SendContentTypes>,
+    opts?: SendOptions
+  ): Promise<string> {
     // TODO: Enable other content types
     // if (opts && opts.contentType) {
     // return await this._sendWithJSCodec(content, opts.contentType)
@@ -83,7 +87,7 @@ export class Group<
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
   streamGroupMessages(
-    callback: (message: DecodedMessage) => Promise<void>
+    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): () => void {
     XMTP.subscribeToGroupMessages(this.client.address, this.id)
     const hasSeen = {}
@@ -94,7 +98,7 @@ export class Group<
         message,
       }: {
         clientAddress: string
-        message: DecodedMessage
+        message: DecodedMessage<ContentTypes>
       }) => {
         if (clientAddress !== this.client.address) {
           return

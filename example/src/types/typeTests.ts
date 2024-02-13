@@ -138,6 +138,22 @@ export const typeTests = async () => {
     },
     { contentType: ContentTypeNumber }
   )
+
+  const customContentGroup = (await customContentClient.conversations.list())[0]
+
+  await customContentGroup.send(
+    {
+      topNumber: {
+        bottomNumber: 12,
+      },
+    },
+    { contentType: ContentTypeNumber }
+  )
   const customContentMessages = await customContentConvo.messages()
   customContentMessages[0].content()
+
+  await customContentGroup.send({
+    // @ts-expect-error
+    test: 'test',
+  })
 }
