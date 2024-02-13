@@ -126,4 +126,8 @@ export class Group<
   async removeMembers(addresses: string[]): Promise<void> {
     return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
   }
+
+  isActive(): boolean {
+    return XMTP.isGroupActive(this.client.address, this.id)
+  }
 }

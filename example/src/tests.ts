@@ -464,6 +464,10 @@ test('can remove members from a group', async () => {
     )
   }
 
+  if (!camGroups[0].isActive()) { 
+    throw new Error('cams group should be active')
+  }
+
   await aliceGroup.removeMembers([bobClient.address])
   await aliceGroup.sync()
   const aliceGroupMembers = await aliceGroup.memberAddresses()
@@ -483,6 +487,12 @@ test('can remove members from a group', async () => {
   // }
 
   await camGroups[0].sync()
+  await camClient.conversations.syncGroups()
+
+  if (!camGroups[0].isActive()) { 
+    throw new Error('cams group should active')
+  }
+
   const camGroupMembers = await camGroups[0].memberAddresses()
   if (camGroupMembers.length !== 2) {
     throw new Error('num group members should be 2')
