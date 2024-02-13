@@ -76,6 +76,37 @@ export default class Conversations<ContentTypes> {
   }
 
   /**
+   * This method streams groups that the client is a member of.
+   *
+   * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
+   */
+  async streamGroups(
+    callback: (group: Group<ContentTypes>) => Promise<void>
+  ): Promise<() => void> {
+    XMTPModule.subscribeToGroups(this.client.address)
+    const groupsSubscription = XMTPModule.emitter.addListener(
+      'group',
+      async ({
+        clientAddress,
+        group,
+      }: {
+        clientAddress: string
+        group: Group<ContentTypes>
+      }) => {
+        if (this.known[group.id]) {
+          return
+        }
+        this.known[group.id] = true
+        await callback(new Group(this.client, group))
+      }
+    )
+    return () => {
+      groupsSubscription.remove()
+      XMTPModule.unsubscribeFromGroups(this.client.address)
+    }
+  }
+
+  /**
    * Creates a new group.
    *
    * This method creates a new conversation with the specified peer address and context.
@@ -164,6 +195,13 @@ export default class Conversations<ContentTypes> {
    */
   cancelStream() {
     XMTPModule.unsubscribeFromConversations(this.client.address)
+  }
+
+  /**
+   * Cancels the stream for new conversations.
+   */
+  cancelStreamGroups() {
+    XMTPModule.unsubscribeFromGroups(this.client.address)
   }
 
   /**

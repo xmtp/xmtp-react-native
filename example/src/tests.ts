@@ -11,6 +11,7 @@ import {
   StaticAttachmentCodec,
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
+  Group,
 } from '../../src/index'
 
 type EncodedContent = content.EncodedContent
@@ -485,6 +486,83 @@ test('can remove members from a group', async () => {
   const camGroupMembers = await camGroups[0].memberAddresses()
   if (camGroupMembers.length !== 2) {
     throw new Error('num group members should be 2')
+  }
+
+  return true
+})
+
+test('can stream groups', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  // Start streaming groups
+  const groups: Group<any>[] = []
+  const cancelStreamGroups = await aliceClient.conversations.streamGroups(
+    async (group: Group<any>) => {
+      groups.push(group)
+    }
+  )
+
+  // Cam creates a group with Alice, so stream callback is fired
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const camGroup = await camClient.conversations.newGroup([aliceClient.address])
+  await delayToPropogate()
+  if ((groups.length as number) !== 1) {
+    throw Error('Unexpected num groups (should be 1): ' + groups.length)
+  }
+
+  // Bob creates a group with Alice so a stream callback is fired
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const bobgroup = await bobClient.conversations.newGroup([aliceClient.address])
+  await delayToPropogate()
+  if ((groups.length as number) !== 2) {
+    throw Error('Unexpected num groups (should be 2): ' + groups.length)
+  }
+
+  // * Note Alice creating a group does not trigger alice conversations
+  // group stream. Workaround is to syncGroups after you create and list manually
+
+  // Alice creates a group
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const aliceGroup = await aliceClient.conversations.newGroup([
+    bobClient.address,
+    camClient.address,
+  ])
+  await delayToPropogate()
+  if (groups.length !== 2) {
+    throw Error('Expected group length 2 but it is: ' + groups.length)
+  }
+  // Sync groups after creation if you created a group
+  await aliceClient.conversations.syncGroups()
+  const listedGroups = await aliceClient.conversations.listGroups()
+  await delayToPropogate()
+  groups.push(listedGroups[listedGroups.length - 1])
+  if ((groups.length as number) !== 3) {
+    throw Error('Expected group length 3 but it is: ' + groups.length)
+  }
+
+  cancelStreamGroups()
+  await delayToPropogate()
+
+  // Creating a group should no longer trigger stream groups
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const camSecond = await camClient.conversations.newGroup([
+    aliceClient.address,
+  ])
+  await delayToPropogate()
+  if ((groups.length as number) !== 3) {
+    throw Error('Unexpected num groups (should be 3): ' + groups.length)
   }
 
   return true

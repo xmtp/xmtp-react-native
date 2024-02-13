@@ -150,6 +150,7 @@ class XMTPModule : Module() {
             "sign",
             "authed",
             "conversation",
+            "group",
             "message",
             "preEnableIdentityCallback",
             "preCreateIdentityCallback"
@@ -602,9 +603,7 @@ class XMTPModule : Module() {
                 throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
             }
             val group = client.conversations.newGroup(peerAddresses)
-            logV("id after creating group: " + Base64.encodeToString(group.id, NO_WRAP))
-            val encodedGroup = GroupWrapper.encode(client, group)
-            return@AsyncFunction encodedGroup
+            GroupWrapper.encode(client, group)
         }
 
         AsyncFunction("listMemberAddresses") { clientAddress: String, groupId: String ->
@@ -614,7 +613,7 @@ class XMTPModule : Module() {
                 throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
             }
             val group = findGroup(clientAddress, groupId)
-            return@AsyncFunction group?.memberAddresses()
+            group?.memberAddresses()
         }
 
         AsyncFunction("syncGroups") { clientAddress: String ->
@@ -663,6 +662,11 @@ class XMTPModule : Module() {
             subscribeToConversations(clientAddress = clientAddress)
         }
 
+        Function("subscribeToGroups") { clientAddress: String ->
+            logV("subscribeToGroups")
+            subscribeToGroups(clientAddress = clientAddress)
+        }
+
         Function("subscribeToAllMessages") { clientAddress: String ->
             logV("subscribeToAllMessages")
             subscribeToAllMessages(clientAddress = clientAddress)
@@ -687,6 +691,11 @@ class XMTPModule : Module() {
         Function("unsubscribeFromConversations") { clientAddress: String ->
             logV("unsubscribeFromConversations")
             subscriptions[getConversationsKey(clientAddress)]?.cancel()
+        }
+
+         Function("unsubscribeFromGroups") { clientAddress: String ->
+            logV("unsubscribeFromGroups")
+            subscriptions[getGroupsKey(clientAddress)]?.cancel()
         }
 
         Function("unsubscribeFromAllMessages") { clientAddress: String ->
@@ -859,6 +868,28 @@ class XMTPModule : Module() {
         }
     }
 
+    private fun subscribeToGroups(clientAddress: String) {
+        val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+        subscriptions[getGroupsKey(clientAddress)]?.cancel()
+        subscriptions[getGroupsKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
+            try {
+                client.conversations.streamGroups().collect { group ->
+                    sendEvent(
+                        "group",
+                        mapOf(
+                            "clientAddress" to clientAddress,
+                            "group" to GroupWrapper.encodeToObj(client, group, Base64.encodeToString(group.id, NO_WRAP))
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("XMTPModule", "Error in group subscription: $e")
+                subscriptions[getGroupsKey(clientAddress)]?.cancel()
+            }
+        }
+    }
+
     private fun subscribeToAllMessages(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
@@ -918,7 +949,6 @@ class XMTPModule : Module() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     group.streamDecryptedMessages().collect { message ->
-                        logV("Group Message before encoding" + message.toString())
                         sendEvent(
                             "message",
                             mapOf(
@@ -940,6 +970,10 @@ class XMTPModule : Module() {
 
     private fun getConversationsKey(clientAddress: String): String {
         return "conversations:$clientAddress"
+    }
+
+    private fun getGroupsKey(clientAddress: String): String {
+        return "groups:$clientAddress"
     }
 
     private fun unsubscribeFromMessages(
