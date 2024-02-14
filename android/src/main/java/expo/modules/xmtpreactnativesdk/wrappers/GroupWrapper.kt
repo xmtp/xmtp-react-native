@@ -23,7 +23,7 @@ class GroupWrapper {
 
         fun encode(client: Client, group: Group): String {
             val gson = GsonBuilder().create()
-            val obj = encodeToObj(client, group, Base64.encodeToString(group.id, NO_WRAP))
+            val obj = encodeToObj(client, group)
             return gson.toJson(obj)
         }
     }
