@@ -426,11 +426,10 @@ public class XMTPModule: Module {
 			}
 
 			let sending = try ContentJson.fromJson(contentJson)
-			try await group.send(
+			return try await group.send(
 				content: sending.content,
 				options: SendOptions(contentType: sending.type)
 			)
-			return group.id.toHex
 		}
 
 		AsyncFunction("prepareMessage") { (

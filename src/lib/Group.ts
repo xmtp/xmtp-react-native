@@ -63,7 +63,7 @@ export class Group<
         content
       )
     } catch (e) {
-      console.info('ERROR in send()', e)
+      console.info('ERROR in send()', e.message)
       throw e
     }
   }
