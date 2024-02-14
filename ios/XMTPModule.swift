@@ -64,7 +64,7 @@ public class XMTPModule: Module {
 	public func definition() -> ModuleDefinition {
 		Name("XMTP")
 
-		Events("sign", "authed", "conversation", "message", "preEnableIdentityCallback", "preCreateIdentityCallback")
+		Events("sign", "authed", "conversation", "message", "group", "conversationContainer", "preEnableIdentityCallback", "preCreateIdentityCallback")
 
 		AsyncFunction("address") { (clientAddress: String) -> String in
 			if let client = await clientsManager.getClient(key: clientAddress) {
@@ -599,6 +599,18 @@ public class XMTPModule: Module {
 		AsyncFunction("subscribeToMessages") { (clientAddress: String, topic: String) in
 			try await subscribeToMessages(clientAddress: clientAddress, topic: topic)
 		}
+		
+		AsyncFunction("subscribeToGroups") { (clientAddress: String) in
+			try await subscribeToGroups(clientAddress: clientAddress)
+		}
+		
+		AsyncFunction("subscribeToAll") { (clientAddress: String) in
+			try await subscribeToAll(clientAddress: clientAddress)
+		}
+
+		AsyncFunction("subscribeToGroupMessages") { (clientAddress: String, id: String) in
+			try await subscribeToGroupMessages(clientAddress: clientAddress, id: id)
+		}
 
 		AsyncFunction("unsubscribeFromConversations") { (clientAddress: String) in
 			await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
@@ -611,6 +623,14 @@ public class XMTPModule: Module {
 		AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String) in
 			try await unsubscribeFromMessages(clientAddress: clientAddress, topic: topic)
 		}
+		
+		AsyncFunction("unsubscribeFromGroupMessages") { (clientAddress: String, id: String) in
+			try await unsubscribeFromGroupMessages(clientAddress: clientAddress, id: id)
+		}
+		
+		AsyncFunction("unsubscribeFromGroups") { (clientAddress: String) in
+			await subscriptionsManager.get(getGroupsKey(clientAddress: clientAddress))?.cancel()
+	   }
 
 		AsyncFunction("registerPushToken") { (pushServer: String, token: String) in
 			XMTPPush.shared.setPushServer(pushServer)
@@ -857,6 +877,78 @@ public class XMTPModule: Module {
 			}
 		})
 	}
+	
+	func subscribeToGroups(clientAddress: String) async throws {
+		guard let client = await clientsManager.getClient(key: clientAddress) else {
+			return
+		}
+
+		await subscriptionsManager.get(getGroupsKey(clientAddress: clientAddress))?.cancel()
+		await subscriptionsManager.set(getGroupsKey(clientAddress: clientAddress), Task {
+			do {
+				for try await group in try await client.conversations.streamGroups() {
+					try sendEvent("group", [
+						"clientAddress": clientAddress,
+						"conversation": GroupWrapper.encodeToObj(group, client: client),
+					])
+				}
+			} catch {
+				print("Error in groups subscription: \(error)")
+				await subscriptionsManager.get(getGroupsKey(clientAddress: clientAddress))?.cancel()
+			}
+		})
+	}
+	
+	func subscribeToAll(clientAddress: String) async throws {
+		guard let client = await clientsManager.getClient(key: clientAddress) else {
+			return
+		}
+
+		await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
+		await subscriptionsManager.set(getConversationsKey(clientAddress: clientAddress), Task {
+			do {
+				for try await conversation in await client.conversations.streamAll() {
+					try sendEvent("conversationContainer", [
+						"clientAddress": clientAddress,
+						"conversation": ConversationContainerWrapper.encodeToObj(conversation, client: client),
+					])
+				}
+			} catch {
+				print("Error in all conversations subscription: \(error)")
+				await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
+			}
+		})
+	}
+	
+	func subscribeToGroupMessages(clientAddress: String, id: String) async throws {
+		guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			return
+		}
+
+		guard let client = await clientsManager.getClient(key: clientAddress) else {
+			throw Error.noClient
+		}
+
+		await subscriptionsManager.get(group.cacheKey(clientAddress))?.cancel()
+		await subscriptionsManager.set(group.cacheKey(clientAddress), Task {
+			do {
+				for try await message in group.streamDecryptedMessages() {
+					do {
+						try sendEvent("message", [
+							"clientAddress": clientAddress,
+							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
+						])
+					} catch {
+						print("discarding message, unable to encode wrapper \(message.id)")
+					}
+				}
+			} catch {
+				print("Error in group messages subscription: \(error)")
+				await subscriptionsManager.get(group.cacheKey(clientAddress))?.cancel()
+			}
+		})
+	}
+	
 
 	func unsubscribeFromMessages(clientAddress: String, topic: String) async throws {
 		guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
@@ -865,6 +957,14 @@ public class XMTPModule: Module {
 
 		await subscriptionsManager.get(conversation.cacheKey(clientAddress))?.cancel()
 	}
+	
+	func unsubscribeFromGroupMessages(clientAddress: String, id: String) async throws {
+		guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			return
+		}
+
+		await subscriptionsManager.get(group.cacheKey(clientAddress))?.cancel()
+	}
 
 	func getMessagesKey(clientAddress: String) -> String {
 		return "messages:\(clientAddress)"
@@ -872,6 +972,10 @@ public class XMTPModule: Module {
 
 	func getConversationsKey(clientAddress: String) -> String {
 		return "conversations:\(clientAddress)"
+	}
+	
+	func getGroupsKey(clientAddress: String) -> String {
+		return "groups:\(clientAddress)"
 	}
 
 	func preEnableIdentityCallback() {
