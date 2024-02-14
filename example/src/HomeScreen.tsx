@@ -9,9 +9,15 @@ import {
   Text,
   View,
 } from 'react-native'
-import { Conversation, Client, useXmtp } from 'xmtp-react-native-sdk'
+import {
+  Conversation,
+  Client,
+  useXmtp,
+  DecodedMessage,
+} from 'xmtp-react-native-sdk'
 import { Group } from 'xmtp-react-native-sdk/lib/Group'
 
+import { SupportedContentTypes } from './contentTypes/contentTypes'
 import { useConversationList, useGroupsList, useMessages } from './hooks'
 
 /// Show the user's list of conversations.
@@ -90,7 +96,17 @@ function GroupListItem({
   client: Client<any> | null
 }) {
   const navigation = useContext(NavigationContext)
-  const messages = []
+  const [messages, setMessages] = useState<
+    DecodedMessage<SupportedContentTypes>[]
+  >([])
+
+  useEffect(() => {
+    group
+      ?.sync()
+      .then(() => group.messages())
+      .then(setMessages)
+  }, [group])
+
   return (
     <Pressable
       onPress={() =>

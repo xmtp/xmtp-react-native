@@ -1,7 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import React, { useState } from 'react'
 import { Button, ScrollView, Switch, Text, TextInput, View } from 'react-native'
-import Toggle from 'react-native-toggle-element'
 import { useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'

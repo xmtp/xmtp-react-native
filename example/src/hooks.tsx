@@ -34,11 +34,11 @@ export function useConversationList(): UseQueryResult<
   )
 }
 
-export function useGroupsList<ContentTypes>(): UseQueryResult<
-  Group<ContentTypes>[]
+export function useGroupsList(): UseQueryResult<
+  Group<SupportedContentTypes>[]
 > {
   const { client } = useXmtp()
-  return useQuery<Group<ContentTypes>[]>(
+  return useQuery<Group<SupportedContentTypes>[]>(
     ['xmtp', 'groups', client?.address],
     async () => (await client?.conversations.listGroups()) || [],
     {
@@ -47,16 +47,16 @@ export function useGroupsList<ContentTypes>(): UseQueryResult<
   )
 }
 
-export function useGroup<ContentTypes>({
+export function useGroup({
   groupId,
 }: {
   groupId: string
-}): UseQueryResult<Group<ContentTypes> | undefined> {
+}): UseQueryResult<Group<SupportedContentTypes> | undefined> {
   const { client } = useXmtp()
   return useQuery<
-    Group<ContentTypes>[],
+    Group<SupportedContentTypes>[],
     unknown,
-    Group<ContentTypes> | undefined
+    Group<SupportedContentTypes> | undefined
   >(
     ['xmtp', 'group', client?.address, groupId],
     async () => {
@@ -117,6 +117,25 @@ export function useMessages({
   )
 }
 
+export function useGroupMessages({
+  id,
+}: {
+  id: string
+}): UseQueryResult<DecodedMessage<SupportedContentTypes>[]> {
+  const { client } = useXmtp()
+  const { data: group } = useGroup({ groupId: id })
+  return useQuery<DecodedMessage<SupportedContentTypes>[]>(
+    ['xmtp', 'groupMessages', client?.address, group?.id],
+    async () => {
+      await group!.sync()
+      return group!.messages()
+    },
+    {
+      enabled: !!client && !!group,
+    }
+  )
+}
+
 /**
  * Get the message with the `messageId` from the conversation identified by `topic`.
  *
@@ -145,6 +164,52 @@ export function useMessage({
     message &&
     ((action: 'added' | 'removed', content: string) =>
       conversation!
+        .send({
+          reaction: {
+            reference: message!.id,
+            action,
+            schema: 'unicode',
+            content,
+          },
+        })
+        .then(() => {
+          refreshMessages().catch((err) =>
+            console.log('Error refreshing messages', err)
+          )
+        }))
+  const isSenderMe = message?.senderAddress === client?.address
+  return {
+    message,
+    performReaction,
+    isSenderMe,
+  }
+}
+
+export function useGroupMessage({
+  groupId,
+  messageId,
+}: {
+  groupId: string
+  messageId: string
+}): {
+  message: DecodedMessage<SupportedContentTypes> | undefined
+  isSenderMe: boolean
+  performReaction:
+    | undefined
+    | ((action: 'added' | 'removed', content: string) => Promise<void>)
+} {
+  const { client } = useXmtp()
+  const { data: group } = useGroup({ groupId })
+  const { data: messages, refetch: refreshMessages } = useGroupMessages({
+    id: groupId,
+  })
+  const message = messages?.find(({ id }) => id === messageId)
+
+  const performReaction =
+    group &&
+    message &&
+    ((action: 'added' | 'removed', content: string) =>
+      group!
         .send({
           reaction: {
             reference: message!.id,
@@ -244,6 +309,79 @@ export function useConversationReactions({ topic }: { topic: string }) {
   )
 }
 
+export function useGroupReactions({ groupId }: { groupId: string }) {
+  const { client } = useXmtp()
+  const { data: messages } = useGroupMessages({ id: groupId })
+  const reactions = (messages || []).filter(
+    (message) => message.contentTypeId === 'xmtp.org/reaction:1.0'
+  )
+  return useQuery<{
+    [messageId: string]: {
+      reaction: string
+      count: number
+      includesMe: boolean
+    }[]
+  }>(
+    ['xmtp', 'reactions', client?.address, groupId, reactions.length],
+    () => {
+      // SELECT messageId, reaction, senderAddress FROM reactions GROUP BY messageId, reaction
+      const byId = {} as {
+        [messageId: string]: { [reaction: string]: string[] }
+      }
+      // Reverse so we apply them in chronological order (adding/removing)
+      reactions
+        .slice()
+        .reverse()
+        .forEach((message) => {
+          const { senderAddress } = message
+          const reaction = message.content() as ReactionContent
+          const messageId = reaction!.reference
+          const reactionText = reaction!.content
+          const v = byId[messageId] || ({} as { [reaction: string]: string[] })
+          // DELETE FROM reactions WHERE messageId = ? AND reaction = ? AND senderAddress = ?
+          let prior = (v[reactionText] || [])
+            // This removes any prior instances of the sender using this reaction.
+            .filter((address) => address !== senderAddress)
+          if (reaction!.action === 'added') {
+            // INSERT INTO reactions (messageId, reaction, senderAddress) VALUES (?, ?, ?)
+            prior = prior.concat([senderAddress])
+          }
+          v[reactionText] = prior
+          byId[messageId] = v
+        })
+      // SELECT messageId, reaction, COUNT(*) AS count, COUNT(senderAddress = ?) AS includesMe
+      // FROM reactions
+      // GROUP BY messageId, reaction
+      // ORDER BY count DESC
+      const result = {} as {
+        [messageId: string]: {
+          reaction: string
+          count: number
+          includesMe: boolean
+        }[]
+      }
+      Object.keys(byId).forEach((messageId) => {
+        const reactions = byId[messageId]
+        result[messageId] = Object.keys(reactions)
+          .map((reaction) => {
+            const addresses = reactions[reaction]
+            return {
+              reaction,
+              count: addresses.length,
+              includesMe: addresses.includes(client!.address),
+            }
+          })
+          .filter(({ count }) => count > 0)
+          .sort((a, b) => b.count - a.count)
+      })
+      return result
+    },
+    {
+      enabled: !!reactions.length,
+    }
+  )
+}
+
 export function useMessageReactions({
   topic,
   messageId,
@@ -252,6 +390,24 @@ export function useMessageReactions({
   messageId: string
 }) {
   const { data: reactionsByMessageId } = useConversationReactions({ topic })
+  const reactions = ((reactionsByMessageId || {})[messageId] || []) as {
+    reaction: string
+    count: number
+    includesMe: boolean
+  }[]
+  return {
+    reactions,
+  }
+}
+
+export function useGroupMessageReactions({
+  groupId,
+  messageId,
+}: {
+  groupId: string
+  messageId: string
+}) {
+  const { data: reactionsByMessageId } = useGroupReactions({ groupId })
   const reactions = ((reactionsByMessageId || {})[messageId] || []) as {
     reaction: string
     count: number
