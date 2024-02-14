@@ -659,6 +659,17 @@ class XMTPModule : Module() {
             runBlocking { group?.removeMembers(peerAddresses) }
         }
 
+        Function("isGroupActive") { clientAddress: String, id: String ->
+            logV("isGroupActive")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            if (client.libXMTPClient == null) {
+                throw XMTPException("Create client with enableAlphaMLS true in order to create a group")
+            }
+            val group = findGroup(clientAddress, id)
+
+            group?.isActive()
+        }
+
         Function("subscribeToConversations") { clientAddress: String ->
             logV("subscribeToConversations")
             subscribeToConversations(clientAddress = clientAddress)

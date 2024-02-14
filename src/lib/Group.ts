@@ -138,4 +138,8 @@ export class Group<
   isGroup(): boolean {
     return true
   }
+  
+  isActive(): boolean {
+    return XMTP.isGroupActive(this.client.address, this.id)
+  }
 }

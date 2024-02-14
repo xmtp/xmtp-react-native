@@ -465,7 +465,11 @@ test('can remove members from a group', async () => {
     )
   }
 
-  await aliceGroup.removeMembers([bobClient.address])
+  if (!camGroups[0].isActive()) {
+    throw new Error('cams group should be active')
+  }
+
+  await aliceGroup.removeMembers([camClient.address])
   await aliceGroup.sync()
   const aliceGroupMembers = await aliceGroup.memberAddresses()
   if (aliceGroupMembers.length !== 2) {
@@ -484,6 +488,12 @@ test('can remove members from a group', async () => {
   // }
 
   await camGroups[0].sync()
+  await camClient.conversations.syncGroups()
+
+  if (camGroups[0].isActive()) {
+    throw new Error('cams group should not be active')
+  }
+
   const camGroupMembers = await camGroups[0].memberAddresses()
   if (camGroupMembers.length !== 2) {
     throw new Error('num group members should be 2')
@@ -1372,7 +1382,7 @@ test('register and use custom content types', async () => {
   assert(
     typeof messageContent === 'object' &&
       'topNumber' in messageContent &&
-      messageContent.topNumber.bottomNumber === 1,
+      messageContent.topNumber.bottomNumber === 12,
     'did not get content properly: ' + JSON.stringify(messageContent)
   )
 
