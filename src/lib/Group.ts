@@ -5,8 +5,8 @@ import {
 import { DecodedMessage } from './DecodedMessage'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
-import * as XMTP from '../index'
 import { SendOptions } from './types/SendOptions'
+import * as XMTP from '../index'
 
 export class Group<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
@@ -134,7 +134,7 @@ export class Group<
   async removeMembers(addresses: string[]): Promise<void> {
     return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
   }
-  
+
   isActive(): boolean {
     return XMTP.isGroupActive(this.client.address, this.id)
   }

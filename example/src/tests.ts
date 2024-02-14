@@ -2,6 +2,7 @@ import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
+import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
 import {
   Query,
@@ -15,7 +16,6 @@ import {
   ConversationContainer,
   ConversationVersion,
 } from '../../src/index'
-import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
@@ -612,7 +612,7 @@ test('can stream all groups and conversations', async () => {
     throw Error('Unexpected num groups (should be 1): ' + containers.length)
   }
   if (containers[0].version === ConversationVersion.GROUP) {
-    (containers[0] as Group).sync()
+    ;(containers[0] as Group).sync()
   } else {
     console.log(JSON.stringify(containers[0] as Group))
     throw Error('Unexpected first ConversationContainer should be a group')
@@ -628,8 +628,14 @@ test('can stream all groups and conversations', async () => {
     throw Error('Unexpected num groups (should be 2): ' + containers.length)
   }
 
-  if(containers[1].version === ConversationVersion.DIRECT && bobConversation.conversationID != (containers[1] as Conversation<any>).conversationID) {
-    throw Error('Conversation from streamed all should match conversationID with created conversation')
+  if (
+    containers[1].version === ConversationVersion.DIRECT &&
+    bobConversation.conversationID !=
+      (containers[1] as Conversation<any>).conversationID
+  ) {
+    throw Error(
+      'Conversation from streamed all should match conversationID with created conversation'
+    )
   }
 
   // * Note Alice creating a v2 Conversation does trigger alice conversations

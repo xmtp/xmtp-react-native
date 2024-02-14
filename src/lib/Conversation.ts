@@ -4,13 +4,13 @@ import {
 } from './ConversationContainer'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
+import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 import {
   ConversationContext,
   DecodedMessage,
   PreparedLocalMessage,
 } from '../index'
-import { SendOptions } from './types/SendOptions'
 
 export class Conversation<ContentTypes extends DefaultContentTypes>
   implements ConversationContainer<ContentTypes>

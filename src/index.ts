@@ -560,7 +560,10 @@ export * from './XMTP.types'
 export { Client } from './lib/Client'
 export * from './lib/ContentCodec'
 export { Conversation } from './lib/Conversation'
-export { ConversationContainer, ConversationVersion } from './lib/ConversationContainer'
+export {
+  ConversationContainer,
+  ConversationVersion,
+} from './lib/ConversationContainer'
 export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
 export { ConsentListEntry, DecodedMessage }
