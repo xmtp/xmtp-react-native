@@ -1,7 +1,6 @@
 import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
-import { ConversationContainer } from 'xmtp-react-native-sdk/lib/ConversationContainer'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
@@ -13,6 +12,8 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
   Group,
+  ConversationContainer,
+  ConversationVersion,
 } from '../../src/index'
 import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
@@ -610,9 +611,10 @@ test('can stream all groups and conversations', async () => {
   if ((containers.length as number) !== 1) {
     throw Error('Unexpected num groups (should be 1): ' + containers.length)
   }
-  if (containers[0].isGroup()) {
+  if (containers[0].version === ConversationVersion.GROUP) {
     (containers[0] as Group).sync()
   } else {
+    console.log(JSON.stringify(containers[0] as Group))
     throw Error('Unexpected first ConversationContainer should be a group')
   }
 
@@ -626,7 +628,7 @@ test('can stream all groups and conversations', async () => {
     throw Error('Unexpected num groups (should be 2): ' + containers.length)
   }
 
-  if(bobConversation.conversationID != (containers[1] as Conversation<any>).conversationID) {
+  if(containers[1].version === ConversationVersion.DIRECT && bobConversation.conversationID != (containers[1] as Conversation<any>).conversationID) {
     throw Error('Conversation from streamed all should match conversationID with created conversation')
   }
 

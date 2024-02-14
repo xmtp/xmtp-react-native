@@ -15,7 +15,7 @@ class GroupWrapper {
                 "id" to id,
                 "createdAt" to group.createdAt.time,
                 "peerAddresses" to group.memberAddresses(),
-                "version" to "group",
+                "version" to "GROUP",
                 "topic" to id 
             )
         }

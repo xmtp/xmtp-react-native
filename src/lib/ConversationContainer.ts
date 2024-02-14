@@ -1,15 +1,9 @@
-import { ContentTypeId } from './types/ContentCodec'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
 
-export type SendOptions = {
-  contentType?: ContentTypeId
-}
-
 export enum ConversationVersion {
-  V1 = 'v1',
-  V2 = 'v2',
-  GROUP = 'group',
+  DIRECT = "DIRECT",
+  GROUP = "GROUP"
 }
 
 export interface ConversationContainer<
@@ -19,5 +13,4 @@ export interface ConversationContainer<
   createdAt: number
   version: ConversationVersion
   topic: string
-  isGroup(): boolean
 }

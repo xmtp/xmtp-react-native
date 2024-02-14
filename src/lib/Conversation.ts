@@ -1,7 +1,6 @@
 import {
   ConversationVersion,
   ConversationContainer,
-  SendOptions,
 } from './ConversationContainer'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
@@ -11,6 +10,7 @@ import {
   DecodedMessage,
   PreparedLocalMessage,
 } from '../index'
+import { SendOptions } from './types/SendOptions'
 
 export class Conversation<ContentTypes extends DefaultContentTypes>
   implements ConversationContainer<ContentTypes>
@@ -20,7 +20,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
   context?: ConversationContext
   topic: string
   peerAddress: string
-  version: ConversationVersion
+  version = ConversationVersion.DIRECT
   conversationID?: string | undefined
   /**
    * Base64 encoded key material for the conversation.
@@ -34,7 +34,6 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       context?: ConversationContext
       topic: string
       peerAddress: string
-      version: ConversationVersion
       conversationID?: string | undefined
       keyMaterial?: string | undefined
     }
@@ -44,7 +43,6 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
     this.context = params.context
     this.topic = params.topic
     this.peerAddress = params.peerAddress
-    this.version = params.version
     this.conversationID = params.conversationID
     this.keyMaterial = params.keyMaterial
   }
@@ -302,9 +300,5 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       messageSubscription.remove()
       XMTP.unsubscribeFromMessages(this.client.address, this.topic)
     }
-  }
-
-  isGroup(): boolean {
-    return false
   }
 }
