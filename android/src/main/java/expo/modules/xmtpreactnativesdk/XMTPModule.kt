@@ -897,7 +897,7 @@ class XMTPModule : Module() {
                         "group",
                         mapOf(
                             "clientAddress" to clientAddress,
-                            "group" to GroupWrapper.encodeToObj(client, group, Base64.encodeToString(group.id, NO_WRAP))
+                            "group" to GroupWrapper.encodeToObj(client, group)
                         )
                     )
                 }

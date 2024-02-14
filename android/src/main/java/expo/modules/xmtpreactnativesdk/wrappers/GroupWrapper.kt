@@ -5,18 +5,19 @@ import android.util.Base64.NO_WRAP
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Group
+import org.xmtp.android.library.toHex
 
 class GroupWrapper {
 
     companion object {
-        fun encodeToObj(client: Client, group: Group, id: String): Map<String, Any> {
+        fun encodeToObj(client: Client, group: Group): Map<String, Any> {
             return mapOf(
                 "clientAddress" to client.address,
-                "id" to id,
+                "id" to group.id.toHex(),
                 "createdAt" to group.createdAt.time,
                 "peerAddresses" to group.memberAddresses(),
                 "version" to "GROUP",
-                "topic" to id 
+                "topic" to group.id.toHex()
             )
         }
 
