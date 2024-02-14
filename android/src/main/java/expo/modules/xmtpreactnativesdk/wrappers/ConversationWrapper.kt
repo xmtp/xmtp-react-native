@@ -24,7 +24,7 @@ class ConversationWrapper {
                 "context" to context,
                 "topic" to conversation.topic,
                 "peerAddress" to conversation.peerAddress,
-                "version" to if (conversation.version == Conversation.Version.V1) "v1" else "v2",
+                "version" to "DIRECT",
                 "conversationID" to (conversation.conversationId ?: ""),
                 "keyMaterial" to Base64.encodeToString(conversation.keyMaterial, Base64.NO_WRAP)
             )

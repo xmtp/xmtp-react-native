@@ -1,5 +1,9 @@
 import { Client } from './Client'
 import { Conversation } from './Conversation'
+import {
+  ConversationVersion,
+  ConversationContainer,
+} from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { Group } from './Group'
 import { ConversationContext } from '../XMTP.types'
@@ -158,6 +162,59 @@ export default class Conversations<
         await callback(new Conversation(this.client, conversation))
       }
     )
+  }
+
+  /**
+   * Sets up a real-time stream to listen for new conversations and groups being started.
+   *
+   * This method subscribes to conversations in real-time and listens for incoming conversation and group events.
+   * When a new conversation is detected, the provided callback function is invoked with the details of the conversation.
+   * @param {Function} callback - A callback function that will be invoked with the new Conversation when a conversation is started.
+   * @returns {Promise<void>} A Promise that resolves when the stream is set up.
+   * @warning This stream will continue infinitely. To end the stream, you can call the function returned by this streamAll.
+   */
+  async streamAll(
+    callback: (
+      conversation: ConversationContainer<ContentTypes>
+    ) => Promise<void>
+  ) {
+    XMTPModule.subscribeToAll(this.client.address)
+    const subscription = XMTPModule.emitter.addListener(
+      'conversationContainer',
+      async ({
+        clientAddress,
+        conversationContainer,
+      }: {
+        clientAddress: string
+        conversationContainer: ConversationContainer<ContentTypes>
+      }) => {
+        if (this.known[conversationContainer.topic]) {
+          return
+        }
+
+        this.known[conversationContainer.topic] = true
+        console.log(
+          'Version on emitter call: ' +
+            JSON.stringify({ clientAddress, conversationContainer })
+        )
+        if (conversationContainer.version === ConversationVersion.GROUP) {
+          return await callback(
+            new Group(this.client, conversationContainer as Group<ContentTypes>)
+          )
+        } else {
+          return await callback(
+            new Conversation(
+              this.client,
+              conversationContainer as Conversation<ContentTypes>
+            )
+          )
+        }
+      }
+    )
+    return () => {
+      subscription.remove()
+      this.cancelStream()
+    }
   }
 
   /**

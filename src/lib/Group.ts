@@ -1,16 +1,23 @@
-import { SendOptions } from './Conversation'
+import {
+  ConversationVersion,
+  ConversationContainer,
+} from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
+import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 
 export class Group<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
-> {
+> implements ConversationContainer<ContentTypes>
+{
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
   peerAddresses: string[]
+  version = ConversationVersion.GROUP
+  topic: string
 
   constructor(
     client: XMTP.Client<ContentTypes>,
@@ -24,6 +31,7 @@ export class Group<
     this.id = params.id
     this.createdAt = params.createdAt
     this.peerAddresses = params.peerAddresses
+    this.topic = params.id
   }
 
   get clientAddress(): string {

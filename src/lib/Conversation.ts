@@ -1,6 +1,10 @@
-import { ContentTypeId } from './types/ContentCodec'
+import {
+  ConversationVersion,
+  ConversationContainer,
+} from './ConversationContainer'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
+import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 import {
   ConversationContext,
@@ -8,17 +12,15 @@ import {
   PreparedLocalMessage,
 } from '../index'
 
-export type SendOptions = {
-  contentType?: ContentTypeId
-}
-
-export class Conversation<ContentTypes extends DefaultContentTypes> {
+export class Conversation<ContentTypes extends DefaultContentTypes>
+  implements ConversationContainer<ContentTypes>
+{
   client: XMTP.Client<ContentTypes>
   createdAt: number
   context?: ConversationContext
   topic: string
   peerAddress: string
-  version: string
+  version = ConversationVersion.DIRECT
   conversationID?: string | undefined
   /**
    * Base64 encoded key material for the conversation.
@@ -32,7 +34,6 @@ export class Conversation<ContentTypes extends DefaultContentTypes> {
       context?: ConversationContext
       topic: string
       peerAddress: string
-      version: string
       conversationID?: string | undefined
       keyMaterial?: string | undefined
     }
@@ -42,7 +43,6 @@ export class Conversation<ContentTypes extends DefaultContentTypes> {
     this.context = params.context
     this.topic = params.topic
     this.peerAddress = params.peerAddress
-    this.version = params.version
     this.conversationID = params.conversationID
     this.keyMaterial = params.keyMaterial
   }

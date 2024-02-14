@@ -19,6 +19,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -150,6 +151,7 @@ class XMTPModule : Module() {
             "sign",
             "authed",
             "conversation",
+            "conversationContainer",
             "group",
             "message",
             "preEnableIdentityCallback",
@@ -678,6 +680,11 @@ class XMTPModule : Module() {
             subscribeToGroups(clientAddress = clientAddress)
         }
 
+        Function("subscribeToAll") { clientAddress: String ->
+            logV("subscribeToAll")
+            subscribeToAll(clientAddress = clientAddress)
+        }
+
         Function("subscribeToAllMessages") { clientAddress: String ->
             logV("subscribeToAllMessages")
             subscribeToAllMessages(clientAddress = clientAddress)
@@ -897,6 +904,28 @@ class XMTPModule : Module() {
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in group subscription: $e")
                 subscriptions[getGroupsKey(clientAddress)]?.cancel()
+            }
+        }
+    }
+
+    private fun subscribeToAll(clientAddress: String) {
+        val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+        subscriptions[getConversationsKey(clientAddress)]?.cancel()
+        subscriptions[getConversationsKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
+            try {
+                client.conversations.streamAll().collect { conversation ->
+                    sendEvent(
+                        "conversationContainer",
+                        mapOf(
+                            "clientAddress" to clientAddress,
+                            "conversationContainer" to ConversationContainerWrapper.encodeToObj(client, conversation)
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("XMTPModule", "Error in subscription to groups + conversations: $e")
+                subscriptions[getConversationsKey(clientAddress)]?.cancel()
             }
         }
     }

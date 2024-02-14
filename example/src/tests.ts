@@ -12,6 +12,8 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
   Group,
+  ConversationContainer,
+  ConversationVersion,
 } from '../../src/index'
 
 type EncodedContent = content.EncodedContent
@@ -573,6 +575,92 @@ test('can stream groups', async () => {
   await delayToPropogate()
   if ((groups.length as number) !== 3) {
     throw Error('Unexpected num groups (should be 3): ' + groups.length)
+  }
+
+  return true
+})
+
+test('can stream all groups and conversations', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  // Start streaming groups and conversations
+  const containers: ConversationContainer<any>[] = []
+  const cancelStreamAll = await aliceClient.conversations.streamAll(
+    async (conversationContainer: ConversationContainer<any>) => {
+      containers.push(conversationContainer)
+    }
+  )
+
+  // Bob creates a group with Alice, so stream callback is fired
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const bobGroup = await bobClient.conversations.newGroup([aliceClient.address])
+  await delayToPropogate()
+  if ((containers.length as number) !== 1) {
+    throw Error('Unexpected num groups (should be 1): ' + containers.length)
+  }
+  if (containers[0].version === ConversationVersion.GROUP) {
+    ;(containers[0] as Group).sync()
+  } else {
+    console.log(JSON.stringify(containers[0] as Group))
+    throw Error('Unexpected first ConversationContainer should be a group')
+  }
+
+  // Bob creates a v2 Conversation with Alice so a stream callback is fired
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const bobConversation = await bobClient.conversations.newConversation(
+    aliceClient.address
+  )
+  await delayToPropogate()
+  if ((containers.length as number) !== 2) {
+    throw Error('Unexpected num groups (should be 2): ' + containers.length)
+  }
+
+  if (
+    containers[1].version === ConversationVersion.DIRECT &&
+    bobConversation.conversationID !==
+      (containers[1] as Conversation<any>).conversationID
+  ) {
+    throw Error(
+      'Conversation from streamed all should match conversationID with created conversation'
+    )
+  }
+
+  // * Note Alice creating a v2 Conversation does trigger alice conversations
+  // stream.
+
+  // Alice creates a V2 Conversationgroup
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const aliceConversation = await aliceClient.conversations.newConversation(
+    camClient.address
+  )
+  await delayToPropogate()
+  if (containers.length !== 3) {
+    throw Error('Expected group length 3 but it is: ' + containers.length)
+  }
+
+  cancelStreamAll()
+  await delayToPropogate()
+
+  // Creating a group should no longer trigger stream groups
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const camConversation = await camClient.conversations.newGroup([
+    aliceClient.address,
+  ])
+  await delayToPropogate()
+  if ((containers.length as number) !== 3) {
+    throw Error('Unexpected num groups (should be 3): ' + containers.length)
   }
 
   return true
@@ -1291,7 +1379,10 @@ test('register and use custom content types', async () => {
   bob.register(new NumberCodec())
   alice.register(new NumberCodec())
 
+  delayToPropogate()
+
   const bobConvo = await bob.conversations.newConversation(alice.address)
+  delayToPropogate()
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
   await bobConvo.send(
