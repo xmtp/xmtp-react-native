@@ -1,10 +1,13 @@
 import {
   ContentTypeId,
+  GroupChangeContent,
   NativeContentCodec,
   NativeMessageContent,
 } from '../ContentCodec'
 
-export class GroupChangeCodec implements NativeContentCodec<string> {
+export class GroupChangeCodec
+  implements NativeContentCodec<GroupChangeContent>
+{
   contentKey: 'groupChange' = 'groupChange'
   contentType: ContentTypeId = {
     authorityId: 'xmtp.org',
@@ -17,8 +20,8 @@ export class GroupChangeCodec implements NativeContentCodec<string> {
     return {}
   }
 
-  decode(nativeContent: NativeMessageContent): string {
-    return nativeContent.text!
+  decode(nativeContent: NativeMessageContent): GroupChangeContent {
+    return nativeContent.groupChange!
   }
 
   fallback(): string | undefined {

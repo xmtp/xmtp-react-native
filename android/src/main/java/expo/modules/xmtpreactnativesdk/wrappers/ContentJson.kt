@@ -30,6 +30,9 @@ import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.codecs.getReactionAction
 import org.xmtp.android.library.codecs.getReactionSchema
 import org.xmtp.android.library.codecs.id
+import uniffi.xmtpv3.org.xmtp.android.library.codecs.ContentTypeGroupMembershipChange
+import uniffi.xmtpv3.org.xmtp.android.library.codecs.GroupMembershipChangeCodec
+import uniffi.xmtpv3.org.xmtp.android.library.codecs.GroupMembershipChanges
 import java.net.URL
 
 class ContentJson(
@@ -51,6 +54,7 @@ class ContentJson(
             Client.register(RemoteAttachmentCodec())
             Client.register(ReplyCodec())
             Client.register(ReadReceiptCodec())
+            Client.register(GroupMembershipChangeCodec())
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -169,6 +173,21 @@ class ContentJson(
 
             ContentTypeReadReceipt.id -> mapOf(
                 "readReceipt" to ""
+            )
+
+            ContentTypeGroupMembershipChange.id -> mapOf(
+                "groupChange" to mapOf(
+                    "membersAdded" to (content as GroupMembershipChanges).membersAddedList.map {
+                        mapOf(
+                            "address" to it.accountAddress,
+                            "initiatedByAddress" to it.initiatedByAccountAddress
+                        )},
+                    "membersRemoved" to content.membersRemovedList.map {
+                        mapOf(
+                            "address" to it.accountAddress,
+                            "initiatedByAddress" to it.initiatedByAccountAddress
+                        )},
+                )
             )
 
             else -> {
