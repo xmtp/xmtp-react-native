@@ -14,6 +14,7 @@ import {
   RemoteAttachmentContent,
   Group,
 } from '../../src/index'
+import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
@@ -579,7 +580,7 @@ test('can stream groups', async () => {
   return true
 })
 
-test('can stream groups and conversations', async () => {
+test('can stream all groups and conversations', async () => {
   // Create three MLS enabled Clients
   const aliceClient = await Client.createRandom({
     env: 'local',
@@ -594,20 +595,25 @@ test('can stream groups and conversations', async () => {
     enableAlphaMls: true,
   })
 
-  // Start streaming groups
-  const groups: ConversationContainer<any>[] = []
+  // Start streaming groups and conversations
+  const containers: ConversationContainer<any>[] = []
   const cancelStreamAll = await aliceClient.conversations.streamAll(
     async (conversationContainer: ConversationContainer<any>) => {
-      groups.push(conversationContainer)
+      containers.push(conversationContainer)
     }
   )
 
-  // Cam creates a group with Alice, so stream callback is fired
+  // Bob creates a group with Alice, so stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const camGroup = await camClient.conversations.newGroup([aliceClient.address])
+  const bobGroup = await bobClient.conversations.newGroup([aliceClient.address])
   await delayToPropogate()
-  if ((groups.length as number) !== 1) {
-    throw Error('Unexpected num groups (should be 1): ' + groups.length)
+  if ((containers.length as number) !== 1) {
+    throw Error('Unexpected num groups (should be 1): ' + containers.length)
+  }
+  if (containers[0].isGroup()) {
+    (containers[0] as Group).sync()
+  } else {
+    throw Error('Unexpected first ConversationContainer should be a group')
   }
 
   // Bob creates a v2 Conversation with Alice so a stream callback is fired
@@ -616,8 +622,12 @@ test('can stream groups and conversations', async () => {
     aliceClient.address
   )
   await delayToPropogate()
-  if ((groups.length as number) !== 2) {
-    throw Error('Unexpected num groups (should be 2): ' + groups.length)
+  if ((containers.length as number) !== 2) {
+    throw Error('Unexpected num groups (should be 2): ' + containers.length)
+  }
+
+  if(bobConversation.conversationID != (containers[1] as Conversation<any>).conversationID) {
+    throw Error('Conversation from streamed all should match conversationID with created conversation')
   }
 
   // * Note Alice creating a v2 Conversation does trigger alice conversations
@@ -629,8 +639,8 @@ test('can stream groups and conversations', async () => {
     camClient.address
   )
   await delayToPropogate()
-  if (groups.length !== 3) {
-    throw Error('Expected group length 3 but it is: ' + groups.length)
+  if (containers.length !== 3) {
+    throw Error('Expected group length 3 but it is: ' + containers.length)
   }
 
   cancelStreamAll()
@@ -638,12 +648,12 @@ test('can stream groups and conversations', async () => {
 
   // Creating a group should no longer trigger stream groups
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const camSecond = await camClient.conversations.newGroup([
+  const camConversation = await camClient.conversations.newGroup([
     aliceClient.address,
   ])
   await delayToPropogate()
-  if ((groups.length as number) !== 3) {
-    throw Error('Unexpected num groups (should be 3): ' + groups.length)
+  if ((containers.length as number) !== 3) {
+    throw Error('Unexpected num groups (should be 3): ' + containers.length)
   }
 
   return true
