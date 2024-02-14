@@ -1308,7 +1308,7 @@ test('register and use custom content types', async () => {
   assert(
     typeof messageContent === 'object' &&
       'topNumber' in messageContent &&
-      messageContent.topNumber.bottomNumber === 1,
+      messageContent.topNumber.bottomNumber === 12,
     'did not get content properly: ' + JSON.stringify(messageContent)
   )
 
