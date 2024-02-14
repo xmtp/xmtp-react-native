@@ -2,7 +2,6 @@ import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
-import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
 import {
   Query,
@@ -630,7 +629,7 @@ test('can stream all groups and conversations', async () => {
 
   if (
     containers[1].version === ConversationVersion.DIRECT &&
-    bobConversation.conversationID !=
+    bobConversation.conversationID !==
       (containers[1] as Conversation<any>).conversationID
   ) {
     throw Error(
