@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker'
 import type { ImagePickerAsset } from 'expo-image-picker'
 import { PermissionStatus } from 'expo-modules-core'
 import moment from 'moment'
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { FC, useCallback, useMemo, useRef, useState } from 'react'
 import {
   Button,
   FlatList,
@@ -31,6 +31,7 @@ import {
   StaticAttachmentContent,
   ReplyContent,
   useClient,
+  GroupChangeContent,
 } from 'xmtp-react-native-sdk'
 import { ConversationSendPayload } from 'xmtp-react-native-sdk/lib/types'
 
@@ -1058,6 +1059,53 @@ function RemoteAttachmentMessageContents({
   )
 }
 
+function formatAddress(address: string) {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`
+}
+
+function GroupChangeContents({ content }: { content: GroupChangeContent }) {
+  return (
+    <>
+      {content.membersAdded.length > 0 &&
+        (content.membersAdded.length === 1 ? (
+          <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
+            {`${formatAddress(
+              content.membersAdded[0].address
+            )} has been added by ${formatAddress(
+              content.membersAdded[0].initiatedByAddress
+            )}`}
+          </Text>
+        ) : (
+          <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
+            {`${
+              content.membersAdded.length
+            } members have been added by ${formatAddress(
+              content.membersAdded[0].initiatedByAddress
+            )}`}
+          </Text>
+        ))}
+      {content.membersRemoved.length > 0 &&
+        (content.membersRemoved.length === 1 ? (
+          <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
+            {`${formatAddress(
+              content.membersRemoved[0].address
+            )} has been removed by ${formatAddress(
+              content.membersRemoved[0].initiatedByAddress
+            )}`}
+          </Text>
+        ) : (
+          <Text style={{ opacity: 0.5, fontStyle: 'italic', flexWrap: 'wrap' }}>
+            {`${
+              content.membersRemoved.length
+            } members have been removed by ${formatAddress(
+              content.membersRemoved[0].initiatedByAddress
+            )}`}
+          </Text>
+        ))}
+    </>
+  )
+}
+
 function MessageContents({
   contentTypeId,
   content,
@@ -1113,11 +1161,7 @@ function MessageContents({
     )
   }
   if (contentTypeId === 'xmtp.org/group_membership_change:1.0') {
-    return (
-      <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
-        Group members have changed
-      </Text>
-    )
+    return <GroupChangeContents content={content} />
   }
 
   return (
