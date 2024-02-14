@@ -580,6 +580,40 @@ test('can stream groups', async () => {
   return true
 })
 
+test('can list all groups and conversations', async () => {
+   // Create three MLS enabled Clients
+   const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  // Add one group and one conversation
+  const bobGroup = await bobClient.conversations.newGroup([aliceClient.address])
+  const aliceConversation = await aliceClient.conversations.newConversation(
+    camClient.address
+  )
+
+  const listedContainers = await aliceClient.conversations.listAll()
+
+  // Verify informatioin in listed containers is correct
+  if (listedContainers[0].topic !== bobGroup.topic ||
+    listedContainers[0].version !== ConversationVersion.GROUP ||
+    listedContainers[1].version !== ConversationVersion.DIRECT ||
+    listedContainers[1].createdAt !== aliceConversation.createdAt) {
+    throw Error('Listed containers should match streamed containers')
+  }
+
+  return true
+})
+
 test('can stream all groups and conversations', async () => {
   // Create three MLS enabled Clients
   const aliceClient = await Client.createRandom({

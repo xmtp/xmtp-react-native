@@ -394,6 +394,15 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("listAll") { clientAddress: String ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val conversationContainerList = client.conversations.list(includeGroups = true)
+            conversationContainerList.map { conversation ->
+                conversations[conversation.cacheKey(clientAddress)] = conversation
+                ConversationContainerWrapper.encode(client, conversation)
+            }
+        }
+
         AsyncFunction("loadMessages") { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
             logV("loadMessages")
             val conversation =

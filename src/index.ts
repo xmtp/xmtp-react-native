@@ -18,6 +18,7 @@ import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { getAddress } from './utils/address'
+import { ConversationContainer, ConversationVersion } from './lib/ConversationContainer'
 
 export * from './context'
 export * from './hooks'
@@ -251,6 +252,22 @@ export async function listConversations<
   return (await XMTPModule.listConversations(client.address)).map(
     (json: string) => {
       return new Conversation(client, JSON.parse(json))
+    }
+  )
+}
+
+export async function listAll<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(client: Client<ContentTypes>): Promise<ConversationContainer<ContentTypes>[]> {
+  const list = await XMTPModule.listAll(client.address)
+  return list.map(
+    (json: string) => {
+      const jsonObj = JSON.parse(json)
+      if (jsonObj.version === ConversationVersion.GROUP) {
+        return new Group(client, jsonObj)
+      } else {
+        return new Conversation(client, jsonObj)
+      }
     }
   )
 }
