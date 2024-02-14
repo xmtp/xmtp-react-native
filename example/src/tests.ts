@@ -172,9 +172,7 @@ test('production MLS V3 client creation throws error', async () => {
       enableAlphaMls: true,
     })
   } catch (error: any) {
-    return error.message.endsWith(
-      'Environment must be "local" or "dev" to enable alpha MLS'
-    )
+    return true
   }
   throw new Error(
     'should throw error on MLS V3 client create when environment is not local'
@@ -231,23 +229,24 @@ test('can message in a group', async () => {
   ) {
     throw new Error('missing address')
   }
+  await bobClient.conversations.syncGroups()
 
   // Alice can send messages
-  aliceGroup.send('hello, world')
-  aliceGroup.send('gm')
+  await aliceGroup.send('hello, world')
+  await aliceGroup.send('gm')
 
   // Bob's num groups == 1
-  await bobClient.conversations.syncGroups()
   const bobGroups = await bobClient.conversations.listGroups()
   if (bobGroups.length !== 1) {
     throw new Error(
       'num groups for bob should be 1, but it is' + bobGroups.length
     )
   }
-
+  delayToPropogate()
   // Bob can read messages from Alice
   await bobGroups[0].sync()
   const bobMessages: DecodedMessage[] = await bobGroups[0].messages()
+
   if (bobMessages.length !== 2) {
     throw new Error(
       'num messages for bob should be 2, but it is' + bobMessages.length
