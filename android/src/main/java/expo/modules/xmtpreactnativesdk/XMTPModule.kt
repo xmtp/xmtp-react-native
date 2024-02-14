@@ -51,6 +51,7 @@ import org.xmtp.android.library.messages.Pagination
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.XMTPPush
+import org.xmtp.android.library.toHex
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
@@ -855,7 +856,7 @@ class XMTPModule : Module() {
            return cacheGroup
        } else {
            val group = client.conversations.listGroups()
-               .firstOrNull { Base64.encodeToString(it.id, NO_WRAP) == id }
+               .firstOrNull {it.id.toHex() == id }
            if (group != null) {
                groups[group.cacheKey(clientAddress)] = group
                return group
