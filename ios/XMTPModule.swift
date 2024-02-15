@@ -899,7 +899,7 @@ public class XMTPModule: Module {
 				for try await group in try await client.conversations.streamGroups() {
 					try sendEvent("group", [
 						"clientAddress": clientAddress,
-						"conversation": GroupWrapper.encodeToObj(group, client: client),
+						"group": GroupWrapper.encodeToObj(group, client: client),
 					])
 				}
 			} catch {
@@ -920,7 +920,7 @@ public class XMTPModule: Module {
 				for try await conversation in await client.conversations.streamAll() {
 					try sendEvent("conversationContainer", [
 						"clientAddress": clientAddress,
-						"conversation": ConversationContainerWrapper.encodeToObj(conversation, client: client),
+						"conversationContainer": ConversationContainerWrapper.encodeToObj(conversation, client: client),
 					])
 				}
 			} catch {
