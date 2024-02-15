@@ -293,9 +293,7 @@ class XMTPModule : Module() {
             if (client.libXMTPClient == null) {
                 throw XMTPException("Create client with enableAlphaMLS true in order to call canGroupMessage")
             }
-            runBlocking {
-                client.libXMTPClient!!.canMessage(peerAddresses)
-            }
+            client.canMessage(peerAddresses)
         }
 
         AsyncFunction("staticCanMessage") { peerAddress: String, environment: String, appVersion: String? ->
