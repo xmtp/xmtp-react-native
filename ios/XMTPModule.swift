@@ -893,7 +893,6 @@ public class XMTPModule: Module {
 		guard let client = await clientsManager.getClient(key: clientAddress) else {
 			return
 		}
-
 		await subscriptionsManager.get(getGroupsKey(clientAddress: clientAddress))?.cancel()
 		await subscriptionsManager.set(getGroupsKey(clientAddress: clientAddress), Task {
 			do {
