@@ -587,6 +587,17 @@ public class XMTPModule: Module {
 
 			try await group.removeMembers(addresses: peerAddresses)
 		}
+		
+		AsyncFunction("isGroupActive") { (clientAddress: String, id: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+			
+			return try group.isActive()
+		}
 
 		AsyncFunction("subscribeToConversations") { (clientAddress: String) in
 			try await subscribeToConversations(clientAddress: clientAddress)
