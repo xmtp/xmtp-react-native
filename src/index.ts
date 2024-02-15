@@ -21,6 +21,7 @@ import { getAddress } from './utils/address'
 
 export * from './context'
 export * from './hooks'
+export { GroupChangeCodec } from './lib/NativeCodecs/GroupChangeCodec'
 export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
 export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
@@ -207,6 +208,13 @@ export async function canMessage(
   peerAddress: string
 ): Promise<boolean> {
   return await XMTPModule.canMessage(clientAddress, getAddress(peerAddress))
+}
+
+export async function canGroupMessage(
+  clientAddress: string,
+  peerAddresses: string[]
+): Promise<boolean[]> {
+  return await XMTPModule.canGroupMessage(clientAddress, peerAddresses)
 }
 
 export async function staticCanMessage(

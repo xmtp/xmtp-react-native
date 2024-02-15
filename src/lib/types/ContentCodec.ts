@@ -53,6 +53,16 @@ export type RemoteAttachmentContent = RemoteAttachmentMetadata & {
   url: string
 }
 
+export type GroupChangeEntry = {
+  address: string
+  initiatedByAddress: string
+}
+
+export type GroupChangeContent = {
+  membersAdded: GroupChangeEntry[]
+  membersRemoved: GroupChangeEntry[]
+}
+
 // This contains a message that has been prepared for sending.
 // It contains the message ID and the URI of a local file
 // containing the payload that needs to be published.
@@ -91,6 +101,7 @@ export type NativeMessageContent = {
   remoteAttachment?: RemoteAttachmentContent
   readReceipt?: ReadReceiptContent
   encoded?: string
+  groupChange?: GroupChangeContent
 }
 
 export interface JSContentCodec<T> {
