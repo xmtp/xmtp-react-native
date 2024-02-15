@@ -581,8 +581,8 @@ test('can stream groups', async () => {
 })
 
 test('can list all groups and conversations', async () => {
-   // Create three MLS enabled Clients
-   const aliceClient = await Client.createRandom({
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
     env: 'local',
     enableAlphaMls: true,
   })
@@ -604,10 +604,12 @@ test('can list all groups and conversations', async () => {
   const listedContainers = await aliceClient.conversations.listAll()
 
   // Verify informatioin in listed containers is correct
-  if (listedContainers[0].topic !== bobGroup.topic ||
+  if (
+    listedContainers[0].topic !== bobGroup.topic ||
     listedContainers[0].version !== ConversationVersion.GROUP ||
     listedContainers[1].version !== ConversationVersion.DIRECT ||
-    listedContainers[1].createdAt !== aliceConversation.createdAt) {
+    listedContainers[1].createdAt !== aliceConversation.createdAt
+  ) {
     throw Error('Listed containers should match streamed containers')
   }
 

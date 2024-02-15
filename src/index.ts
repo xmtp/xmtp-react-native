@@ -12,13 +12,16 @@ import {
   PreparedLocalMessage,
 } from './lib/ContentCodec'
 import { Conversation } from './lib/Conversation'
+import {
+  ConversationContainer,
+  ConversationVersion,
+} from './lib/ConversationContainer'
 import { DecodedMessage } from './lib/DecodedMessage'
 import { Group } from './lib/Group'
 import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { getAddress } from './utils/address'
-import { ConversationContainer, ConversationVersion } from './lib/ConversationContainer'
 
 export * from './context'
 export * from './hooks'
@@ -258,18 +261,18 @@ export async function listConversations<
 
 export async function listAll<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(client: Client<ContentTypes>): Promise<ConversationContainer<ContentTypes>[]> {
+>(
+  client: Client<ContentTypes>
+): Promise<ConversationContainer<ContentTypes>[]> {
   const list = await XMTPModule.listAll(client.address)
-  return list.map(
-    (json: string) => {
-      const jsonObj = JSON.parse(json)
-      if (jsonObj.version === ConversationVersion.GROUP) {
-        return new Group(client, jsonObj)
-      } else {
-        return new Conversation(client, jsonObj)
-      }
+  return list.map((json: string) => {
+    const jsonObj = JSON.parse(json)
+    if (jsonObj.version === ConversationVersion.GROUP) {
+      return new Group(client, jsonObj)
+    } else {
+      return new Conversation(client, jsonObj)
     }
-  )
+  })
 }
 
 export async function listMessages<
