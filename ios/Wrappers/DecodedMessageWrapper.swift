@@ -41,8 +41,7 @@ struct ContentJson {
 		ReplyCodec(),
 		RemoteAttachmentCodec(),
 		ReadReceiptCodec(),
-		// TODO:
-		// CompositeCodec(),
+		GroupMembershipChangedCodec(),
 	]
 
 	static func initCodecs(client: Client) {
