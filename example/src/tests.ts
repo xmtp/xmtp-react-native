@@ -1,3 +1,4 @@
+import { FramesClient } from '@xmtp/frames-client'
 import { content } from '@xmtp/proto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
@@ -936,6 +937,43 @@ test('correctly handles lowercase addresses', async () => {
     throw new Error(
       `contacts denied by bo should be denied not ${allowedLowercaseState}`
     )
+  }
+  return true
+})
+
+test('instantiate frames client correctly', async () => {
+  const frameUrl =
+    'https://fc-polls-five.vercel.app/polls/01032f47-e976-42ee-9e3d-3aac1324f4b8'
+  const client = await Client.createRandom({ env: 'local' })
+  const framesClient = new FramesClient(client)
+  const metadata = await framesClient.proxy.readMetadata(frameUrl)
+  if (!metadata) {
+    throw new Error('metadata should exist')
+  }
+  const signedPayload = await framesClient.signFrameAction({
+    frameUrl,
+    buttonIndex: 1,
+    conversationTopic: 'foo',
+    participantAccountAddresses: ['amal', 'bola'],
+  })
+  const postUrl = metadata.extractedTags['fc:frame:post_url']
+  const response = await framesClient.proxy.post(postUrl, signedPayload)
+  if (!response) {
+    throw new Error('response should exist')
+  }
+  console.log('response', response)
+  if (response.extractedTags['fc:frame'] !== 'vNext') {
+    throw new Error('response should have expected extractedTags')
+  }
+  const imageUrl = response.extractedTags['fc:frame:image']
+  const mediaUrl = framesClient.proxy.mediaUrl(imageUrl)
+
+  const downloadedMedia = await fetch(mediaUrl)
+  if (!downloadedMedia.ok) {
+    throw new Error('downloadedMedia should be ok')
+  }
+  if (downloadedMedia.headers.get('content-type') !== 'image/png') {
+    throw new Error('downloadedMedia should be image/png')
   }
   return true
 })
