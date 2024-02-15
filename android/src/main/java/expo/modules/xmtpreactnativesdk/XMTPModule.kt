@@ -45,8 +45,7 @@ import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.Pagination
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
-import org.xmtp.android.library.messages.toPublicKeyBundle
-import org.xmtp.android.library.messages.toV2
+import org.xmtp.android.library.messages.getPublicKeyBundle
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
@@ -239,14 +238,15 @@ class XMTPModule : Module() {
                         )
                     }
                 }
-            val privateKeyBundle = client.privateKeyBundle.v2
-            val key = if (keyType == "prekey") {
+            val privateKeyBundle = client.keys
+            val signedPrivateKey = if (keyType == "prekey") {
                 privateKeyBundle.preKeysList[preKeyIndex]
             } else {
                 privateKeyBundle.identityKey
             }
             val signature = runBlocking {
-                PrivateKeyBuilder(key).sign(digestBytes)
+                val privateKey = PrivateKeyBuilder.buildFromSignedPrivateKey(signedPrivateKey)
+                PrivateKeyBuilder(privateKey).sign(digestBytes)
             }
             signature.toByteArray().map { it.toInt() and 0xFF }
         }
@@ -254,7 +254,7 @@ class XMTPModule : Module() {
         AsyncFunction("exportPublicKeyBundle") { clientAddress: String ->
             logV("exportPublicKeyBundle")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.privateKeyBundle.toV2().toPublicKeyBundle().toByteArray().map { it.toInt() and 0xFF }
+            client.keys.getPublicKeyBundle().toByteArray().map { it.toInt() and 0xFF }
         }
 
         AsyncFunction("exportKeyBundle") { clientAddress: String ->
