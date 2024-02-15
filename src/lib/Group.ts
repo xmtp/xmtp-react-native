@@ -135,7 +135,7 @@ export class Group<
     return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
   }
 
-  isActive(): boolean {
+  async isActive(): Promise<boolean> {
     return XMTP.isGroupActive(this.client.address, this.id)
   }
 }

@@ -490,7 +490,7 @@ test('can remove members from a group', async () => {
   await camGroups[0].sync()
   await camClient.conversations.syncGroups()
 
-  if (camGroups[0].isActive()) {
+  if (await camGroups[0].isActive()) {
     throw new Error('cams group should not be active')
   }
 

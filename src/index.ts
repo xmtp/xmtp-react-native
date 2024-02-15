@@ -550,7 +550,10 @@ export function preCreateIdentityCallbackCompleted() {
   XMTPModule.preCreateIdentityCallbackCompleted()
 }
 
-export function isGroupActive(clientAddress: string, id: string): boolean {
+export async function isGroupActive(
+  clientAddress: string,
+  id: string
+): Promise<boolean> {
   return XMTPModule.isGroupActive(clientAddress, id)
 }
 

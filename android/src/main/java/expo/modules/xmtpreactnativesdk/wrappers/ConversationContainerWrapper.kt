@@ -11,9 +11,7 @@ class ConversationContainerWrapper {
             when (conversation.version) {
                 Conversation.Version.GROUP -> {
                     val group = (conversation as Conversation.Group).group
-                    return GroupWrapper.encodeToObj(client, group, Base64.encodeToString(group.id,
-                        Base64.NO_WRAP
-                    ))
+                    return GroupWrapper.encodeToObj(client, group)
                 }
                 else -> {
                     return ConversationWrapper.encodeToObj(client, conversation)
