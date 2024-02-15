@@ -129,15 +129,13 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			
-			let privateKeyBundle = client.privateKeyBundle
-			let key = if (keyType == "prekey") {
-				privateKeyBundle.v2.preKeys[preKeyIndex]
-			} else {
-				privateKeyBundle.v2.identityKey
-			}
-			let signature = await PrivateKey(key).sign(Data(digest))
-			return Array(Data(signature))
+			let privateKeyBundle = client.keys
+			let key = keyType == "prekey" ? privateKeyBundle.preKeys[preKeyIndex] : privateKeyBundle.identityKey
+
+			let privateKey = try PrivateKey(key)
+			let signature = try await privateKey.sign(Data(digest))
+			let uint = try [UInt8](signature.serializedData())
+			return uint
 		}
 		
 		AsyncFunction("exportPublicKeyBundle") { (clientAddress: String) -> [UInt8] in
