@@ -1,6 +1,7 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import android.util.Base64
+import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Conversation
 
@@ -17,6 +18,12 @@ class ConversationContainerWrapper {
                     return ConversationWrapper.encodeToObj(client, conversation)
                 }
             }
+        }
+
+        fun encode(client: Client, conversation: Conversation): String {
+            val gson = GsonBuilder().create()
+            val obj = ConversationContainerWrapper.encodeToObj(client, conversation)
+            return gson.toJson(obj)
         }
     }
 }

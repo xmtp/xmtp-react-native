@@ -83,6 +83,21 @@ export default class Conversations<
   }
 
   /**
+   * This method returns a list of all conversations and groups that the client is a member of.
+   *
+   * @returns {Promise<ConversationContainer[]>} A Promise that resolves to an array of ConversationContainer objects.
+   */
+  async listAll(): Promise<ConversationContainer<ContentTypes>[]> {
+    const result = await XMTPModule.listAll(this.client)
+
+    for (const conversationContainer of result) {
+      this.known[conversationContainer.topic] = true
+    }
+
+    return result
+  }
+
+  /**
    * This method streams groups that the client is a member of.
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
@@ -193,10 +208,6 @@ export default class Conversations<
         }
 
         this.known[conversationContainer.topic] = true
-        console.log(
-          'Version on emitter call: ' +
-            JSON.stringify({ clientAddress, conversationContainer })
-        )
         if (conversationContainer.version === ConversationVersion.GROUP) {
           return await callback(
             new Group(this.client, conversationContainer as Group<ContentTypes>)

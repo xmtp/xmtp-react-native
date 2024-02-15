@@ -12,6 +12,10 @@ import {
   PreparedLocalMessage,
 } from './lib/ContentCodec'
 import { Conversation } from './lib/Conversation'
+import {
+  ConversationContainer,
+  ConversationVersion,
+} from './lib/ConversationContainer'
 import { DecodedMessage } from './lib/DecodedMessage'
 import { Group } from './lib/Group'
 import type { Query } from './lib/Query'
@@ -261,6 +265,22 @@ export async function listConversations<
       return new Conversation(client, JSON.parse(json))
     }
   )
+}
+
+export async function listAll<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>
+): Promise<ConversationContainer<ContentTypes>[]> {
+  const list = await XMTPModule.listAll(client.address)
+  return list.map((json: string) => {
+    const jsonObj = JSON.parse(json)
+    if (jsonObj.version === ConversationVersion.GROUP) {
+      return new Group(client, jsonObj)
+    } else {
+      return new Conversation(client, jsonObj)
+    }
+  })
 }
 
 export async function listMessages<
