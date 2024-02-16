@@ -40,7 +40,10 @@ export function useGroupsList(): UseQueryResult<
   const { client } = useXmtp()
   return useQuery<Group<SupportedContentTypes>[]>(
     ['xmtp', 'groups', client?.address],
-    async () => (await client?.conversations.listGroups()) || [],
+    async () => {
+      await client?.conversations.syncGroups()
+      return (await client?.conversations.listGroups()) || []
+    },
     {
       enabled: !!client,
     }
@@ -128,6 +131,8 @@ export function useGroupMessages({
     ['xmtp', 'groupMessages', client?.address, group?.id],
     async () => {
       await group!.sync()
+      const messages = await group!.messages()
+      console.log('messages', messages)
       return group!.messages()
     },
     {
