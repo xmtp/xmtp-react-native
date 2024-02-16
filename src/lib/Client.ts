@@ -302,6 +302,19 @@ export class Client<ContentTypes> {
     this.codecRegistry[id] = contentCodec
   }
 
+  async sign(digest: Uint8Array, keyType: KeyType): Promise<Uint8Array> {
+    return XMTPModule.sign(
+      this.address,
+      digest,
+      keyType.kind,
+      keyType.prekeyIndex
+    )
+  }
+
+  async exportPublicKeyBundle(): Promise<Uint8Array> {
+    return XMTPModule.exportPublicKeyBundle(this.address)
+  }
+
   /**
    * Exports the key bundle associated with the current XMTP address.
    *
@@ -406,6 +419,11 @@ export type NetworkOptions = {
    * SDK updates, including deprecations and required upgrades.
    */
   appVersion?: string
+}
+
+export type KeyType = {
+  kind: 'identity' | 'prekey'
+  prekeyIndex?: number
 }
 
 export type CallbackOptions = {

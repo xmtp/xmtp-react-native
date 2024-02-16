@@ -22,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import org.xmtp.android.library.Client
@@ -44,6 +45,7 @@ import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.Pagination
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
+import org.xmtp.android.library.messages.getPublicKeyBundle
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
@@ -222,6 +224,37 @@ class XMTPModule : Module() {
             } catch (e: Exception) {
                 throw XMTPException("Failed to create client: $e")
             }
+        }
+
+        AsyncFunction("sign") { clientAddress: String, digest: List<Int>, keyType: String, preKeyIndex: Int ->
+            logV("sign")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val digestBytes =
+                digest.foldIndexed(ByteArray(digest.size)) { i, a, v ->
+                    a.apply {
+                        set(
+                            i,
+                            v.toByte()
+                        )
+                    }
+                }
+            val privateKeyBundle = client.keys
+            val signedPrivateKey = if (keyType == "prekey") {
+                privateKeyBundle.preKeysList[preKeyIndex]
+            } else {
+                privateKeyBundle.identityKey
+            }
+            val signature = runBlocking {
+                val privateKey = PrivateKeyBuilder.buildFromSignedPrivateKey(signedPrivateKey)
+                PrivateKeyBuilder(privateKey).sign(digestBytes)
+            }
+            signature.toByteArray().map { it.toInt() and 0xFF }
+        }
+
+        AsyncFunction("exportPublicKeyBundle") { clientAddress: String ->
+            logV("exportPublicKeyBundle")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.keys.getPublicKeyBundle().toByteArray().map { it.toInt() and 0xFF }
         }
 
         AsyncFunction("exportKeyBundle") { clientAddress: String ->
