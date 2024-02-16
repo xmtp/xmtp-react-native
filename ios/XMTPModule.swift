@@ -181,6 +181,14 @@ public class XMTPModule: Module {
 
 			return try await client.canMessage(peerAddress)
 		}
+		
+		AsyncFunction("canGroupMessage") { (clientAddress: String, peerAddresses: [String]) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+
+			return try await client.canMessageV3(addresses: peerAddresses)
+		}
 
 		AsyncFunction("staticCanMessage") { (peerAddress: String, environment: String, appVersion: String?) -> Bool in
 			do {
@@ -287,6 +295,29 @@ public class XMTPModule: Module {
 					taskGroup.addTask {
 						await self.groupsManager.set(group.cacheKey(clientAddress), group)
 						return try GroupWrapper.encode(group, client: client)
+					}
+				}
+
+				var results: [String] = []
+				for try await result in taskGroup {
+					results.append(result)
+				}
+
+				return results
+			}
+		}
+		
+		AsyncFunction("listAll") { (clientAddress: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			let conversationContainerList = try await client.conversations.list(includeGroups: true)
+			
+			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
+				for conversation in conversationContainerList {
+					taskGroup.addTask {
+						await self.conversationsManager.set(conversation.cacheKey(clientAddress), conversation)
+						return try ConversationContainerWrapper.encode(conversation, client: client)
 					}
 				}
 
