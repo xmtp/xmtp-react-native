@@ -961,7 +961,6 @@ test('instantiate frames client correctly', async () => {
   if (!response) {
     throw new Error('response should exist')
   }
-  console.log('response', response)
   if (response.extractedTags['fc:frame'] !== 'vNext') {
     throw new Error('response should have expected extractedTags')
   }
