@@ -602,7 +602,7 @@ test('can list all groups and conversations', async () => {
 
   const listedContainers = await aliceClient.conversations.listAll()
 
-  // Verify informatioin in listed containers is correct
+  // Verify information in listed containers is correct
   if (
     listedContainers[0].topic !== bobGroup.topic ||
     listedContainers[0].version !== ConversationVersion.GROUP ||

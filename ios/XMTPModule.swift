@@ -306,6 +306,29 @@ public class XMTPModule: Module {
 				return results
 			}
 		}
+		
+		AsyncFunction("listAll") { (clientAddress: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			let conversationContainerList = try await client.conversations.list(includeGroups: true)
+			
+			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
+				for conversation in conversationContainerList {
+					taskGroup.addTask {
+						await self.conversationsManager.set(conversation.cacheKey(clientAddress), conversation)
+						return try ConversationContainerWrapper.encode(conversation, client: client)
+					}
+				}
+
+				var results: [String] = []
+				for try await result in taskGroup {
+					results.append(result)
+				}
+
+				return results
+			}
+		}
 
 		AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
 			let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil
