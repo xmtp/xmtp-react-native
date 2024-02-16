@@ -15,7 +15,7 @@ export class GroupChangeCodec
     versionMajor: 1,
     versionMinor: 0,
   }
-
+  // Should never have to encode since only sent from Rust backend
   encode(): NativeMessageContent {
     return {}
   }
@@ -25,6 +25,6 @@ export class GroupChangeCodec
   }
 
   fallback(): string | undefined {
-    return 'The members of this group have changed'
+    return undefined
   }
 }
