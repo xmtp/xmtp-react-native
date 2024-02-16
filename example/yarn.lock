@@ -6793,10 +6793,10 @@
   resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.7.13.tgz#ff34942667a4e19a9f4a0996a76814daac364cf3"
   integrity sha512-lm2GW5PkosIzccsaZIz7tp8cPADSIlIHWDFTR1N0SzfinhhYgeIQjFMz4rYzanCScr3DqQLeomUDArp6MWKm+g==
 
-"@xmtp/frames-client@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@xmtp/frames-client/-/frames-client-0.3.0.tgz#5d8848590f57ea543905df2d7719a6eacedc74c7"
-  integrity sha512-iUc9LRqTkYBqsD2lvnpunjgotudTMHu0h187KcHacVeq+GQYjVMZx6E06hi3DztUlmZ1OwBzq3ki30qdBFKSbg==
+"@xmtp/frames-client@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@xmtp/frames-client/-/frames-client-0.3.2.tgz#6c860e11cbf7a63aa956543b4941ee72738ed211"
+  integrity sha512-61rxA7YcNUUKndQ9e5X44LNVwWJCrrZR6sBGOWLckfMK00LqRasoiLgom1PlR34c17a59PPZmagxoNQ2QCto7A==
   dependencies:
     "@noble/hashes" "^1.3.3"
     "@xmtp/proto" "3.41.0-beta.5"
