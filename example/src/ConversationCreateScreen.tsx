@@ -21,12 +21,13 @@ export default function ConversationCreateScreen({
       return
     }
     if (groupsEnabled) {
-      const canMessage = (await client.canGroupMessage([toAddress]))[0]
+      const toAddresses = toAddress.split(',')
+      const canMessage = await client.canGroupMessage(toAddresses)
       if (!canMessage) {
         setAlert(`${toAddress} cannot be added to a group conversation yet`)
         return
       }
-      const group = await client.conversations.newGroup([toAddress])
+      const group = await client.conversations.newGroup(toAddresses)
       navigation.navigate('group', { id: group.id })
     } else {
       const canMessage = await client.canMessage(toAddress)
