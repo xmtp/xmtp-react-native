@@ -769,11 +769,28 @@ test('can pass a custom filter date and receive message objects with expected da
 })
 
 test('canMessage', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  const alice = await Client.createRandom({ env: 'local' })
+  const bo = await Client.createRandom({ env: 'local' })
+  const alix = await Client.createRandom({ env: 'local' })
 
-  const canMessage = await bob.canMessage(alice.address)
-  return canMessage
+  const canMessage = await bo.canMessage(alix.address)
+  if (!canMessage) {
+    throw new Error('should be able to message v2 client')
+  }
+
+  const caro = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const chux = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  const canMessageV3 = await caro.canGroupMessage([chux.address])
+  if (!canMessageV3) {
+    throw new Error('should be able to message v3 client')
+  }
+  return true
 })
 
 test('createFromKeyBundle throws error for non string value', async () => {
