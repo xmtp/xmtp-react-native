@@ -233,7 +233,7 @@ public class XMTPModule: Module {
 
 			let encodedContent = try EncodedContent(serializedData: Data(encodedContentData))
 			
-			let options = SendOptions(contentType: encodedContent.type, shouldPush: shouldPush)
+			let options = SendOptions(contentType: encodedContent.type, __shouldPush: shouldPush)
 
 			return try await conversation.send(encodedContent: encodedContent, options: options)
 		}
@@ -404,7 +404,7 @@ public class XMTPModule: Module {
 
 			let prepared = try await conversation.prepareMessage(
 				encodedContent: encodedContent,
-				options: SendOptions(contentType: contentType, shouldPush: shouldPush)
+				options: SendOptions(contentType: contentType, __shouldPush: shouldPush)
 			)
 			let preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
 			let preparedData = try prepared.serializedData()
