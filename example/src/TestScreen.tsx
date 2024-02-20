@@ -2,6 +2,7 @@ import { useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
 
+import { createdAtTests } from './tests/createdAtTests'
 import { groupTests } from './tests/groupTests'
 import { tests, Test } from './tests/tests'
 
@@ -100,16 +101,31 @@ function TestView({
 export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0)
   const route = useRoute()
-  const params = route.params as { onlyGroups: boolean }
-  const allTests = tests.concat(groupTests)
-  const activeTests = params.onlyGroups ? groupTests : allTests
+  const params = route.params as {
+    testSelection: 'groups' | 'createdAt' | 'all'
+  }
+  const allTests = tests.concat(groupTests).concat(createdAtTests)
+  let activeTests, title
+  switch (params.testSelection) {
+    case 'groups':
+      activeTests = groupTests
+      title = 'Group Unit Tests'
+      break
+    case 'createdAt':
+      activeTests = createdAtTests
+      title = 'Created At Unit Tests'
+      break
+    default:
+      activeTests = allTests
+      title = 'All Unit Tests'
+  }
 
   return (
     <ScrollView>
       <View>
         <View style={{ padding: 12 }}>
           <Text testID="Test View" accessible accessibilityLabel="Test View">
-            {params.onlyGroups ? 'Group Unit Tests' : 'All Unit Tests'}
+            {title}
           </Text>
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between' }}

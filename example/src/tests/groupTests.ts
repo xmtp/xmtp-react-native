@@ -491,44 +491,6 @@ test('can stream groups', async () => {
   return true
 })
 
-test('can list all groups', async () => {
-  // Create three MLS enabled Clients
-  const aliceClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  delayToPropogate()
-  const bobClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  delayToPropogate()
-  const camClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  delayToPropogate()
-  const bobGroup = await bobClient.conversations.newGroup([aliceClient.address])
-  const aliceGroup = await aliceClient.conversations.newGroup([
-    camClient.address,
-  ])
-
-  await aliceClient.conversations.syncGroups()
-  delayToPropogate
-
-  const listedGroups = await aliceClient.conversations.listGroups()
-  console.log('BREAK')
-
-  console.log('listedGroups[0].createdAt', listedGroups[0].createdAt)
-  console.log('bob.createdAt', bobGroup.createdAt)
-  console.log('listedGroups[0].createdAt', listedGroups[1].createdAt)
-  console.log('alice.createdAt', aliceGroup.createdAt)
-
-  console.log('BREAK')
-
-  return true
-})
-
 test('can list all groups and conversations', async () => {
   // Create three MLS enabled Clients
   const aliceClient = await Client.createRandom({
