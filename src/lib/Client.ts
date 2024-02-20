@@ -299,6 +299,19 @@ export class Client<
     this.codecRegistry[id] = contentCodec
   }
 
+  async sign(digest: Uint8Array, keyType: KeyType): Promise<Uint8Array> {
+    return XMTPModule.sign(
+      this.address,
+      digest,
+      keyType.kind,
+      keyType.prekeyIndex
+    )
+  }
+
+  async exportPublicKeyBundle(): Promise<Uint8Array> {
+    return XMTPModule.exportPublicKeyBundle(this.address)
+  }
+
   /**
    * Exports the key bundle associated with the current XMTP address.
    *
@@ -414,6 +427,11 @@ export type ClientOptions = {
    * Specify whether to enable Alpha version of MLS (Group Chat)
    */
   enableAlphaMls?: boolean
+}
+
+export type KeyType = {
+  kind: 'identity' | 'prekey'
+  prekeyIndex?: number
 }
 
 /**
