@@ -112,33 +112,32 @@ test('group createdAt matches listAll', async () => {
   assert(
     aliceGroups[first].topic === aliceGroup.id,
     'First group returned from listGroups shows ' +
-      (aliceGroups[1] as Group).id +
-      ' but should be ' +
-      aliceGroup.id
+    (aliceGroups[1] as Group).id +
+    ' but should be ' +
+    aliceGroup.id
   )
   assert(
     aliceGroups[second].topic === bobGroup.id,
     'Second group returned from listGroups shows ' +
-      (aliceGroups[0] as Group).id +
-      ' but should be ' +
-      bobGroup.id
+    (aliceGroups[0] as Group).id +
+    ' but should be ' +
+    bobGroup.id
   )
-
-  // Below tests fail on Android
+  assert(
+    aliceGroups[first].createdAt === aliceGroup.createdAt,
+    'Alice group returned from listGroups shows createdAt ' +
+    aliceGroups[1].createdAt +
+    ' but should be ' +
+    aliceGroup.createdAt
+  )
+  // Below assertion fail on Android
   if (isIos()) {
-    assert(
-      aliceGroups[first].createdAt === aliceGroup.createdAt,
-      'Alice group returned from listGroups shows createdAt ' +
-        aliceGroups[1].createdAt +
-        ' but should be ' +
-        aliceGroup.createdAt
-    )
     assert(
       aliceGroups[second].createdAt === bobGroup.createdAt,
       'Bob group returned from listGroups shows createdAt ' +
-        aliceGroups[0].createdAt +
-        ' but should be ' +
-        bobGroup.createdAt
+      aliceGroups[0].createdAt +
+      ' but should be ' +
+      bobGroup.createdAt
     )
   }
   return true
@@ -317,32 +316,32 @@ test('conversation createdAt matches stream', async () => {
   assert(
     allConversations[0].topic === aliceConversation.topic,
     'list()[1].topic: ' +
-      allConversations[0].topic +
-      ' != ' +
-      aliceConversation.topic
+    allConversations[0].topic +
+    ' != ' +
+    aliceConversation.topic
   )
   assert(
     allConversations[1].topic === camConversation.topic,
     'list()[0].topic: ' +
-      allConversations[1].topic +
-      ' != ' +
-      camConversation.topic
+    allConversations[1].topic +
+    ' != ' +
+    camConversation.topic
   )
 
   // CreatedAt returned from list matches createAt from create function
   assert(
     allConversations[0].createdAt === aliceConversation.createdAt,
     'list()[0].createdAt: ' +
-      allConversations[0].createdAt +
-      ' != ' +
-      aliceConversation.createdAt
+    allConversations[0].createdAt +
+    ' != ' +
+    aliceConversation.createdAt
   )
   assert(
     allConversations[1].createdAt === camConversation.createdAt,
     'list()[1].createdAt: ' +
-      allConversations[1].createdAt +
-      ' != ' +
-      camConversation.createdAt
+    allConversations[1].createdAt +
+    ' != ' +
+    camConversation.createdAt
   )
 
   return true
@@ -392,32 +391,32 @@ test('conversation createdAt matches streamAll', async () => {
   assert(
     allConversations[0].topic === aliceConversation.topic,
     'list()[1].topic: ' +
-      allConversations[0].topic +
-      ' != ' +
-      aliceConversation.topic
+    allConversations[0].topic +
+    ' != ' +
+    aliceConversation.topic
   )
   assert(
     allConversations[1].topic === camConversation.topic,
     'list()[0].topic: ' +
-      allConversations[1].topic +
-      ' != ' +
-      camConversation.topic
+    allConversations[1].topic +
+    ' != ' +
+    camConversation.topic
   )
 
   // CreatedAt returned from list matches createAt from create function
   assert(
     allConversations[0].createdAt === aliceConversation.createdAt,
     'list()[0].createdAt: ' +
-      allConversations[0].createdAt +
-      ' != ' +
-      aliceConversation.createdAt
+    allConversations[0].createdAt +
+    ' != ' +
+    aliceConversation.createdAt
   )
   assert(
     allConversations[1].createdAt === camConversation.createdAt,
     'list()[1].createdAt: ' +
-      allConversations[1].createdAt +
-      ' != ' +
-      camConversation.createdAt
+    allConversations[1].createdAt +
+    ' != ' +
+    camConversation.createdAt
   )
 
   return true
