@@ -515,11 +515,15 @@ test('can list all groups and conversations', async () => {
   const listedContainers = await aliceClient.conversations.listAll()
 
   // Verify information in listed containers is correct
+  // BUG - List All returns in Chronological order on iOS
+  // and reverse Chronological order on Android
+  const first = isIos() ? 1 : 0
+  const second = isIos() ? 0 : 1
   if (
-    listedContainers[0].topic !== bobGroup.topic ||
-    listedContainers[0].version !== ConversationVersion.GROUP ||
-    listedContainers[1].version !== ConversationVersion.DIRECT ||
-    listedContainers[1].createdAt !== aliceConversation.createdAt
+    listedContainers[first].topic !== bobGroup.topic ||
+    listedContainers[first].version !== ConversationVersion.GROUP ||
+    listedContainers[second].version !== ConversationVersion.DIRECT ||
+    listedContainers[second].createdAt !== aliceConversation.createdAt
   ) {
     throw Error('Listed containers should match streamed containers')
   }
