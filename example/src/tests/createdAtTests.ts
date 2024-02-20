@@ -56,19 +56,21 @@ test('group createdAt matches listGroups', async () => {
     'First group returned from listGroups should be the first group created'
   )
   assert(
-    aliceGroups[second].id === bobGroup.id,
-    'Bob group createdAt should match'
-  )
-  assert(
     aliceGroups[first].createdAt === aliceGroup.createdAt,
     'Alice group createdAt should match'
   )
-
-  // Below test fails on Android
+  assert(
+    aliceGroups[second].id === bobGroup.id,
+    'Bob group createdAt should match'
+  )
+  // Below assertion fails on Android
   if (isIos()) {
     assert(
       aliceGroups[second].createdAt === bobGroup.createdAt,
-      'Bob group createdAt should match'
+      'Second group returned from listGroups shows ' +
+      aliceGroups[second].createdAt +
+      ' but should be ' +
+      bobGroup.createdAt
     )
   }
   return true
@@ -170,12 +172,12 @@ test('conversation createdAt matches list', async () => {
   })
   delayToPropogate()
 
-  // Alice creates a group
+  // Alice creates a conversation
   const aliceConversation = await aliceClient.conversations.newConversation(
     bobClient.address
   )
 
-  // Bob creates a group
+  // Bob creates a conversation
   const camConversation = await camClient.conversations.newConversation(
     aliceClient.address
   )
