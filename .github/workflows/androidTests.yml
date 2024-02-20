@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - nm/fix-android-tests
   pull_request:
 
 env:
@@ -44,7 +45,7 @@ jobs:
 
       - name: Install docker
         run: brew install docker docker-compose
-      
+
       - name: Start colima
         run: colima start
 

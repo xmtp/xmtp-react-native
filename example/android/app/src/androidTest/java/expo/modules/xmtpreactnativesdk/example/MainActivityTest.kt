@@ -27,7 +27,7 @@ class MainActivityTest {
 
     @Test
     fun testRunTests() {
-        waitForDisplayed(withContentDescription("Unit-tests")) { button ->
+        waitForDisplayed(withContentDescription("unitTests")) { button ->
             // Go to unit tests page
             onView(button).perform(click())
             waitForDisplayed(withContentDescription("Test View")) { view ->
