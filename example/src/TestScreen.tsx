@@ -1,9 +1,9 @@
+import { useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
-import { useRoute } from '@react-navigation/native';
 
-import { tests, Test } from './tests/tests'
 import { groupTests } from './tests/groupTests'
+import { tests, Test } from './tests/tests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
@@ -99,17 +99,17 @@ function TestView({
 
 export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0)
-  const route = useRoute();
-  const params = route.params as { onlyGroups: boolean };
-  const allTests = tests.concat(groupTests);
-  const activeTests = params.onlyGroups ? groupTests : allTests;
+  const route = useRoute()
+  const params = route.params as { onlyGroups: boolean }
+  const allTests = tests.concat(groupTests)
+  const activeTests = params.onlyGroups ? groupTests : allTests
 
   return (
     <ScrollView>
       <View>
         <View style={{ padding: 12 }}>
           <Text testID="Test View" accessible accessibilityLabel="Test View">
-          {params.onlyGroups ? 'Group Unit Tests' : 'All Unit Tests'}          
+            {params.onlyGroups ? 'Group Unit Tests' : 'All Unit Tests'}
           </Text>
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between' }}
@@ -135,17 +135,19 @@ export default function TestScreen(): JSX.Element {
           accessibilityLabel="tests-complete"
           style={{ paddingHorizontal: 12 }}
         >
-          {(activeTests || []).slice(0, completedTests + 1).map((test: Test, i) => {
-            return (
-              <TestView
-                test={test}
-                onComplete={() => {
-                  setCompletedTests((prev) => prev + 1)
-                }}
-                key={i}
-              />
-            )
-          })}
+          {(activeTests || [])
+            .slice(0, completedTests + 1)
+            .map((test: Test, i) => {
+              return (
+                <TestView
+                  test={test}
+                  onComplete={() => {
+                    setCompletedTests((prev) => prev + 1)
+                  }}
+                  key={i}
+                />
+              )
+            })}
         </View>
       </View>
     </ScrollView>

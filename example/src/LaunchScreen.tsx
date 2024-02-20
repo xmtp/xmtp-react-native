@@ -13,11 +13,14 @@ import { useSavedKeys } from './hooks'
 const appVersion = 'XMTP_RN_EX/0.0.1'
 
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
-export default function LaunchScreen(this: any, {
-  navigation,
-}: NativeStackScreenProps<NavigationParamList, 'launch'>) {
-  const [selectedNetwork, setSelectedNetwork] = useState<'dev' | 'local' | 'production'>('dev');
-  const [enableGroups, setEnableGroups] = useState('true');
+export default function LaunchScreen(
+  this: any,
+  { navigation }: NativeStackScreenProps<NavigationParamList, 'launch'>
+) {
+  const [selectedNetwork, setSelectedNetwork] = useState<
+    'dev' | 'local' | 'production'
+  >('dev')
+  const [enableGroups, setEnableGroups] = useState('true')
   const signer = useSigner()
   const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
   const { setClient } = useXmtp()
@@ -55,15 +58,15 @@ export default function LaunchScreen(this: any, {
     { key: 0, label: 'dev' },
     { key: 1, label: 'local' },
     // { key: 2, label: 'production' },
-  ];
+  ]
 
   const groupOptions = [
     { key: 0, label: 'true' },
     { key: 1, label: 'false' },
-  ];
+  ]
 
   useEffect(() => {
-    ; (async () => {
+    ;(async () => {
       if (signer) {
         const address = await signer.getAddress()
         const addressDisplay = address.slice(0, 6) + '...' + address.slice(-4)
@@ -76,10 +79,8 @@ export default function LaunchScreen(this: any, {
 
   return (
     <ScrollView>
-      <Text style={styles.title}>
-        Automated Tests
-      </Text>
-      <View key="run-tests" style={{ margin: 16}}>
+      <Text style={styles.title}>Automated Tests</Text>
+      <View key="run-tests" style={{ margin: 16 }}>
         <Button
           title="Run All Unit Tests"
           onPress={() => navigation.navigate('test', { onlyGroups: false })}
@@ -93,10 +94,8 @@ export default function LaunchScreen(this: any, {
           accessibilityLabel="Unit-group-tests"
         />
       </View>
-      <View style={styles.divider}/>
-      <Text style={styles.title}>
-        Test Conversations
-      </Text>
+      <View style={styles.divider} />
+      <Text style={styles.title}>Test Conversations</Text>
       <View style={styles.row}>
         <Text style={styles.label}>Select Network:</Text>
         <ModalSelector
@@ -104,9 +103,11 @@ export default function LaunchScreen(this: any, {
           selectStyle={styles.modalSelector}
           initValueTextStyle={styles.modalSelectText}
           selectTextStyle={styles.modalSelectText}
-          backdropPressToClose={true}
+          backdropPressToClose
           initValue={selectedNetwork}
-          onChange={(option) => setSelectedNetwork(option.label as 'dev' | 'local' | 'production')}
+          onChange={(option) =>
+            setSelectedNetwork(option.label as 'dev' | 'local' | 'production')
+          }
         />
       </View>
       <View style={styles.row}>
@@ -115,10 +116,12 @@ export default function LaunchScreen(this: any, {
           selectStyle={styles.modalSelector}
           initValueTextStyle={styles.modalSelectText}
           selectTextStyle={styles.modalSelectText}
-          backdropPressToClose={true}
+          backdropPressToClose
           data={groupOptions}
           initValue={enableGroups}
-          onChange={(option) => {setEnableGroups(option.label)}}
+          onChange={(option) => {
+            setEnableGroups(option.label)
+          }}
         />
       </View>
       <View style={styles.row}>
@@ -132,7 +135,12 @@ export default function LaunchScreen(this: any, {
               title={`Use Connected Wallet (${signerAddressDisplay} + )`}
               color="orange"
               onPress={() => {
-                console.log('Using network ' + selectedNetwork + ' and enableAlphaMLS ' + enableGroups)
+                console.log(
+                  'Using network ' +
+                    selectedNetwork +
+                    ' and enableAlphaMLS ' +
+                    enableGroups
+                )
                 configureWallet(
                   selectedNetwork,
                   XMTP.Client.create(signer, {
@@ -153,7 +161,12 @@ export default function LaunchScreen(this: any, {
           title="Use Random Wallet"
           color="green"
           onPress={() => {
-            console.log('Using network ' + selectedNetwork + ' and enableAlphaMLS ' + enableGroups)
+            console.log(
+              'Using network ' +
+                selectedNetwork +
+                ' and enableAlphaMLS ' +
+                enableGroups
+            )
             configureWallet(
               selectedNetwork,
               XMTP.Client.createRandom({
@@ -175,7 +188,12 @@ export default function LaunchScreen(this: any, {
               title="Use Saved Wallet"
               color="purple"
               onPress={() => {
-                console.log('Using network ' + selectedNetwork + ' and enableAlphaMLS ' + enableGroups)
+                console.log(
+                  'Using network ' +
+                    selectedNetwork +
+                    ' and enableAlphaMLS ' +
+                    enableGroups
+                )
                 configureWallet(
                   selectedNetwork,
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
@@ -230,11 +248,11 @@ const styles = StyleSheet.create({
     borderColor: 'black',
   },
   modalSelectText: {
-    color: 'black', 
-    fontWeight: 'bold' ,
+    color: 'black',
+    fontWeight: 'bold',
   },
   label: {
     fontSize: 16,
     flex: 1,
-  }
-});
+  },
+})

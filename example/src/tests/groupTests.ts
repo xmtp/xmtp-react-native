@@ -1,5 +1,6 @@
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
+import { Test, assert, delayToPropogate } from './tests'
 import {
   Client,
   Conversation,
@@ -7,7 +8,6 @@ import {
   ConversationContainer,
   ConversationVersion,
 } from '../../../src/index'
-import { Test, assert, delayToPropogate } from './tests'
 
 export const groupTests: Test[] = []
 
@@ -41,8 +41,10 @@ test('can make a MLS V3 client from bundle', async () => {
 
   const group1 = await client.conversations.newGroup([anotherClient.address])
 
-  assert(group1.clientAddress === client.address,
-    `clients dont match ${client.address} and ${group1.clientAddress}`)
+  assert(
+    group1.clientAddress === client.address,
+    `clients dont match ${client.address} and ${group1.clientAddress}`
+  )
 
   const bundle = await client.exportKeyBundle()
   const client2 = await Client.createFromKeyBundle(bundle, {
@@ -51,7 +53,10 @@ test('can make a MLS V3 client from bundle', async () => {
     enableAlphaMls: true,
   })
 
-  assert(client.address === client2.address, `clients dont match ${client2.address} and ${client.address}`)
+  assert(
+    client.address === client2.address,
+    `clients dont match ${client2.address} and ${client.address}`
+  )
 
   const randomClient = await Client.createRandom({
     env: 'local',
@@ -61,7 +66,10 @@ test('can make a MLS V3 client from bundle', async () => {
 
   const group = await client2.conversations.newGroup([randomClient.address])
 
-  assert(group.clientAddress === client2.address, `clients dont match ${client2.address} and ${group.clientAddress}`)
+  assert(
+    group.clientAddress === client2.address,
+    `clients dont match ${client2.address} and ${group.clientAddress}`
+  )
 
   return true
 })
@@ -501,7 +509,9 @@ test('can list all groups', async () => {
   })
   delayToPropogate()
   const bobGroup = await bobClient.conversations.newGroup([aliceClient.address])
-  const aliceGroup = await aliceClient.conversations.newGroup([camClient.address])
+  const aliceGroup = await aliceClient.conversations.newGroup([
+    camClient.address,
+  ])
 
   await aliceClient.conversations.syncGroups()
   delayToPropogate
@@ -640,8 +650,6 @@ test('can stream all groups and conversations', async () => {
 
   return true
 })
-
-
 
 test('canMessage', async () => {
   const bo = await Client.createRandom({ env: 'local' })
