@@ -321,7 +321,7 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("sendEncodedContent") { clientAddress: String, topic: String, encodedContentData: List<Int> ->
+        AsyncFunction("sendEncodedContent") { clientAddress: String, topic: String, encodedContentData: List<Int>, shouldPush: Boolean ->
             val conversation =
                 findConversation(
                     clientAddress = clientAddress,
@@ -338,8 +338,9 @@ class XMTPModule : Module() {
                     }
                 }
             val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
+            val options = SendOptions(contentType = encodedContent.type, __shouldPush = shouldPush)
 
-            conversation.send(encodedContent = encodedContent)
+            conversation.send(encodedContent = encodedContent, options = options)
         }
 
         AsyncFunction("listConversations") { clientAddress: String ->
@@ -456,7 +457,7 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("prepareEncodedMessage") { clientAddress: String, conversationTopic: String, encodedContentData: List<Int> ->
+        AsyncFunction("prepareEncodedMessage") { clientAddress: String, conversationTopic: String, encodedContentData: List<Int>, shouldPush: Boolean ->
             logV("prepareEncodedMessage")
             val conversation =
                 findConversation(
@@ -478,6 +479,7 @@ class XMTPModule : Module() {
 
             val prepared = conversation.prepareMessage(
                 encodedContent = encodedContent,
+                options = SendOptions(contentType = encodedContent.type, __shouldPush = shouldPush)
             )
             val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
             val preparedFile = File.createTempFile(prepared.messageId, null)

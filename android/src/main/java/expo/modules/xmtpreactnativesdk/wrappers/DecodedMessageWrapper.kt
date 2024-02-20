@@ -20,7 +20,8 @@ class DecodedMessageWrapper {
             "content" to ContentJson(model.encodedContent).toJsonMap(),
             "senderAddress" to model.senderAddress,
             "sent" to model.sentAt.time,
-            "fallback" to model.encodedContent.fallback
+            "fallback" to model.encodedContent.fallback,
+            "shouldPush" to model.shouldPush as Any
         )
     }
 }
