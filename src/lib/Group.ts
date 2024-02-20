@@ -38,7 +38,10 @@ export class Group<
     return this.client.address
   }
 
-  async memberAddresses(): Promise<string[]> {
+  async memberAddresses(skipSync = false): Promise<string[]> {
+    if (!skipSync) {
+      await this.sync()
+    }
     return XMTP.listMemberAddresses(this.client, this.id)
   }
 
@@ -76,7 +79,10 @@ export class Group<
     }
   }
 
-  async messages(): Promise<DecodedMessage<ContentTypes>[]> {
+  async messages(skipSync = false): Promise<DecodedMessage<ContentTypes>[]> {
+    if (!skipSync) {
+      await this.sync()
+    }
     return await XMTP.groupMessages(this.client, this.id)
   }
 
@@ -135,7 +141,10 @@ export class Group<
     return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
   }
 
-  async isActive(): Promise<boolean> {
+  async isActive(skipSync = false): Promise<boolean> {
+    if (!skipSync) {
+      await this.sync()
+    }
     return XMTP.isGroupActive(this.client.address, this.id)
   }
 }
