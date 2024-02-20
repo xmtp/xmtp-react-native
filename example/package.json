@@ -31,6 +31,7 @@
     "react-native-encrypted-storage": "^4.0.3",
     "react-native-get-random-values": "^1.10.0",
     "react-native-mmkv": "^2.8.0",
+    "react-native-modal-selector": "^2.1.2",
     "react-native-quick-base64": "^2.0.8",
     "react-native-quick-crypto": "^0.6.1",
     "react-native-randombytes": "^3.6.1",

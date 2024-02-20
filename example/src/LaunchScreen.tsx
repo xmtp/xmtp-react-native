@@ -2,6 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ConnectWallet, useSigner } from '@thirdweb-dev/react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
+import ModalSelector from 'react-native-modal-selector'
 import * as XMTP from 'xmtp-react-native-sdk'
 import { useXmtp } from 'xmtp-react-native-sdk'
 
@@ -12,9 +13,11 @@ import { useSavedKeys } from './hooks'
 const appVersion = 'XMTP_RN_EX/0.0.1'
 
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
-export default function LaunchScreen({
+export default function LaunchScreen(this: any, {
   navigation,
 }: NativeStackScreenProps<NavigationParamList, 'launch'>) {
+  const [selectedNetwork, setSelectedNetwork] = useState<'dev' | 'local' | 'production'>('dev');
+  const [enableGroups, setEnableGroups] = useState('true');
   const signer = useSigner()
   const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
   const { setClient } = useXmtp()
@@ -48,8 +51,19 @@ export default function LaunchScreen({
     console.log('Pre Enable Identity Callback')
   }
 
+  const networkOptions = [
+    { key: 0, label: 'dev' },
+    { key: 1, label: 'local' },
+    // { key: 2, label: 'production' },
+  ];
+
+  const groupOptions = [
+    { key: 0, label: 'true' },
+    { key: 1, label: 'false' },
+  ];
+
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       if (signer) {
         const address = await signer.getAddress()
         const addressDisplay = address.slice(0, 6) + '...' + address.slice(-4)
@@ -62,89 +76,71 @@ export default function LaunchScreen({
 
   return (
     <ScrollView>
-      <ConnectWallet theme="dark" />
-      <Text
-        style={{
-          fontSize: 16,
-          textAlign: 'right',
-          textTransform: 'uppercase',
-          color: '#333',
-          marginTop: 16,
-          paddingHorizontal: 16,
-          marginHorizontal: 16,
-        }}
-      >
-        Testing
+      <Text style={styles.title}>
+        Automated Tests
       </Text>
-      <View key="run-tests" style={{ margin: 16, marginTop: 16 }}>
+      <View key="run-tests" style={{ margin: 16}}>
         <Button
-          title="Run Unit Tests"
-          onPress={() => navigation.navigate('test')}
+          title="Run All Unit Tests"
+          onPress={() => navigation.navigate('test', { onlyGroups: false })}
           accessibilityLabel="Unit-tests"
         />
       </View>
+      <View key="run-group-tests" style={{ margin: 16 }}>
+        <Button
+          title="Run Group Unit Tests"
+          onPress={() => navigation.navigate('test', { onlyGroups: true })}
+          accessibilityLabel="Unit-group-tests"
+        />
+      </View>
+      <View style={styles.divider}/>
+      <Text style={styles.title}>
+        Test Conversations
+      </Text>
+      <View style={styles.row}>
+        <Text style={styles.label}>Select Network:</Text>
+        <ModalSelector
+          data={networkOptions}
+          selectStyle={styles.modalSelector}
+          initValueTextStyle={styles.modalSelectText}
+          selectTextStyle={styles.modalSelectText}
+          backdropPressToClose={true}
+          initValue={selectedNetwork}
+          onChange={(option) => setSelectedNetwork(option.label as 'dev' | 'local' | 'production')}
+        />
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Enable Groups:</Text>
+        <ModalSelector
+          selectStyle={styles.modalSelector}
+          initValueTextStyle={styles.modalSelectText}
+          selectTextStyle={styles.modalSelectText}
+          backdropPressToClose={true}
+          data={groupOptions}
+          initValue={enableGroups}
+          onChange={(option) => {setEnableGroups(option.label)}}
+        />
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>External Wallet:</Text>
+        <ConnectWallet theme="dark" />
+      </View>
       {signer && (
         <>
-          <Divider key="divider-connected" />
-          <Text
-            style={{
-              fontSize: 16,
-              textAlign: 'right',
-              textTransform: 'uppercase',
-              color: '#333',
-              paddingHorizontal: 16,
-              marginHorizontal: 16,
-            }}
-          >
-            Connected Wallet ({signerAddressDisplay})
-          </Text>
           <View key="connected-dev" style={{ margin: 16 }}>
             <Button
-              title="Use Connected Wallet (dev)"
-              color="green"
+              title={`Use Connected Wallet (${signerAddressDisplay} + )`}
+              color="orange"
               onPress={() => {
+                console.log('Using network ' + selectedNetwork + ' and enableAlphaMLS ' + enableGroups)
                 configureWallet(
-                  'dev',
+                  selectedNetwork,
                   XMTP.Client.create(signer, {
-                    env: 'dev',
+                    env: selectedNetwork,
                     appVersion,
                     preCreateIdentityCallback,
                     preEnableIdentityCallback,
-                  })
-                )
-              }}
-            />
-          </View>
-          <View key="connected-local" style={{ margin: 16 }}>
-            <Button
-              title="Use Connected Wallet (local)"
-              color="purple"
-              onPress={() => {
-                configureWallet(
-                  'local',
-                  XMTP.Client.create(signer, {
-                    env: 'local',
-                    appVersion,
-                    preCreateIdentityCallback,
-                    preEnableIdentityCallback,
-                  })
-                )
-              }}
-            />
-          </View>
-          <View key="connected-groups-local" style={{ margin: 16 }}>
-            <Button
-              title="Use Connected Wallet with Groups (local)"
-              color="purple"
-              onPress={() => {
-                configureWallet(
-                  'local',
-                  XMTP.Client.create(signer, {
-                    env: 'local',
-                    appVersion,
-                    preCreateIdentityCallback,
-                    preEnableIdentityCallback,
-                    enableAlphaMls: true,
+                    enableAlphaMls: enableGroups === 'true',
                   })
                 )
               }}
@@ -152,88 +148,21 @@ export default function LaunchScreen({
           </View>
         </>
       )}
-      <Divider key="divider-generated" />
-      <Text
-        style={{
-          fontSize: 16,
-          textAlign: 'right',
-          textTransform: 'uppercase',
-          color: '#333',
-          paddingHorizontal: 16,
-          marginHorizontal: 16,
-        }}
-      >
-        Random Wallet
-      </Text>
       <View key="generated-dev" style={{ margin: 16 }}>
         <Button
-          title="Use Generated Wallet (dev)"
+          title="Use Random Wallet"
           color="green"
           onPress={() => {
+            console.log('Using network ' + selectedNetwork + ' and enableAlphaMLS ' + enableGroups)
             configureWallet(
-              'dev',
+              selectedNetwork,
               XMTP.Client.createRandom({
-                env: 'dev',
+                env: selectedNetwork,
                 appVersion,
                 codecs: supportedCodecs,
                 preCreateIdentityCallback,
                 preEnableIdentityCallback,
-              })
-            )
-          }}
-        />
-      </View>
-      <View key="generated-local" style={{ margin: 16 }}>
-        <Button
-          title="Use Generated Wallet (local)"
-          color="purple"
-          onPress={() => {
-            configureWallet(
-              'local',
-              XMTP.Client.createRandom({
-                env: 'local',
-                appVersion,
-                codecs: supportedCodecs,
-                preCreateIdentityCallback,
-                preEnableIdentityCallback,
-              })
-            )
-          }}
-        />
-      </View>
-      <View key="generated-groups-local" style={{ margin: 16 }}>
-        <Button
-          title="Use Generated Wallet with Groups (local)"
-          color="purple"
-          onPress={() => {
-            configureWallet(
-              'local',
-              XMTP.Client.createRandom({
-                enableAlphaMls: true,
-                env: 'local',
-                appVersion,
-                codecs: supportedCodecs,
-                preCreateIdentityCallback,
-                preEnableIdentityCallback,
-              })
-            )
-          }}
-        />
-      </View>
-      <View key="generated-groups-dev" style={{ margin: 16 }}>
-        <Button
-          title="Use Generated Wallet with Groups (dev)"
-          color="purple"
-          onPress={() => {
-            configureWallet(
-              'dev',
-              XMTP.Client.createRandom({
-                enableAlphaMls: true,
-                env: 'dev',
-                appVersion,
-                codecs: supportedCodecs,
-                preCreateIdentityCallback,
-                preEnableIdentityCallback,
+                enableAlphaMls: enableGroups === 'true',
               })
             )
           }}
@@ -241,80 +170,19 @@ export default function LaunchScreen({
       </View>
       {!!savedKeys.keyBundle && (
         <>
-          <Divider key="divider-saved" />
-          <Text
-            style={{
-              fontSize: 16,
-              textAlign: 'right',
-              textTransform: 'uppercase',
-              color: '#333',
-              paddingHorizontal: 16,
-              marginHorizontal: 16,
-            }}
-          >
-            Saved Wallet
-          </Text>
           <View key="saved-dev" style={{ margin: 16 }}>
             <Button
-              title="Use Saved Wallet (dev)"
-              color="green"
-              onPress={() => {
-                configureWallet(
-                  'dev',
-                  XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    env: 'dev',
-                    appVersion,
-                    codecs: supportedCodecs,
-                  })
-                )
-              }}
-            />
-          </View>
-          <View key="saved-local" style={{ margin: 16 }}>
-            <Button
-              title="Use Saved Wallet (local)"
+              title="Use Saved Wallet"
               color="purple"
               onPress={() => {
+                console.log('Using network ' + selectedNetwork + ' and enableAlphaMLS ' + enableGroups)
                 configureWallet(
-                  'local',
+                  selectedNetwork,
                   XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    env: 'local',
+                    env: selectedNetwork,
                     appVersion,
                     codecs: supportedCodecs,
-                  })
-                )
-              }}
-            />
-          </View>
-          <View key="saved-groups-local" style={{ margin: 16 }}>
-            <Button
-              title="Use Saved Wallet with Groups (local)"
-              color="purple"
-              onPress={() => {
-                configureWallet(
-                  'local',
-                  XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    enableAlphaMls: true,
-                    env: 'local',
-                    appVersion,
-                    codecs: supportedCodecs,
-                  })
-                )
-              }}
-            />
-          </View>
-          <View key="saved-groups-dev" style={{ margin: 16 }}>
-            <Button
-              title="Use Saved Wallet with Groups (dev)"
-              color="purple"
-              onPress={() => {
-                configureWallet(
-                  'dev',
-                  XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
-                    enableAlphaMls: true,
-                    env: 'dev',
-                    appVersion,
-                    codecs: supportedCodecs,
+                    enableAlphaMls: enableGroups === 'true',
                   })
                 )
               }}
@@ -323,7 +191,7 @@ export default function LaunchScreen({
           <View key="saved-clear" style={{ margin: 16 }}>
             <Button
               title="Clear Saved Wallet"
-              // color={"black"}
+              color="red"
               onPress={() => savedKeys.clear()}
             />
           </View>
@@ -333,14 +201,40 @@ export default function LaunchScreen({
   )
 }
 
-function Divider() {
-  return (
-    <View
-      style={{
-        borderBottomColor: 'black',
-        margin: 16,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-      }}
-    />
-  )
-}
+const styles = StyleSheet.create({
+  divider: {
+    borderBottomColor: 'black',
+    margin: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  title: {
+    fontSize: 18,
+    textAlign: 'left',
+    textTransform: 'uppercase',
+    color: '#333',
+    marginVertical: 16,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    backgroundColor: '#fff', // Or any color that fits your app's theme
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#ccc',
+  },
+  modalSelector: {
+    borderColor: 'black',
+  },
+  modalSelectText: {
+    color: 'black', 
+    fontWeight: 'bold' ,
+  },
+  label: {
+    fontSize: 16,
+    flex: 1,
+  }
+});
