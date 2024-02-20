@@ -1,4 +1,3 @@
-import { content } from '@xmtp/proto'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
@@ -8,26 +7,9 @@ import {
   ConversationContainer,
   ConversationVersion,
 } from '../../../src/index'
-import { Test } from './tests'
-
-export type NumberRef = {
-  topNumber: {
-    bottomNumber: number
-  }
-}
+import { Test, assert, delayToPropogate } from './tests'
 
 export const groupTests: Test[] = []
-
-function assert(condition: boolean, msg: string) {
-  if (!condition) {
-    throw new Error(msg)
-  }
-}
-
-async function delayToPropogate(): Promise<void> {
-  // delay 1s to avoid clobbering
-  return new Promise((r) => setTimeout(r, 100))
-}
 
 function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name, run: perform })
@@ -59,24 +41,17 @@ test('can make a MLS V3 client from bundle', async () => {
 
   const group1 = await client.conversations.newGroup([anotherClient.address])
 
-  if (group1.clientAddress !== client.address) {
-    throw new Error(
-      `clients dont match ${client.address} and ${group1.clientAddress}`
-    )
-  }
-  const bundle = await client.exportKeyBundle()
+  assert(group1.clientAddress === client.address,
+    `clients dont match ${client.address} and ${group1.clientAddress}`)
 
+  const bundle = await client.exportKeyBundle()
   const client2 = await Client.createFromKeyBundle(bundle, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableAlphaMls: true,
   })
 
-  if (client.address !== client2.address) {
-    throw new Error(
-      `clients dont match ${client2.address} and ${client.address}`
-    )
-  }
+  assert(client.address === client2.address, `clients dont match ${client2.address} and ${client.address}`)
 
   const randomClient = await Client.createRandom({
     env: 'local',
@@ -86,11 +61,7 @@ test('can make a MLS V3 client from bundle', async () => {
 
   const group = await client2.conversations.newGroup([randomClient.address])
 
-  if (group.clientAddress !== client2.address) {
-    throw new Error(
-      `clients dont match ${client2.address} and ${group.clientAddress}`
-    )
-  }
+  assert(group.clientAddress === client2.address, `clients dont match ${client2.address} and ${group.clientAddress}`)
 
   return true
 })

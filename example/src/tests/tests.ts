@@ -11,9 +11,6 @@ import {
   StaticAttachmentCodec,
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
-  Group,
-  ConversationContainer,
-  ConversationVersion,
 } from '../../../src/index'
 
 type EncodedContent = content.EncodedContent
@@ -70,13 +67,13 @@ export type Test = {
 
 export const tests: Test[] = []
 
-function assert(condition: boolean, msg: string) {
+export function assert(condition: boolean, msg: string) {
   if (!condition) {
     throw new Error(msg)
   }
 }
 
-async function delayToPropogate(): Promise<void> {
+export async function delayToPropogate(): Promise<void> {
   // delay 1s to avoid clobbering
   return new Promise((r) => setTimeout(r, 100))
 }
