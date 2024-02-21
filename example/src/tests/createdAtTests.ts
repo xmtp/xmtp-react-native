@@ -1,6 +1,4 @@
-import { Platform } from 'expo-modules-core'
-
-import { Test, assert, delayToPropogate } from './tests'
+import { Test, assert, delayToPropogate, isIos } from './tests'
 import {
   Client,
   Conversation,
@@ -9,10 +7,6 @@ import {
 } from '../../../src/index'
 
 export const createdAtTests: Test[] = []
-
-function isIos() {
-  return Platform.OS === 'ios'
-}
 
 function test(name: string, perform: () => Promise<boolean>) {
   createdAtTests.push({ name, run: perform })
@@ -56,19 +50,21 @@ test('group createdAt matches listGroups', async () => {
     'First group returned from listGroups should be the first group created'
   )
   assert(
-    aliceGroups[second].id === bobGroup.id,
-    'Bob group createdAt should match'
-  )
-  assert(
     aliceGroups[first].createdAt === aliceGroup.createdAt,
     'Alice group createdAt should match'
   )
-
-  // Below test fails on Android
+  assert(
+    aliceGroups[second].id === bobGroup.id,
+    'Bob group createdAt should match'
+  )
+  // Below assertion fails on Android
   if (isIos()) {
     assert(
       aliceGroups[second].createdAt === bobGroup.createdAt,
-      'Bob group createdAt should match'
+      'Second group returned from listGroups shows ' +
+        aliceGroups[second].createdAt +
+        ' but should be ' +
+        bobGroup.createdAt
     )
   }
   return true
@@ -121,16 +117,15 @@ test('group createdAt matches listAll', async () => {
       ' but should be ' +
       bobGroup.id
   )
-
-  // Below tests fail on Android
+  assert(
+    aliceGroups[first].createdAt === aliceGroup.createdAt,
+    'Alice group returned from listGroups shows createdAt ' +
+      aliceGroups[1].createdAt +
+      ' but should be ' +
+      aliceGroup.createdAt
+  )
+  // Below assertion fail on Android
   if (isIos()) {
-    assert(
-      aliceGroups[first].createdAt === aliceGroup.createdAt,
-      'Alice group returned from listGroups shows createdAt ' +
-        aliceGroups[1].createdAt +
-        ' but should be ' +
-        aliceGroup.createdAt
-    )
     assert(
       aliceGroups[second].createdAt === bobGroup.createdAt,
       'Bob group returned from listGroups shows createdAt ' +
@@ -143,12 +138,139 @@ test('group createdAt matches listAll', async () => {
 })
 
 test('group createdAt matches streamGroups', async () => {
-  // TODO
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  await delayToPropogate()
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  await delayToPropogate()
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  await delayToPropogate()
+
+  // Start streaming groups
+  const allGroups: Group<any>[] = []
+  const cancelStream = await aliceClient.conversations.streamGroups(
+    async (group: Group<any>) => {
+      allGroups.push(group)
+    }
+  )
+
+  await delayToPropogate()
+
+  // Alice creates a group
+  const bobGroup = await bobClient.conversations.newGroup([aliceClient.address])
+
+  await delayToPropogate()
+
+  // Bob creates a group
+  const camGroup = await camClient.conversations.newGroup([aliceClient.address])
+
+  await delayToPropogate()
+
+  assert(allGroups.length === 2, 'Alice should have two groups')
+
+  // Stream returns in chronological order
+  assert(
+    allGroups[0].id === bobGroup.id,
+    'first ' + allGroups[0].id + ' != ' + bobGroup.id
+  )
+  assert(
+    allGroups[1].id === camGroup.id,
+    'second ' + allGroups[1].id + ' != ' + camGroup.id
+  )
+
+  // CreatedAt returned from stream matches createAt from create function
+  // Assertion below fails on Android
+  if (isIos()) {
+    assert(
+      allGroups[0].createdAt === bobGroup.createdAt,
+      'first ' + allGroups[0].createdAt + ' != ' + bobGroup.createdAt
+    )
+
+    assert(
+      allGroups[1].createdAt === camGroup.createdAt,
+      'second ' + allGroups[1].createdAt + ' != ' + camGroup.createdAt
+    )
+  }
+
+  cancelStream()
+
   return true
 })
 
 test('group createdAt matches streamAll', async () => {
-  // TODO
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  await delayToPropogate()
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  await delayToPropogate()
+  const camClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  await delayToPropogate()
+
+  // Start streaming groups
+  const allGroups: ConversationContainer<any>[] = []
+  const cancelStream = await aliceClient.conversations.streamAll(
+    async (group: ConversationContainer<any>) => {
+      allGroups.push(group)
+    }
+  )
+
+  await delayToPropogate()
+
+  // Alice creates a group
+  const bobGroup = await bobClient.conversations.newGroup([aliceClient.address])
+
+  await delayToPropogate()
+
+  // Bob creates a group
+  const camGroup = await camClient.conversations.newGroup([aliceClient.address])
+
+  await delayToPropogate()
+
+  assert(allGroups.length === 2, 'Alice should have two groups')
+
+  // Stream returns in chronological order
+  assert(
+    allGroups[0].topic === bobGroup.topic,
+    'first ' + allGroups[0].topic + ' != ' + bobGroup.topic
+  )
+  assert(
+    allGroups[1].topic === camGroup.topic,
+    'second ' + allGroups[1].topic + ' != ' + camGroup.topic
+  )
+
+  // CreatedAt returned from stream matches createAt from create function
+  // Assertion below fails on Android
+  if (isIos()) {
+    assert(
+      allGroups[0].createdAt === bobGroup.createdAt,
+      'first ' + allGroups[0].createdAt + ' != ' + bobGroup.createdAt
+    )
+    assert(
+      allGroups[1].createdAt === camGroup.createdAt,
+      'second ' + allGroups[1].createdAt + ' != ' + camGroup.createdAt
+    )
+  }
+
+  cancelStream()
+
   return true
 })
 
@@ -170,12 +292,12 @@ test('conversation createdAt matches list', async () => {
   })
   delayToPropogate()
 
-  // Alice creates a group
+  // Alice creates a conversation
   const aliceConversation = await aliceClient.conversations.newConversation(
     bobClient.address
   )
 
-  // Bob creates a group
+  // Bob creates a conversation
   const camConversation = await camClient.conversations.newConversation(
     aliceClient.address
   )
@@ -295,14 +417,14 @@ test('conversation createdAt matches stream', async () => {
     allConversations.push(conversation)
   })
 
-  // Alice creates a group
+  // Alice creates a conversation
   const aliceConversation = await aliceClient.conversations.newConversation(
     bobClient.address
   )
 
   await delayToPropogate()
 
-  // Bob creates a group
+  // Bob creates a conversation
   const camConversation = await camClient.conversations.newConversation(
     aliceClient.address
   )
@@ -366,9 +488,11 @@ test('conversation createdAt matches streamAll', async () => {
 
   // Start streaming conversations
   const allConversations: ConversationContainer<any>[] = []
-  await aliceClient.conversations.streamAll(async (conversation) => {
-    allConversations.push(conversation)
-  })
+  const cancel = await aliceClient.conversations.streamAll(
+    async (conversation) => {
+      allConversations.push(conversation)
+    }
+  )
 
   // Alice creates a group
   const aliceConversation = await aliceClient.conversations.newConversation(
@@ -417,6 +541,8 @@ test('conversation createdAt matches streamAll', async () => {
       ' != ' +
       camConversation.createdAt
   )
+
+  cancel()
 
   return true
 })
