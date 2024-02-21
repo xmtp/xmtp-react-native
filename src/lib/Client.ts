@@ -108,7 +108,8 @@ export class Client<
           Boolean(createSubscription),
           Boolean(enableSubscription),
           Boolean(options.enableAlphaMls),
-          options.encryptionKey
+          options.dbEncryptionKey,
+          options.dbPath
         )
       })()
     })
@@ -146,7 +147,8 @@ export class Client<
       Boolean(createSubscription),
       Boolean(enableSubscription),
       Boolean(options.enableAlphaMls),
-      options.encryptionKey
+      options.dbEncryptionKey,
+      options.dbPath
     )
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
@@ -176,7 +178,8 @@ export class Client<
       options.env,
       options.appVersion,
       Boolean(options.enableAlphaMls),
-      options.encryptionKey
+      options.dbEncryptionKey,
+      options.dbPath
     )
     return new Client(address, opts?.codecs || [])
   }
@@ -430,8 +433,14 @@ export type ClientOptions = {
    * Specify whether to enable Alpha version of MLS (Group Chat)
    */
   enableAlphaMls?: boolean
-
-  encryptionKey?: Uint8Array
+  /**
+   * OPTIONAL specify the encryption key for the database
+   */
+  dbEncryptionKey?: Uint8Array
+  /**
+   * OPTIONAL specify the XMTP managed database path
+   */
+  dbPath?: string
 }
 
 export type KeyType = {
@@ -448,7 +457,8 @@ export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
   const _defaultOptions: ClientOptions = {
     env: 'dev',
     enableAlphaMls: false,
-    encryptionKey: undefined,
+    dbEncryptionKey: undefined,
+    dbPath: undefined,
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions
