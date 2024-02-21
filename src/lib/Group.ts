@@ -86,7 +86,7 @@ export class Group<
   }
 
   async messages(
-    skipSync = false,
+    skipSync: boolean = false,
     limit?: number | undefined,
     before?: number | Date | undefined,
     after?: number | Date | undefined,

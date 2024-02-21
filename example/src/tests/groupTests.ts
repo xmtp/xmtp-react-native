@@ -763,3 +763,40 @@ test('can make a group with admin permissions', async () => {
 
   return true
 })
+
+test('can paginate group messages', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  // Alice creates a group
+  const aliceGroup = await aliceClient.conversations.newGroup([
+    bobClient.address,
+  ])
+
+  // Alice can send messages
+  await aliceGroup.send('hello, world')
+  await aliceGroup.send('gm')
+
+  const bobGroups = await bobClient.conversations.listGroups()
+  if (bobGroups.length !== 1) {
+    throw new Error(
+      'num groups for bob should be 1, but it is' + bobGroups.length
+    )
+  }
+  delayToPropogate()
+  // Bob can read messages from Alice
+  const bobMessages: DecodedMessage[] = await bobGroups[0].messages(false, 1)
+
+  if (bobMessages.length !== 1) {
+    throw Error(`Should limit just 1 message but was ${bobMessages.length}`)
+  }
+
+  return true
+})
