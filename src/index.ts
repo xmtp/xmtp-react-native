@@ -96,7 +96,7 @@ export async function createGroup<
 >(
   client: Client<ContentTypes>,
   peerAddresses: string[],
-  permissionLevel: 'everyone_admin' | 'creator_admin'
+  permissionLevel: 'everyone_admin' | 'creator_admin' = 'everyone_admin'
 ): Promise<Group<ContentTypes>> {
   return new Group(
     client,

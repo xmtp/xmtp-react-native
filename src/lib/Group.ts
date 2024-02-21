@@ -19,7 +19,7 @@ export class Group<
   version = ConversationVersion.GROUP
   topic: string
   adminAddress: string
-  permissionLevel?: 'everyone_admin' | 'creator_admin' = 'everyone_admin'
+  permissionLevel: 'everyone_admin' | 'creator_admin'
 
   constructor(
     client: XMTP.Client<ContentTypes>,
