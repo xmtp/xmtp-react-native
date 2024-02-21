@@ -653,7 +653,7 @@ class XMTPModule : Module() {
             ConversationWrapper.encode(client, conversation)
         }
 
-        AsyncFunction("createGroup") { clientAddress: String, peerAddresses: List<String>, permission: String? ->
+        AsyncFunction("createGroup") { clientAddress: String, peerAddresses: List<String>, permission: String ->
             logV("createGroup")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val permissionLevel = when (permission) {

@@ -792,3 +792,39 @@ test('can stream all messages', async () => {
 
   return true
 })
+
+test('can make a group with admin permissions', async () => {
+  const adminClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const anotherClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const group = await adminClient.conversations.newGroup(
+    [anotherClient.address],
+    'creator_admin'
+  )
+
+  if (group.permissionLevel !== 'creator_admin') {
+    throw Error(
+      `Group permission level should be creator_admin but was ${group.permissionLevel}`
+    )
+  }
+
+  const isAdmin = await group.isAdmin()
+  if (!isAdmin) {
+    throw Error(`adminClient should be the admin`)
+  }
+
+  if (group.adminAddress.toLowerCase !== adminClient.address.toLowerCase) {
+    throw Error(`adminClient should be the admin but was ${group.adminAddress}`)
+  }
+
+  return true
+})
