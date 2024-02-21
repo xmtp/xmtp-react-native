@@ -1,5 +1,6 @@
 import { FramesClient } from '@xmtp/frames-client'
 import { content } from '@xmtp/proto'
+import { Platform } from 'expo-modules-core'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
@@ -13,7 +14,6 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
 } from '../../../src/index'
-import { Platform } from 'expo-modules-core'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId

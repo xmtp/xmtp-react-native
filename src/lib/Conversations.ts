@@ -72,7 +72,10 @@ export default class Conversations<
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
-  async listGroups(): Promise<Group<ContentTypes>[]> {
+  async listGroups(skipSync = false): Promise<Group<ContentTypes>[]> {
+    if (!skipSync) {
+      await this.syncGroups()
+    }
     const result = await XMTPModule.listGroups(this.client)
 
     for (const group of result) {
