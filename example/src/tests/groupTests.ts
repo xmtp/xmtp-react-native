@@ -378,7 +378,6 @@ test('can remove members from a group', async () => {
     throw new Error('num group members should be 2')
   }
 
-
   if (await camGroups[0].isActive()) {
     throw new Error('cams group should not be active')
   }
