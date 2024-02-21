@@ -11,13 +11,21 @@ import XMTP
 // Wrapper around XMTP.Group to allow passing these objects back into react native.
 struct GroupWrapper {
 	static func encodeToObj(_ group: XMTP.Group, client: XMTP.Client) throws -> [String: Any] {
+		let permissionString = switch try group.permissionLevel() {
+			case .everyoneIsAdmin:
+				"everyone_admin"
+			case .groupCreatorIsAdmin:
+				"creator_admin"
+		}
 		return [
 			"clientAddress": client.address,
 			"id": group.id.toHex,
 			"createdAt": UInt64(group.createdAt.timeIntervalSince1970 * 1000),
 			"peerAddresses": group.memberAddresses,
 			"version": "GROUP",
-			"topic": group.id.toHex
+			"topic": group.id.toHex,
+			"permissionLevel": permissionString,
+			"adminAddress": try group.adminAddress()
 		]
 	}
 

@@ -727,3 +727,76 @@ test('can stream all messages', async () => {
 
   return true
 })
+
+test('can make a group with admin permissions', async () => {
+  const adminClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const anotherClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const group = await adminClient.conversations.newGroup(
+    [anotherClient.address],
+    'creator_admin'
+  )
+
+  if (group.permissionLevel !== 'creator_admin') {
+    throw Error(
+      `Group permission level should be creator_admin but was ${group.permissionLevel}`
+    )
+  }
+
+  const isAdmin = await group.isAdmin()
+  if (!isAdmin) {
+    throw Error(`adminClient should be the admin`)
+  }
+
+  if (group.adminAddress.toLowerCase !== adminClient.address.toLowerCase) {
+    throw Error(`adminClient should be the admin but was ${group.adminAddress}`)
+  }
+
+  return true
+})
+
+test('can paginate group messages', async () => {
+  // Create three MLS enabled Clients
+  const aliceClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+  const bobClient = await Client.createRandom({
+    env: 'local',
+    enableAlphaMls: true,
+  })
+
+  // Alice creates a group
+  const aliceGroup = await aliceClient.conversations.newGroup([
+    bobClient.address,
+  ])
+
+  // Alice can send messages
+  await aliceGroup.send('hello, world')
+  await aliceGroup.send('gm')
+
+  const bobGroups = await bobClient.conversations.listGroups()
+  if (bobGroups.length !== 1) {
+    throw new Error(
+      'num groups for bob should be 1, but it is' + bobGroups.length
+    )
+  }
+  delayToPropogate()
+  // Bob can read messages from Alice
+  const bobMessages: DecodedMessage[] = await bobGroups[0].messages(false, 1)
+
+  if (bobMessages.length !== 1) {
+    throw Error(`Should limit just 1 message but was ${bobMessages.length}`)
+  }
+
+  return true
+})

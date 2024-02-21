@@ -6,18 +6,25 @@ import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Group
 import org.xmtp.android.library.toHex
+import uniffi.xmtpv3.GroupPermissions
 
 class GroupWrapper {
 
     companion object {
         fun encodeToObj(client: Client, group: Group): Map<String, Any> {
+            val permissionString = when (group.permissionLevel()) {
+                GroupPermissions.EVERYONE_IS_ADMIN -> "everyone_admin"
+                GroupPermissions.GROUP_CREATOR_IS_ADMIN -> "creator_admin"
+            }
             return mapOf(
                 "clientAddress" to client.address,
                 "id" to group.id.toHex(),
                 "createdAt" to group.createdAt.time,
                 "peerAddresses" to group.memberAddresses(),
                 "version" to "GROUP",
-                "topic" to group.id.toHex()
+                "topic" to group.id.toHex(),
+                "permissionLevel" to permissionString,
+                "adminAddress" to group.adminAddress()
             )
         }
 

@@ -18,6 +18,8 @@ export class Group<
   peerAddresses: string[]
   version = ConversationVersion.GROUP
   topic: string
+  adminAddress: string
+  permissionLevel: 'everyone_admin' | 'creator_admin'
 
   constructor(
     client: XMTP.Client<ContentTypes>,
@@ -25,6 +27,8 @@ export class Group<
       id: string
       createdAt: number
       peerAddresses: string[]
+      adminAddress: string
+      permissionLevel: 'everyone_admin' | 'creator_admin'
     }
   ) {
     this.client = client
@@ -32,6 +36,8 @@ export class Group<
     this.createdAt = params.createdAt
     this.peerAddresses = params.peerAddresses
     this.topic = params.id
+    this.adminAddress = params.adminAddress
+    this.permissionLevel = params.permissionLevel
   }
 
   get clientAddress(): string {
@@ -79,11 +85,27 @@ export class Group<
     }
   }
 
-  async messages(skipSync = false): Promise<DecodedMessage<ContentTypes>[]> {
+  async messages(
+    skipSync: boolean = false,
+    limit?: number | undefined,
+    before?: number | Date | undefined,
+    after?: number | Date | undefined,
+    direction?:
+      | 'SORT_DIRECTION_ASCENDING'
+      | 'SORT_DIRECTION_DESCENDING'
+      | undefined
+  ): Promise<DecodedMessage<ContentTypes>[]> {
     if (!skipSync) {
       await this.sync()
     }
-    return await XMTP.groupMessages(this.client, this.id)
+    return await XMTP.groupMessages(
+      this.client,
+      this.id,
+      limit,
+      before,
+      after,
+      direction
+    )
   }
 
   async sync() {
@@ -146,5 +168,9 @@ export class Group<
       await this.sync()
     }
     return XMTP.isGroupActive(this.client.address, this.id)
+  }
+
+  async isAdmin(): Promise<boolean> {
+    return XMTP.isGroupAdmin(this.client.address, this.id)
   }
 }

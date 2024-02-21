@@ -139,8 +139,15 @@ export default class Conversations<
    * @param {string[]} peerAddresses - The addresses of the peers to create a group with.
    * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
    */
-  async newGroup(peerAddresses: string[]): Promise<Group<ContentTypes>> {
-    return await XMTPModule.createGroup(this.client, peerAddresses)
+  async newGroup(
+    peerAddresses: string[],
+    permissionLevel: 'everyone_admin' | 'creator_admin' = 'everyone_admin'
+  ): Promise<Group<ContentTypes>> {
+    return await XMTPModule.createGroup(
+      this.client,
+      peerAddresses,
+      permissionLevel
+    )
   }
 
   async syncGroups() {

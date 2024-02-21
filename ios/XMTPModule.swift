@@ -1,5 +1,6 @@
 import ExpoModulesCore
 import XMTP
+import LibXMTP
 
 extension Conversation {
 	static func cacheKeyForTopic(clientAddress: String, topic: String) -> String {
@@ -382,15 +383,24 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("groupMessages") { (clientAddress: String, id: String) -> [String] in
+		AsyncFunction("groupMessages") { (clientAddress: String, id: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
+			
+			let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil
+			let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!) / 1000) : nil
+
+			let sortDirection: Int = (direction != nil && direction == "SORT_DIRECTION_ASCENDING") ? 1 : 2
 
 			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
-			let decryptedMessages = try await group.decryptedMessages()
+			let decryptedMessages = try await group.decryptedMessages(
+				before: beforeDate,
+				after: afterDate,
+				limit: limit,
+				direction: PagingInfoSortDirection(rawValue: sortDirection))
 			
 			return decryptedMessages.compactMap { msg in
 				do {
@@ -575,12 +585,20 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("createGroup") { (clientAddress: String, peerAddresses: [String]) -> String in
+		AsyncFunction("createGroup") { (clientAddress: String, peerAddresses: [String], permission: String) -> String in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
+			let permissionLevel: GroupPermissions = {
+				switch permission {
+				case "creator_admin":
+					return .groupCreatorIsAdmin
+				default:
+					return .everyoneIsAdmin
+				}
+			}()
 			do {
-				let group = try await client.conversations.newGroup(with: peerAddresses)
+				let group = try await client.conversations.newGroup(with: peerAddresses, permissions: permissionLevel)
 				return try GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -649,6 +667,17 @@ public class XMTPModule: Module {
 			}
 			
 			return try group.isActive()
+		}
+		
+		AsyncFunction("isGroupAdmin") { (clientAddress: String, id: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+			
+			return try group.isAdmin()
 		}
 
 		AsyncFunction("subscribeToConversations") { (clientAddress: String) in
