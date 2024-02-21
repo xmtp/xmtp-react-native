@@ -106,7 +106,7 @@ test('can message in a group', async () => {
   })
 
   // Alice's num groups start at 0
-  let aliceGroups = await aliceClient.conversations.listGroups(false)
+  let aliceGroups = await aliceClient.conversations.listGroups()
   if (aliceGroups.length !== 0) {
     throw new Error('num groups should be 0')
   }
