@@ -845,7 +845,7 @@ test('can stream all group messages', async () => {
   }
 
   alix.conversations.cancelStreamAllGroupMessages()
-
+  await delayToPropogate()
   await alix.conversations.streamAllGroupMessages(async (message) => {
     allMessages.push(message)
   })
