@@ -13,6 +13,7 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
 } from '../../../src/index'
+import { Platform } from 'expo-modules-core'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
@@ -77,6 +78,10 @@ export function assert(condition: boolean, msg: string) {
 export async function delayToPropogate(): Promise<void> {
   // delay 1s to avoid clobbering
   return new Promise((r) => setTimeout(r, 100))
+}
+
+export function isIos() {
+  return Platform.OS === 'ios'
 }
 
 function test(name: string, perform: () => Promise<boolean>) {

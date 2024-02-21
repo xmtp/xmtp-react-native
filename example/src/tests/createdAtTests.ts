@@ -1,6 +1,4 @@
-import { Platform } from 'expo-modules-core'
-
-import { Test, assert, delayToPropogate } from './tests'
+import { Test, assert, delayToPropogate, isIos } from './tests'
 import {
   Client,
   Conversation,
@@ -9,10 +7,6 @@ import {
 } from '../../../src/index'
 
 export const createdAtTests: Test[] = []
-
-function isIos() {
-  return Platform.OS === 'ios'
-}
 
 function test(name: string, perform: () => Promise<boolean>) {
   createdAtTests.push({ name, run: perform })
@@ -166,7 +160,6 @@ test('group createdAt matches streamGroups', async () => {
   const cancelStream = await aliceClient.conversations.streamGroups(
     async (group: Group<any>) => {
       allGroups.push(group)
-      console.log('group', allGroups.length)
     }
   )
 
@@ -236,7 +229,6 @@ test('group createdAt matches streamAll', async () => {
   const cancelStream = await aliceClient.conversations.streamAll(
     async (group: ConversationContainer<any>) => {
       allGroups.push(group)
-      console.log('group', allGroups.length)
     }
   )
 

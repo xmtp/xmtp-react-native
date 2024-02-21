@@ -1,6 +1,6 @@
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, delayToPropogate } from './tests'
+import { Test, assert, delayToPropogate, isIos } from './tests'
 import {
   Client,
   Conversation,
