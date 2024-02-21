@@ -1,4 +1,3 @@
-import { Platform } from 'expo-modules-core'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import { Test, assert, delayToPropogate, isIos } from './tests'
@@ -11,10 +10,6 @@ import {
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
-
-function isIos() {
-  return Platform.OS === 'ios'
-}
 
 function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name, run: perform })
@@ -111,7 +106,7 @@ test('can message in a group', async () => {
   })
 
   // Alice's num groups start at 0
-  let aliceGroups = await aliceClient.conversations.listGroups()
+  let aliceGroups = await aliceClient.conversations.listGroups(false)
   if (aliceGroups.length !== 0) {
     throw new Error('num groups should be 0')
   }
@@ -148,7 +143,6 @@ test('can message in a group', async () => {
   ) {
     throw new Error('missing address')
   }
-  await bobClient.conversations.syncGroups()
 
   // Alice can send messages
   await aliceGroup.send('hello, world')
@@ -163,7 +157,6 @@ test('can message in a group', async () => {
   }
   delayToPropogate()
   // Bob can read messages from Alice
-  // await bobGroups[0].sync()
   const bobMessages: DecodedMessage[] = await bobGroups[0].messages()
 
   if (bobMessages.length !== 2) {
@@ -181,7 +174,6 @@ test('can message in a group', async () => {
   bobGroups[0].send('hey guys!')
 
   // Cam's num groups == 1
-  await camClient.conversations.syncGroups()
   const camGroups = await camClient.conversations.listGroups()
   if (camGroups.length !== 1) {
     throw new Error(
@@ -190,7 +182,6 @@ test('can message in a group', async () => {
   }
 
   // Cam can read messages from Alice and Bob
-  // await camGroups[0].sync()
   const camMessages = await camGroups[0].messages()
   if (camMessages[1].content() !== 'gm') {
     throw new Error("second Message should be 'gm'")
@@ -268,7 +259,6 @@ test('can add members to a group', async () => {
   aliceGroup.send('gm')
 
   // Bob's num groups == 1
-  await bobClient.conversations.syncGroups()
   bobGroups = await bobClient.conversations.listGroups()
   if (bobGroups.length !== 1) {
     throw new Error(
@@ -279,7 +269,6 @@ test('can add members to a group', async () => {
   await aliceGroup.addMembers([camClient.address])
 
   // Cam's num groups == 1
-  await camClient.conversations.syncGroups()
   camGroups = await camClient.conversations.listGroups()
   if (camGroups.length !== 1) {
     throw new Error(
@@ -291,7 +280,6 @@ test('can add members to a group', async () => {
     throw new Error('num messages for cam should be 0')
   }
 
-  // await bobGroups[0].sync()
   const bobGroupMembers = await bobGroups[0].memberAddresses()
   if (bobGroupMembers.length !== 3) {
     throw new Error('num group members should be 3')
@@ -365,7 +353,6 @@ test('can remove members from a group', async () => {
   await aliceGroup.send('gm')
 
   // Bob's num groups == 1
-  await bobClient.conversations.syncGroups()
   bobGroups = await bobClient.conversations.listGroups()
   if (bobGroups.length !== 1) {
     throw new Error(
@@ -374,7 +361,6 @@ test('can remove members from a group', async () => {
   }
 
   // Cam's num groups == 1
-  await camClient.conversations.syncGroups()
   camGroups = await camClient.conversations.listGroups()
   if (camGroups.length !== 1) {
     throw new Error(
@@ -387,25 +373,11 @@ test('can remove members from a group', async () => {
   }
 
   await aliceGroup.removeMembers([camClient.address])
-  // await aliceGroup.sync()
   const aliceGroupMembers = await aliceGroup.memberAddresses()
   if (aliceGroupMembers.length !== 2) {
     throw new Error('num group members should be 2')
   }
 
-  // await bobClient.conversations.syncGroups()
-
-  // bobGroups = await bobClient.conversations.listGroups()
-  // await bobGroups[0].sync()
-  // const bobGroupMessages = await bobGroups[0].messages()
-  // if (bobGroups.length !== 0) {
-  //   throw new Error(
-  //     'num groups for bob should be 0, but it is ' + bobGroups.length
-  //   )
-  // }
-
-  // await camGroups[0].sync()
-  await camClient.conversations.syncGroups()
 
   if (await camGroups[0].isActive()) {
     throw new Error('cams group should not be active')
@@ -473,7 +445,6 @@ test('can stream groups', async () => {
     throw Error('Expected group length 2 but it is: ' + groups.length)
   }
   // Sync groups after creation if you created a group
-  await aliceClient.conversations.syncGroups()
   const listedGroups = await aliceClient.conversations.listGroups()
   await delayToPropogate()
   groups.push(listedGroups[listedGroups.length - 1])
@@ -567,12 +538,6 @@ test('can stream all groups and conversations', async () => {
   if ((containers.length as number) !== 1) {
     throw Error('Unexpected num groups (should be 1): ' + containers.length)
   }
-  // if (containers[0].version === ConversationVersion.GROUP) {
-  //   ;(containers[0] as Group).sync()
-  // } else {
-  //   console.log(JSON.stringify(containers[0] as Group))
-  //   throw Error('Unexpected first ConversationContainer should be a group')
-  // }
 
   // Bob creates a v2 Conversation with Alice so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -678,7 +643,6 @@ test('can stream group messages', async () => {
   )
 
   // Bob's num groups == 1
-  await bobClient.conversations.syncGroups()
   const bobGroup = (await bobClient.conversations.listGroups())[0]
 
   for (let i = 0; i < 5; i++) {
