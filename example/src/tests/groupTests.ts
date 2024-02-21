@@ -673,9 +673,9 @@ test('can stream group messages', async () => {
 })
 
 test('can stream all messages', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
+  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local' })
+  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
   await delayToPropogate()
 
   // Record message stream across all conversations
@@ -699,11 +699,13 @@ test('can stream all messages', async () => {
   }
 
   // Starts a new conversation.
-  const caro = await Client.createRandom({ env: 'local' })
+  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
   const caroConvo = await caro.conversations.newConversation(alix.address)
+  const caroGroup = await caro.conversations.newGroup([alix.address])
   await delayToPropogate()
   for (let i = 0; i < 5; i++) {
     await caroConvo.send({ text: `Message ${i}` })
+    await caroGroup.send({ text: `Message ${i}` })
     await delayToPropogate()
   }
 
@@ -715,13 +717,14 @@ test('can stream all messages', async () => {
 
   await alix.conversations.streamAllMessages(async (message) => {
     allMessages.push(message)
-  })
+  }, true)
 
   for (let i = 0; i < 5; i++) {
     await boConvo.send({ text: `Message ${i}` })
+    await caroGroup.send({ text: `Message ${i}` })
     await delayToPropogate()
   }
-  if (allMessages.length <= 10) {
+  if (allMessages.length <= 15) {
     throw Error('Unexpected all messages count ' + allMessages.length)
   }
 
@@ -796,6 +799,63 @@ test('can paginate group messages', async () => {
 
   if (bobMessages.length !== 1) {
     throw Error(`Should limit just 1 message but was ${bobMessages.length}`)
+  }
+
+  return true
+})
+
+test('can stream all group messages', async () => {
+  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+  await delayToPropogate()
+
+  // Start Bob starts a new group.
+  const boGroup = await bo.conversations.newGroup([alix.address])
+  await delayToPropogate()
+
+  // Starts a new conversation.
+  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+  const caroGroup = await caro.conversations.newGroup([alix.address])
+
+  // Record message stream across all conversations
+  const allMessages: DecodedMessage[] = []
+  await alix.conversations.streamAllGroupMessages(async (message) => {
+    allMessages.push(message)
+  })
+
+  for (let i = 0; i < 5; i++) {
+    await boGroup.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  const count = allMessages.length
+  if (count !== 5) {
+    throw Error('Unexpected all messages count first' + allMessages.length)
+  }
+
+  await delayToPropogate()
+  for (let i = 0; i < 5; i++) {
+    await caroGroup.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  if (allMessages.length !== 10) {
+    throw Error('Unexpected all messages count second' + allMessages.length)
+  }
+
+  alix.conversations.cancelStreamAllGroupMessages()
+
+  await alix.conversations.streamAllGroupMessages(async (message) => {
+    allMessages.push(message)
+  })
+
+  for (let i = 0; i < 5; i++) {
+    await boGroup.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+  if (allMessages.length <= 10) {
+    throw Error('Unexpected all messages count ' + allMessages.length)
   }
 
   return true

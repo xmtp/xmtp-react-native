@@ -247,8 +247,8 @@ export default class Conversations<
    * @returns {Promise<void>} A Promise that resolves when the stream is set up.
    */
   async streamAllMessages(
-    includeGroups: boolean = false,
-    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
+    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>,
+    includeGroups: boolean = false
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(this.client.address, includeGroups)
     XMTPModule.emitter.addListener(
