@@ -195,6 +195,7 @@ test('group createdAt matches streamGroups', async () => {
   )
 
   // CreatedAt returned from stream matches createAt from create function
+  // Assertion below fails on Android
   if (isIos()) {
     assert(
       allGroups[0].createdAt === bobGroup.createdAt,
@@ -264,6 +265,7 @@ test('group createdAt matches streamAll', async () => {
   )
 
   // CreatedAt returned from stream matches createAt from create function
+  // Assertion below fails on Android
   if (isIos()) {
     assert(
       allGroups[0].createdAt === bobGroup.createdAt,
