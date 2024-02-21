@@ -242,13 +242,48 @@ export default class Conversations<
    * Listen for new messages in all conversations.
    *
    * This method subscribes to all conversations in real-time and listens for incoming and outgoing messages.
+   * @param {boolean} includeGroups - Whether or not to include group messages in the stream.
    * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
    * @returns {Promise<void>} A Promise that resolves when the stream is set up.
    */
   async streamAllMessages(
+    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>,
+    includeGroups: boolean = false
+  ): Promise<void> {
+    XMTPModule.subscribeToAllMessages(this.client.address, includeGroups)
+    XMTPModule.emitter.addListener(
+      'message',
+      async ({
+        clientAddress,
+        message,
+      }: {
+        clientAddress: string
+        message: DecodedMessage
+      }) => {
+        if (clientAddress !== this.client.address) {
+          return
+        }
+        if (this.known[message.id]) {
+          return
+        }
+
+        this.known[message.id] = true
+        await callback(DecodedMessage.fromObject(message, this.client))
+      }
+    )
+  }
+
+  /**
+   * Listen for new messages in all groups.
+   *
+   * This method subscribes to all groups in real-time and listens for incoming and outgoing messages.
+   * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
+   * @returns {Promise<void>} A Promise that resolves when the stream is set up.
+   */
+  async streamAllGroupMessages(
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<void> {
-    XMTPModule.subscribeToAllMessages(this.client.address)
+    XMTPModule.subscribeToAllGroupMessages(this.client.address)
     XMTPModule.emitter.addListener(
       'message',
       async ({
@@ -290,5 +325,12 @@ export default class Conversations<
    */
   cancelStreamAllMessages() {
     XMTPModule.unsubscribeFromAllMessages(this.client.address)
+  }
+
+  /**
+   * Cancels the stream for new messages in all groups.
+   */
+  cancelStreamAllGroupMessages() {
+    XMTPModule.unsubscribeFromAllGroupMessages(this.client.address)
   }
 }

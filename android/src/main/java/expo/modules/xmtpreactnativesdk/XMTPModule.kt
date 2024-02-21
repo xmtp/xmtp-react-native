@@ -731,9 +731,14 @@ class XMTPModule : Module() {
             subscribeToAll(clientAddress = clientAddress)
         }
 
-        Function("subscribeToAllMessages") { clientAddress: String ->
+        Function("subscribeToAllMessages") { clientAddress: String, includeGroups: Boolean ->
             logV("subscribeToAllMessages")
-            subscribeToAllMessages(clientAddress = clientAddress)
+            subscribeToAllMessages(clientAddress = clientAddress, includeGroups = includeGroups)
+        }
+
+        Function("subscribeToAllGroupMessages") { clientAddress: String ->
+            logV("subscribeToAllGroupMessages")
+            subscribeToAllGroupMessages(clientAddress = clientAddress)
         }
 
         AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String ->
@@ -765,6 +770,11 @@ class XMTPModule : Module() {
         Function("unsubscribeFromAllMessages") { clientAddress: String ->
             logV("unsubscribeFromAllMessages")
             subscriptions[getMessagesKey(clientAddress)]?.cancel()
+        }
+
+        Function("unsubscribeFromAllGroupMessages") { clientAddress: String ->
+            logV("unsubscribeFromAllGroupMessages")
+            subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
         }
 
         AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String ->
@@ -979,13 +989,13 @@ class XMTPModule : Module() {
         }
     }
 
-    private fun subscribeToAllMessages(clientAddress: String) {
+    private fun subscribeToAllMessages(clientAddress: String, includeGroups: Boolean = false) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
         subscriptions[getMessagesKey(clientAddress)]?.cancel()
         subscriptions[getMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.conversations.streamAllDecryptedMessages().collect { message ->
+                client.conversations.streamAllDecryptedMessages(includeGroups = includeGroups).collect { message ->
                     sendEvent(
                         "message",
                         mapOf(
@@ -997,6 +1007,28 @@ class XMTPModule : Module() {
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in all messages subscription: $e")
                 subscriptions[getMessagesKey(clientAddress)]?.cancel()
+            }
+        }
+    }
+
+    private fun subscribeToAllGroupMessages(clientAddress: String) {
+        val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+        subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
+        subscriptions[getGroupMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
+            try {
+                client.conversations.streamAllGroupDecryptedMessages().collect { message ->
+                    sendEvent(
+                        "message",
+                        mapOf(
+                            "clientAddress" to clientAddress,
+                            "message" to DecodedMessageWrapper.encodeMap(message),
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("XMTPModule", "Error in all group messages subscription: $e")
+                subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
             }
         }
     }
@@ -1055,6 +1087,10 @@ class XMTPModule : Module() {
 
     private fun getMessagesKey(clientAddress: String): String {
         return "messages:$clientAddress"
+    }
+
+    private fun getGroupMessagesKey(clientAddress: String): String {
+        return "groupMessages:$clientAddress"
     }
 
     private fun getConversationsKey(clientAddress: String): String {
