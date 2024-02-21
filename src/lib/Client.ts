@@ -107,7 +107,8 @@ export class Client<
           options.appVersion,
           Boolean(createSubscription),
           Boolean(enableSubscription),
-          Boolean(options.enableAlphaMls)
+          Boolean(options.enableAlphaMls),
+          options.encryptionKey
         )
       })()
     })
@@ -144,7 +145,8 @@ export class Client<
       options.appVersion,
       Boolean(createSubscription),
       Boolean(enableSubscription),
-      Boolean(options.enableAlphaMls)
+      Boolean(options.enableAlphaMls),
+      options.encryptionKey
     )
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
@@ -173,7 +175,8 @@ export class Client<
       keyBundle,
       options.env,
       options.appVersion,
-      Boolean(options.enableAlphaMls)
+      Boolean(options.enableAlphaMls),
+      options.encryptionKey
     )
     return new Client(address, opts?.codecs || [])
   }
@@ -427,6 +430,8 @@ export type ClientOptions = {
    * Specify whether to enable Alpha version of MLS (Group Chat)
    */
   enableAlphaMls?: boolean
+
+  encryptionKey?: Uint8Array
 }
 
 export type KeyType = {
@@ -443,6 +448,7 @@ export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
   const _defaultOptions: ClientOptions = {
     env: 'dev',
     enableAlphaMls: false,
+    encryptionKey: undefined,
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions

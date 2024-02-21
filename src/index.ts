@@ -45,7 +45,8 @@ export async function auth(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
-  enableAlphaMls?: boolean | undefined
+  enableAlphaMls?: boolean | undefined,
+  encryptionKey?: Uint8Array | undefined
 ) {
   return await XMTPModule.auth(
     address,
@@ -53,7 +54,8 @@ export async function auth(
     appVersion,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableAlphaMls
+    enableAlphaMls,
+    encryptionKey ? Array.from(encryptionKey) : undefined
   )
 }
 
@@ -66,14 +68,16 @@ export async function createRandom(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
-  enableAlphaMls?: boolean | undefined
+  enableAlphaMls?: boolean | undefined,
+  encryptionKey?: Uint8Array | undefined
 ): Promise<string> {
   return await XMTPModule.createRandom(
     environment,
     appVersion,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableAlphaMls
+    enableAlphaMls,
+    encryptionKey ? Array.from(encryptionKey) : undefined
   )
 }
 
@@ -81,13 +85,15 @@ export async function createFromKeyBundle(
   keyBundle: string,
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
-  enableAlphaMls?: boolean | undefined
+  enableAlphaMls?: boolean | undefined,
+  encryptionKey?: Uint8Array | undefined
 ): Promise<string> {
   return await XMTPModule.createFromKeyBundle(
     keyBundle,
     environment,
     appVersion,
-    enableAlphaMls
+    enableAlphaMls,
+    encryptionKey ? Array.from(encryptionKey) : undefined
   )
 }
 
