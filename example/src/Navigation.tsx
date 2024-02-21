@@ -2,7 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 export type NavigationParamList = {
   launch: undefined
-  test: { onlyGroups?: boolean }
+  test: { testSelection?: 'groups' | 'createdAt' | 'all' }
   home: undefined
   group: { id: string }
   conversation: { topic: string }

@@ -83,15 +83,26 @@ export default function LaunchScreen(
       <View key="run-tests" style={{ margin: 16 }}>
         <Button
           title="Run All Unit Tests"
-          onPress={() => navigation.navigate('test', { onlyGroups: false })}
+          onPress={() => navigation.navigate('test', { testSelection: 'all' })}
           accessibilityLabel="Unit-tests"
         />
       </View>
       <View key="run-group-tests" style={{ margin: 16 }}>
         <Button
           title="Run Group Unit Tests"
-          onPress={() => navigation.navigate('test', { onlyGroups: true })}
+          onPress={() =>
+            navigation.navigate('test', { testSelection: 'groups' })
+          }
           accessibilityLabel="Unit-group-tests"
+        />
+      </View>
+      <View key="run-created-at-tests" style={{ margin: 16 }}>
+        <Button
+          title="Run Created At Unit Tests"
+          onPress={() =>
+            navigation.navigate('test', { testSelection: 'createdAt' })
+          }
+          accessibilityLabel="Unit-created-at-tests"
         />
       </View>
       <View style={styles.divider} />
