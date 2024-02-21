@@ -642,8 +642,6 @@ test('can stream group messages', async () => {
     }
   )
 
-  // Bob's num groups == 1
-  const bobGroup = (await bobClient.conversations.listGroups())[0]
 
   for (let i = 0; i < 5; i++) {
     await aliceGroup.send({ text: `Message ${i}` })
@@ -663,7 +661,7 @@ test('can stream group messages', async () => {
 
   cancelGroupMessageStream()
   for (let i = 0; i < 5; i++) {
-    await bobGroup.send({ text: `Message ${i}` })
+    await aliceGroup.send({ text: `Message ${i}` })
   }
 
   if (groupMessages.length !== 5) {
