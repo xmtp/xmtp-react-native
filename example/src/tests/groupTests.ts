@@ -455,6 +455,7 @@ test('can stream groups', async () => {
 
   // * Note Alice creating a group does not trigger alice conversations
   // group stream. Workaround is to syncGroups after you create and list manually
+  // See https://github.com/xmtp/libxmtp/issues/504
 
   // Alice creates a group
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
