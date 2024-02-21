@@ -56,6 +56,7 @@ import org.xmtp.android.library.toHex
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
+import uniffi.xmtpv3.GroupPermissions
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -652,10 +653,14 @@ class XMTPModule : Module() {
             ConversationWrapper.encode(client, conversation)
         }
 
-        AsyncFunction("createGroup") { clientAddress: String, peerAddresses: List<String> ->
+        AsyncFunction("createGroup") { clientAddress: String, peerAddresses: List<String>, permission: String? ->
             logV("createGroup")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val group = client.conversations.newGroup(peerAddresses)
+            val permissionLevel = when (permission) {
+                "creator_admin" -> GroupPermissions.GROUP_CREATOR_IS_ADMIN
+                else -> GroupPermissions.EVERYONE_IS_ADMIN
+            }
+            val group = client.conversations.newGroup(peerAddresses, permissionLevel)
             GroupWrapper.encode(client, group)
         }
 
