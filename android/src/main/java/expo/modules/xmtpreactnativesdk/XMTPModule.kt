@@ -170,7 +170,7 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, encryptionKey: List<Int>? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbPath: String? ->
             logV("auth")
             requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
@@ -186,7 +186,7 @@ class XMTPModule : Module() {
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
             val context = if (enableAlphaMls == true) context else null
             val encryptionKeyBytes =
-                encryptionKey?.foldIndexed(ByteArray(encryptionKey.size)) { i, a, v ->
+                dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                     a.apply { set(i, v.toByte()) }
                 }
 
@@ -196,7 +196,8 @@ class XMTPModule : Module() {
                 preEnableIdentityCallback = preEnableIdentityCallback,
                 enableAlphaMls = enableAlphaMls == true,
                 appContext = context,
-                dbEncryptionKey = encryptionKeyBytes
+                dbEncryptionKey = encryptionKeyBytes,
+                dbPath = dbPath
             )
             clients[address] = Client().create(account = reactSigner, options = options)
             ContentJson.Companion
@@ -210,7 +211,7 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, encryptionKey: List<Int>? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbPath: String? ->
             logV("createRandom")
             requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val privateKey = PrivateKeyBuilder()
@@ -225,7 +226,7 @@ class XMTPModule : Module() {
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
             val context = if (enableAlphaMls == true) context else null
             val encryptionKeyBytes =
-                encryptionKey?.foldIndexed(ByteArray(encryptionKey.size)) { i, a, v ->
+                dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                     a.apply { set(i, v.toByte()) }
                 }
 
@@ -235,7 +236,8 @@ class XMTPModule : Module() {
                 preEnableIdentityCallback = preEnableIdentityCallback,
                 enableAlphaMls = enableAlphaMls == true,
                 appContext = context,
-                dbEncryptionKey = encryptionKeyBytes
+                dbEncryptionKey = encryptionKeyBytes,
+                dbPath = dbPath
             )
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
@@ -243,21 +245,22 @@ class XMTPModule : Module() {
             randomClient.address
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean?, encryptionKey: List<Int>? ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbPath: String? ->
             logV("createFromKeyBundle")
             requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
 
             try {
                 val context = if (enableAlphaMls == true) context else null
                 val encryptionKeyBytes =
-                    encryptionKey?.foldIndexed(ByteArray(encryptionKey.size)) { i, a, v ->
+                    dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                         a.apply { set(i, v.toByte()) }
                     }
                 val options = ClientOptions(
                     api = apiEnvironments(environment, appVersion),
                     enableAlphaMls = enableAlphaMls == true,
                     appContext = context,
-                    dbEncryptionKey = encryptionKeyBytes
+                    dbEncryptionKey = encryptionKeyBytes,
+                    dbPath = dbPath
                 )
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
