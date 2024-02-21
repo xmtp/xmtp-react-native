@@ -19,7 +19,7 @@ export class Group<
   version = ConversationVersion.GROUP
   topic: string
   adminAddress: string
-  permissionLevel: 'everyone_admin' | 'creator_admin'
+  permissionLevel?: 'everyone_admin' | 'creator_admin' = 'everyone_admin'
 
   constructor(
     client: XMTP.Client<ContentTypes>,
@@ -82,8 +82,23 @@ export class Group<
     }
   }
 
-  async messages(): Promise<DecodedMessage<ContentTypes>[]> {
-    return await XMTP.groupMessages(this.client, this.id)
+  async messages(
+    limit?: number | undefined,
+    before?: number | Date | undefined,
+    after?: number | Date | undefined,
+    direction?:
+      | 'SORT_DIRECTION_ASCENDING'
+      | 'SORT_DIRECTION_DESCENDING'
+      | undefined
+  ): Promise<DecodedMessage<ContentTypes>[]> {
+    return await XMTP.groupMessages(
+      this.client,
+      this.id,
+      limit,
+      before,
+      after,
+      direction
+    )
   }
 
   async sync() {
