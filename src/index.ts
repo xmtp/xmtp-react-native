@@ -95,11 +95,18 @@ export async function createGroup<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerAddresses: string[]
+  peerAddresses: string[],
+  permissionLevel: 'everyone_admin' | 'creator_admin'
 ): Promise<Group<ContentTypes>> {
   return new Group(
     client,
-    JSON.parse(await XMTPModule.createGroup(client.address, peerAddresses))
+    JSON.parse(
+      await XMTPModule.createGroup(
+        client.address,
+        peerAddresses,
+        permissionLevel
+      )
+    )
   )
 }
 
@@ -606,6 +613,13 @@ export async function isGroupActive(
   id: string
 ): Promise<boolean> {
   return XMTPModule.isGroupActive(clientAddress, id)
+}
+
+export async function isGroupAdmin(
+  clientAddress: string,
+  id: string
+): Promise<boolean> {
+  return XMTPModule.isGroupAdmin(clientAddress, id)
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
