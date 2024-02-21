@@ -184,7 +184,7 @@ class XMTPModule : Module() {
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
             val context = if (enableAlphaMls == true) context else null
-            
+
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
@@ -463,11 +463,20 @@ class XMTPModule : Module() {
                 .map { DecodedMessageWrapper.encode(it) }
         }
 
-        AsyncFunction("groupMessages") { clientAddress: String, id: String ->
+        AsyncFunction("groupMessages") { clientAddress: String, id: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
             logV("groupMessages")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val beforeDate = if (before != null) Date(before) else null
+            val afterDate = if (after != null) Date(after) else null
             val group = findGroup(clientAddress, id)
-            group?.decryptedMessages()?.map { DecodedMessageWrapper.encode(it) }
+            group?.decryptedMessages(
+                limit = limit,
+                before = beforeDate,
+                after = afterDate,
+                direction = MessageApiOuterClass.SortDirection.valueOf(
+                    direction ?: "SORT_DIRECTION_DESCENDING"
+                )
+            )?.map { DecodedMessageWrapper.encode(it) }
         }
 
         AsyncFunction("loadBatchMessages") { clientAddress: String, topics: List<String> ->
@@ -530,20 +539,20 @@ class XMTPModule : Module() {
             )
         }
 
-       AsyncFunction("sendMessageToGroup") { clientAddress: String, id: String, contentJson: String ->
-           logV("sendMessageToGroup")
-           val group =
-               findGroup(
-                   clientAddress = clientAddress,
-                   id = id
-               )
-                   ?: throw XMTPException("no group found for $id")
-           val sending = ContentJson.fromJson(contentJson)
-           group.send(
-               content = sending.content,
-               options = SendOptions(contentType = sending.type)
-           )
-       }
+        AsyncFunction("sendMessageToGroup") { clientAddress: String, id: String, contentJson: String ->
+            logV("sendMessageToGroup")
+            val group =
+                findGroup(
+                    clientAddress = clientAddress,
+                    id = id
+                )
+                    ?: throw XMTPException("no group found for $id")
+            val sending = ContentJson.fromJson(contentJson)
+            group.send(
+                content = sending.content,
+                options = SendOptions(contentType = sending.type)
+            )
+        }
 
         AsyncFunction("prepareMessage") { clientAddress: String, conversationTopic: String, contentJson: String ->
             logV("prepareMessage")
@@ -743,7 +752,7 @@ class XMTPModule : Module() {
             subscriptions[getConversationsKey(clientAddress)]?.cancel()
         }
 
-         Function("unsubscribeFromGroups") { clientAddress: String ->
+        Function("unsubscribeFromGroups") { clientAddress: String ->
             logV("unsubscribeFromGroups")
             subscriptions[getGroupsKey(clientAddress)]?.cancel()
         }
@@ -875,26 +884,26 @@ class XMTPModule : Module() {
         return null
     }
 
-   private fun findGroup(
-       clientAddress: String,
-       id: String,
-   ): Group? {
-       val client = clients[clientAddress] ?: throw XMTPException("No client")
+    private fun findGroup(
+        clientAddress: String,
+        id: String,
+    ): Group? {
+        val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-       val cacheKey = "${clientAddress}:${id}"
-       val cacheGroup = groups[cacheKey]
-       if (cacheGroup != null) {
-           return cacheGroup
-       } else {
-           val group = client.conversations.listGroups()
-               .firstOrNull {it.id.toHex() == id }
-           if (group != null) {
-               groups[group.cacheKey(clientAddress)] = group
-               return group
-           }
-       }
-       return null
-   }
+        val cacheKey = "${clientAddress}:${id}"
+        val cacheGroup = groups[cacheKey]
+        if (cacheGroup != null) {
+            return cacheGroup
+        } else {
+            val group = client.conversations.listGroups()
+                .firstOrNull { it.id.toHex() == id }
+            if (group != null) {
+                groups[group.cacheKey(clientAddress)] = group
+                return group
+            }
+        }
+        return null
+    }
 
     private fun subscribeToConversations(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
@@ -951,7 +960,10 @@ class XMTPModule : Module() {
                         "conversationContainer",
                         mapOf(
                             "clientAddress" to clientAddress,
-                            "conversationContainer" to ConversationContainerWrapper.encodeToObj(client, conversation)
+                            "conversationContainer" to ConversationContainerWrapper.encodeToObj(
+                                client,
+                                conversation
+                            )
                         )
                     )
                 }
@@ -1091,7 +1103,7 @@ class XMTPModule : Module() {
     }
 
     private fun requireNotProductionEnvForAlphaMLS(enableAlphaMls: Boolean?, environment: String) {
-        if (enableAlphaMls == true && (environment == "production" )) {
+        if (enableAlphaMls == true && (environment == "production")) {
             throw XMTPException("Environment must be \"local\" or \"dev\" to enable alpha MLS")
         }
     }
