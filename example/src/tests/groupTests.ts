@@ -12,29 +12,31 @@ import {
 export const groupTests: Test[] = []
 
 // Function to create a timed promise
-function createTimedPromise(timeoutMs: number = 1000): { promise: Promise<void>; resolve: () => void; } {
-  let resolve: () => void;
-  let timeoutHandle: NodeJS.Timeout;
+function createTimedPromise(timeoutMs: number = 1000): {
+  promise: Promise<void>
+  resolve: () => void
+} {
+  let resolve: () => void
+  let timeoutHandle: NodeJS.Timeout
   const promise = new Promise<void>((res, reject) => {
-      // Assign the resolve function to the outer scoped variable
-      resolve = res;
-      
-      // Set up the timeout
-      timeoutHandle = setTimeout(() => {
-          reject(new Error('Timeout exceeded'));
-      }, timeoutMs);
-  });
+    // Assign the resolve function to the outer scoped variable
+    resolve = res
+
+    // Set up the timeout
+    timeoutHandle = setTimeout(() => {
+      reject(new Error('Timeout exceeded'))
+    }, timeoutMs)
+  })
 
   // Return the promise and the method to resolve it
   return {
-      promise,
-      resolve: () => {
-          clearTimeout(timeoutHandle);
-          resolve();
-      },
-  };
+    promise,
+    resolve: () => {
+      clearTimeout(timeoutHandle)
+      resolve()
+    },
+  }
 }
-
 
 function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name, run: perform })
@@ -908,63 +910,84 @@ test('group message send returns groupId', async () => {
   ])
 
   // Alice starts streaming messages for this group
-  const groupMessages: DecodedMessage[] = [];
-  let messageCount = 0;
-  const startTime: Record<number, number> = {};
+  const groupMessages: DecodedMessage[] = []
+  let messageCount = 0
+  const startTime: Record<number, number> = {}
 
-  const firstMessageReceived = createTimedPromise();
-  const secondMessageReceived = createTimedPromise();
+  const firstMessageReceived = createTimedPromise()
+  const secondMessageReceived = createTimedPromise()
 
   const cancelGroupMessageStream = await aliceGroup.streamGroupMessages(
     async (message) => {
-      messageCount++;
-      const endTime = Date.now();
-      const duration = endTime - startTime[messageCount];
-      console.log(`Message ${messageCount} streamed after ${duration} milliseconds.`);
-      groupMessages.push(message);
-      
+      messageCount++
+      const endTime = Date.now()
+      const duration = endTime - startTime[messageCount]
+      console.log(
+        `Message ${messageCount} streamed after ${duration} milliseconds.`
+      )
+      groupMessages.push(message)
+
       if (message.content() === 'hello') {
-        firstMessageReceived.resolve();
+        firstMessageReceived.resolve()
       } else if (message.content() === 'world') {
-        secondMessageReceived.resolve();
+        secondMessageReceived.resolve()
       }
     }
   )
 
-  const sendMessage = async (group: typeof aliceGroup, text: string, index: number): Promise<string> => {
-    startTime[index] = Date.now();
-    return group.send({ text });
-  };
+  const sendMessage = async (
+    group: typeof aliceGroup,
+    text: string,
+    index: number
+  ): Promise<string> => {
+    startTime[index] = Date.now()
+    return group.send({ text })
+  }
 
   // Bob sends a message
-  const bobGroup = (await bobClient.conversations.listGroups())[0];
-  assert(bobGroup.id === aliceGroup.id, 'Expected group id to match');
-  const bobMessageSentId = await sendMessage(bobGroup, 'hello', 1);
+  const bobGroup = (await bobClient.conversations.listGroups())[0]
+  assert(bobGroup.id === aliceGroup.id, 'Expected group id to match')
+  const bobMessageSentId = await sendMessage(bobGroup, 'hello', 1)
 
   // Wait for the first message to be streamed
-  await firstMessageReceived.promise;
+  await firstMessageReceived.promise
 
   // Cam sends a message
-  const camGroup = (await camClient.conversations.listGroups())[0];
-  const camMessageSentId = await sendMessage(camGroup, 'world', 2);
+  const camGroup = (await camClient.conversations.listGroups())[0]
+  const camMessageSentId = await sendMessage(camGroup, 'world', 2)
 
   // Wait for the second message to be streamed
-  await secondMessageReceived.promise;
+  await secondMessageReceived.promise
 
   // Id returned from message.send is the group id
-  assert (bobMessageSentId === aliceGroup.id, 'Expected message send to return group id')
-  assert (camMessageSentId === aliceGroup.id, 'Expected message send to return group id')
+  assert(
+    bobMessageSentId === aliceGroup.id,
+    'Expected message send to return group id'
+  )
+  assert(
+    camMessageSentId === aliceGroup.id,
+    'Expected message send to return group id'
+  )
   console.log('aliceGroup.id', aliceGroup.id)
 
   // Stream Messages have their own unique ids not equal to groupID
-  assert (groupMessages.length === 2, 'Expected 2 messages, but got ' + groupMessages.length)
-  assert (groupMessages[0].id !== aliceGroup.id, 'Expected message id to not match group id')
+  assert(
+    groupMessages.length === 2,
+    'Expected 2 messages, but got ' + groupMessages.length
+  )
+  assert(
+    groupMessages[0].id !== aliceGroup.id,
+    'Expected message id to not match group id'
+  )
   console.log('groupMessages[0].id', groupMessages[0].id)
-  assert (groupMessages[1].id !== aliceGroup.id, 'Expected message id to not match group id')
+  assert(
+    groupMessages[1].id !== aliceGroup.id,
+    'Expected message id to not match group id'
+  )
   console.log('groupMessages[1].id', groupMessages[1].id)
 
   cancelGroupMessageStream()
-  
+
   return true
 })
 
@@ -985,7 +1008,7 @@ test('conversation message send returns message id', async () => {
 
   // Alice creates a group
   const aliceConversation = await aliceClient.conversations.newConversation(
-    bobClient.address,
+    bobClient.address
   )
 
   // Alice starts streaming messages for this group
@@ -998,11 +1021,17 @@ test('conversation message send returns message id', async () => {
 
   // Bob sends a message
   const bobConversation = (await bobClient.conversations.list())[0]
-  assert (bobConversation.topic === aliceConversation.topic, 'Expected group id to match')
+  assert(
+    bobConversation.topic === aliceConversation.topic,
+    'Expected group id to match'
+  )
   const bobMessageSentId = await bobConversation.send({ text: 'hello' })
 
   // Id returned from message.send is the group id
-  assert (bobMessageSentId !== bobConversation.topic, 'Expected message send to return group id')
+  assert(
+    bobMessageSentId !== bobConversation.topic,
+    'Expected message send to return group id'
+  )
 
   cancelGroupMessageStream()
 
