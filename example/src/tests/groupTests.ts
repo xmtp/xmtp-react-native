@@ -34,7 +34,8 @@ test('can make a MLS V3 client with encryption key and database path', async () 
   if (!directoryExists) {
     await RNFS.mkdir(dbDirPath)
   }
-  const dbPath = `${dbDirPath}/myCoolApp.db3`
+  const timestamp = Date.now().toString()
+  const dbPath = `${dbDirPath}/myCoolApp${timestamp}.db3`
 
   const key = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -78,7 +79,6 @@ test('can make a MLS V3 client with encryption key and database path', async () 
     (await clientFromBundle.conversations.listGroups()).length === 1,
     `should have a group size of 1 but was ${(await clientFromBundle.conversations.listGroups()).length}`
   )
-  RNFS.unlink(dbDirPath)
   return true
 })
 
