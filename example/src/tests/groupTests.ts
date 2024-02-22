@@ -1,5 +1,5 @@
-import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 import RNFS from 'react-native-fs'
+import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import { Test, assert, delayToPropogate, isIos } from './tests'
 import {
@@ -78,6 +78,7 @@ test('can make a MLS V3 client with encryption key and database path', async () 
     (await clientFromBundle.conversations.listGroups()).length === 1,
     `should have a group size of 1 but was ${(await clientFromBundle.conversations.listGroups()).length}`
   )
+  RNFS.unlink(dbDirPath)
   return true
 })
 
