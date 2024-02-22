@@ -564,20 +564,23 @@ test('group and conversation createdAt has millisecond precision', async () => {
   ])
 
   // Bob creates a conversation
-  const bobConversation = await bobClient.conversations.newConversation(aliceClient.address)
+  const bobConversation = await bobClient.conversations.newConversation(
+    aliceClient.address
+  )
 
   console.log('Group createdAt: ' + aliceGroup.createdAt)
   console.log('Conversation createdAt: ' + bobConversation.createdAt)
   assert(
-    (! bobConversation.createdAt.toString().endsWith('000')),
-    'Group createdAt should have millisecond precision, but it is ' + bobConversation.createdAt
+    !bobConversation.createdAt.toString().endsWith('000'),
+    'Group createdAt should have millisecond precision, but it is ' +
+      bobConversation.createdAt
   )
   assert(
-    (! aliceGroup.createdAt.toString().endsWith('000')),
-    'Group createdAt should have millisecond precision, but it is ' + aliceGroup.createdAt
+    !aliceGroup.createdAt.toString().endsWith('000'),
+    'Group createdAt should have millisecond precision, but it is ' +
+      aliceGroup.createdAt
   )
 
-  
   return true
 })
 
@@ -598,7 +601,9 @@ test('message timestamp has millisecond precision', async () => {
   ])
 
   // Bob creates a conversation
-  const bobConversation = await bobClient.conversations.newConversation(aliceClient.address)
+  const bobConversation = await bobClient.conversations.newConversation(
+    aliceClient.address
+  )
 
   await aliceGroup.send('hello')
   await bobConversation.send('hi')
@@ -609,12 +614,14 @@ test('message timestamp has millisecond precision', async () => {
   console.log('Group message sent: ' + aliceMessage.sent)
   console.log('Conversation message sent: ' + bobMessage.sent)
   assert(
-    (! bobMessage.sent.toString().endsWith('000')),
-    'Conversation message sent should have millisecond precision, but it is ' + bobMessage.sent
+    !bobMessage.sent.toString().endsWith('000'),
+    'Conversation message sent should have millisecond precision, but it is ' +
+      bobMessage.sent
   )
   assert(
-    (! aliceMessage.sent.toString().endsWith('000')),
-    'Group message sent should have millisecond precision, but it is ' + aliceMessage.sent
+    !aliceMessage.sent.toString().endsWith('000'),
+    'Group message sent should have millisecond precision, but it is ' +
+      aliceMessage.sent
   )
 
   return true
