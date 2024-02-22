@@ -566,17 +566,18 @@ test('group and conversation createdAt has millisecond precision', async () => {
   // Bob creates a conversation
   const bobConversation = await bobClient.conversations.newConversation(aliceClient.address)
 
+  console.log('Group createdAt: ' + aliceGroup.createdAt)
+  console.log('Conversation createdAt: ' + bobConversation.createdAt)
+  assert(
+    (! bobConversation.createdAt.toString().endsWith('000')),
+    'Group createdAt should have millisecond precision, but it is ' + bobConversation.createdAt
+  )
   assert(
     (! aliceGroup.createdAt.toString().endsWith('000')),
     'Group createdAt should have millisecond precision, but it is ' + aliceGroup.createdAt
   )
-  console.log('Group createdAt: ' + aliceGroup.createdAt)
 
-  assert(
-    (! aliceGroup.createdAt.toString().endsWith('000')),
-    'Group createdAt should have millisecond precision, but it is ' + bobConversation.createdAt
-  )
-  console.log('Conversation createdAt: ' + bobConversation.createdAt)
+  
   return true
 })
 
@@ -605,16 +606,16 @@ test('message timestamp has millisecond precision', async () => {
   const aliceMessage = (await aliceGroup.messages())[0]
   const bobMessage = (await bobConversation.messages())[0]
 
-  assert(
-    (! aliceMessage.sent.toString().endsWith('000')),
-    'Group message sent should have millisecond precision, but it is ' + aliceMessage.sent
-  )
   console.log('Group message sent: ' + aliceMessage.sent)
-
+  console.log('Conversation message sent: ' + bobMessage.sent)
   assert(
     (! bobMessage.sent.toString().endsWith('000')),
     'Conversation message sent should have millisecond precision, but it is ' + bobMessage.sent
   )
-  console.log('Conversation message sent: ' + bobMessage.sent)
+  assert(
+    (! aliceMessage.sent.toString().endsWith('000')),
+    'Group message sent should have millisecond precision, but it is ' + aliceMessage.sent
+  )
+
   return true
 })
