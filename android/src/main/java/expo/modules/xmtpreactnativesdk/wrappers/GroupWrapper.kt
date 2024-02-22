@@ -4,6 +4,7 @@ import android.util.Base64
 import android.util.Base64.NO_WRAP
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
+import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.Group
 import org.xmtp.android.library.toHex
 import uniffi.xmtpv3.GroupPermissions
@@ -20,7 +21,7 @@ class GroupWrapper {
                 "clientAddress" to client.address,
                 "id" to group.id.toHex(),
                 "createdAt" to group.createdAt.time,
-                "peerAddresses" to group.memberAddresses(),
+                "peerAddresses" to Conversation.Group(group).peerAddresses,
                 "version" to "GROUP",
                 "topic" to group.id.toHex(),
                 "permissionLevel" to permissionString,

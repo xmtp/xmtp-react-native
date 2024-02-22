@@ -186,6 +186,10 @@ test('can message in a group', async () => {
   if (memberAddresses.length !== 3) {
     throw new Error('num group members should be 3')
   }
+  const peerAddresses = await aliceGroup.peerAddresses
+  if (peerAddresses.length !== 2) {
+    throw new Error('num peer group members should be 2')
+  }
   const lowercasedAddresses: string[] = memberAddresses.map((s) =>
     s.toLowerCase()
   )
@@ -197,6 +201,18 @@ test('can message in a group', async () => {
     )
   ) {
     throw new Error('missing address')
+  }
+
+  const lowercasedPeerAddresses: string[] = peerAddresses.map((s) =>
+    s.toLowerCase()
+  )
+  if (
+    !(
+      lowercasedPeerAddresses.includes(bobClient.address.toLowerCase()) &&
+      lowercasedPeerAddresses.includes(camClient.address.toLowerCase())
+    )
+  ) {
+    throw new Error('should include self')
   }
 
   // Alice can send messages
