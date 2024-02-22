@@ -518,8 +518,15 @@ export function subscribeToGroups(clientAddress: string) {
   return XMTPModule.subscribeToGroups(clientAddress)
 }
 
-export function subscribeToAllMessages(clientAddress: string) {
-  return XMTPModule.subscribeToAllMessages(clientAddress)
+export function subscribeToAllMessages(
+  clientAddress: string,
+  includeGroups: boolean
+) {
+  return XMTPModule.subscribeToAllMessages(clientAddress, includeGroups)
+}
+
+export function subscribeToAllGroupMessages(clientAddress: string) {
+  return XMTPModule.subscribeToAllGroupMessages(clientAddress)
 }
 
 export async function subscribeToMessages(
@@ -539,6 +546,10 @@ export function unsubscribeFromGroups(clientAddress: string) {
 
 export function unsubscribeFromAllMessages(clientAddress: string) {
   return XMTPModule.unsubscribeFromAllMessages(clientAddress)
+}
+
+export function unsubscribeFromAllGroupMessages(clientAddress: string) {
+  return XMTPModule.unsubscribeFromAllGroupMessages(clientAddress)
 }
 
 export async function unsubscribeFromMessages(
