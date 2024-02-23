@@ -6,6 +6,7 @@ import {
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { Group } from './Group'
+import { EventTypes } from './types/EventTypes'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
@@ -110,7 +111,7 @@ export default class Conversations<
   ): Promise<() => void> {
     XMTPModule.subscribeToGroups(this.client.address)
     const groupsSubscription = XMTPModule.emitter.addListener(
-      'group',
+      EventTypes.Group,
       async ({
         clientAddress,
         group,
@@ -168,7 +169,7 @@ export default class Conversations<
   ) {
     XMTPModule.subscribeToConversations(this.client.address)
     XMTPModule.emitter.addListener(
-      'conversation',
+      EventTypes.Conversation,
       async ({
         clientAddress,
         conversation,
@@ -205,7 +206,7 @@ export default class Conversations<
   ) {
     XMTPModule.subscribeToAll(this.client.address)
     const subscription = XMTPModule.emitter.addListener(
-      'conversationContainer',
+      EventTypes.ConversationContainer,
       async ({
         clientAddress,
         conversationContainer,
@@ -252,7 +253,7 @@ export default class Conversations<
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(this.client.address, includeGroups)
     XMTPModule.emitter.addListener(
-      'message',
+      EventTypes.Message,
       async ({
         clientAddress,
         message,
@@ -285,7 +286,7 @@ export default class Conversations<
   ): Promise<void> {
     XMTPModule.subscribeToAllGroupMessages(this.client.address)
     XMTPModule.emitter.addListener(
-      'message',
+      EventTypes.AllGroupMessage,
       async ({
         clientAddress,
         message,

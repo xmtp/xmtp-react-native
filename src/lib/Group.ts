@@ -5,6 +5,7 @@ import {
 import { DecodedMessage } from './DecodedMessage'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
+import { EventTypes } from './types/EventTypes'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 
@@ -128,7 +129,7 @@ export class Group<
     XMTP.subscribeToGroupMessages(this.client.address, this.id)
     const hasSeen = {}
     const messageSubscription = XMTP.emitter.addListener(
-      'message',
+      EventTypes.GroupMessage,
       async ({
         clientAddress,
         message,

@@ -65,7 +65,23 @@ public class XMTPModule: Module {
 	public func definition() -> ModuleDefinition {
 		Name("XMTP")
 
-		Events("sign", "authed", "conversation", "message", "group", "conversationContainer", "preEnableIdentityCallback", "preCreateIdentityCallback")
+		Events(
+            // Auth
+            "sign",
+            "authed",
+            "preCreateIdentityCallback",
+            "preEnableIdentityCallback",
+            // Conversations
+            "conversation",
+            "group",
+            "conversationContainer",
+            "message",
+            "allGroupMessage",
+            // Conversation
+            "conversationMessage",
+            // Group
+            "groupMessage"
+        )
 
 		AsyncFunction("address") { (clientAddress: String) -> String in
 			if let client = await clientsManager.getClient(key: clientAddress) {
@@ -960,7 +976,7 @@ public class XMTPModule: Module {
 			do {
 				for try await message in await client.conversations.streamAllGroupDecryptedMessages() {
 					do {
-						try sendEvent("message", [
+            try sendEvent("allGroupMessage", [
 							"clientAddress": clientAddress,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
 						])
@@ -989,7 +1005,7 @@ public class XMTPModule: Module {
 			do {
 				for try await message in conversation.streamDecryptedMessages() {
 					do {
-						try sendEvent("message", [
+						try sendEvent("conversationMessage", [
 							"clientAddress": clientAddress,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
 						])
@@ -1059,7 +1075,7 @@ public class XMTPModule: Module {
 			do {
 				for try await message in group.streamDecryptedMessages() {
 					do {
-						try sendEvent("message", [
+						try sendEvent("groupMessage", [
 							"clientAddress": clientAddress,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
 						])
