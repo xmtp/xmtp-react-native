@@ -49,7 +49,6 @@ type Attachment = {
   file?: DocumentPickerAsset
   image?: ImagePickerAsset
 }
-
 const hiddenMessageTypes = ['xmtp.org/reaction:1.0']
 
 /// Show the messages in a conversation.
