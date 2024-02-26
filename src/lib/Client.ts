@@ -19,13 +19,11 @@ import { DecodedMessage } from '../index'
 
 declare const Buffer
 
-export type GetMessageContentTypeFromClient<C> = C extends Client<infer T>
-  ? T
-  : never
+export type GetMessageContentTypeFromClient<C> =
+  C extends Client<infer T> ? T : never
 
-export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
-  ? T
-  : never
+export type ExtractDecodedType<C> =
+  C extends XMTPModule.ContentCodec<infer T> ? T : never
 
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
@@ -195,6 +193,13 @@ export class Client<
    */
   async canMessage(peerAddress: string): Promise<boolean> {
     return await XMTPModule.canMessage(this.address, peerAddress)
+  }
+
+  /**
+   * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
+   */
+  async deleteLocalDatabase() {
+    return await XMTPModule.deleteLocalDatabase(this.address)
   }
 
   /**

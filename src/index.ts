@@ -39,6 +39,10 @@ export function address(): string {
   return XMTPModule.address()
 }
 
+export async function deleteLocalDatabase(address: string) {
+  return XMTPModule.deleteLocalDatabase(address)
+}
+
 export async function auth(
   address: string,
   environment: 'local' | 'dev' | 'production',
