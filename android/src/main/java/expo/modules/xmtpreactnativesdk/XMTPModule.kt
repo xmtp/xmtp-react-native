@@ -151,14 +151,22 @@ class XMTPModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("XMTP")
         Events(
+            // Auth
             "sign",
             "authed",
-            "conversation",
-            "conversationContainer",
-            "group",
-            "message",
+            "preCreateIdentityCallback",
             "preEnableIdentityCallback",
-            "preCreateIdentityCallback"
+            // Conversations
+            "conversation",
+            "group",
+            "conversationContainer",
+            "message",
+            "allGroupMessage",
+            // Conversation
+            "conversationMessage",
+            // Group
+            "groupMessage"
+
         )
 
         Function("address") { clientAddress: String ->
@@ -1038,7 +1046,7 @@ class XMTPModule : Module() {
             try {
                 client.conversations.streamAllGroupDecryptedMessages().collect { message ->
                     sendEvent(
-                        "message",
+                        "allGroupMessage",
                         mapOf(
                             "clientAddress" to clientAddress,
                             "message" to DecodedMessageWrapper.encodeMap(message),
@@ -1064,7 +1072,7 @@ class XMTPModule : Module() {
                 try {
                     conversation.streamDecryptedMessages().collect { message ->
                         sendEvent(
-                            "message",
+                            "conversationMessage",
                             mapOf(
                                 "clientAddress" to clientAddress,
                                 "message" to DecodedMessageWrapper.encodeMap(message),
@@ -1090,7 +1098,7 @@ class XMTPModule : Module() {
                 try {
                     group.streamDecryptedMessages().collect { message ->
                         sendEvent(
-                            "message",
+                            "groupMessage",
                             mapOf(
                                 "clientAddress" to clientAddress,
                                 "message" to DecodedMessageWrapper.encodeMap(message),

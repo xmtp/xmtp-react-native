@@ -4,6 +4,7 @@ import {
 } from './ConversationContainer'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
+import { EventTypes } from './types/EventTypes'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 import {
@@ -274,7 +275,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
     XMTP.subscribeToMessages(this.client.address, this.topic)
     const hasSeen = {}
     const messageSubscription = XMTP.emitter.addListener(
-      'message',
+      EventTypes.ConversationMessage,
       async ({
         clientAddress,
         message,
