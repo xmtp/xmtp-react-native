@@ -27,6 +27,37 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
+test('can delete a local database', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const client = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  const anotherClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
+
+  await client.conversations.newGroup([anotherClient.address])
+  assert(
+    (await client.conversations.listGroups()).length === 1,
+    `should have a group size of 1 but was ${(await client.conversations.listGroups()).length}`
+  )
+
+  await client.deleteLocalDatabase()
+
+  await client.conversations.newGroup([anotherClient.address])
+  assert(
+    (await client.conversations.listGroups()).length === 0,
+    `should have a group size of 0 but was ${(await client.conversations.listGroups()).length}`
+  )
+
+  return true
+})
+
 test('can make a MLS V3 client with encryption key and database path', async () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
