@@ -42,14 +42,14 @@ test('can delete a local database', async () => {
   })
 
   await client.conversations.newGroup([anotherClient.address])
+  await client.conversations.syncGroups()
   assert(
     (await client.conversations.listGroups()).length === 1,
     `should have a group size of 1 but was ${(await client.conversations.listGroups()).length}`
   )
 
   await client.deleteLocalDatabase()
-
-  await client.conversations.newGroup([anotherClient.address])
+  await client.conversations.syncGroups()
   assert(
     (await client.conversations.listGroups()).length === 0,
     `should have a group size of 0 but was ${(await client.conversations.listGroups()).length}`
