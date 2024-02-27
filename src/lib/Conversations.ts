@@ -1,6 +1,6 @@
 import { Client } from './Client'
 import { Conversation } from './Conversation'
-import { DecodedMessage } from './DecodedMessage'
+import { DecodedMessage } from './DecodedMessage' // Add this import statement
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { getAddress } from '../utils/address'
@@ -8,6 +8,7 @@ import { getAddress } from '../utils/address'
 export default class Conversations<ContentTypes> {
   client: Client<ContentTypes>
   private known = {} as { [topic: string]: boolean }
+  private subscriptions: { [key: string]: { remove: () => void } } = {}
 
   constructor(client: Client<ContentTypes>) {
     this.client = client
@@ -70,9 +71,9 @@ export default class Conversations<ContentTypes> {
    */
   async stream(
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>
-  ) {
+  ): Promise<void> {
     XMTPModule.subscribeToConversations(this.client.address)
-    XMTPModule.emitter.addListener(
+    const subscription = XMTPModule.emitter.addListener(
       'conversation',
       async ({
         clientAddress,
@@ -92,20 +93,21 @@ export default class Conversations<ContentTypes> {
         await callback(new Conversation(this.client, conversation))
       }
     )
+    this.subscriptions['conversation'] = subscription
   }
 
-  /**
-   * Listen for new messages in all conversations.
-   *
-   * This method subscribes to all conversations in real-time and listens for incoming and outgoing messages.
-   * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
-   * @returns {Promise<void>} A Promise that resolves when the stream is set up.
-   */
+/**
+ * Listen for new messages in all conversations.
+ *
+ * This method subscribes to all conversations in real-time and listens for incoming and outgoing messages.
+ * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
+ * @returns {Promise<void>} A Promise that resolves when the stream is set up.
+ */
   async streamAllMessages(
     callback: (message: DecodedMessage) => Promise<void>
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(this.client.address)
-    XMTPModule.emitter.addListener(
+    const subscription = XMTPModule.emitter.addListener(
       'message',
       async ({
         clientAddress,
@@ -125,12 +127,17 @@ export default class Conversations<ContentTypes> {
         await callback(DecodedMessage.fromObject(message, this.client))
       }
     )
+    this.subscriptions['message'] = subscription
   }
 
   /**
    * Cancels the stream for new conversations.
    */
   cancelStream() {
+    if (this.subscriptions['conversation']) {
+      this.subscriptions['conversation'].remove()
+      delete this.subscriptions['conversation']
+    }
     XMTPModule.unsubscribeFromConversations(this.client.address)
   }
 
@@ -138,6 +145,10 @@ export default class Conversations<ContentTypes> {
    * Cancels the stream for new messages in all conversations.
    */
   cancelStreamAllMessages() {
+    if (this.subscriptions['message']) {
+      this.subscriptions['message'].remove()
+      delete this.subscriptions['message']
+    }
     XMTPModule.unsubscribeFromAllMessages(this.client.address)
   }
 }
