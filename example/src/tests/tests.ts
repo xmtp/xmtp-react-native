@@ -75,9 +75,9 @@ export function assert(condition: boolean, msg: string) {
   }
 }
 
-export async function delayToPropogate(): Promise<void> {
+export async function delayToPropogate(milliseconds = 100): Promise<void> {
   // delay 1s to avoid clobbering
-  return new Promise((r) => setTimeout(r, 100))
+  return new Promise((r) => setTimeout(r, milliseconds))
 }
 
 export function isIos() {
