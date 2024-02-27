@@ -17,6 +17,7 @@ export default class Conversations<
 > {
   client: Client<ContentTypes>
   private known = {} as { [topic: string]: boolean }
+  private subscriptions: { [key: string]: { remove: () => void } } = {}
 
   constructor(client: Client<ContentTypes>) {
     this.client = client
@@ -168,7 +169,7 @@ export default class Conversations<
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>
   ) {
     XMTPModule.subscribeToConversations(this.client.address)
-    XMTPModule.emitter.addListener(
+    const subscription = XMTPModule.emitter.addListener(
       EventTypes.Conversation,
       async ({
         clientAddress,
@@ -188,6 +189,7 @@ export default class Conversations<
         await callback(new Conversation(this.client, conversation))
       }
     )
+    this.subscriptions[EventTypes.Conversation] = subscription
   }
 
   /**
@@ -311,6 +313,10 @@ export default class Conversations<
    * Cancels the stream for new conversations.
    */
   cancelStream() {
+    if (this.subscriptions[EventTypes.Conversation]) {
+      this.subscriptions[EventTypes.Conversation].remove()
+      delete this.subscriptions[EventTypes.Conversation]
+    }
     XMTPModule.unsubscribeFromConversations(this.client.address)
   }
 
