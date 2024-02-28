@@ -26,7 +26,7 @@ class ConversationWrapper {
                 "peerAddress" to conversation.peerAddress,
                 "version" to "DIRECT",
                 "conversationID" to (conversation.conversationId ?: ""),
-                "keyMaterial" to Base64.encodeToString(conversation.keyMaterial, Base64.NO_WRAP)
+                "keyMaterial" to (conversation.keyMaterial?.let { Base64.encodeToString(it, Base64.NO_WRAP) } ?: "")
             )
         }
 

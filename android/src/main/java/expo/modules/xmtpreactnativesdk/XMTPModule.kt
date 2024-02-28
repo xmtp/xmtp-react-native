@@ -338,6 +338,9 @@ class XMTPModule : Module() {
             val data = TopicData.parseFrom(Base64.decode(topicData, NO_WRAP))
             val conversation = client.conversations.importTopicData(data)
             conversations[conversation.cacheKey(clientAddress)] = conversation
+            if (conversation.keyMaterial == null) {
+                logV("Null key material before encode conversation")
+            }
             ConversationWrapper.encode(client, conversation)
         }
 
@@ -447,6 +450,9 @@ class XMTPModule : Module() {
             val conversationList = client.conversations.list()
             conversationList.map { conversation ->
                 conversations[conversation.cacheKey(clientAddress)] = conversation
+                if (conversation.keyMaterial == null) {
+                    logV("Null key material before encode conversation")
+                }
                 ConversationWrapper.encode(client, conversation)
             }
         }
@@ -677,6 +683,9 @@ class XMTPModule : Module() {
                     },
                 )
             )
+            if (conversation.keyMaterial == null) {
+                logV("Null key material before encode conversation")
+            }
             ConversationWrapper.encode(client, conversation)
         }
 
@@ -954,13 +963,21 @@ class XMTPModule : Module() {
         subscriptions[getConversationsKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.conversations.stream().collect { conversation ->
-                    sendEvent(
-                        "conversation",
-                        mapOf(
-                            "clientAddress" to clientAddress,
-                            "conversation" to ConversationWrapper.encodeToObj(client, conversation)
+                    run {
+                        if (conversation.keyMaterial == null) {
+                            logV("Null key material before encode conversation")
+                        }
+                        sendEvent(
+                            "conversation",
+                            mapOf(
+                                "clientAddress" to clientAddress,
+                                "conversation" to ConversationWrapper.encodeToObj(
+                                    client,
+                                    conversation
+                                )
+                            )
                         )
-                    )
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in conversations subscription: $e")
