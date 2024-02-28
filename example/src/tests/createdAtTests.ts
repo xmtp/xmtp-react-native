@@ -1,4 +1,4 @@
-import { Test, assert, delayToPropogate, isIos } from './tests'
+import { Test, assert, delayToPropogate, isIos } from './test-utils'
 import {
   Client,
   Conversation,

@@ -4,7 +4,8 @@ import { View, Text, Button, ScrollView } from 'react-native'
 
 import { createdAtTests } from './tests/createdAtTests'
 import { groupTests } from './tests/groupTests'
-import { tests, Test } from './tests/tests'
+import { Test } from './tests/test-utils'
+import { tests } from './tests/tests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
@@ -98,26 +99,38 @@ function TestView({
   )
 }
 
+export enum TestCategory {
+  all = 'all',
+  tests = 'tests',
+  group = 'group',
+  createdAt = 'createdAt',
+}
+
 export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0)
   const route = useRoute()
   const params = route.params as {
-    testSelection: 'groups' | 'createdAt' | 'all'
+    testSelection: TestCategory
   }
   const allTests = tests.concat(groupTests).concat(createdAtTests)
   let activeTests, title
   switch (params.testSelection) {
-    case 'groups':
+    case TestCategory.all:
+      activeTests = allTests
+      title = 'All Unit Tests'
+      break
+    case TestCategory.tests:
+      activeTests = tests
+      title = 'Original Unit Tests'
+      break
+    case TestCategory.group:
       activeTests = groupTests
       title = 'Group Unit Tests'
       break
-    case 'createdAt':
+    case TestCategory.createdAt:
       activeTests = createdAtTests
       title = 'Created At Unit Tests'
       break
-    default:
-      activeTests = allTests
-      title = 'All Unit Tests'
   }
 
   return (
