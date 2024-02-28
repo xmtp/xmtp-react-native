@@ -1,3 +1,5 @@
+import type { keystore } from '@xmtp/proto'
+
 import { Client } from './Client'
 import { Conversation } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
@@ -26,6 +28,10 @@ export default class Conversations<ContentTypes> {
     }
 
     return result
+  }
+
+  async getHmacKeys(): Promise<keystore.GetConversationHmacKeysResponse> {
+    return await XMTPModule.getHmacKeys(this.client.address)
   }
 
   async importTopicData(
