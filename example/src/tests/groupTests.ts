@@ -1,7 +1,7 @@
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, delayToPropogate, isIos } from './tests'
+import { Test, assert, delayToPropogate, isIos } from './test-utils'
 import {
   Client,
   Conversation,

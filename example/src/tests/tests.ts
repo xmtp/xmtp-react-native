@@ -1,6 +1,5 @@
 import { FramesClient } from '@xmtp/frames-client'
 import { content } from '@xmtp/proto'
-import { Platform } from 'expo-modules-core'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
@@ -14,6 +13,7 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
 } from '../../../src/index'
+import { Test, delayToPropogate } from './test-utils'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
@@ -62,28 +62,7 @@ class NumberCodec implements JSContentCodec<NumberRef> {
   }
 }
 
-export type Test = {
-  name: string
-  run: () => Promise<boolean>
-}
-
 export const tests: Test[] = []
-
-export function assert(condition: boolean, msg: string) {
-  if (!condition) {
-    throw new Error(msg)
-  }
-}
-
-export async function delayToPropogate(): Promise<void> {
-  // delay 1s to avoid clobbering
-  return new Promise((r) => setTimeout(r, 100))
-}
-
-export function isIos() {
-  return Platform.OS === 'ios'
-}
-
 function test(name: string, perform: () => Promise<boolean>) {
   tests.push({ name, run: perform })
 }
