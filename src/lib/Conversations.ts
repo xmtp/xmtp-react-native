@@ -289,7 +289,7 @@ export default class Conversations<
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<void> {
     XMTPModule.subscribeToAllGroupMessages(this.client.address)
-    XMTPModule.emitter.addListener(
+    const subscription = XMTPModule.emitter.addListener(
       EventTypes.AllGroupMessage,
       async ({
         clientAddress,
@@ -309,6 +309,7 @@ export default class Conversations<
         await callback(DecodedMessage.fromObject(message, this.client))
       }
     )
+    this.subscriptions[EventTypes.AllGroupMessage] = subscription
   }
 
   /**
@@ -348,6 +349,10 @@ export default class Conversations<
    * Cancels the stream for new messages in all groups.
    */
   cancelStreamAllGroupMessages() {
+    if (this.subscriptions[EventTypes.AllGroupMessage]) {
+      this.subscriptions[EventTypes.AllGroupMessage].remove()
+      delete this.subscriptions[EventTypes.AllGroupMessage]
+    }
     XMTPModule.unsubscribeFromAllGroupMessages(this.client.address)
   }
 }

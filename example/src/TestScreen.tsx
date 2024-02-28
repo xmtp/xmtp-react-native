@@ -114,7 +114,12 @@ export default function TestScreen(): JSX.Element {
   const params = route.params as {
     testSelection: TestCategory
   }
-  const allTests = tests.concat(groupTests).concat(createdAtTests)
+  const allTests = [
+    ...tests,
+    ...groupTests,
+    ...createdAtTests,
+    ...restartStreamTests,
+  ]
   let activeTests, title
   switch (params.testSelection) {
     case TestCategory.all:
