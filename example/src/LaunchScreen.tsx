@@ -7,9 +7,9 @@ import * as XMTP from 'xmtp-react-native-sdk'
 import { useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
+import { TestCategory } from './TestScreen'
 import { supportedCodecs } from './contentTypes/contentTypes'
 import { useSavedKeys } from './hooks'
-import { TestCategory } from './TestScreen'
 
 const appVersion = 'XMTP_RN_EX/0.0.1'
 
@@ -18,7 +18,9 @@ export default function LaunchScreen(
   this: any,
   { navigation }: NativeStackScreenProps<NavigationParamList, 'launch'>
 ) {
-  const [selectedTest, setSelectedTest] = useState<TestCategory>(TestCategory.all)
+  const [selectedTest, setSelectedTest] = useState<TestCategory>(
+    TestCategory.all
+  )
   const [selectedNetwork, setSelectedNetwork] = useState<
     'dev' | 'local' | 'production'
   >('dev')
@@ -67,10 +69,12 @@ export default function LaunchScreen(
     { key: 1, label: 'false' },
   ]
 
-  const testOptions = Object.entries(TestCategory).map(([key, value], index) => ({
-    key: index,
-    label: value
-  }));
+  const testOptions = Object.entries(TestCategory).map(
+    ([key, value], index) => ({
+      key: index,
+      label: value,
+    })
+  )
 
   useEffect(() => {
     ;(async () => {
@@ -96,15 +100,15 @@ export default function LaunchScreen(
           selectTextStyle={styles.modalSelectText}
           backdropPressToClose
           initValue={selectedTest}
-          onChange={(option) =>
-            setSelectedTest(option.label as TestCategory)
-          }
+          onChange={(option) => setSelectedTest(option.label as TestCategory)}
         />
       </View>
       <View key="run-tests" style={{ margin: 16 }}>
         <Button
           title={`Run Selected Tests: ${selectedTest}`}
-          onPress={() => navigation.navigate('test', { testSelection: selectedTest  })}
+          onPress={() =>
+            navigation.navigate('test', { testSelection: selectedTest })
+          }
           accessibilityLabel="Unit-tests"
         />
       </View>

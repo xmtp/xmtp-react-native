@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { TestCategory } from './tests/test-utils'
+import { TestCategory } from './TestScreen'
 
 export type NavigationParamList = {
   launch: undefined

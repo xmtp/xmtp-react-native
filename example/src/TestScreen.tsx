@@ -4,8 +4,8 @@ import { View, Text, Button, ScrollView } from 'react-native'
 
 import { createdAtTests } from './tests/createdAtTests'
 import { groupTests } from './tests/groupTests'
-import { tests } from './tests/tests'
 import { Test } from './tests/test-utils'
+import { tests } from './tests/tests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
@@ -105,7 +105,6 @@ export enum TestCategory {
   group = 'group',
   createdAt = 'createdAt',
 }
-
 
 export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0)

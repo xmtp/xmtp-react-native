@@ -4,6 +4,7 @@ import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
+import { Test, assert, delayToPropogate } from './test-utils'
 import {
   Query,
   JSContentCodec,
@@ -13,7 +14,6 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
 } from '../../../src/index'
-import { Test, assert, delayToPropogate } from './test-utils'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
