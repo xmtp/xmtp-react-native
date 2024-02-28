@@ -1152,17 +1152,11 @@ test('get all HMAC keys', async () => {
   Object.keys(hmacKeys).map((topic) => {
     const hmacData = hmacKeys[topic]
 
-    hmacData.values.map(
-      async ({ hmacKey, thirtyDayPeriodsSinceEpoch }, idx) => {
-        assert(thirtyDayPeriodsSinceEpoch === periods[idx], 'periods not equal')
-        const valid = await verifyHmacSignature(
-          await importHmacKey(hmacKey),
-          topicHmacs[topic],
-          headerBytes
-        )
-        console.log(valid)
+    hmacData.values.map(({ hmacKey, thirtyDayPeriodsSinceEpoch }, idx) => {
+      assert(thirtyDayPeriodsSinceEpoch === periods[idx], 'periods not equal')
+      const valid = verifyHmacSignature(hmacKey, topicHmacs[topic], headerBytes)
 
-        assert(valid === (idx === 1), 'key is not valid')
+      assert(valid === (idx === 1), 'key is not valid')
       }
     )
   })
