@@ -13,7 +13,7 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
 } from '../../../src/index'
-import { Test, delayToPropogate } from './test-utils'
+import { Test, assert, delayToPropogate } from './test-utils'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId

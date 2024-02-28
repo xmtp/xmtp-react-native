@@ -9,6 +9,7 @@ import { useXmtp } from 'xmtp-react-native-sdk'
 import { NavigationParamList } from './Navigation'
 import { supportedCodecs } from './contentTypes/contentTypes'
 import { useSavedKeys } from './hooks'
+import { TestCategory } from './TestScreen'
 
 const appVersion = 'XMTP_RN_EX/0.0.1'
 
@@ -17,6 +18,7 @@ export default function LaunchScreen(
   this: any,
   { navigation }: NativeStackScreenProps<NavigationParamList, 'launch'>
 ) {
+  const [selectedTest, setSelectedTest] = useState<TestCategory>(TestCategory.all)
   const [selectedNetwork, setSelectedNetwork] = useState<
     'dev' | 'local' | 'production'
   >('dev')
@@ -65,6 +67,11 @@ export default function LaunchScreen(
     { key: 1, label: 'false' },
   ]
 
+  const testOptions = Object.entries(TestCategory).map(([key, value], index) => ({
+    key: index,
+    label: value
+  }));
+
   useEffect(() => {
     ;(async () => {
       if (signer) {
@@ -80,29 +87,25 @@ export default function LaunchScreen(
   return (
     <ScrollView>
       <Text style={styles.title}>Automated Tests</Text>
+      <View style={styles.row}>
+        <Text style={styles.label}>Select Test:</Text>
+        <ModalSelector
+          data={testOptions}
+          selectStyle={styles.modalSelector}
+          initValueTextStyle={styles.modalSelectText}
+          selectTextStyle={styles.modalSelectText}
+          backdropPressToClose
+          initValue={selectedTest}
+          onChange={(option) =>
+            setSelectedTest(option.label as TestCategory)
+          }
+        />
+      </View>
       <View key="run-tests" style={{ margin: 16 }}>
         <Button
-          title="Run All Unit Tests"
-          onPress={() => navigation.navigate('test', { testSelection: 'all' })}
+          title={`Run Selected Tests: ${selectedTest}`}
+          onPress={() => navigation.navigate('test', { testSelection: selectedTest  })}
           accessibilityLabel="Unit-tests"
-        />
-      </View>
-      <View key="run-group-tests" style={{ margin: 16 }}>
-        <Button
-          title="Run Group Unit Tests"
-          onPress={() =>
-            navigation.navigate('test', { testSelection: 'groups' })
-          }
-          accessibilityLabel="Unit-group-tests"
-        />
-      </View>
-      <View key="run-created-at-tests" style={{ margin: 16 }}>
-        <Button
-          title="Run Created At Unit Tests"
-          onPress={() =>
-            navigation.navigate('test', { testSelection: 'createdAt' })
-          }
-          accessibilityLabel="Unit-created-at-tests"
         />
       </View>
       <View style={styles.divider} />
