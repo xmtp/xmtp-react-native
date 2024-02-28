@@ -127,6 +127,7 @@ export default class Conversations<
         await callback(new Group(this.client, group))
       }
     )
+    this.subscriptions[EventTypes.Group] = groupsSubscription
     return () => {
       groupsSubscription.remove()
       XMTPModule.unsubscribeFromGroups(this.client.address)
@@ -324,6 +325,10 @@ export default class Conversations<
    * Cancels the stream for new conversations.
    */
   cancelStreamGroups() {
+    if (this.subscriptions[EventTypes.Group]) {
+      this.subscriptions[EventTypes.Group].remove()
+      delete this.subscriptions[EventTypes.Group]
+    }
     XMTPModule.unsubscribeFromGroups(this.client.address)
   }
 
