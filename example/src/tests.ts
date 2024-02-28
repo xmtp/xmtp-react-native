@@ -92,7 +92,7 @@ async function hkdfHmacKey(
     false,
     ['deriveKey']
   )
-  return window.crypto.subtle.deriveKey(
+  return await window.crypto.subtle.deriveKey(
     { name: 'HKDF', hash: 'SHA-256', salt: hkdfNoSalt, info },
     key,
     { name: 'HMAC', hash: 'SHA-256', length: 256 },
@@ -115,22 +115,20 @@ function base64ToUint8Array(base64String: string): Uint8Array {
   const buffer = Buffer.from(base64String, 'base64')
   return new Uint8Array(buffer)
 }
-async function verifyHmacSignature(
-  key: CryptoKey,
+
+function verifyHmacSignature(
+  key: Uint8Array,
   signature: Uint8Array,
   message: Uint8Array
-): Promise<boolean> {
-  return await window.crypto.subtle.verify('HMAC', key, signature, message)
-}
+): boolean {
+  const hmac = createHmac('sha256', Buffer.from(key))
 
-async function importHmacKey(key: Uint8Array): Promise<CryptoKey> {
-  return window.crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'HMAC', hash: 'SHA-256', length: 256 },
-    true,
-    ['sign', 'verify']
-  )
+  hmac.update(message)
+
+  const calculatedSignature = hmac.digest()
+  const result = Buffer.compare(calculatedSignature, signature) === 0
+
+  return result
 }
 
 async function exportHmacKey(key: CryptoKey): Promise<Uint8Array> {

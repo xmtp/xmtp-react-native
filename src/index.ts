@@ -117,11 +117,9 @@ export async function exportConversationTopicData(
 export async function getHmacKeys(
   clientAddress: string
 ): Promise<keystore.GetConversationHmacKeysResponse> {
-  // const hmacKeys: keystore.GetConversationHmacKeysResponse['hmacKeys'] = {}
   const hmacKeysArray = await XMTPModule.getHmacKeys(clientAddress)
   const array = new Uint8Array(hmacKeysArray)
-  const response = keystore.GetConversationHmacKeysResponse.decode(array)
-  return response
+  return keystore.GetConversationHmacKeysResponse.decode(array)
 }
 
 export async function importConversationTopicData<ContentTypes>(
