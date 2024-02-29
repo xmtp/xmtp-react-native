@@ -91,6 +91,13 @@ public class XMTPModule: Module {
 			}
 		}
 
+		AsyncFunction("deleteLocalDatabase") { (clientAddress: String) in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			try client.deleteLocalDatabase()
+		}
+
 		//
 		// Auth functions
 		//

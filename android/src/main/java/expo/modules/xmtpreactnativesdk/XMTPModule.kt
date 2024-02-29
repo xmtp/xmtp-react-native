@@ -175,6 +175,11 @@ class XMTPModule : Module() {
             client?.address ?: "No Client."
         }
 
+        AsyncFunction("deleteLocalDatabase") { clientAddress: String ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.deleteLocalDatabase()
+        }
+
         //
         // Auth functions
         //
@@ -1039,15 +1044,16 @@ class XMTPModule : Module() {
         subscriptions[getMessagesKey(clientAddress)]?.cancel()
         subscriptions[getMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.conversations.streamAllDecryptedMessages(includeGroups = includeGroups).collect { message ->
-                    sendEvent(
-                        "message",
-                        mapOf(
-                            "clientAddress" to clientAddress,
-                            "message" to DecodedMessageWrapper.encodeMap(message),
+                client.conversations.streamAllDecryptedMessages(includeGroups = includeGroups)
+                    .collect { message ->
+                        sendEvent(
+                            "message",
+                            mapOf(
+                                "clientAddress" to clientAddress,
+                                "message" to DecodedMessageWrapper.encodeMap(message),
+                            )
                         )
-                    )
-                }
+                    }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in all messages subscription: $e")
                 subscriptions[getMessagesKey(clientAddress)]?.cancel()
