@@ -929,3 +929,133 @@ test('instantiate frames client correctly', async () => {
   }
   return true
 })
+
+// Skipping this test as it's not something supported right now
+test('can stream all conversation Messages from multiple clients', async () => {
+  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+  await delayToPropogate()
+  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+  await delayToPropogate()
+  if (bo.address === alix.address) {
+    throw Error('Bo and Alix should have different addresses')
+  }
+  if (bo.address === caro.address) {
+    throw Error('Bo and Caro should have different addresses')
+  }
+  if (alix.address === caro.address) {
+    throw Error('Alix and Caro should have different addresses')
+  }
+
+  // Setup stream
+  const allAlixMessages: DecodedMessage<any>[] = []
+  const allBoMessages: DecodedMessage<any>[] = []
+  const alixConvo = await caro.conversations.newConversation(alix.address)
+  const boConvo = await caro.conversations.newConversation(bo.address)
+
+  await alixConvo.streamMessages(async (message) => {
+    allAlixMessages.push(message)
+  })
+  await boConvo.streamMessages(async (message) => {
+    allBoMessages.push(message)
+  })
+
+  // Start Caro starts a new conversation.
+  await delayToPropogate()
+  await alixConvo.send({ text: `Message` })
+  await delayToPropogate()
+  if (allBoMessages.length !== 0) {
+    throw Error(
+      'Unexpected all conversations count for Bo ' + allBoMessages.length
+    )
+  }
+
+  if (allAlixMessages.length !== 1) {
+    throw Error(
+      'Unexpected all conversations count for Alix ' + allAlixMessages.length
+    )
+  }
+
+  const alixConv = (await alix.conversations.list())[0]
+  await alixConv.send({ text: `Message` })
+  await delayToPropogate()
+  if (allBoMessages.length !== 0) {
+    throw Error(
+      'Unexpected all conversations count for Bo ' + allBoMessages.length
+    )
+  }
+  // @ts-ignore-next-line
+  if (allAlixMessages.length !== 2) {
+    throw Error(
+      'Unexpected all conversations count for Alix ' + allAlixMessages.length
+    )
+  }
+
+  return true
+})
+
+test('can stream all conversation Messages from multiple clients - swapped', async () => {
+  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+  await delayToPropogate()
+  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+  await delayToPropogate()
+  if (bo.address === alix.address) {
+    throw Error('Bo and Alix should have different addresses')
+  }
+  if (bo.address === caro.address) {
+    throw Error('Bo and Caro should have different addresses')
+  }
+  if (alix.address === caro.address) {
+    throw Error('Alix and Caro should have different addresses')
+  }
+
+  // Setup stream
+  const allAlixMessages: DecodedMessage<any>[] = []
+  const allBoMessages: DecodedMessage<any>[] = []
+  const alixConvo = await caro.conversations.newConversation(alix.address)
+  const boConvo = await caro.conversations.newConversation(bo.address)
+
+  await boConvo.streamMessages(async (message) => {
+    allBoMessages.push(message)
+  })
+  await alixConvo.streamMessages(async (message) => {
+    allAlixMessages.push(message)
+  })
+
+  // Start Caro starts a new conversation.
+  await delayToPropogate()
+  await alixConvo.send({ text: `Message` })
+  await delayToPropogate()
+  if (allBoMessages.length !== 0) {
+    throw Error(
+      'Unexpected all conversations count for Bo ' + allBoMessages.length
+    )
+  }
+
+  if (allAlixMessages.length !== 1) {
+    throw Error(
+      'Unexpected all conversations count for Alix ' + allAlixMessages.length
+    )
+  }
+
+  const alixConv = (await alix.conversations.list())[0]
+  await alixConv.send({ text: `Message` })
+  await delayToPropogate()
+  if (allBoMessages.length !== 0) {
+    throw Error(
+      'Unexpected all conversations count for Bo ' + allBoMessages.length
+    )
+  }
+  // @ts-ignore-next-line
+  if (allAlixMessages.length !== 2) {
+    throw Error(
+      'Unexpected all conversations count for Alix ' + allAlixMessages.length
+    )
+  }
+
+  return true
+})
+

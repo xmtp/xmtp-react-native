@@ -217,6 +217,9 @@ export default class Conversations<
         clientAddress: string
         conversationContainer: ConversationContainer<ContentTypes>
       }) => {
+        if (clientAddress !== this.client.address) {
+          return
+        }
         if (this.known[conversationContainer.topic]) {
           return
         }

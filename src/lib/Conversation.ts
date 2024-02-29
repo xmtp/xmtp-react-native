@@ -279,11 +279,17 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       async ({
         clientAddress,
         message,
+        topic,
       }: {
         clientAddress: string
         message: DecodedMessage<ContentTypes>
+        topic: string
       }) => {
+        // Long term these checks should be able to be done on the native layer as well, but additional checks in JS for safety
         if (clientAddress !== this.client.address) {
+          return
+        }
+        if (topic !== this.topic) {
           return
         }
         if (hasSeen[message.id]) {

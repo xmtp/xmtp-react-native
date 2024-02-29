@@ -1099,6 +1099,7 @@ class XMTPModule : Module() {
                             mapOf(
                                 "clientAddress" to clientAddress,
                                 "message" to DecodedMessageWrapper.encodeMap(message),
+                                "topic" to topic,
                             )
                         )
                     }
@@ -1125,6 +1126,7 @@ class XMTPModule : Module() {
                             mapOf(
                                 "clientAddress" to clientAddress,
                                 "message" to DecodedMessageWrapper.encodeMap(message),
+                                "groupId" to id,
                             )
                         )
                     }
