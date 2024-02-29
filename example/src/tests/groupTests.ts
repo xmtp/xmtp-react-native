@@ -28,8 +28,7 @@ test('can make a MLS V3 client', async () => {
 })
 
 test('can delete a local database', async () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const client = await Client.createRandom({
+  let client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableAlphaMls: true,
@@ -49,6 +48,11 @@ test('can delete a local database', async () => {
   )
 
   await client.deleteLocalDatabase()
+  client = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+  })
   await client.conversations.syncGroups()
   assert(
     (await client.conversations.listGroups()).length === 0,

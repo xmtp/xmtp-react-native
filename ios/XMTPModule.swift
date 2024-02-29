@@ -79,7 +79,7 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			client.deleteLocalDatabase()
+			try client.deleteLocalDatabase()
 		}
 
 		//
