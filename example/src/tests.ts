@@ -81,18 +81,14 @@ function delayToPropogate(): Promise<void> {
 
 const hkdfNoSalt = new ArrayBuffer(0)
 
-async function hkdfHmacKey(
+export async function hkdfHmacKey(
   secret: Uint8Array,
   info: Uint8Array
 ): Promise<CryptoKey> {
-  const key = await window.crypto.subtle.importKey(
-    'raw',
-    secret,
-    'HKDF',
-    false,
-    ['deriveKey']
-  )
-  return await window.crypto.subtle.deriveKey(
+  const key = await crypto.subtle.importKey('raw', secret, 'HKDF', false, [
+    'deriveKey',
+  ])
+  return crypto.subtle.deriveKey(
     { name: 'HKDF', hash: 'SHA-256', salt: hkdfNoSalt, info },
     key,
     { name: 'HMAC', hash: 'SHA-256', length: 256 },
@@ -101,13 +97,13 @@ async function hkdfHmacKey(
   )
 }
 
-async function generateHmacSignature(
+export async function generateHmacSignature(
   secret: Uint8Array,
   info: Uint8Array,
   message: Uint8Array
 ): Promise<Uint8Array> {
   const key = await hkdfHmacKey(secret, info)
-  const signed = await window.crypto.subtle.sign('HMAC', key, message)
+  const signed = await crypto.subtle.sign('HMAC', key, message)
   return new Uint8Array(signed)
 }
 
@@ -116,24 +112,27 @@ function base64ToUint8Array(base64String: string): Uint8Array {
   return new Uint8Array(buffer)
 }
 
-function verifyHmacSignature(
-  key: Uint8Array,
+export async function verifyHmacSignature(
+  key: CryptoKey,
   signature: Uint8Array,
   message: Uint8Array
-): boolean {
-  const hmac = createHmac('sha256', Buffer.from(key))
-
-  hmac.update(message)
-
-  const calculatedSignature = hmac.digest()
-  const result = Buffer.compare(calculatedSignature, signature) === 0
-
-  return result
+): Promise<boolean> {
+  return await crypto.subtle.verify('HMAC', key, signature, message)
 }
 
-async function exportHmacKey(key: CryptoKey): Promise<Uint8Array> {
-  const exported = await window.crypto.subtle.exportKey('raw', key)
+export async function exportHmacKey(key: CryptoKey): Promise<Uint8Array> {
+  const exported = await crypto.subtle.exportKey('raw', key)
   return new Uint8Array(exported)
+}
+
+export async function importHmacKey(key: Uint8Array): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256', length: 256 },
+    true,
+    ['sign', 'verify']
+  )
 }
 
 function test(name: string, perform: () => Promise<boolean>) {
@@ -1149,17 +1148,33 @@ test('get all HMAC keys', async () => {
     topicHmacs[topic] = hmac
   }
 
-  Object.keys(hmacKeys).map((topic) => {
-    const hmacData = hmacKeys[topic]
+  await Promise.all(
+    Object.keys(hmacKeys).map(async (topic) => {
+      const hmacData = hmacKeys[topic]
 
-    hmacData.values.map(({ hmacKey, thirtyDayPeriodsSinceEpoch }, idx) => {
-      assert(thirtyDayPeriodsSinceEpoch === periods[idx], 'periods not equal')
-      const valid = verifyHmacSignature(hmacKey, topicHmacs[topic], headerBytes)
-
-      assert(valid === (idx === 1), 'key is not valid')
-      }
-    )
-  })
-
+      await Promise.all(
+        hmacData.values.map(
+          async ({ hmacKey, thirtyDayPeriodsSinceEpoch }, idx) => {
+            assert(
+              thirtyDayPeriodsSinceEpoch === periods[idx],
+              'periods not equal'
+            )
+            try {
+              const cryptoKey = await importHmacKey(hmacKey)
+              const valid = await verifyHmacSignature(
+                cryptoKey,
+                topicHmacs[topic],
+                headerBytes
+              )
+              assert(valid === (idx === 1), 'key is not valid')
+            } catch (err) {
+              console.error(err)
+              throw new Error('error importing key')
+            }
+          }
+        )
+      )
+    })
+  )
   return true
 })

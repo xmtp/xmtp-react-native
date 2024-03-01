@@ -56,7 +56,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.14)
   - hermes-engine/Pre-built (0.71.14)
   - libevent (2.1.12)
-  - LibXMTP (0.4.1-beta1)
+  - LibXMTP (0.4.2-beta3)
   - Logging (1.0.0)
   - MessagePacker (0.4.7)
   - MMKV (1.3.3):
@@ -344,6 +344,9 @@ PODS:
     - RCTTypeSafety
     - React-Core
     - ReactCommon/turbomodule/core
+  - react-native-webview (13.8.1):
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
   - React-perflogger (0.71.14)
   - React-RCTActionSheet (0.71.14):
     - React-Core/RCTActionSheetHeaders (= 0.71.14)
@@ -442,16 +445,16 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.8.0):
+  - XMTP (0.8.14):
     - Connect-Swift (= 0.3.0)
     - GzipSwift
-    - LibXMTP (= 0.4.1-beta1)
+    - LibXMTP (= 0.4.2-beta3)
     - web3.swift
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 0.8.0)
+    - XMTP (= 0.8.14)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -502,6 +505,7 @@ DEPENDENCIES:
   - react-native-quick-crypto (from `../node_modules/react-native-quick-crypto`)
   - react-native-randombytes (from `../node_modules/react-native-randombytes`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - react-native-webview (from `../node_modules/react-native-webview`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
   - React-RCTActionSheet (from `../node_modules/react-native/Libraries/ActionSheetIOS`)
   - React-RCTAnimation (from `../node_modules/react-native/Libraries/NativeAnimation`)
@@ -518,6 +522,7 @@ DEPENDENCIES:
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
+  - XMTP (from `/Users/alexrisch/ios/xmtp-ios`)
   - XMTPReactNative (from `../../ios`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -539,7 +544,6 @@ SPEC REPOS:
     - secp256k1.swift
     - SwiftProtobuf
     - web3.swift
-    - XMTP
 
 EXTERNAL SOURCES:
   boost:
@@ -630,6 +634,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-randombytes"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
+  react-native-webview:
+    :path: "../node_modules/react-native-webview"
   React-perflogger:
     :path: "../node_modules/react-native/ReactCommon/reactperflogger"
   React-RCTActionSheet:
@@ -662,6 +668,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-screens"
   RNSVG:
     :path: "../node_modules/react-native-svg"
+  XMTP:
+    :path: "/Users/alexrisch/ios/xmtp-ios"
   XMTPReactNative:
     :path: "../../ios"
   Yoga:
@@ -695,7 +703,7 @@ SPEC CHECKSUMS:
   GzipSwift: 893f3e48e597a1a4f62fafcb6514220fcf8287fa
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  LibXMTP: 01d1797089db5fe7e0a39c524261f460a0f183c9
+  LibXMTP: d6e1d416c7138b3593dfd7a6f07c8e88537c00eb
   Logging: 9ef4ecb546ad3169398d5a723bc9bea1c46bef26
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: f902fb6719da13c2ab0965233d8963a59416f911
@@ -725,6 +733,7 @@ SPEC CHECKSUMS:
   react-native-quick-crypto: 455c1b411db006dba1026a30681ececb19180187
   react-native-randombytes: 421f1c7d48c0af8dbcd471b0324393ebf8fe7846
   react-native-safe-area-context: 39c2d8be3328df5d437ac1700f4f3a4f75716acc
+  react-native-webview: bdc091de8cf7f8397653e30182efcd9f772e03b3
   React-perflogger: 4987ad83731c23d11813c84263963b0d3028c966
   React-RCTActionSheet: 5ad952b2a9740d87a5bd77280c4bc23f6f89ea0c
   React-RCTAnimation: d2de22af3f536cc80bb5b3918e1a455114d1b985
@@ -744,10 +753,10 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: b02b5075dcf60c9f5f403000b3b0c202a11b6ae1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 9296a8e8dc53a033d5ca38207d5ed05843e657b6
-  XMTPReactNative: 808e9937e815f506a84ace93af6f84df7e3fb038
+  XMTP: f716708390140ef0542425898888e2346e04174e
+  XMTPReactNative: 145687cf515815fcc26f89e4347c44814708981b
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
-PODFILE CHECKSUM: 95d6ace79946933ecf80684613842ee553dd76a2
+PODFILE CHECKSUM: 8242ff30cd3d5f088735e1ce137bb6663d40d264
 
-COCOAPODS: 1.14.2
+COCOAPODS: 1.14.3
