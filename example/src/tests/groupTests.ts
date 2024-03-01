@@ -167,13 +167,13 @@ test('can make a MLS V3 client from bundle', async () => {
 
 test('production MLS V3 client creation throws error', async () => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const client = await Client.createRandom({
+    await Client.createRandom({
       env: 'production',
       appVersion: 'Testing/0.0.0',
       enableAlphaMls: true,
     })
-  } catch (error: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
     return true
   }
   throw new Error(

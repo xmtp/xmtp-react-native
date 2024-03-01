@@ -4,6 +4,7 @@ import { View, Text, Button, ScrollView } from 'react-native'
 
 import { createdAtTests } from './tests/createdAtTests'
 import { groupTests } from './tests/groupTests'
+import { restartStreamTests } from './tests/restartStreamsTests'
 import { Test } from './tests/test-utils'
 import { tests } from './tests/tests'
 
@@ -104,6 +105,7 @@ export enum TestCategory {
   tests = 'tests',
   group = 'group',
   createdAt = 'createdAt',
+  restartStreans = 'restartStreams',
 }
 
 export default function TestScreen(): JSX.Element {
@@ -112,7 +114,12 @@ export default function TestScreen(): JSX.Element {
   const params = route.params as {
     testSelection: TestCategory
   }
-  const allTests = tests.concat(groupTests).concat(createdAtTests)
+  const allTests = [
+    ...tests,
+    ...groupTests,
+    ...createdAtTests,
+    ...restartStreamTests,
+  ]
   let activeTests, title
   switch (params.testSelection) {
     case TestCategory.all:
@@ -130,6 +137,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.createdAt:
       activeTests = createdAtTests
       title = 'Created At Unit Tests'
+      break
+    case TestCategory.restartStreans:
+      activeTests = restartStreamTests
+      title = 'Restart Streams Unit Tests'
       break
   }
 

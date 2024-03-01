@@ -17,6 +17,7 @@ export default class Conversations<
 > {
   client: Client<ContentTypes>
   private known = {} as { [topic: string]: boolean }
+  private subscriptions: { [key: string]: { remove: () => void } } = {}
 
   constructor(client: Client<ContentTypes>) {
     this.client = client
@@ -126,6 +127,7 @@ export default class Conversations<
         await callback(new Group(this.client, group))
       }
     )
+    this.subscriptions[EventTypes.Group] = groupsSubscription
     return () => {
       groupsSubscription.remove()
       XMTPModule.unsubscribeFromGroups(this.client.address)
@@ -168,7 +170,7 @@ export default class Conversations<
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>
   ) {
     XMTPModule.subscribeToConversations(this.client.address)
-    XMTPModule.emitter.addListener(
+    const subscription = XMTPModule.emitter.addListener(
       EventTypes.Conversation,
       async ({
         clientAddress,
@@ -188,6 +190,7 @@ export default class Conversations<
         await callback(new Conversation(this.client, conversation))
       }
     )
+    this.subscriptions[EventTypes.Conversation] = subscription
   }
 
   /**
@@ -252,7 +255,7 @@ export default class Conversations<
     includeGroups: boolean = false
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(this.client.address, includeGroups)
-    XMTPModule.emitter.addListener(
+    const subscription = XMTPModule.emitter.addListener(
       EventTypes.Message,
       async ({
         clientAddress,
@@ -272,6 +275,7 @@ export default class Conversations<
         await callback(DecodedMessage.fromObject(message, this.client))
       }
     )
+    this.subscriptions[EventTypes.Message] = subscription
   }
 
   /**
@@ -285,7 +289,7 @@ export default class Conversations<
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<void> {
     XMTPModule.subscribeToAllGroupMessages(this.client.address)
-    XMTPModule.emitter.addListener(
+    const subscription = XMTPModule.emitter.addListener(
       EventTypes.AllGroupMessage,
       async ({
         clientAddress,
@@ -305,12 +309,17 @@ export default class Conversations<
         await callback(DecodedMessage.fromObject(message, this.client))
       }
     )
+    this.subscriptions[EventTypes.AllGroupMessage] = subscription
   }
 
   /**
    * Cancels the stream for new conversations.
    */
   cancelStream() {
+    if (this.subscriptions[EventTypes.Conversation]) {
+      this.subscriptions[EventTypes.Conversation].remove()
+      delete this.subscriptions[EventTypes.Conversation]
+    }
     XMTPModule.unsubscribeFromConversations(this.client.address)
   }
 
@@ -318,6 +327,10 @@ export default class Conversations<
    * Cancels the stream for new conversations.
    */
   cancelStreamGroups() {
+    if (this.subscriptions[EventTypes.Group]) {
+      this.subscriptions[EventTypes.Group].remove()
+      delete this.subscriptions[EventTypes.Group]
+    }
     XMTPModule.unsubscribeFromGroups(this.client.address)
   }
 
@@ -325,6 +338,10 @@ export default class Conversations<
    * Cancels the stream for new messages in all conversations.
    */
   cancelStreamAllMessages() {
+    if (this.subscriptions[EventTypes.Message]) {
+      this.subscriptions[EventTypes.Message].remove()
+      delete this.subscriptions[EventTypes.Message]
+    }
     XMTPModule.unsubscribeFromAllMessages(this.client.address)
   }
 
@@ -332,6 +349,10 @@ export default class Conversations<
    * Cancels the stream for new messages in all groups.
    */
   cancelStreamAllGroupMessages() {
+    if (this.subscriptions[EventTypes.AllGroupMessage]) {
+      this.subscriptions[EventTypes.AllGroupMessage].remove()
+      delete this.subscriptions[EventTypes.AllGroupMessage]
+    }
     XMTPModule.unsubscribeFromAllGroupMessages(this.client.address)
   }
 }
