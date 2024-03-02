@@ -1,7 +1,13 @@
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, delayToPropogate, isIos } from './test-utils'
+import {
+  Test,
+  assert,
+  createClients,
+  delayToPropogate,
+  isIos,
+} from './test-utils'
 import {
   Client,
   Conversation,
@@ -44,7 +50,9 @@ test('can delete a local database', async () => {
   await client.conversations.syncGroups()
   assert(
     (await client.conversations.listGroups()).length === 1,
-    `should have a group size of 1 but was ${(await client.conversations.listGroups()).length}`
+    `should have a group size of 1 but was ${
+      (await client.conversations.listGroups()).length
+    }`
   )
 
   await client.deleteLocalDatabase()
@@ -56,7 +64,9 @@ test('can delete a local database', async () => {
   await client.conversations.syncGroups()
   assert(
     (await client.conversations.listGroups()).length === 0,
-    `should have a group size of 0 but was ${(await client.conversations.listGroups()).length}`
+    `should have a group size of 0 but was ${
+      (await client.conversations.listGroups()).length
+    }`
   )
 
   return true
@@ -1011,12 +1021,7 @@ test('can streamAll from multiple clients', async () => {
 })
 
 test('can streamAll from multiple clients - swapped orderring', async () => {
-  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
+  const [alix, bo, caro] = await createClients(3)
 
   // Setup stream alls
   const allBoConversations: any[] = []
@@ -1050,12 +1055,7 @@ test('can streamAll from multiple clients - swapped orderring', async () => {
 })
 
 test('can streamAllMessages from multiple clients', async () => {
-  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
+  const [alix, bo, caro] = await createClients(3)
 
   // Setup stream
   const allBoMessages: any[] = []
@@ -1088,12 +1088,7 @@ test('can streamAllMessages from multiple clients', async () => {
 })
 
 test('can streamAllMessages from multiple clients - swapped', async () => {
-  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
+  const [alix, bo, caro] = await createClients(3)
 
   // Setup stream
   const allBoMessages: any[] = []
@@ -1129,12 +1124,7 @@ test('can streamAllMessages from multiple clients - swapped', async () => {
 })
 
 test('can stream all group Messages from multiple clients', async () => {
-  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
+  const [alix, bo, caro] = await createClients(3)
 
   // Setup stream
   const allAlixMessages: DecodedMessage[] = []
@@ -1180,12 +1170,7 @@ test('can stream all group Messages from multiple clients', async () => {
 })
 
 test('can stream all group Messages from multiple clients - swapped', async () => {
-  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
+  const [alix, bo, caro] = await createClients(3)
 
   // Setup stream
   const allAlixMessages: DecodedMessage[] = []
