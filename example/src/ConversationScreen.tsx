@@ -123,7 +123,11 @@ export default function ConversationScreen({
   )
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView
+      testID="conversation-screen"
+      accessible={false}
+      style={{ flex: 1 }}
+    >
       <KeyboardAvoidingView
         behavior="padding"
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
@@ -249,6 +253,7 @@ export default function ConversationScreen({
                         editable={!isSending}
                         value={text}
                         onChangeText={setText}
+                        testID="message-input"
                         style={{
                           height: 40,
                           marginRight: 0,
@@ -261,6 +266,7 @@ export default function ConversationScreen({
                       />
                       <Button
                         title="Send"
+                        testID="send-message-button"
                         onPress={sendTextMessage}
                         disabled={isSending || !conversation || !text.length}
                       />
@@ -915,6 +921,7 @@ function MessageItem({
       <TouchableHighlight
         onLongPress={() => setShowNewReaction(true)}
         underlayColor="#eee"
+        testID={`conversation-message-${messageId}`}
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
           {showSender ? (

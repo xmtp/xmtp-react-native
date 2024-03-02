@@ -80,6 +80,7 @@ export default function App() {
                       onPress={() => navigation.navigate('conversationCreate')}
                       title="New"
                       color={Platform.OS === 'ios' ? '#fff' : 'rgb(49 0 110)'}
+                      testID="new-conversation-button"
                     />
                   ),
                 })}

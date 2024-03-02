@@ -5,6 +5,10 @@ import { tests, Test } from './tests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
+function getTestId(test: Test, result: Result): string {
+  return `${test.name}-${result}`
+}
+
 function TestView({
   test,
   onComplete,
@@ -54,7 +58,7 @@ function TestView({
   }[result]
 
   return (
-    <View style={{ backgroundColor }}>
+    <View style={{ backgroundColor }} testID={getTestId(test, result)}>
       <View
         style={{
           flexDirection: 'row',
@@ -99,7 +103,7 @@ export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0)
 
   return (
-    <ScrollView>
+    <ScrollView testID="test-screen" accessible={false}>
       <View>
         <View style={{ padding: 12 }}>
           <Text testID="Test View" accessible accessibilityLabel="Test View">
