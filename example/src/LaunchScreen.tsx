@@ -87,6 +87,7 @@ export default function LaunchScreen({
           title="Run Unit Tests"
           onPress={() => navigation.navigate('test')}
           accessibilityLabel="Unit-tests"
+          testID="run-tests-button"
         />
       </View>
       {signer && (
@@ -157,6 +158,7 @@ export default function LaunchScreen({
         <Button
           title="Use Generated Wallet (dev)"
           color="green"
+          testID="generated-dev-button"
           onPress={() => {
             configureWallet(
               'dev',
@@ -175,6 +177,7 @@ export default function LaunchScreen({
         <Button
           title="Use Generated Wallet (local)"
           color="purple"
+          testID="generated-local-button"
           onPress={() => {
             configureWallet(
               'local',
@@ -208,6 +211,7 @@ export default function LaunchScreen({
             <Button
               title="Use Saved Wallet (dev)"
               color="green"
+              testID="saved-dev-button"
               onPress={() => {
                 configureWallet(
                   'dev',
@@ -224,6 +228,7 @@ export default function LaunchScreen({
             <Button
               title="Use Saved Wallet (local)"
               color="purple"
+              testID="saved-local-button"
               onPress={() => {
                 configureWallet(
                   'local',
@@ -238,6 +243,7 @@ export default function LaunchScreen({
           </View>
           <View key="saved-clear" style={{ margin: 16 }}>
             <Button
+              testID="saved-clear-button"
               title="Clear Saved Wallet"
               // color={"black"}
               onPress={() => savedKeys.clear()}

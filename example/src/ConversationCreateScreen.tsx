@@ -28,7 +28,7 @@ export default function ConversationCreateScreen({
   }
   return (
     <>
-      <ScrollView>
+      <ScrollView testID="conversation-screen" accessible={false}>
         <TextInput
           value={toAddress}
           placeholder="Enter an address"
@@ -36,6 +36,7 @@ export default function ConversationCreateScreen({
             setToAddress(toAddress)
             setAlert('') // clear any previous alert
           }}
+          testID="to-address-input"
           editable={!isCreating}
           style={{
             height: 40,
@@ -57,6 +58,7 @@ export default function ConversationCreateScreen({
               .catch((err) => setAlert(err.message))
               .finally(() => setCreating(false))
           }}
+          testID="start-conversation-button"
           disabled={isCreating || !toAddress}
         />
         {alert && (

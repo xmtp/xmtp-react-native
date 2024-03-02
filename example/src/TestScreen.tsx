@@ -99,7 +99,7 @@ export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0)
 
   return (
-    <ScrollView>
+    <ScrollView testID="test-screen" accessible={false}>
       <View>
         <View style={{ padding: 12 }}>
           <Text testID="Test View" accessible accessibilityLabel="Test View">

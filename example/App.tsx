@@ -1,5 +1,12 @@
 import { NavigationContainer } from '@react-navigation/native'
+import { Ethereum } from '@thirdweb-dev/chains'
+import {
+  ThirdwebProvider,
+  metamaskWallet,
+  rainbowWallet,
+} from '@thirdweb-dev/react-native'
 import { Button, Platform } from 'react-native'
+import Config from 'react-native-config'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { XmtpProvider } from 'xmtp-react-native-sdk'
 
@@ -9,9 +16,6 @@ import HomeScreen from './src/HomeScreen'
 import LaunchScreen from './src/LaunchScreen'
 import { Navigator } from './src/Navigation'
 import TestScreen from './src/TestScreen'
-import { ThirdwebProvider, metamaskWallet, rainbowWallet } from '@thirdweb-dev/react-native'
-import { Ethereum } from '@thirdweb-dev/chains'
-import Config from 'react-native-config'
 
 const queryClient = new QueryClient()
 
@@ -20,18 +24,18 @@ export default function App() {
   // console.log("Thirdweb client id: " + Config.THIRD_WEB_CLIENT_ID)
   return (
     <ThirdwebProvider
-      activeChain={ Ethereum }
-      supportedChains={ [ Ethereum ] }
-      clientId={ Config.THIRD_WEB_CLIENT_ID }
+      activeChain={Ethereum}
+      supportedChains={[Ethereum]}
+      clientId={Config.THIRD_WEB_CLIENT_ID}
       dAppMeta={{
         name: 'XMTP Example',
         description: 'Example app from xmtp-react-native repo',
-        logoUrl: 'https://pbs.twimg.com/profile_images/1668323456935510016/2c_Ue8dF_400x400.jpg',
+        logoUrl:
+          'https://pbs.twimg.com/profile_images/1668323456935510016/2c_Ue8dF_400x400.jpg',
         url: 'https://xmtp.org',
       }}
-      supportedWallets={[
-        metamaskWallet(), rainbowWallet()
-      ]}>
+      supportedWallets={[metamaskWallet(), rainbowWallet()]}
+    >
       <QueryClientProvider client={queryClient}>
         <XmtpProvider>
           <NavigationContainer>
@@ -72,6 +76,7 @@ export default function App() {
                       onPress={() => navigation.navigate('conversationCreate')}
                       title="New"
                       color={Platform.OS === 'ios' ? '#fff' : 'rgb(49 0 110)'}
+                      testID="new-conversation-button"
                     />
                   ),
                 })}
