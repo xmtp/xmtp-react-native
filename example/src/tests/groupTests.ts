@@ -262,7 +262,7 @@ test('can message in a group', async () => {
       'num groups for bob should be 1, but it is' + bobGroups.length
     )
   }
-  delayToPropogate()
+  await delayToPropogate()
   // Bob can read messages from Alice
   const bobMessages: DecodedMessage[] = await bobGroups[0].messages()
 
@@ -371,8 +371,8 @@ test('can add members to a group', async () => {
   }
 
   // Alice can send messages
-  aliceGroup.send('hello, world')
-  aliceGroup.send('gm')
+  await aliceGroup.send('hello, world')
+  await aliceGroup.send('gm')
 
   // Bob's num groups == 1
   bobGroups = await bobClient.conversations.listGroups()
@@ -909,7 +909,7 @@ test('can paginate group messages', async () => {
       'num groups for bob should be 1, but it is' + bobGroups.length
     )
   }
-  delayToPropogate()
+  await delayToPropogate()
   // Bob can read messages from Alice
   const bobMessages: DecodedMessage[] = await bobGroups[0].messages(false, 1)
 
