@@ -289,15 +289,20 @@ test('can message in a group', async () => {
   }
 
   // Cam can read messages from Alice and Bob
+  await camGroups[0].sync()
   const camMessages = await camGroups[0].messages()
-  if (camMessages[1].content() !== 'gm') {
-    throw new Error(
-      `second Message should be 'gm' but was ${camMessages[1].content()}`
-    )
+
+  if (camMessages.length !== 3) {
+    throw new Error(`length should be 3 but was ${camMessages.length}`)
   }
   if (camMessages[0].content() !== 'hey guys!') {
     throw new Error(
       `newest Message should be 'hey guys!' but was ${camMessages[0].content()}`
+    )
+  }
+  if (camMessages[1].content() !== 'gm') {
+    throw new Error(
+      `second Message should be 'gm' but was ${camMessages[1].content()}`
     )
   }
 
