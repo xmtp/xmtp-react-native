@@ -269,10 +269,10 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
    * @param {Function} callback - A callback function that will be invoked with the new DecodedMessage when a message is received.
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
-  streamMessages(
+  async streamMessages(
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
-  ): () => void {
-    XMTP.subscribeToMessages(this.client.address, this.topic)
+  ): Promise<() => void> {
+    await XMTP.subscribeToMessages(this.client.address, this.topic)
     const hasSeen = {}
     const messageSubscription = XMTP.emitter.addListener(
       EventTypes.ConversationMessage,
@@ -297,9 +297,9 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       }
     )
 
-    return () => {
+    return async () => {
       messageSubscription.remove()
-      XMTP.unsubscribeFromMessages(this.client.address, this.topic)
+      await XMTP.unsubscribeFromMessages(this.client.address, this.topic)
     }
   }
 }

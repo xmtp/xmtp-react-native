@@ -123,10 +123,10 @@ export class Group<
    * @param {Function} callback - A callback function that will be invoked with the new DecodedMessage when a message is received.
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
-  streamGroupMessages(
+  async streamGroupMessages(
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
-  ): () => void {
-    XMTP.subscribeToGroupMessages(this.client.address, this.id)
+  ): Promise<() => void> {
+    await XMTP.subscribeToGroupMessages(this.client.address, this.id)
     const hasSeen = {}
     const messageSubscription = XMTP.emitter.addListener(
       EventTypes.GroupMessage,
@@ -150,9 +150,9 @@ export class Group<
         await callback(DecodedMessage.fromObject(message, this.client))
       }
     )
-    return () => {
+    return async () => {
       messageSubscription.remove()
-      XMTP.unsubscribeFromGroupMessages(this.client.address, this.id)
+      await XMTP.unsubscribeFromGroupMessages(this.client.address, this.id)
     }
   }
 

@@ -75,7 +75,7 @@ export class Client<
 
               const signature = Buffer.from(sigBytes).toString('base64')
 
-              XMTPModule.receiveSignature(request.id, signature)
+              await XMTPModule.receiveSignature(request.id, signature)
             } catch (e) {
               const errorMessage = 'ERROR in create. User rejected signature'
               console.info(errorMessage, e)
@@ -99,7 +99,7 @@ export class Client<
             resolve(new Client(address, opts?.codecs || []))
           }
         )
-        XMTPModule.auth(
+        await XMTPModule.auth(
           await signer.getAddress(),
           options.env,
           options.appVersion,
@@ -109,7 +109,9 @@ export class Client<
           options.dbEncryptionKey,
           options.dbPath
         )
-      })()
+      })().catch((error) => {
+        console.error('ERROR in create: ', error)
+      })
     })
   }
 
@@ -256,9 +258,7 @@ export class Client<
     return opts?.[event] !== undefined
   }
 
-  private static async removeSubscription(
-    subscription?: Subscription
-  ): Promise<void> {
+  private static removeSubscription(subscription?: Subscription) {
     if (subscription) {
       subscription.remove()
     }
