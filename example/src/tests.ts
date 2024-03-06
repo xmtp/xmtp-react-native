@@ -1,5 +1,6 @@
 import { FramesClient } from '@xmtp/frames-client'
 import { content } from '@xmtp/proto'
+import { createHmac } from 'crypto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
@@ -13,7 +14,7 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
 } from '../../src/index'
-import { createHmac } from 'crypto'
+import { Platform } from 'react-native'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
@@ -117,24 +118,63 @@ function base64ToUint8Array(base64String: string): Uint8Array {
   return new Uint8Array(buffer)
 }
 
-function verifyHmacSignature(
+async function verifyHmacSignature(
   key: Uint8Array,
+  // key: CryptoKey,
   signature: Uint8Array,
-  message: Uint8Array
-): boolean {
+  message: Uint8Array,
+  idx?: number
+  // ): boolean {
+): Promise<boolean> {
+  // return await crypto.subtle.verify('HMAC', key, signature, message)
+  // const testKey = await exportHmacKey(key)
   const hmac = createHmac('sha256', Buffer.from(key))
 
   hmac.update(message)
 
   const calculatedSignature = hmac.digest()
-  const result = Buffer.compare(calculatedSignature, signature) === 0
 
+
+  if (idx === 1) {
+    console.log('Whatt', Buffer.compare(calculatedSignature, signature))
+    if (calculatedSignature.length !== signature.length) {
+      console.log('here11110', calculatedSignature.length, signature.length)
+    }
+    console.log({
+      os: Platform.OS,
+      key: uint8ArrayToBase64(key),
+      signature: uint8ArrayToBase64(signature),
+      message: uint8ArrayToBase64(message),
+      calculatedSignature: calculatedSignature.toString('base64'),
+    })
+    for (let i = 0; i < calculatedSignature.length; i++) {
+      if (calculatedSignature[i] !== signature[i]) {
+        console.log('here11119', i, calculatedSignature[i], signature[i])
+        // return false
+      }
+    }
+  }
+  const result = Buffer.compare(calculatedSignature, signature) === 0
   return result
 }
 
 async function exportHmacKey(key: CryptoKey): Promise<Uint8Array> {
-  const exported = await window.crypto.subtle.exportKey('raw', key)
+  const exported = await crypto.subtle.exportKey('raw', key)
   return new Uint8Array(exported)
+}
+
+export async function importHmacKey(key: Uint8Array): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    true,
+    ['sign', 'verify']
+  )
+}
+
+function uint8ArrayToBase64(uint8Array: Uint8Array) {
+  return Buffer.from(uint8Array).toString('base64')
 }
 
 function test(name: string, perform: () => Promise<boolean>) {
@@ -1035,85 +1075,108 @@ function test(name: string, perform: () => Promise<boolean>) {
 //   return true
 // })
 
-// test('generates and validates HMAC', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info = crypto.getRandomValues(new Uint8Array(32))
-//   const message = crypto.getRandomValues(new Uint8Array(32))
-//   const hmac = await generateHmacSignature(secret, info, message)
-//   const key = await hkdfHmacKey(secret, info)
-//   const valid = await verifyHmacSignature(key, hmac, message)
-//   return valid
-// })
+test('generates and validates HMAC', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const key = await hkdfHmacKey(secret, info)
+  const valid = await verifyHmacSignature(
+    await exportHmacKey(key),
+    // key,
+    hmac,
+    message
+  )
+  assert(valid, 'HMAC should be valid')
+  return valid
+})
 
-// test('generates and validates HMAC with imported key', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info = crypto.getRandomValues(new Uint8Array(32))
-//   const message = crypto.getRandomValues(new Uint8Array(32))
-//   const hmac = await generateHmacSignature(secret, info, message)
-//   const key = await hkdfHmacKey(secret, info)
-//   const exportedKey = await exportHmacKey(key)
-//   const importedKey = await importHmacKey(exportedKey)
-//   const valid = await verifyHmacSignature(importedKey, hmac, message)
-//   return valid
-// })
+test('generates and validates HMAC with imported key', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const key = await hkdfHmacKey(secret, info)
+  const exportedKey = await exportHmacKey(key)
+  const importedKey = await importHmacKey(exportedKey)
+  const valid = await verifyHmacSignature(
+    await exportHmacKey(importedKey),
+    // importedKey,
+    hmac,
+    message
+  )
+  assert(valid, 'HMAC should be valid')
+  return valid
+})
 
-// test('generates different HMAC keys with different infos', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info1 = crypto.getRandomValues(new Uint8Array(32))
-//   const info2 = crypto.getRandomValues(new Uint8Array(32))
-//   const key1 = await hkdfHmacKey(secret, info1)
-//   const key2 = await hkdfHmacKey(secret, info2)
+test('generates different HMAC keys with different infos', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info1 = crypto.getRandomValues(new Uint8Array(32))
+  const info2 = crypto.getRandomValues(new Uint8Array(32))
+  const key1 = await hkdfHmacKey(secret, info1)
+  const key2 = await hkdfHmacKey(secret, info2)
 
-//   const exported1 = await exportHmacKey(key1)
-//   const exported2 = await exportHmacKey(key2)
-//   return exported1 !== exported2
-// })
+  const exported1 = await exportHmacKey(key1)
+  const exported2 = await exportHmacKey(key2)
+  assert(exported1 !== exported2, 'keys should be different')
+  return exported1 !== exported2
+})
 
-// test('fails to validate HMAC with wrong message', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info = crypto.getRandomValues(new Uint8Array(32))
-//   const message = crypto.getRandomValues(new Uint8Array(32))
-//   const hmac = await generateHmacSignature(secret, info, message)
-//   const key = await hkdfHmacKey(secret, info)
-//   const valid = await verifyHmacSignature(
-//     key,
-//     hmac,
-//     crypto.getRandomValues(new Uint8Array(32))
-//   )
-//   return !valid
-// })
+test('fails to validate HMAC with wrong message', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const key = await hkdfHmacKey(secret, info)
+  const valid = await verifyHmacSignature(
+    await exportHmacKey(key),
+    // key,
+    hmac,
+    crypto.getRandomValues(new Uint8Array(32))
+  )
+  return !valid
+})
 
-// test('fails to validate HMAC with wrong key', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info = crypto.getRandomValues(new Uint8Array(32))
-//   const message = crypto.getRandomValues(new Uint8Array(32))
-//   const hmac = await generateHmacSignature(secret, info, message)
-//   const valid = await verifyHmacSignature(
-//     await hkdfHmacKey(
-//       crypto.getRandomValues(new Uint8Array(32)),
-//       crypto.getRandomValues(new Uint8Array(32))
-//     ),
-//     hmac,
-//     message
-//   )
-//   return !valid
-// })
+test('fails to validate HMAC with wrong key', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const valid = await verifyHmacSignature(
+    await exportHmacKey(
+      await hkdfHmacKey(
+        crypto.getRandomValues(new Uint8Array(32)),
+        crypto.getRandomValues(new Uint8Array(32))
+      )
+    ),
+    hmac,
+    message
+  )
+  return !valid
+})
 
 test('get all HMAC keys', async () => {
-  const alice = await Client.createRandom({ env: 'local' })
+  const keybundle =
+    'CooDCsIBCMvkxb/fMRIiCiBHJQr6m5qd2Fv/DiHvGsLm+tbwKef+f5QTImu0gxDWYhqUAQjL5MW/3zESRgpECkCCNGC2uxPeS+m7kZCmpOMW33KCJtA7avaKPf02XrYEsRK6etQ+Eg0zgpI6r8LZVK8SDTdZRyf2aQVMwKoxTMuMEAEaQwpBBEUKQOxhE0lG1nomUA8S2WSU+MzmhIkYYzA6ipEyLIdzegEXJjDqUv3s2pniTc+YHSQ/mZUkShc9bXPKd6N2om4SwgEI0uTFv98xEiIKIPQuDX2QfZNyR8Y0+8vBlbF30aMGhEAGC66A2n0QvjSUGpQBCNLkxb/fMRJGCkQKQAR8Mjq/I/fWfr6etR+XaOi5Z3KeXyJpsWtXqf4Vf5OUEt5U59FUQMxhpY11InmLRakJzP+VN4qtG8XLeCCutGgQARpDCkEEApjREPHI8Bseij1HgG9oOykZKgQGBt4u0X9A+w0+XquRrvr6dpLs7FqU3bLAPglV9aC+os/Lob6v7B7Lee2JWQ=='
+  const alice = await Client.createFromKeyBundle(keybundle, { env: 'local' })
 
-  const conversations: Conversation<string | undefined>[] = []
+  const conversations: Conversation<string | undefined>[] =
+    await alice.conversations.list()
 
-  for (let i = 0; i < 5; i++) {
-    const client = await Client.createRandom({ env: 'local' })
-    const convo = await alice.conversations.newConversation(client.address, {
-      conversationID: `https://example.com/${i}`,
-      metadata: {
-        title: `Conversation ${i}`,
-      },
-    })
-    conversations.push(convo)
-  }
+  // const alice = await Client.createRandom({ env: 'local' })
+
+  // const conversations: Conversation<string | undefined>[] = []
+
+  // for (let i = 0; i < 5; i++) {
+  //   const client = await Client.createRandom({ env: 'local' })
+  //   const convo = await alice.conversations.newConversation(client.address, {
+  //     conversationID: `https://example.com/${i}`,
+  //     metadata: {
+  //       title: `Conversation ${i}`,
+  //     },
+  //   })
+  //   conversations.push(convo)
+  // }
   const thirtyDayPeriodsSinceEpoch = Math.floor(
     Date.now() / 1000 / 60 / 60 / 24 / 30
   )
@@ -1133,32 +1196,59 @@ test('get all HMAC keys', async () => {
   const topicHmacs: {
     [topic: string]: Uint8Array
   } = {}
-  const headerBytes = crypto.getRandomValues(new Uint8Array(10))
+  const headerBytes = new Uint8Array(10)
 
   for (const conversation of conversations) {
     const topic = conversation.topic
 
     const keyMaterial = conversation.keyMaterial!
-    const info = `${thirtyDayPeriodsSinceEpoch}-${alice.address}`
-    const hmac = await generateHmacSignature(
-      base64ToUint8Array(keyMaterial),
-      new TextEncoder().encode(info),
-      headerBytes
+    console.log('here1111', keyMaterial)
+    const info = new TextEncoder().encode(
+      `${thirtyDayPeriodsSinceEpoch}-${alice.address}`
     )
+    const secret = base64ToUint8Array(keyMaterial)
+    const message = headerBytes
+    const hmac = await generateHmacSignature(secret, info, message)
+    const key = await hkdfHmacKey(secret, info)
+    const isValid = await verifyHmacSignature(
+      await exportHmacKey(key),
+      // key,
+      hmac,
+      message
+    )
+    assert(isValid, 'covnersation key is not valid')
 
     topicHmacs[topic] = hmac
   }
 
-  Object.keys(hmacKeys).map((topic) => {
-    const hmacData = hmacKeys[topic]
+  await Promise.all(
+    Object.keys(hmacKeys).map(async (topic) => {
+      const hmacData = hmacKeys[topic]
 
-    hmacData.values.map(({ hmacKey, thirtyDayPeriodsSinceEpoch }, idx) => {
-      assert(thirtyDayPeriodsSinceEpoch === periods[idx], 'periods not equal')
-      const valid = verifyHmacSignature(hmacKey, topicHmacs[topic], headerBytes)
-
-      assert(valid === (idx === 1), 'key is not valid')
+      await Promise.all(
+        hmacData.values.map(
+          async ({ hmacKey, thirtyDayPeriodsSinceEpoch }, idx) => {
+            assert(
+              thirtyDayPeriodsSinceEpoch === periods[idx],
+              'periods not equal'
+            )
+            console.log('verifying', idx)
+            console.log('topic', topic)
+            console.log('hmacKey', hmacKey)
+            // uint to base64
+            const valid = await verifyHmacSignature(
+              hmacKey,
+              // await importHmacKey(hmacKey),
+              topicHmacs[topic],
+              headerBytes,
+              idx
+            )
+            assert(valid === (idx === 1), 'key is not valid')
+          }
+        )
+      )
     })
-  })
+  )
 
   return true
 })
