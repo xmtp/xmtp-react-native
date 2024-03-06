@@ -278,7 +278,7 @@ test('can message in a group', async () => {
     throw new Error("newest message should be 'hello, world'")
   }
   // Bob can send a message
-  bobGroups[0].send('hey guys!')
+  await bobGroups[0].send('hey guys!')
 
   // Cam's num groups == 1
   const camGroups = await camClient.conversations.listGroups()
