@@ -1,5 +1,6 @@
 import { FramesClient } from '@xmtp/frames-client'
 import { content } from '@xmtp/proto'
+import { createHmac } from 'crypto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
@@ -13,7 +14,6 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
 } from '../../src/index'
-import { createHmac } from 'crypto'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
@@ -135,6 +135,16 @@ function verifyHmacSignature(
 async function exportHmacKey(key: CryptoKey): Promise<Uint8Array> {
   const exported = await window.crypto.subtle.exportKey('raw', key)
   return new Uint8Array(exported)
+}
+
+async function importHmacKey(key: Uint8Array): Promise<CryptoKey> {
+  return await window.crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256', length: 256 },
+    true,
+    ['sign', 'verify']
+  )
 }
 
 function test(name: string, perform: () => Promise<boolean>) {
@@ -1035,69 +1045,70 @@ function test(name: string, perform: () => Promise<boolean>) {
 //   return true
 // })
 
-// test('generates and validates HMAC', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info = crypto.getRandomValues(new Uint8Array(32))
-//   const message = crypto.getRandomValues(new Uint8Array(32))
-//   const hmac = await generateHmacSignature(secret, info, message)
-//   const key = await hkdfHmacKey(secret, info)
-//   const valid = await verifyHmacSignature(key, hmac, message)
-//   return valid
-// })
+test('generates and validates HMAC', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const key = await hkdfHmacKey(secret, info)
+  const valid = verifyHmacSignature(await exportHmacKey(key), hmac, message)
+  return valid
+})
 
-// test('generates and validates HMAC with imported key', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info = crypto.getRandomValues(new Uint8Array(32))
-//   const message = crypto.getRandomValues(new Uint8Array(32))
-//   const hmac = await generateHmacSignature(secret, info, message)
-//   const key = await hkdfHmacKey(secret, info)
-//   const exportedKey = await exportHmacKey(key)
-//   const importedKey = await importHmacKey(exportedKey)
-//   const valid = await verifyHmacSignature(importedKey, hmac, message)
-//   return valid
-// })
+test('generates and validates HMAC with imported key', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const key = await hkdfHmacKey(secret, info)
+  const exportedKey = await exportHmacKey(key)
+  const valid = verifyHmacSignature(exportedKey, hmac, message)
+  return valid
+})
 
-// test('generates different HMAC keys with different infos', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info1 = crypto.getRandomValues(new Uint8Array(32))
-//   const info2 = crypto.getRandomValues(new Uint8Array(32))
-//   const key1 = await hkdfHmacKey(secret, info1)
-//   const key2 = await hkdfHmacKey(secret, info2)
+test('generates different HMAC keys with different infos', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info1 = crypto.getRandomValues(new Uint8Array(32))
+  const info2 = crypto.getRandomValues(new Uint8Array(32))
+  const key1 = await hkdfHmacKey(secret, info1)
+  const key2 = await hkdfHmacKey(secret, info2)
 
-//   const exported1 = await exportHmacKey(key1)
-//   const exported2 = await exportHmacKey(key2)
-//   return exported1 !== exported2
-// })
+  const exported1 = await exportHmacKey(key1)
+  const exported2 = await exportHmacKey(key2)
+  return exported1 !== exported2
+})
 
-// test('fails to validate HMAC with wrong message', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info = crypto.getRandomValues(new Uint8Array(32))
-//   const message = crypto.getRandomValues(new Uint8Array(32))
-//   const hmac = await generateHmacSignature(secret, info, message)
-//   const key = await hkdfHmacKey(secret, info)
-//   const valid = await verifyHmacSignature(
-//     key,
-//     hmac,
-//     crypto.getRandomValues(new Uint8Array(32))
-//   )
-//   return !valid
-// })
+test('fails to validate HMAC with wrong message', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const key = await hkdfHmacKey(secret, info)
+  const valid = verifyHmacSignature(
+    await exportHmacKey(key),
+    hmac,
+    crypto.getRandomValues(new Uint8Array(32))
+  )
+  return !valid
+})
 
-// test('fails to validate HMAC with wrong key', async () => {
-//   const secret = crypto.getRandomValues(new Uint8Array(32))
-//   const info = crypto.getRandomValues(new Uint8Array(32))
-//   const message = crypto.getRandomValues(new Uint8Array(32))
-//   const hmac = await generateHmacSignature(secret, info, message)
-//   const valid = await verifyHmacSignature(
-//     await hkdfHmacKey(
-//       crypto.getRandomValues(new Uint8Array(32)),
-//       crypto.getRandomValues(new Uint8Array(32))
-//     ),
-//     hmac,
-//     message
-//   )
-//   return !valid
-// })
+test('fails to validate HMAC with wrong key', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const valid = verifyHmacSignature(
+    await exportHmacKey(
+      await hkdfHmacKey(
+        crypto.getRandomValues(new Uint8Array(32)),
+        crypto.getRandomValues(new Uint8Array(32))
+      )
+    ),
+    hmac,
+    message
+  )
+  return !valid
+})
 
 test('get all HMAC keys', async () => {
   const alice = await Client.createRandom({ env: 'local' })
