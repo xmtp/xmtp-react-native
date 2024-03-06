@@ -108,7 +108,11 @@ export default function ConversationScreen({
   }
   const sendRemoteAttachmentMessage = () => {
     if (remoteAttachment) {
-      sendMessage({ remoteAttachment }).then(() => setAttachment(null))
+      sendMessage({ remoteAttachment })
+        .then(() => setAttachment(null))
+        .catch((e) => {
+          console.error('Error sending message: ', e)
+        })
     }
   }
   const sendTextMessage = () => sendMessage({ text }).then(() => setText(''))
@@ -982,7 +986,14 @@ function MessageItem({
               visible={showNewReaction}
               onReaction={(reaction) => {
                 setShowNewReaction(false)
-                performReaction && performReaction('added', reaction)
+                performReaction &&
+                  performReaction('added', reaction)
+                    .then(() => {
+                      console.log('Reaction added successfully')
+                    })
+                    .catch((error) => {
+                      console.error('Error adding reaction', error)
+                    })
               }}
             />
           </View>

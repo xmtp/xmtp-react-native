@@ -47,7 +47,9 @@ function TestView({
   useEffect(() => {
     ;(async () => {
       await run()
-    })()
+    })().catch((e) => {
+      console.error(e)
+    })
   }, [test])
 
   const backgroundColor = {

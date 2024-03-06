@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker'
 import type { ImagePickerAsset } from 'expo-image-picker'
 import { PermissionStatus } from 'expo-modules-core'
 import moment from 'moment'
-import React, { FC, useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   Button,
   FlatList,
@@ -110,7 +110,11 @@ export default function GroupScreen({
   }
   const sendRemoteAttachmentMessage = () => {
     if (remoteAttachment) {
-      sendMessage({ remoteAttachment }).then(() => setAttachment(null))
+      sendMessage({ remoteAttachment })
+        .then(() => setAttachment(null))
+        .catch((e) => {
+          console.error('Error sending message: ', e)
+        })
     }
   }
   const sendTextMessage = () => sendMessage({ text }).then(() => setText(''))
@@ -982,7 +986,14 @@ function MessageItem({
               visible={showNewReaction}
               onReaction={(reaction) => {
                 setShowNewReaction(false)
-                performReaction && performReaction('added', reaction)
+                performReaction &&
+                  performReaction('added', reaction)
+                    .then(() => {
+                      console.log('Reaction added successfully')
+                    })
+                    .catch((error) => {
+                      console.error('Error adding reaction', error)
+                    })
               }}
             />
           </View>

@@ -24,7 +24,14 @@ export function useConversationList(): UseQueryResult<
   Conversation<SupportedContentTypes>[]
 > {
   const { client } = useXmtp()
-  client?.contacts.refreshConsentList()
+  client?.contacts
+    .refreshConsentList()
+    .then(() => {
+      console.log('Refreshed consent list successfully')
+    })
+    .catch((error) => {
+      console.error('Error refreshing consent list', error)
+    })
   return useQuery<Conversation<SupportedContentTypes>[]>(
     ['xmtp', 'conversations', client?.address],
     () => client!.conversations.list(),
