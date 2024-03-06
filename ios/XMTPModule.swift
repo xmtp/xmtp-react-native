@@ -1018,6 +1018,7 @@ public class XMTPModule: Module {
 						try sendEvent("conversationMessage", [
 							"clientAddress": clientAddress,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
+              "topic": topic
 						])
 					} catch {
 						print("discarding message, unable to encode wrapper \(message.id)")
@@ -1088,6 +1089,7 @@ public class XMTPModule: Module {
 						try sendEvent("groupMessage", [
 							"clientAddress": clientAddress,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
+              "groupId": id,
 						])
 					} catch {
 						print("discarding message, unable to encode wrapper \(message.id)")

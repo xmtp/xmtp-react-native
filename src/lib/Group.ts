@@ -133,11 +133,17 @@ export class Group<
       async ({
         clientAddress,
         message,
+        groupId,
       }: {
         clientAddress: string
         message: DecodedMessage<ContentTypes>
+        groupId: string
       }) => {
+        // Long term these checks should be able to be done on the native layer as well, but additional checks in JS for safety
         if (clientAddress !== this.client.address) {
+          return
+        }
+        if (groupId !== this.id) {
           return
         }
         if (hasSeen[message.id]) {
