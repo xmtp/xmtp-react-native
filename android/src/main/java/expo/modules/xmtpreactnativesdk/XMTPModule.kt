@@ -271,6 +271,14 @@ class XMTPModule : Module() {
             Base64.encodeToString(conversation.toTopicData().toByteArray(), NO_WRAP)
         }
 
+        AsyncFunction("getHmacKeys") { clientAddress: String ->
+            logV("getHmacKeys")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val hmacKeys = client.conversations.getHmacKeys()
+            logV("$hmacKeys")
+            hmacKeys.toByteArray().map { it.toInt() and 0xFF }
+        }
+
         // Import a conversation from its serialized topic data.
         AsyncFunction("importConversationTopicData") { clientAddress: String, topicData: String ->
             logV("importConversationTopicData")

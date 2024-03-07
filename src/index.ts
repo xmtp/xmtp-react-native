@@ -1,4 +1,4 @@
-import { content } from '@xmtp/proto'
+import { content, keystore } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import { Client } from '.'
@@ -112,6 +112,14 @@ export async function exportConversationTopicData(
     clientAddress,
     conversationTopic
   )
+}
+
+export async function getHmacKeys(
+  clientAddress: string
+): Promise<keystore.GetConversationHmacKeysResponse> {
+  const hmacKeysArray = await XMTPModule.getHmacKeys(clientAddress)
+  const array = new Uint8Array(hmacKeysArray)
+  return keystore.GetConversationHmacKeysResponse.decode(array)
 }
 
 export async function importConversationTopicData<ContentTypes>(
