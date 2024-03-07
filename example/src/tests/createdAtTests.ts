@@ -280,17 +280,17 @@ test('conversation createdAt matches list', async () => {
     env: 'local',
     enableAlphaMls: true,
   })
-  delayToPropogate()
+  await delayToPropogate()
   const bobClient = await Client.createRandom({
     env: 'local',
     enableAlphaMls: true,
   })
-  delayToPropogate()
+  await delayToPropogate()
   const camClient = await Client.createRandom({
     env: 'local',
     enableAlphaMls: true,
   })
-  delayToPropogate()
+  await delayToPropogate()
 
   // Alice creates a conversation
   const aliceConversation = await aliceClient.conversations.newConversation(
@@ -339,17 +339,17 @@ test('conversation createdAt matches listAll', async () => {
     env: 'local',
     enableAlphaMls: true,
   })
-  delayToPropogate()
+  await delayToPropogate()
   const bobClient = await Client.createRandom({
     env: 'local',
     enableAlphaMls: true,
   })
-  delayToPropogate()
+  await delayToPropogate()
   const camClient = await Client.createRandom({
     env: 'local',
     enableAlphaMls: true,
   })
-  delayToPropogate()
+  await delayToPropogate()
 
   // Alice creates a group
   const aliceConversation = await aliceClient.conversations.newConversation(

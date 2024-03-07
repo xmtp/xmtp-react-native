@@ -710,10 +710,10 @@ test('register and use custom content types', async () => {
   bob.register(new NumberCodec())
   alice.register(new NumberCodec())
 
-  delayToPropogate()
+  await delayToPropogate()
 
   const bobConvo = await bob.conversations.newConversation(alice.address)
-  delayToPropogate()
+  await delayToPropogate()
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
   await bobConvo.send(

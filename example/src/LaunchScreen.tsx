@@ -85,7 +85,9 @@ export default function LaunchScreen(
       } else {
         setSignerAddressDisplay('loading...')
       }
-    })()
+    })().catch((e) => {
+      console.error("Error displaying signers's address", e)
+    })
   }, [signer])
 
   return (

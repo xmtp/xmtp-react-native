@@ -54,12 +54,12 @@ class NumberCodec implements JSContentCodec<NumberRef> {
 export const typeTests = async () => {
   const textClient = await Client.createRandom<[TextCodec]>({ env: 'local' })
   const textConvo = (await textClient.conversations.list())[0]
-  textConvo.send({ text: 'hello' })
-  textConvo.send('hello')
+  await textConvo.send({ text: 'hello' })
+  await textConvo.send('hello')
   // @ts-expect-error
-  textConvo.send(12312312)
+  await textConvo.send(12312312)
   // @ts-expect-error
-  textConvo.send({ wrong: 'hello' })
+  await textConvo.send({ wrong: 'hello' })
 
   const textConvo2 = new Conversation(textClient, {
     createdAt: 123,
@@ -67,23 +67,23 @@ export const typeTests = async () => {
     peerAddress: 'sdf',
     version: 'sdf',
   })
-  textConvo2.send({ text: 'hello' })
-  textConvo2.send('hello')
+  await textConvo2.send({ text: 'hello' })
+  await textConvo2.send('hello')
   // @ts-expect-error
-  textConvo2.send(12312312)
+  await textConvo2.send(12312312)
   // @ts-expect-error
-  textConvo2.send({ wrong: 'hello' })
-  sendMessage<[TextCodec]>('0x1234', 'topic', { text: 'hello' })
-  sendMessage<[TextCodec]>('0x1234', 'topic', 'hello')
+  await textConvo2.send({ wrong: 'hello' })
+  await sendMessage<[TextCodec]>('0x1234', 'topic', { text: 'hello' })
+  await sendMessage<[TextCodec]>('0x1234', 'topic', 'hello')
   // @ts-expect-error
-  sendMessage<[TextCodec]>('0x1234', 'topic', 12314)
+  await sendMessage<[TextCodec]>('0x1234', 'topic', 12314)
 
   const supportedCodecs = [new ReactionCodec()]
   const reactionClient = await Client.createRandom<typeof supportedCodecs>({
     codecs: supportedCodecs,
   })
   const reactionConvo = (await reactionClient.conversations.list())[0]
-  reactionConvo.send({
+  await reactionConvo.send({
     reaction: {
       action: 'added',
       content: '💖',
@@ -91,7 +91,7 @@ export const typeTests = async () => {
       schema: 'unicode',
     },
   })
-  reactionConvo.send({
+  await reactionConvo.send({
     // @ts-expect-error
     schmeaction: {
       action: 'added',
@@ -101,13 +101,13 @@ export const typeTests = async () => {
     },
   })
 
-  reactionConvo.send({
+  await reactionConvo.send({
     reaction: {
       // @ts-expect-error
       text: 'added',
     },
   })
-  reactionConvo.send({
+  await reactionConvo.send({
     text: 'text',
   })
 
@@ -130,7 +130,7 @@ export const typeTests = async () => {
   })
   const customContentConvo = (await customContentClient.conversations.list())[0]
 
-  customContentConvo.send(
+  await customContentConvo.send(
     {
       topNumber: {
         bottomNumber: 12,

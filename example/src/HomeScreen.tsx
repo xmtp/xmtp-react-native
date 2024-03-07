@@ -105,6 +105,9 @@ function GroupListItem({
       ?.sync()
       .then(() => group.messages())
       .then(setMessages)
+      .catch((e) => {
+        console.error('Error fetching group messages: ', e)
+      })
   }, [group])
 
   return (
@@ -154,14 +157,24 @@ function ConversationItem({
   const [getConsentState, setConsentState] = useState<string | undefined>()
 
   useEffect(() => {
-    conversation.consentState().then((result) => {
-      setConsentState(result)
-    })
+    conversation
+      .consentState()
+      .then((result) => {
+        setConsentState(result)
+      })
+      .catch((e) => {
+        console.error('Error setting consent state: ', e)
+      })
   }, [conversation])
 
-  const denyContact = () => {
-    client?.contacts.deny([conversation.peerAddress])
-    conversation.consentState().then(setConsentState)
+  const denyContact = async () => {
+    await client?.contacts.deny([conversation.peerAddress])
+    conversation
+      .consentState()
+      .then(setConsentState)
+      .catch((e) => {
+        console.error('Error denying contact: ', e)
+      })
   }
 
   return (
