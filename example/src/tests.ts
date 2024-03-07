@@ -147,16 +147,6 @@ async function exportHmacKey(key: CryptoKey): Promise<Uint8Array> {
   return new Uint8Array(exported)
 }
 
-async function importHmacKey(key: Uint8Array): Promise<CryptoKey> {
-  return await window.crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'HMAC', hash: 'SHA-256', length: 256 },
-    true,
-    ['sign', 'verify']
-  )
-}
-
 function test(name: string, perform: () => Promise<boolean>) {
   tests.push({ name, run: perform })
 }
