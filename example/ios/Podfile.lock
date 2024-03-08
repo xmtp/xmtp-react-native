@@ -344,8 +344,7 @@ PODS:
     - RCTTypeSafety
     - React-Core
     - ReactCommon/turbomodule/core
-  - react-native-webview (13.8.1):
-    - RCT-Folly (= 2021.07.22.00)
+  - react-native-webview (12.1.0):
     - React-Core
   - React-perflogger (0.71.14)
   - React-RCTActionSheet (0.71.14):
@@ -445,7 +444,7 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.8.15):
+  - XMTP (0.8.16):
     - Connect-Swift (= 0.3.0)
     - GzipSwift
     - LibXMTP (= 0.4.2-beta5)
@@ -454,7 +453,7 @@ PODS:
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 0.8.15)
+    - XMTP (= 0.8.16)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -679,7 +678,7 @@ SPEC CHECKSUMS:
   CoinbaseWalletSDK: ea1f37512bbc69ebe07416e3b29bf840f5cc3152
   CoinbaseWalletSDKExpo: c79420eb009f482f768c23b6768fc5b2d7c98777
   Connect-Swift: d38eedc1907d440314f8d26d5a038a00cbb0f6f1
-  DoubleConversion: fea03f2699887d960129cc54bba7e52542b6f953
+  DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
   EXApplication: 2a0d9abd4feace9c6faedfe541c1dec02e3702cd
   EXConstants: f348da07e21b23d2b085e270d7b74f282df1a7d9
   EXFileSystem: 844e86ca9b5375486ecc4ef06d3838d5597d895d
@@ -697,7 +696,7 @@ SPEC CHECKSUMS:
   FBReactNativeSpec: b6ae48e67aaba46442f84d6f9ba598ccfbe2ee66
   fmt: ff9d55029c625d3757ed641535fd4a75fedc7ce9
   GenericJSON: 79a840eeb77030962e8cf02a62d36bd413b67626
-  glog: c5d68082e772fa1c511173d6b30a9de2c05a69a2
+  glog: 04b94705f318337d7ead9e6d17c019bd9b1f6b1b
   GzipSwift: 893f3e48e597a1a4f62fafcb6514220fcf8287fa
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
@@ -731,7 +730,7 @@ SPEC CHECKSUMS:
   react-native-quick-crypto: 455c1b411db006dba1026a30681ececb19180187
   react-native-randombytes: 421f1c7d48c0af8dbcd471b0324393ebf8fe7846
   react-native-safe-area-context: 39c2d8be3328df5d437ac1700f4f3a4f75716acc
-  react-native-webview: bdc091de8cf7f8397653e30182efcd9f772e03b3
+  react-native-webview: 13db17f7c7fe8f91c826e9afcc369cbc74507ea0
   React-perflogger: 4987ad83731c23d11813c84263963b0d3028c966
   React-RCTActionSheet: 5ad952b2a9740d87a5bd77280c4bc23f6f89ea0c
   React-RCTAnimation: d2de22af3f536cc80bb5b3918e1a455114d1b985
@@ -751,10 +750,10 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: b02b5075dcf60c9f5f403000b3b0c202a11b6ae1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 00fe090825e6bc5991870c1925befc06b1a30b78
-  XMTPReactNative: c452a9190442c7cbc0a4c0676cfc598761d463d2
+  XMTP: 3de1abbf9cc64d277e8ab5d16509813658524994
+  XMTPReactNative: 8746d61225e2e521a76cf626058625f1eb417ed9
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 95d6ace79946933ecf80684613842ee553dd76a2
 
-COCOAPODS: 1.14.3
+COCOAPODS: 1.14.2
