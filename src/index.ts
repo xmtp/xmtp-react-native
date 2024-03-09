@@ -24,6 +24,7 @@ export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
 export { TextCodec } from './lib/NativeCodecs/TextCodec'
 export * from './hooks'
 export * from './context'
+export * from './lib/Signer'
 
 const EncodedContent = content.EncodedContent
 
