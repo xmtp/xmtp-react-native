@@ -187,7 +187,7 @@ export function convertPrivateKeyAccountToSigner(
   }
 }
 
-test('can make a client from env private key', async () => {
+test('can load a client from env "2k lens convos" private key', async () => {
   if (!Config.TEST_PRIVATE_KEY) {
     throw new Error('Add private key to .env file')
   }
@@ -207,7 +207,7 @@ test('can make a client from env private key', async () => {
   return true
 })
 
-test('can load 1995 conversations from dev network account', async () => {
+test('can load 1995 conversations from dev network "2k lens convos" account', async () => {
   if (!Config.TEST_PRIVATE_KEY) {
     throw new Error('Add private key to .env file')
   }
@@ -227,7 +227,10 @@ test('can load 1995 conversations from dev network account', async () => {
   )
 
   const conversations = await xmtpClient.conversations.list()
-  console.log('Num Conversations: ' + conversations.length)
+  assert(
+    conversations.length === 1995,
+    'Conversations: ' + conversations.length
+  )
 
   return true
 })
