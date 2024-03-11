@@ -2,7 +2,10 @@ import { FramesClient } from '@xmtp/frames-client'
 import { content } from '@xmtp/proto'
 import { createHmac } from 'crypto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
+import Config from 'react-native-config'
 import { TextEncoder, TextDecoder } from 'text-encoding'
+import { PrivateKeyAccount } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
@@ -13,6 +16,7 @@ import {
   StaticAttachmentCodec,
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
+  Signer,
 } from '../../src/index'
 
 type EncodedContent = content.EncodedContent
@@ -169,6 +173,70 @@ test('can make a client', async () => {
     )
   }
   return client.address.length > 0
+})
+
+export function convertPrivateKeyAccountToSigner(
+  privateKeyAccount: PrivateKeyAccount
+): Signer {
+  if (!privateKeyAccount.address) {
+    throw new Error('WalletClient is not configured')
+  }
+
+  return {
+    getAddress: async () => privateKeyAccount.address,
+    signMessage: async (message: string | Uint8Array) =>
+      privateKeyAccount.signMessage({
+        message: typeof message === 'string' ? message : { raw: message },
+      }),
+  }
+}
+
+test('can load a client from env "2k lens convos" private key', async () => {
+  if (!Config.TEST_PRIVATE_KEY) {
+    throw new Error('Add private key to .env file')
+  }
+  const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
+
+  const signer = convertPrivateKeyAccountToSigner(
+    privateKeyToAccount(privateKeyHex)
+  )
+  const xmtpClient = await Client.create(signer, {
+    env: 'local',
+  })
+
+  assert(
+    xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
+    'Address: ' + xmtpClient.address
+  )
+  return true
+})
+
+test('can load 1995 conversations from dev network "2k lens convos" account', async () => {
+  if (!Config.TEST_PRIVATE_KEY) {
+    throw new Error('Add private key to .env file')
+  }
+
+  const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
+
+  const signer = convertPrivateKeyAccountToSigner(
+    privateKeyToAccount(privateKeyHex)
+  )
+  const xmtpClient = await Client.create(signer, {
+    env: 'dev',
+  })
+
+  assert(
+    xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
+    'Address: ' + xmtpClient.address
+  )
+
+  const conversations = await xmtpClient.conversations.list()
+  assert(
+    conversations.length === 1995,
+    'Conversations: ' + conversations.length
+  )
+
+  return true
 })
 
 test('can pass a custom filter date and receive message objects with expected dates', async () => {
