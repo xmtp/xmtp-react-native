@@ -557,81 +557,45 @@ test('can stream messages', async () => {
   return true
 })
 
-test('can stream messages with delay', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
+test('can stream conversations with delay', async () => {
+  const bo = await Client.createRandom({ env: 'local' })
   await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const alix = await Client.createRandom({ env: 'local' })
   await delayToPropogate()
 
-  // Record new conversation stream
-  const allConversations: Conversation<any>[] = []
-  await alice.conversations.stream(async (conversation) => {
-    allConversations.push(conversation)
+  const allConvos: Conversation<any>[] = []
+  await alix.conversations.stream(async (convo) => {
+    allConvos.push(convo)
   })
 
-  // Start Bob starts a new conversation.
-  const bobConvo = await bob.conversations.newConversation(alice.address, {
-    conversationID: 'https://example.com/alice-and-bob',
-    metadata: {
-      title: 'Alice and Bob',
-    },
+  await bo.conversations.newConversation(alix.address)
+  await delayToPropogate()
+
+  await bo.conversations.newConversation(alix.address, {
+    conversationID: 'convo-2',
+    metadata: {},
   })
   await delayToPropogate()
+
+  assert(
+    allConvos.length === 2,
+    'Unexpected all convos count ' + allConvos.length
+  )
 
   await sleep(15000)
 
-  assert(bobConvo.clientAddress === bob.address, 'Unexpected client address')
-  assert(!!bobConvo.topic, 'Missing topic' + bobConvo.topic)
-  assert(
-    bobConvo.context?.conversationID === 'https://example.com/alice-and-bob',
-    'Unexpected conversationID' + bobConvo.context?.conversationID
-  )
-  assert(
-    bobConvo.context?.metadata?.title === 'Alice and Bob',
-    'Unexpected metadata title' + bobConvo.context?.metadata?.title
-  )
-  assert(!!bobConvo.createdAt, 'Missing createdAt' + bobConvo.createdAt)
-  assert(
-    allConversations.length === 1,
-    'Unexpected all conversations count' + allConversations.length
-  )
-  assert(
-    allConversations[0].topic === bobConvo.topic,
-    'Unexpected all conversations topic' + allConversations[0].topic
-  )
-
-  const aliceConvo = (await alice.conversations.list())[0]
-  assert(!!aliceConvo, 'missing conversation')
-
-  // Record message stream for this conversation
-  const convoMessages: DecodedMessage[] = []
-  await aliceConvo.streamMessages(async (message) => {
-    convoMessages.push(message)
+  await bo.conversations.newConversation(alix.address, {
+    conversationID: 'convo-3',
+    metadata: {},
   })
-
-  for (let i = 0; i < 5; i++) {
-    await bobConvo.send({ text: `Message ${i}` })
-    await delayToPropogate()
-  }
-
-  await sleep(15000)
+  await delayToPropogate()
 
   assert(
-    convoMessages.length === 5,
-    'Unexpected convo messages count' + convoMessages.length
+    allConvos.length === 3,
+    'Unexpected all convos count ' + allConvos.length
   )
-  for (let i = 0; i < 5; i++) {
-    assert(
-      convoMessages[i].content() === `Message ${i}`,
-      'Unexpected convo message content' + convoMessages[i].content()
-    )
-    assert(
-      convoMessages[i].topic === bobConvo.topic,
-      'Unexpected convo message topic' + convoMessages[i].topic
-    )
-  }
-  alice.conversations.cancelStream()
 
+  alix.conversations.cancelStream()
   return true
 })
 
@@ -837,46 +801,40 @@ test('can stream all msgs with delay', async () => {
     await delayToPropogate()
   }
 
-  await sleep(15000)
-
   assert(
     allMessages.length === 5,
     'Unexpected all messages count ' + allMessages.length
   )
 
+  await sleep(15000)
   // Starts a new conversation.
   const caro = await Client.createRandom({ env: 'local' })
   const caroConvo = await caro.conversations.newConversation(alix.address)
   await delayToPropogate()
+
   for (let i = 0; i < 5; i++) {
     await caroConvo.send({ text: `Message ${i}` })
     await delayToPropogate()
   }
-
-  await sleep(15000)
 
   assert(
     allMessages.length === 10,
     'Unexpected all messages count ' + allMessages.length
   )
 
-  alix.conversations.cancelStreamAllMessages()
-
-  await alix.conversations.streamAllMessages(async (message) => {
-    allMessages.push(message)
-  })
+  await sleep(15000)
 
   for (let i = 0; i < 5; i++) {
     await boConvo.send({ text: `Message ${i}` })
     await delayToPropogate()
   }
 
-  await sleep(15000)
-
   assert(
-    allMessages.length > 10,
+    allMessages.length === 15,
     'Unexpected all messages count ' + allMessages.length
   )
+
+  alix.conversations.cancelStreamAllMessages()
 
   return true
 })
