@@ -80,6 +80,10 @@ function delayToPropogate(): Promise<void> {
   return new Promise((r) => setTimeout(r, 100))
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 const hkdfNoSalt = new ArrayBuffer(0)
 
 async function hkdfHmacKey(
@@ -553,6 +557,84 @@ test('can stream messages', async () => {
   return true
 })
 
+test('can stream messages with delay', async () => {
+  const bob = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  const alice = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+
+  // Record new conversation stream
+  const allConversations: Conversation<any>[] = []
+  await alice.conversations.stream(async (conversation) => {
+    allConversations.push(conversation)
+  })
+
+  // Start Bob starts a new conversation.
+  const bobConvo = await bob.conversations.newConversation(alice.address, {
+    conversationID: 'https://example.com/alice-and-bob',
+    metadata: {
+      title: 'Alice and Bob',
+    },
+  })
+  await delayToPropogate()
+
+  await sleep(15000)
+
+  assert(bobConvo.clientAddress === bob.address, 'Unexpected client address')
+  assert(!!bobConvo.topic, 'Missing topic' + bobConvo.topic)
+  assert(
+    bobConvo.context?.conversationID === 'https://example.com/alice-and-bob',
+    'Unexpected conversationID' + bobConvo.context?.conversationID
+  )
+  assert(
+    bobConvo.context?.metadata?.title === 'Alice and Bob',
+    'Unexpected metadata title' + bobConvo.context?.metadata?.title
+  )
+  assert(!!bobConvo.createdAt, 'Missing createdAt' + bobConvo.createdAt)
+  assert(
+    allConversations.length === 1,
+    'Unexpected all conversations count' + allConversations.length
+  )
+  assert(
+    allConversations[0].topic === bobConvo.topic,
+    'Unexpected all conversations topic' + allConversations[0].topic
+  )
+
+  const aliceConvo = (await alice.conversations.list())[0]
+  assert(!!aliceConvo, 'missing conversation')
+
+  // Record message stream for this conversation
+  const convoMessages: DecodedMessage[] = []
+  await aliceConvo.streamMessages(async (message) => {
+    convoMessages.push(message)
+  })
+
+  for (let i = 0; i < 5; i++) {
+    await bobConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  await sleep(15000)
+
+  assert(
+    convoMessages.length === 5,
+    'Unexpected convo messages count' + convoMessages.length
+  )
+  for (let i = 0; i < 5; i++) {
+    assert(
+      convoMessages[i].content() === `Message ${i}`,
+      'Unexpected convo message content' + convoMessages[i].content()
+    )
+    assert(
+      convoMessages[i].topic === bobConvo.topic,
+      'Unexpected convo message topic' + convoMessages[i].topic
+    )
+  }
+  alice.conversations.cancelStream()
+
+  return true
+})
+
 test('remote attachments should work', async () => {
   const alice = await Client.createRandom({
     env: 'local',
@@ -730,6 +812,71 @@ test('can stream all messages', async () => {
   if (allMessages.length <= 10) {
     throw Error('Unexpected all messages count ' + allMessages.length)
   }
+
+  return true
+})
+
+test('can stream all msgs with delay', async () => {
+  const bo = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+
+  // Record message stream across all conversations
+  const allMessages: DecodedMessage[] = []
+  await alix.conversations.streamAllMessages(async (message) => {
+    allMessages.push(message)
+  })
+
+  // Start Bob starts a new conversation.
+  const boConvo = await bo.conversations.newConversation(alix.address)
+  await delayToPropogate()
+
+  for (let i = 0; i < 5; i++) {
+    await boConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  await sleep(15000)
+
+  assert(
+    allMessages.length === 5,
+    'Unexpected all messages count ' + allMessages.length
+  )
+
+  // Starts a new conversation.
+  const caro = await Client.createRandom({ env: 'local' })
+  const caroConvo = await caro.conversations.newConversation(alix.address)
+  await delayToPropogate()
+  for (let i = 0; i < 5; i++) {
+    await caroConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  await sleep(15000)
+
+  assert(
+    allMessages.length === 10,
+    'Unexpected all messages count ' + allMessages.length
+  )
+
+  alix.conversations.cancelStreamAllMessages()
+
+  await alix.conversations.streamAllMessages(async (message) => {
+    allMessages.push(message)
+  })
+
+  for (let i = 0; i < 5; i++) {
+    await boConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  await sleep(15000)
+
+  assert(
+    allMessages.length > 10,
+    'Unexpected all messages count ' + allMessages.length
+  )
 
   return true
 })
