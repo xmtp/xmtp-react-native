@@ -1224,6 +1224,87 @@ test('can stream all group Messages from multiple clients - swapped', async () =
   return true
 })
 
+test('creating a group should allow group', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const group = await alix.conversations.newGroup([bo.address])
+  const consent = await alix.contacts.isGroupAllowed(group.id)
+
+  if (!consent) {
+    throw Error('Group should be allowed')
+  }
+
+  return true
+})
+
+test('can allow a group', async () => {
+  const [alix, bo] = await createClients(2)
+  const alixGroup = await alix.conversations.newGroup([bo.address])
+  const startConsent = await bo.contacts.isGroupAllowed(alixGroup.id)
+  if (startConsent) {
+    throw Error('Group should not be allowed')
+  }
+  await bo.contacts.allowGroups([alixGroup.id])
+  const isAllowed = await bo.contacts.isGroupAllowed(alixGroup.id)
+  if (!isAllowed) {
+    throw Error('Group should be allowed')
+  }
+
+  return true
+})
+
+test('can deny a group', async () => {
+  const [alix, bo] = await createClients(2)
+  const alixGroup = await alix.conversations.newGroup([bo.address])
+  const startConsent = await bo.contacts.isGroupDenied(alixGroup.id)
+  if (startConsent) {
+    throw Error('Group should be unknown')
+  }
+  await bo.contacts.denyGroups([alixGroup.id])
+  const isDenied = await bo.contacts.isGroupDenied(alixGroup.id)
+  if (!isDenied) {
+    throw Error('Group should be denied')
+  }
+  await bo.contacts.allowGroups([alixGroup.id])
+  const isAllowed = await bo.contacts.isGroupAllowed(alixGroup.id)
+  if (!isAllowed) {
+    throw Error('Group should be allowed')
+  }
+
+  return true
+})
+
+test('can check if group is allowed', async () => {
+  const [alix, bo] = await createClients(2)
+  const alixGroup = await alix.conversations.newGroup([bo.address])
+  const startConsent = await bo.contacts.isGroupAllowed(alixGroup.id)
+  if (startConsent) {
+    throw Error('Group should not be allowed by default')
+  }
+  await bo.contacts.allowGroups([alixGroup.id])
+  const consent = await bo.contacts.isGroupAllowed(alixGroup.id)
+  if (!consent) {
+    throw Error('Group should be allowed')
+  }
+
+  return true
+})
+
+test('can check if group is denied', async () => {
+  const [alix, bo] = await createClients(2)
+  const alixGroup = await alix.conversations.newGroup([bo.address])
+  const startConsent = await bo.contacts.isGroupDenied(alixGroup.id)
+  if (startConsent) {
+    throw Error('Group should not be denied by default')
+  }
+  await bo.contacts.denyGroups([alixGroup.id])
+  const consent = await bo.contacts.isGroupDenied(alixGroup.id)
+  if (!consent) {
+    throw Error('Group should be denied')
+  }
+  return true
+})
+
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
 //   const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })

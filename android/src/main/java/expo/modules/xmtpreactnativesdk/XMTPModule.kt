@@ -63,6 +63,7 @@ import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import com.facebook.common.util.Hex
 
 class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
@@ -912,6 +913,32 @@ class XMTPModule : Module() {
         Function("preEnableIdentityCallbackCompleted") {
             logV("preEnableIdentityCallbackCompleted")
             preEnableIdentityCallbackDeferred?.complete(Unit)
+        }
+
+        AsyncFunction("allowGroups") { clientAddress: String, groupIds: List<String> ->
+            logV("allowGroups")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
+            client.contacts.allowGroup(groupDataIds)
+        }
+
+        AsyncFunction("denyGroups") { clientAddress: String, groupIds: List<String> ->
+            logV("denyGroups")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
+            client.contacts.denyGroup(groupDataIds)
+        }
+
+        AsyncFunction("isGroupAllowed") { clientAddress: String, groupId: String ->
+            logV("isGroupAllowed")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.isGroupAllowed(Hex.hexStringToByteArray(groupId))
+        }
+
+        AsyncFunction("isGroupDenied") { clientAddress: String, groupId: String ->
+            logV("isGroupDenied")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.isGroupDenied(Hex.hexStringToByteArray(groupId))
         }
     }
 
