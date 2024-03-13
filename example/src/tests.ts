@@ -626,9 +626,9 @@ test('can stream messages', async () => {
 })
 
 test('can stream conversations with delay', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
+  const bo = await Client.createRandom({ env: 'dev' })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local' })
+  const alix = await Client.createRandom({ env: 'dev' })
   await delayToPropogate()
 
   const allConvos: Conversation<any>[] = []
