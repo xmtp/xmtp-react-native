@@ -849,9 +849,9 @@ test('can stream all messages', async () => {
 })
 
 test('can stream all msgs with delay', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
+  const bo = await Client.createRandom({ env: 'dev' })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local' })
+  const alix = await Client.createRandom({ env: 'dev' })
   await delayToPropogate()
 
   // Record message stream across all conversations
@@ -876,7 +876,7 @@ test('can stream all msgs with delay', async () => {
 
   await sleep(15000)
   // Starts a new conversation.
-  const caro = await Client.createRandom({ env: 'local' })
+  const caro = await Client.createRandom({ env: 'dev' })
   const caroConvo = await caro.conversations.newConversation(alix.address)
   await delayToPropogate()
 
