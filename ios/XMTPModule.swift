@@ -59,7 +59,7 @@ public class XMTPModule: Module {
 	}
 
 	enum Error: Swift.Error {
-		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String), mlsNotEnabled(String)
+		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String), mlsNotEnabled(String), invalidString
 	}
 
 	public func definition() -> ModuleDefinition {
@@ -866,6 +866,42 @@ public class XMTPModule: Module {
 				self.preCreateIdentityCallbackDeferred?.signal()
 				self.preCreateIdentityCallbackDeferred = nil
 			}
+		}
+    
+    AsyncFunction("allowGroups") { (clientAddress: String, groupIds: [String]) in
+      guard let client = await clientsManager.getClient(key: clientAddress) else {
+        throw Error.noClient
+      }
+      let groupDataIds = groupIds.compactMap { Data(hex: $0) }
+      try await client.contacts.allowGroup(groupIds: groupDataIds)
+    }
+    
+    AsyncFunction("denyGroups") { (clientAddress: String, groupIds: [String]) in
+      guard let client = await clientsManager.getClient(key: clientAddress) else {
+        throw Error.noClient
+      }
+      let groupDataIds = groupIds.compactMap { Data(hex: $0) }
+      try await client.contacts.denyGroup(groupIds: groupDataIds)
+    }
+
+    AsyncFunction("isGroupAllowed") { (clientAddress: String, groupId: String) -> Bool in
+      guard let client = await clientsManager.getClient(key: clientAddress) else {
+        throw Error.noClient
+      }
+      guard let groupDataId = Data(hex: groupId) else {
+        throw Error.invalidString
+      }
+      return try await client.contacts.isGroupAllowed(groupId: groupDataId)
+    }
+    
+    AsyncFunction("isGroupDenied") { (clientAddress: String, groupId: String) -> Bool in
+      guard let client = await clientsManager.getClient(key: clientAddress) else {
+        throw Error.invalidString
+      }
+      guard let groupDataId = Data(hex: groupId) else {
+        throw Error.invalidString
+      }
+      return try await client.contacts.isGroupDenied(groupId: groupDataId)
 		}
 	}
 

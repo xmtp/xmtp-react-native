@@ -663,6 +663,34 @@ export async function isGroupAdmin(
   return XMTPModule.isGroupAdmin(clientAddress, id)
 }
 
+export async function allowGroups(
+  clientAddress: string,
+  groupIds: string[]
+): Promise<void> {
+  return XMTPModule.allowGroups(clientAddress, groupIds)
+}
+
+export async function denyGroups(
+  clientAddress: string,
+  groupIds: string[]
+): Promise<void> {
+  return XMTPModule.denyGroups(clientAddress, groupIds)
+}
+
+export async function isGroupAllowed(
+  clientAddress: string,
+  groupId: string
+): Promise<boolean> {
+  return XMTPModule.isGroupAllowed(clientAddress, groupId)
+}
+
+export async function isGroupDenied(
+  clientAddress: string,
+  groupId: string
+): Promise<boolean> {
+  return XMTPModule.isGroupDenied(clientAddress, groupId)
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 export * from './XMTP.types'
