@@ -7,6 +7,8 @@ import {
 } from '@thirdweb-dev/react-native'
 import { Button, Platform } from 'react-native'
 import Config from 'react-native-config'
+// Used to polyfill webCrypto in react-native
+import PolyfillCrypto from 'react-native-webview-crypto'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { XmtpProvider } from 'xmtp-react-native-sdk'
 
@@ -37,6 +39,7 @@ export default function App() {
       }}
       supportedWallets={[metamaskWallet(), rainbowWallet()]}
     >
+      <PolyfillCrypto />
       <QueryClientProvider client={queryClient}>
         <XmtpProvider>
           <NavigationContainer>

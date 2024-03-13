@@ -206,6 +206,15 @@ public class XMTPModule: Module {
 			}
 			return try conversation.toTopicData().serializedData().base64EncodedString()
 		}
+		
+		AsyncFunction("getHmacKeys") { (clientAddress: String) -> [UInt8] in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			let hmacKeys = await client.conversations.getHmacKeys()
+			
+			return try [UInt8](hmacKeys.serializedData())
+		}
 
 		// Import a conversation from its serialized topic data.
 		AsyncFunction("importConversationTopicData") { (clientAddress: String, topicData: String) -> String in
