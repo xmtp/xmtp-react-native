@@ -1,41 +1,4 @@
 {
-  "expo": {
-    "name": "xmtp-react-native-sdk-example",
-    "slug": "xmtp-react-native-sdk-example",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "plugins": [
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "The app accesses your photos to let you attach them as messages.",
-          "cameraPermission": "The app accesses your camera to let you attach photos as messages."
-        }
-      ]
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "expo.modules.xmtpreactnativesdk.example"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "expo.modules.xmtpreactnativesdk.example"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
-  }
+  "name": "XmtpReactNativeSdkExample",
+  "displayName": "XmtpReactNativeSdkExample"
 }
