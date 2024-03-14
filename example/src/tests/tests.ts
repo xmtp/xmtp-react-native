@@ -1,7 +1,11 @@
 import { FramesClient } from '@xmtp/frames-client'
 import { content } from '@xmtp/proto'
+import { createHmac } from 'crypto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
+import Config from 'react-native-config'
 import { TextEncoder, TextDecoder } from 'text-encoding'
+import { PrivateKeyAccount } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import { Test, assert, delayToPropogate } from './test-utils'
@@ -13,6 +17,7 @@ import {
   StaticAttachmentCodec,
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
+  Signer,
 } from '../../../src/index'
 
 type EncodedContent = content.EncodedContent
@@ -63,6 +68,78 @@ class NumberCodec implements JSContentCodec<NumberRef> {
 }
 
 export const tests: Test[] = []
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+const hkdfNoSalt = new ArrayBuffer(0)
+
+async function hkdfHmacKey(
+  secret: Uint8Array,
+  info: Uint8Array
+): Promise<CryptoKey> {
+  const key = await window.crypto.subtle.importKey(
+    'raw',
+    secret,
+    'HKDF',
+    false,
+    ['deriveKey']
+  )
+  return await window.crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: hkdfNoSalt, info },
+    key,
+    { name: 'HMAC', hash: 'SHA-256', length: 256 },
+    true,
+    ['sign', 'verify']
+  )
+}
+
+export async function importHmacKey(key: Uint8Array): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    true,
+    ['sign', 'verify']
+  )
+}
+
+async function generateHmacSignature(
+  secret: Uint8Array,
+  info: Uint8Array,
+  message: Uint8Array
+): Promise<Uint8Array> {
+  const key = await hkdfHmacKey(secret, info)
+  const signed = await window.crypto.subtle.sign('HMAC', key, message)
+  return new Uint8Array(signed)
+}
+
+function base64ToUint8Array(base64String: string): Uint8Array {
+  const buffer = Buffer.from(base64String, 'base64')
+  return new Uint8Array(buffer)
+}
+
+function verifyHmacSignature(
+  key: Uint8Array,
+  signature: Uint8Array,
+  message: Uint8Array
+): boolean {
+  const hmac = createHmac('sha256', Buffer.from(key))
+
+  hmac.update(message)
+
+  const calculatedSignature = hmac.digest()
+  const result = Buffer.compare(calculatedSignature, signature) === 0
+
+  return result
+}
+
+async function exportHmacKey(key: CryptoKey): Promise<Uint8Array> {
+  const exported = await window.crypto.subtle.exportKey('raw', key)
+  return new Uint8Array(exported)
+}
+
 function test(name: string, perform: () => Promise<boolean>) {
   tests.push({ name, run: perform })
 }
@@ -81,6 +158,70 @@ test('can make a client', async () => {
     )
   }
   return client.address.length > 0
+})
+
+export function convertPrivateKeyAccountToSigner(
+  privateKeyAccount: PrivateKeyAccount
+): Signer {
+  if (!privateKeyAccount.address) {
+    throw new Error('WalletClient is not configured')
+  }
+
+  return {
+    getAddress: async () => privateKeyAccount.address,
+    signMessage: async (message: string | Uint8Array) =>
+      privateKeyAccount.signMessage({
+        message: typeof message === 'string' ? message : { raw: message },
+      }),
+  }
+}
+
+test('can load a client from env "2k lens convos" private key', async () => {
+  if (!Config.TEST_PRIVATE_KEY) {
+    throw new Error('Add private key to .env file')
+  }
+  const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
+
+  const signer = convertPrivateKeyAccountToSigner(
+    privateKeyToAccount(privateKeyHex)
+  )
+  const xmtpClient = await Client.create(signer, {
+    env: 'local',
+  })
+
+  assert(
+    xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
+    'Address: ' + xmtpClient.address
+  )
+  return true
+})
+
+test('can load 1995 conversations from dev network "2k lens convos" account', async () => {
+  if (!Config.TEST_PRIVATE_KEY) {
+    throw new Error('Add private key to .env file')
+  }
+
+  const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
+
+  const signer = convertPrivateKeyAccountToSigner(
+    privateKeyToAccount(privateKeyHex)
+  )
+  const xmtpClient = await Client.create(signer, {
+    env: 'dev',
+  })
+
+  assert(
+    xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
+    'Address: ' + xmtpClient.address
+  )
+
+  const conversations = await xmtpClient.conversations.list()
+  assert(
+    conversations.length === 1995,
+    'Conversations: ' + conversations.length
+  )
+
+  return true
 })
 
 test('can pass a custom filter date and receive message objects with expected dates', async () => {
@@ -486,6 +627,48 @@ test('can stream messages', async () => {
   return true
 })
 
+test('can stream conversations with delay', async () => {
+  const bo = await Client.createRandom({ env: 'dev' })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'dev' })
+  await delayToPropogate()
+
+  const allConvos: Conversation<any>[] = []
+  await alix.conversations.stream(async (convo) => {
+    allConvos.push(convo)
+  })
+
+  await bo.conversations.newConversation(alix.address)
+  await delayToPropogate()
+
+  await bo.conversations.newConversation(alix.address, {
+    conversationID: 'convo-2',
+    metadata: {},
+  })
+  await delayToPropogate()
+
+  assert(
+    allConvos.length === 2,
+    'Unexpected all convos count ' + allConvos.length
+  )
+
+  await sleep(15000)
+
+  await bo.conversations.newConversation(alix.address, {
+    conversationID: 'convo-3',
+    metadata: {},
+  })
+  await delayToPropogate()
+
+  assert(
+    allConvos.length === 3,
+    'Unexpected all convos count ' + allConvos.length
+  )
+
+  alix.conversations.cancelStream()
+  return true
+})
+
 test('remote attachments should work', async () => {
   const alice = await Client.createRandom({
     env: 'local',
@@ -607,6 +790,121 @@ test('can send read receipts', async () => {
   if (bobMessages[0].fallback) {
     throw Error('Unexpected message fallback ' + bobMessages[0].fallback)
   }
+
+  return true
+})
+
+test('can stream all messages', async () => {
+  const bo = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+
+  // Record message stream across all conversations
+  const allMessages: DecodedMessage[] = []
+  await alix.conversations.streamAllMessages(async (message) => {
+    allMessages.push(message)
+  })
+
+  // Start Bob starts a new conversation.
+  const boConvo = await bo.conversations.newConversation(alix.address)
+  await delayToPropogate()
+
+  for (let i = 0; i < 5; i++) {
+    await boConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  const count = allMessages.length
+  if (count !== 5) {
+    throw Error('Unexpected all messages count ' + allMessages.length)
+  }
+
+  // Starts a new conversation.
+  const caro = await Client.createRandom({ env: 'local' })
+  const caroConvo = await caro.conversations.newConversation(alix.address)
+  await delayToPropogate()
+  for (let i = 0; i < 5; i++) {
+    await caroConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  if (allMessages.length !== 10) {
+    throw Error('Unexpected all messages count ' + allMessages.length)
+  }
+
+  alix.conversations.cancelStreamAllMessages()
+
+  await alix.conversations.streamAllMessages(async (message) => {
+    allMessages.push(message)
+  })
+
+  for (let i = 0; i < 5; i++) {
+    await boConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+  if (allMessages.length <= 10) {
+    throw Error('Unexpected all messages count ' + allMessages.length)
+  }
+
+  return true
+})
+
+test('can stream all msgs with delay', async () => {
+  const bo = await Client.createRandom({ env: 'dev' })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'dev' })
+  await delayToPropogate()
+
+  // Record message stream across all conversations
+  const allMessages: DecodedMessage[] = []
+  await alix.conversations.streamAllMessages(async (message) => {
+    allMessages.push(message)
+  })
+
+  // Start Bob starts a new conversation.
+  const boConvo = await bo.conversations.newConversation(alix.address)
+  await delayToPropogate()
+
+  for (let i = 0; i < 5; i++) {
+    await boConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  assert(
+    allMessages.length === 5,
+    'Unexpected all messages count ' + allMessages.length
+  )
+
+  await sleep(15000)
+  // Starts a new conversation.
+  const caro = await Client.createRandom({ env: 'dev' })
+  const caroConvo = await caro.conversations.newConversation(alix.address)
+  await delayToPropogate()
+
+  for (let i = 0; i < 5; i++) {
+    await caroConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  assert(
+    allMessages.length === 10,
+    'Unexpected all messages count ' + allMessages.length
+  )
+
+  await sleep(15000)
+
+  for (let i = 0; i < 5; i++) {
+    await boConvo.send({ text: `Message ${i}` })
+    await delayToPropogate()
+  }
+
+  assert(
+    allMessages.length === 15,
+    'Unexpected all messages count ' + allMessages.length
+  )
+
+  alix.conversations.cancelStreamAllMessages()
 
   return true
 })
@@ -1059,3 +1357,152 @@ test('can stream all conversation Messages from multiple clients - swapped', asy
   return true
 })
 
+test('generates and validates HMAC', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const key = await hkdfHmacKey(secret, info)
+  const valid = await verifyHmacSignature(
+    await exportHmacKey(key),
+    hmac,
+    message
+  )
+  return valid
+})
+
+test('generates and validates HMAC with imported key', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const key = await hkdfHmacKey(secret, info)
+  const exportedKey = await exportHmacKey(key)
+  const importedKey = await importHmacKey(exportedKey)
+  const valid = await verifyHmacSignature(
+    await exportHmacKey(importedKey),
+    hmac,
+    message
+  )
+  return valid
+})
+
+test('generates different HMAC keys with different infos', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info1 = crypto.getRandomValues(new Uint8Array(32))
+  const info2 = crypto.getRandomValues(new Uint8Array(32))
+  const key1 = await hkdfHmacKey(secret, info1)
+  const key2 = await hkdfHmacKey(secret, info2)
+
+  const exported1 = await exportHmacKey(key1)
+  const exported2 = await exportHmacKey(key2)
+  return exported1 !== exported2
+})
+
+test('fails to validate HMAC with wrong message', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const key = await hkdfHmacKey(secret, info)
+  const valid = await verifyHmacSignature(
+    await exportHmacKey(key),
+    hmac,
+    crypto.getRandomValues(new Uint8Array(32))
+  )
+  return !valid
+})
+
+test('fails to validate HMAC with wrong key', async () => {
+  const secret = crypto.getRandomValues(new Uint8Array(32))
+  const info = crypto.getRandomValues(new Uint8Array(32))
+  const message = crypto.getRandomValues(new Uint8Array(32))
+  const hmac = await generateHmacSignature(secret, info, message)
+  const valid = await verifyHmacSignature(
+    await exportHmacKey(
+      await hkdfHmacKey(
+        crypto.getRandomValues(new Uint8Array(32)),
+        crypto.getRandomValues(new Uint8Array(32))
+      )
+    ),
+    hmac,
+    message
+  )
+  return !valid
+})
+
+test('get all HMAC keys', async () => {
+  const alice = await Client.createRandom({ env: 'local' })
+
+  const conversations: Conversation<any>[] = []
+
+  for (let i = 0; i < 5; i++) {
+    const client = await Client.createRandom({ env: 'local' })
+    const convo = await alice.conversations.newConversation(client.address, {
+      conversationID: `https://example.com/${i}`,
+      metadata: {
+        title: `Conversation ${i}`,
+      },
+    })
+    conversations.push(convo)
+  }
+  const thirtyDayPeriodsSinceEpoch = Math.floor(
+    Date.now() / 1000 / 60 / 60 / 24 / 30
+  )
+
+  const periods = [
+    thirtyDayPeriodsSinceEpoch - 1,
+    thirtyDayPeriodsSinceEpoch,
+    thirtyDayPeriodsSinceEpoch + 1,
+  ]
+  const { hmacKeys } = await alice.conversations.getHmacKeys()
+
+  const topics = Object.keys(hmacKeys)
+  conversations.forEach((conversation) => {
+    assert(topics.includes(conversation.topic), 'topic not found')
+  })
+
+  const topicHmacs: {
+    [topic: string]: Uint8Array
+  } = {}
+  const headerBytes = crypto.getRandomValues(new Uint8Array(10))
+
+  for (const conversation of conversations) {
+    const topic = conversation.topic
+
+    const keyMaterial = conversation.keyMaterial!
+    const info = `${thirtyDayPeriodsSinceEpoch}-${alice.address}`
+    const hmac = await generateHmacSignature(
+      base64ToUint8Array(keyMaterial),
+      new TextEncoder().encode(info),
+      headerBytes
+    )
+
+    topicHmacs[topic] = hmac
+  }
+
+  await Promise.all(
+    Object.keys(hmacKeys).map(async (topic) => {
+      const hmacData = hmacKeys[topic]
+
+      await Promise.all(
+        hmacData.values.map(
+          async ({ hmacKey, thirtyDayPeriodsSinceEpoch }, idx) => {
+            assert(
+              thirtyDayPeriodsSinceEpoch === periods[idx],
+              'periods not equal'
+            )
+            const valid = await verifyHmacSignature(
+              hmacKey,
+              topicHmacs[topic],
+              headerBytes
+            )
+            assert(valid === (idx === 1), 'key is not valid')
+          }
+        )
+      )
+    })
+  )
+
+  return true
+})
