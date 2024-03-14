@@ -1367,3 +1367,112 @@ test('get all HMAC keys', async () => {
 
   return true
 })
+
+test('can handle complex streaming setup', async () => {
+  const bo = await Client.createRandom({ env: 'dev' })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'dev' })
+  await delayToPropogate()
+
+  const allConvos: Conversation<any>[] = []
+  await alix.conversations.stream(async (convo) => {
+    allConvos.push(convo)
+  })
+  const allMessages: DecodedMessage[] = []
+  await alix.conversations.streamAllMessages(async (message) => {
+    allMessages.push(message)
+  })
+
+  const conv1 = await bo.conversations.newConversation(alix.address)
+  await delayToPropogate()
+
+  await bo.conversations.newConversation(alix.address, {
+    conversationID: 'convo-2',
+    metadata: {},
+  })
+  const allConvMessages: DecodedMessage[] = []
+  conv1.streamMessages(async (message) => {
+    allConvMessages.push(message)
+  })
+  await conv1.send({ text: 'Hello' })
+  await delayToPropogate()
+
+  assert(
+    allConvos.length === 2,
+    'Unexpected all convos count1 ' + allConvos.length
+  )
+
+  assert(
+    allMessages.length === 1,
+    'Unexpected all messages count2 ' + allMessages.length
+  )
+
+  assert(
+    allConvMessages.length === 1,
+    'Unexpected all conv messages count3 ' + allConvMessages.length
+  )
+
+  await sleep(15000)
+  const conv3 = await bo.conversations.newConversation(alix.address, {
+    conversationID: 'convo-3',
+    metadata: {},
+  })
+  const allConv3Messages: DecodedMessage[] = []
+  conv3.streamMessages(async (message) => {
+    allConv3Messages.push(message)
+  })
+  await conv1.send({ text: 'Hello' })
+  await conv3.send({ text: 'Hello' })
+  await delayToPropogate()
+
+  assert(
+    allConvos.length === 3,
+    'Unexpected all convos count4 ' + allConvos.length
+  )
+
+  assert(
+    allMessages.length === 3,
+    'Unexpected all messages count5 ' + allMessages.length
+  )
+
+  assert(
+    allConvMessages.length === 2,
+    'Unexpected all conv messages count6 ' + allConvMessages.length
+  )
+
+  assert(
+    allConv3Messages.length === 1,
+    'Unexpected all conv3 messages count7 ' + allConv3Messages.length
+  )
+
+  alix.conversations.cancelStream()
+  alix.conversations.cancelStreamAllMessages()
+
+  await bo.conversations.newConversation(alix.address, {
+    conversationID: 'convo-4',
+    metadata: {},
+  })
+  await conv3.send({ text: 'Hello' })
+
+  assert(
+    allConvos.length === 3,
+    'Unexpected all convos count8 ' + allConvos.length
+  )
+
+  assert(
+    allMessages.length === 3,
+    'Unexpected all messages count9 ' + allMessages.length
+  )
+
+  assert(
+    allConvMessages.length === 2,
+    'Unexpected all conv messages count10 ' + allConvMessages.length
+  )
+
+  assert(
+    allConv3Messages.length === 2,
+    'Unexpected all conv3 messages count11 ' + allConv3Messages.length
+  )
+
+  return true
+})
