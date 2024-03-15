@@ -54,3 +54,27 @@ Running tests locally is useful when updating GitHub actions, or locally testing
     ```bash
     docker-compose -p xmtp -f dev/local/docker-compose.yml down
     ```
+
+## Run e2e tests for example app
+Running e2e tests when updating example app with Detox
+
+1. Setup [Detox Prerequisites](https://wix.github.io/Detox/docs/introduction/environment-setup#detox-prerequisites)
+
+2. Update example/.detoxrc.js to match device configs - [More information on device config and debugging issues](https://wix.github.io/Detox/docs/introduction/project-setup#step-3-device-configs)
+
+3. Build the app for testing: 
+```bash
+    detox build --configuration ios.sim.debug
+```
+or
+```bash
+    detox build --configuration android.emu.debug
+```
+4. Run the tests:
+```bash
+    detox test --configuration ios.sim.debug
+```
+or
+```bash
+    detox test --configuration android.emu.debug
+```

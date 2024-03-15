@@ -51,15 +51,19 @@ jobs:
       - name: Start local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
 
-      - name: Gradle Run Integration Tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          working-directory: ./example
-          api-level: 29
-          script: |
-            react-native run-android
-            sleep 15
-            cd android && ./gradlew connectedCheck
+      - name: Build Android app
+        run: |
+          cd example
+          react-native run-android
+
+      - name: Install Detox command line tools
+        run: npm install -g detox-cli
+
+      - name: Build and test Android app
+        run: |
+          cd example
+          detox build -c android.emu.debug
+          detox test -c android.emu.debug  
 
       - name: Stop local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
