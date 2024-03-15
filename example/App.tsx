@@ -17,6 +17,7 @@ import ConversationScreen from './src/ConversationScreen'
 import HomeScreen from './src/HomeScreen'
 import LaunchScreen from './src/LaunchScreen'
 import { Navigator } from './src/Navigation'
+import StreamScreen from './src/StreamScreen'
 import TestScreen from './src/TestScreen'
 
 const queryClient = new QueryClient()
@@ -93,6 +94,11 @@ export default function App() {
                 name="conversationCreate"
                 component={ConversationCreateScreen}
                 options={{ title: 'New Conversation' }}
+              />
+              <Navigator.Screen
+                name="streamTest"
+                component={StreamScreen}
+                options={{ title: 'Stream Tests' }}
               />
             </Navigator.Navigator>
           </NavigationContainer>
