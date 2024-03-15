@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { Client } from '../lib/Client'
+import { Client } from '../base/Client'
 
 export interface XmtpContextValue {
   /**

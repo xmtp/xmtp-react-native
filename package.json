@@ -1,7 +1,7 @@
 {
-  "name": "react-native-xmtp-react-native-sdk",
+  "name": "react-native-xmtp",
   "version": "0.1.0",
-  "description": "React Native SDK for Xmtp",
+  "description": "Wraps for native xmtp sdks for react native",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
   "types": "lib/typescript/src/index.d.ts",
@@ -26,7 +26,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace react-native-xmtp-react-native-sdk-example",
+    "example": "yarn workspace react-native-xmtp-example",
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
@@ -43,7 +43,7 @@
     "type": "git",
     "url": "git+https://github.com/xmtp/xmtp-react-native.git"
   },
-  "author": "Xmtp <alex@xmtp.com> (https://xmtp.org/)",
+  "author": "XMTP Labs <eng@xmtp.com> (https://github.com/xmtp/xmtp-react-native#readme)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/xmtp/xmtp-react-native/issues"
@@ -53,6 +53,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
     "@commitlint/config-conventional": "^17.0.2",
     "@evilmartians/lefthook": "^1.5.0",
     "@react-native/eslint-config": "^0.73.1",
@@ -68,10 +69,11 @@
     "prettier": "^3.0.3",
     "react": "18.2.0",
     "react-native": "0.73.6",
-    "react-native-builder-bob": "^0.23.2",
+    "react-native-builder-bob": "^0.20.0",
     "release-it": "^15.0.0",
     "turbo": "^1.10.7",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "viem": "^2.8.9"
   },
   "resolutions": {
     "@types/react": "^18.2.44"
@@ -118,30 +120,18 @@
     "extends": [
       "@react-native",
       "prettier"
-    ],
-    "rules": {
-      "prettier/prettier": [
-        "error",
-        {
-          "quoteProps": "consistent",
-          "singleQuote": true,
-          "tabWidth": 2,
-          "trailingComma": "es5",
-          "useTabs": false
-        }
-      ]
-    }
+    ]
   },
   "eslintIgnore": [
     "node_modules/",
     "lib/"
   ],
   "prettier": {
-    "quoteProps": "consistent",
+    "semi": false,
     "singleQuote": true,
-    "tabWidth": 2,
     "trailingComma": "es5",
-    "useTabs": false
+    "arrowParens": "always",
+    "printWidth": 80
   },
   "react-native-builder-bob": {
     "source": "src",
@@ -156,5 +146,13 @@
         }
       ]
     ]
+  },
+  "dependencies": {
+    "@ethersproject/bytes": "^5.7.0",
+    "@msgpack/msgpack": "^3.0.0-beta2",
+    "@noble/hashes": "^1.4.0",
+    "@xmtp/proto": "^3.45.0",
+    "buffer": "^6.0.3",
+    "text-encoding": "^0.7.0"
   }
 }

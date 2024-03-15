@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  XmtpReactNativeSdkExample
+//  XmtpExample
 //
 
 import Foundation

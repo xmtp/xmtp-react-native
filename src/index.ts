@@ -1,30 +1,30 @@
 import { content, keystore } from '@xmtp/proto'
-import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
+import { NativeEventEmitter } from 'react-native'
 
 import { Client } from '.'
 import { ConversationContext } from './XMTP.types'
 import XMTPModule from './XMTPModule'
-import { ConsentListEntry, ConsentState } from './lib/ConsentListEntry'
+import { ConsentListEntry, ConsentState } from './base/ConsentListEntry'
 import {
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
   PreparedLocalMessage,
   ContentCodec,
-} from './lib/ContentCodec'
-import { Conversation } from './lib/Conversation'
-import { DecodedMessage } from './lib/DecodedMessage'
-import type { Query } from './lib/Query'
+} from './base/ContentCodec'
+import { Conversation } from './base/Conversation'
+import { DecodedMessage } from './base/DecodedMessage'
+import type { Query } from './base/Query'
 import { getAddress } from './utils/address'
 
-export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
-export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
-export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
-export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
-export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
-export { TextCodec } from './lib/NativeCodecs/TextCodec'
+export { ReactionCodec } from './base/NativeCodecs/ReactionCodec'
+export { ReplyCodec } from './base/NativeCodecs/ReplyCodec'
+export { ReadReceiptCodec } from './base/NativeCodecs/ReadReceiptCodec'
+export { StaticAttachmentCodec } from './base/NativeCodecs/StaticAttachmentCodec'
+export { RemoteAttachmentCodec } from './base/NativeCodecs/RemoteAttachmentCodec'
+export { TextCodec } from './base/NativeCodecs/TextCodec'
 export * from './hooks'
 export * from './context'
-export * from './lib/Signer'
+export * from './base/Signer'
 
 const EncodedContent = content.EncodedContent
 
@@ -458,13 +458,13 @@ export function preCreateIdentityCallbackCompleted() {
   XMTPModule.preCreateIdentityCallbackCompleted()
 }
 
-export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
+export const emitter = new NativeEventEmitter(XMTPModule ?? Proxy)
 
-export * from './lib/ContentCodec'
-export { Client } from './lib/Client'
-export { Conversation } from './lib/Conversation'
+export * from './base/ContentCodec'
+export { Client } from './base/Client'
+export { Conversation } from './base/Conversation'
 export * from './XMTP.types'
-export { Query } from './lib/Query'
-export { XMTPPush } from './lib/XMTPPush'
+export { Query } from './base/Query'
+export { XMTPPush } from './base/XMTPPush'
 export { DecodedMessage }
 export { ConsentListEntry }

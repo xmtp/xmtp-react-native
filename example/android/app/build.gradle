@@ -74,9 +74,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.xmtpreactnativesdkexample"
+    namespace "com.xmtpexample"
     defaultConfig {
-        applicationId "com.xmtpreactnativesdkexample"
+        applicationId "com.xmtpexample"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

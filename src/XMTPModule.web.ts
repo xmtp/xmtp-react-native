@@ -1,6 +1,6 @@
-import { EventEmitter } from 'expo-modules-core'
+import { NativeEventEmitter } from 'react-native'
 
-const emitter = new EventEmitter({} as any)
+const emitter = new NativeEventEmitter({} as any)
 
 export default {
   PI: Math.PI,

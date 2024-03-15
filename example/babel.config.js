@@ -13,5 +13,6 @@ module.exports = {
         },
       },
     ],
+    '@babel/plugin-proposal-export-namespace-from'
   ],
 };

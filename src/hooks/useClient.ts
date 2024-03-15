@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
 
 import { useXmtp } from './useXmtp'
-import { Client, ClientOptions } from '../lib/Client'
-import { Signer } from '../lib/Signer'
+import { Client, ClientOptions } from '../base/Client'
+import { Signer } from '../base/Signer'
 
 interface InitializeClientOptions {
   signer: Signer | null
