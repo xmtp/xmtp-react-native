@@ -7,8 +7,8 @@ PODS:
   - CoinbaseWalletSDKExpo (1.0.10):
     - CoinbaseWalletSDK/CrossPlatform (= 1.0.4)
     - ExpoModulesCore
-  - Connect-Swift (0.3.0):
-    - SwiftProtobuf (~> 1.20.3)
+  - Connect-Swift (0.12.0):
+    - SwiftProtobuf (~> 1.25.2)
   - DoubleConversion (1.1.6)
   - EXApplication (5.4.0):
     - ExpoModulesCore
@@ -56,7 +56,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.14)
   - hermes-engine/Pre-built (0.71.14)
   - libevent (2.1.12)
-  - LibXMTP (0.4.3-beta2)
+  - LibXMTP (0.4.3-beta3)
   - Logging (1.0.0)
   - MessagePacker (0.4.7)
   - MMKV (1.3.3):
@@ -439,22 +439,22 @@ PODS:
   - RNSVG (13.14.0):
     - React-Core
   - secp256k1.swift (0.1.4)
-  - SwiftProtobuf (1.20.3)
+  - SwiftProtobuf (1.25.2)
   - web3.swift (1.6.0):
     - BigInt (~> 5.0.0)
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.9.1):
-    - Connect-Swift (= 0.3.0)
+  - XMTP (0.9.3):
+    - Connect-Swift (= 0.12.0)
     - GzipSwift
-    - LibXMTP (= 0.4.3-beta2)
+    - LibXMTP (= 0.4.3-beta3)
     - web3.swift
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 0.9.1)
+    - XMTP (= 0.9.3)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -678,7 +678,7 @@ SPEC CHECKSUMS:
   boost: 57d2868c099736d80fcd648bf211b4431e51a558
   CoinbaseWalletSDK: ea1f37512bbc69ebe07416e3b29bf840f5cc3152
   CoinbaseWalletSDKExpo: c79420eb009f482f768c23b6768fc5b2d7c98777
-  Connect-Swift: d38eedc1907d440314f8d26d5a038a00cbb0f6f1
+  Connect-Swift: 1de2ef4a548c59ecaeb9120812dfe0d6e07a0d47
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
   EXApplication: 2a0d9abd4feace9c6faedfe541c1dec02e3702cd
   EXConstants: f348da07e21b23d2b085e270d7b74f282df1a7d9
@@ -701,7 +701,7 @@ SPEC CHECKSUMS:
   GzipSwift: 893f3e48e597a1a4f62fafcb6514220fcf8287fa
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  LibXMTP: ef1e7d04de6b7f0cb88f7678be44bb6329263f6c
+  LibXMTP: 19195625ed53f3f2d5ac3b1048275b6c2f152f03
   Logging: 9ef4ecb546ad3169398d5a723bc9bea1c46bef26
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: f902fb6719da13c2ab0965233d8963a59416f911
@@ -749,10 +749,10 @@ SPEC CHECKSUMS:
   RNScreens: 218801c16a2782546d30bd2026bb625c0302d70f
   RNSVG: d00c8f91c3cbf6d476451313a18f04d220d4f396
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
-  SwiftProtobuf: b02b5075dcf60c9f5f403000b3b0c202a11b6ae1
+  SwiftProtobuf: 407a385e97fd206c4fbe880cc84123989167e0d1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 1d6bbf66833dc71763de3345f63801dbc6c6de27
-  XMTPReactNative: 28a3ff58d411efe05cf6ee4429b315e5e3bd169a
+  XMTP: 8c520ef61c6f7ab0db6fc53e40e9947c2c32f9ad
+  XMTPReactNative: f526ba6c0f19becb0b9cb97e461351f627cc932d
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 95d6ace79946933ecf80684613842ee553dd76a2
