@@ -30,4 +30,8 @@ export class RemoteAttachmentCodec
   fallback(content: RemoteAttachmentContent): string | undefined {
     return `Can’t display "${content.filename}". This app doesn’t support attachments.`
   }
+
+  shouldPush(content: RemoteAttachmentContent): boolean {
+    return true
+  }
 }

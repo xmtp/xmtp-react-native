@@ -35,4 +35,15 @@ export class ReactionCodec implements NativeContentCodec<ReactionContent> {
         return undefined
     }
   }
+
+  shouldPush(content: ReactionContent): boolean {
+    switch (content.action) {
+      case 'added':
+        return true
+      case 'removed':
+        return false
+      default:
+        return false
+    }
+  }
 }

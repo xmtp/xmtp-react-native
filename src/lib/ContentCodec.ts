@@ -101,6 +101,7 @@ export interface JSContentCodec<T> {
   encode(content: T): EncodedContent
   decode(encodedContent: EncodedContent): T
   fallback(content: T): string | undefined
+  shouldPush(content: T): boolean
 }
 
 export interface NativeContentCodec<T> {
@@ -109,6 +110,7 @@ export interface NativeContentCodec<T> {
   encode(content: T): NativeMessageContent
   decode(nativeContent: NativeMessageContent): T
   fallback(content: T): string | undefined
+  shouldPush(content: T): boolean
 }
 
 export type ContentCodec<T> = JSContentCodec<T> | NativeContentCodec<T>

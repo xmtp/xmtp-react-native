@@ -256,14 +256,16 @@ public class XMTPModule: Module {
 			).toJson()
 		}
 
-		AsyncFunction("sendEncodedContent") { (clientAddress: String, topic: String, encodedContentData: [UInt8]) -> String in
+		AsyncFunction("sendEncodedContent") { (clientAddress: String, topic: String, encodedContentData: [UInt8], shouldPush: Bool) -> String in
 			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
 				throw Error.conversationNotFound("no conversation found for \(topic)")
 			}
 
 			let encodedContent = try EncodedContent(serializedData: Data(encodedContentData))
+			
+			let options = SendOptions(contentType: encodedContent.type, __shouldPush: shouldPush)
 
-			return try await conversation.send(encodedContent: encodedContent)
+			return try await conversation.send(encodedContent: encodedContent, options: options)
 		}
 
 		AsyncFunction("listConversations") { (clientAddress: String) -> [String] in
@@ -420,15 +422,19 @@ public class XMTPModule: Module {
 		AsyncFunction("prepareEncodedMessage") { (
 			clientAddress: String,
 			conversationTopic: String,
-			encodedContentData: [UInt8]
+			encodedContentData: [UInt8],
+			shouldPush: Bool
 		) -> String in
 			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
             let encodedContent = try EncodedContent(serializedData: Data(encodedContentData))
+			
+			let contentType = encodedContent.type
 
 			let prepared = try await conversation.prepareMessage(
-				encodedContent: encodedContent
+				encodedContent: encodedContent,
+				options: SendOptions(contentType: contentType, __shouldPush: shouldPush)
 			)
 			let preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
 			let preparedData = try prepared.serializedData()
