@@ -744,43 +744,31 @@ test('canMessage', async () => {
 
 test('can stream group messages', async () => {
   // Create three MLS enabled Clients
-  const aliceClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  const bobClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
-  const camClient = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-  })
+  const [alix, bo, caro] = await createClients(3)
 
   // Alice creates a group
-  const aliceGroup = await aliceClient.conversations.newGroup([
-    bobClient.address,
-    camClient.address,
+  const alixGroup = await alix.conversations.newGroup([
+    bo.address,
+    caro.address,
   ])
 
   // Record message stream for this group
   const groupMessages: DecodedMessage[] = []
-  const cancelGroupMessageStream = await aliceGroup.streamGroupMessages(
+  const cancelGroupMessageStream = await alixGroup.streamGroupMessages(
     async (message) => {
       groupMessages.push(message)
     }
   )
 
   // Bob's num groups == 1
-  const bobGroup = (await bobClient.conversations.listGroups())[0]
-
+  const boGroup = (await bo.conversations.listGroups())[0]
   for (let i = 0; i < 5; i++) {
-    await bobGroup.send({ text: `Message ${i}` })
+    await boGroup.send({ text: `Message ${i}` })
     await delayToPropogate()
   }
 
   if (groupMessages.length !== 5) {
-    throw Error('Unexpected convo messages count ' + groupMessages.length)
+    throw Error('Unexpected group messages count ' + groupMessages.length)
   }
   for (let i = 0; i < 5; i++) {
     if (groupMessages[i].content() !== `Message ${i}`) {
@@ -792,7 +780,55 @@ test('can stream group messages', async () => {
 
   cancelGroupMessageStream()
   for (let i = 0; i < 5; i++) {
-    await bobGroup.send({ text: `Message ${i}` })
+    await boGroup.send({ text: `Message ${i}` })
+  }
+
+  if (groupMessages.length !== 5) {
+    throw Error('Unexpected convo messages count ' + groupMessages.length)
+  }
+
+  return true
+})
+
+test('can stream group messages from self', async () => {
+  // Create three MLS enabled Clients
+  const [alix, bo, caro] = await createClients(3)
+
+  // Alice creates a group
+  const alixGroup = await alix.conversations.newGroup([
+    bo.address,
+    caro.address,
+  ])
+
+  // Record message stream for this group
+  const groupMessages: DecodedMessage[] = []
+  const cancelGroupMessageStream = await alixGroup.streamGroupMessages(
+    async (message) => {
+      groupMessages.push(message)
+    }
+  )
+
+  for (let i = 0; i < 5; i++) {
+    await alixGroup.send({ text: `Message ${i}` })
+    await delayToPropogate(200)
+  }
+
+  await delayToPropogate(1000)
+
+  if (groupMessages.length !== 5) {
+    throw Error('Unexpected group messages count ' + groupMessages.length)
+  }
+  for (let i = 0; i < 5; i++) {
+    if (groupMessages[i].content() !== `Message ${i}`) {
+      throw Error(
+        'Unexpected group message content ' + groupMessages[i].content()
+      )
+    }
+  }
+
+  cancelGroupMessageStream()
+  for (let i = 0; i < 5; i++) {
+    await alixGroup.send({ text: `Message ${i}` })
   }
 
   if (groupMessages.length !== 5) {
