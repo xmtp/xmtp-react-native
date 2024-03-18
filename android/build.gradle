@@ -90,5 +90,8 @@ dependencies {
   //noinspection GradleDynamicVersion
   implementation "com.facebook.react:react-native:+"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+  implementation "org.xmtp:android:0.8.4"
+  implementation 'com.google.code.gson:gson:2.10.1'
+  implementation "com.daveanthonythomas.moshipack:moshipack:1.0.1"
 }
 
