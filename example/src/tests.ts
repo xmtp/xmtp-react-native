@@ -6,7 +6,7 @@ import Config from 'react-native-config'
 import { TextEncoder, TextDecoder } from 'text-encoding'
 import { PrivateKeyAccount } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
+import { DecodedMessage } from 'react-native-xmtp'
 
 import {
   Query,

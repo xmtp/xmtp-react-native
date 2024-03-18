@@ -31,8 +31,7 @@ import {
   StaticAttachmentContent,
   ReplyContent,
   useClient,
-} from 'xmtp-react-native-sdk'
-
+} from 'react-native-xmtp'
 import { NavigationParamList } from './Navigation'
 import {
   useConversation,

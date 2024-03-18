@@ -1,9 +1,0 @@
-{
-  "platforms": ["ios", "android", "web"],
-  "ios": {
-    "modules": ["XMTPModule"]
-  },
-  "android": {
-    "modules": ["expo.modules.xmtpreactnativesdk.XMTPModule"]
-  }
-}

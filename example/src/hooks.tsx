@@ -9,8 +9,7 @@ import {
   ReactionContent,
   RemoteAttachmentContent,
   useXmtp,
-} from 'xmtp-react-native-sdk'
-
+} from 'react-native-xmtp'
 import { downloadFile, uploadFile } from './storage'
 
 /**

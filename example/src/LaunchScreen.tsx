@@ -2,9 +2,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ConnectWallet, useSigner } from '@thirdweb-dev/react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
-import * as XMTP from 'xmtp-react-native-sdk'
-import { useXmtp } from 'xmtp-react-native-sdk'
-
+import * as XMTP from 'react-native-xmtp'
+import { useXmtp } from 'react-native-xmtp'
 import { NavigationParamList } from './Navigation'
 import { useSavedKeys } from './hooks'
 
