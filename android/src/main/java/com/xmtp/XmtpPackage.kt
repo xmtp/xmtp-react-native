@@ -8,7 +8,7 @@ import com.facebook.react.uimanager.ViewManager
 
 class XmtpPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-    return listOf(XmtpModule(reactContext))
+    return listOf(XMTPModule(reactContext))
   }
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {

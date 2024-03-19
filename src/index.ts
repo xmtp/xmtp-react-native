@@ -458,7 +458,7 @@ export function preCreateIdentityCallbackCompleted() {
   XMTPModule.preCreateIdentityCallbackCompleted()
 }
 
-export const emitter = new NativeEventEmitter(XMTPModule ?? Proxy)
+export const emitter = new NativeEventEmitter(XMTPModule)
 
 export * from './base/ContentCodec'
 export { Client } from './base/Client'
