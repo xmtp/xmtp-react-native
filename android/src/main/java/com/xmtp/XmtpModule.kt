@@ -1,8 +1,6 @@
 package com.xmtp
 
-import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.WritableMap
@@ -15,11 +13,17 @@ import android.util.Base64.NO_WRAP
 import android.util.Log
 import androidx.core.net.toUri
 import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReadableArray
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
+import com.xmtp.wrappers.ConsentWrapper
+import com.xmtp.wrappers.ConsentWrapper.Companion.consentStateToString
 import com.xmtp.wrappers.ContentJson
 import com.xmtp.wrappers.ConversationWrapper
 import com.xmtp.wrappers.DecodedMessageWrapper
+import com.xmtp.wrappers.DecryptedLocalAttachment
+import com.xmtp.wrappers.EncryptedLocalAttachment
+import com.xmtp.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -242,11 +246,12 @@ class XMTPModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun sign(clientAddress: String, digest: List<Int>, keyType: String, preKeyIndex: Int, promise: Promise) {
+  fun sign(clientAddress: String, digest: ReadableArray, keyType: String, preKeyIndex: Int, promise: Promise) {
     logV("sign")
     val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val digestList: List<Int> = (0 until digest.size()).map { digest.getInt(it) }
     val digestBytes =
-      digest.foldIndexed(ByteArray(digest.size)) { i, a, v ->
+      digestList.foldIndexed(ByteArray(digestList.size)) { i, a, v ->
         a.apply {
           set(
             i,
@@ -264,14 +269,16 @@ class XMTPModule(reactContext: ReactApplicationContext) :
       val privateKey = PrivateKeyBuilder.buildFromSignedPrivateKey(signedPrivateKey)
       PrivateKeyBuilder(privateKey).sign(digestBytes)
     }
-    promise.resolve(signature.toByteArray().map { it.toInt() and 0xFF })
+    val result = signature.toByteArray().map { it.toInt() and 0xFF }
+    promise.resolve(Arguments.fromList(result))
   }
 
   @ReactMethod
   fun exportPublicKeyBundle(clientAddress: String, promise: Promise) {
     logV("exportPublicKeyBundle")
     val client = clients[clientAddress] ?: throw XMTPException("No client")
-    promise.resolve(client.keys.getPublicKeyBundle().toByteArray().map { it.toInt() and 0xFF })
+    val result = client.keys.getPublicKeyBundle().toByteArray().map { it.toInt() and 0xFF }
+    promise.resolve(Arguments.fromList(result))
   }
 
   @ReactMethod
@@ -279,6 +286,467 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     logV("exportKeyBundle")
     val client = clients[clientAddress] ?: throw XMTPException("No client")
     promise.resolve(Base64.encodeToString(client.privateKeyBundle.toByteArray(), NO_WRAP))
+  }
+
+  // Export the conversation's serialized topic data.
+  @ReactMethod
+  fun exportConversationTopicData(clientAddress: String, topic: String, promise: Promise) {
+    logV("exportConversationTopicData")
+    val conversation = findConversation(clientAddress, topic)
+      ?: throw XMTPException("no conversation found for $topic")
+    promise.resolve(Base64.encodeToString(conversation.toTopicData().toByteArray(), NO_WRAP))
+  }
+
+  @ReactMethod
+  fun getHmacKeys(clientAddress: String, promise: Promise) {
+    logV("getHmacKeys")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val hmacKeys = client.conversations.getHmacKeys()
+    promise.resolve(hmacKeys.toByteArray().map { it.toInt() and 0xFF })
+  }
+
+  // Import a conversation from its serialized topic data.
+  @ReactMethod
+  fun importConversationTopicData(clientAddress: String, topicData: String, promise: Promise) {
+    logV("importConversationTopicData")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val data = TopicData.parseFrom(Base64.decode(topicData, NO_WRAP))
+    val conversation = client.conversations.importTopicData(data)
+    conversations[conversation.cacheKey(clientAddress)] = conversation
+    if (conversation.keyMaterial == null) {
+      logV("Null key material before encode conversation")
+    }
+    promise.resolve(ConversationWrapper.encode(client, conversation))
+  }
+
+  //
+  // Client API
+  @ReactMethod
+ fun canMessage(clientAddress: String, peerAddress: String, promise: Promise) {
+    logV("canMessage")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+    promise.resolve(client.canMessage(peerAddress))
+  }
+
+  @ReactMethod
+  fun staticCanMessage(peerAddress: String, environment: String, appVersion: String?, promise: Promise) {
+    try {
+      logV("staticCanMessage")
+      val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+      promise.resolve(Client.canMessage(peerAddress = peerAddress, options = options))
+    } catch (e: Exception) {
+      throw XMTPException("Failed to create client: ${e.message}")
+    }
+  }
+
+  @ReactMethod
+  fun encryptAttachment(clientAddress: String, fileJson: String, promise: Promise) {
+    logV("encryptAttachment")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val file = DecryptedLocalAttachment.fromJson(fileJson)
+    val uri = Uri.parse(file.fileUri)
+    val data = reactApplicationContext.contentResolver
+      ?.openInputStream(uri)
+      ?.use { it.buffered().readBytes() }!!
+    val attachment = Attachment(
+      filename = uri.lastPathSegment ?: "",
+      mimeType = file.mimeType,
+      data.toByteString(),
+    )
+    val encrypted = RemoteAttachment.encodeEncrypted(
+      attachment,
+      AttachmentCodec()
+    )
+    val encryptedFile = File.createTempFile(UUID.randomUUID().toString(), null)
+    encryptedFile.writeBytes(encrypted.payload.toByteArray())
+
+    promise.resolve(EncryptedLocalAttachment.from(
+      attachment,
+      encrypted,
+      encryptedFile.toUri()
+    ).toJson())
+  }
+
+  @ReactMethod
+  fun decryptAttachment(clientAddress: String, encryptedFileJson: String, promise: Promise) {
+    logV("decryptAttachment")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val encryptedFile = EncryptedLocalAttachment.fromJson(encryptedFileJson)
+    val encryptedData = reactApplicationContext.contentResolver
+      ?.openInputStream(Uri.parse(encryptedFile.encryptedLocalFileUri))
+      ?.use { it.buffered().readBytes() }!!
+    val encrypted = EncryptedEncodedContent(
+      encryptedFile.metadata.contentDigest,
+      encryptedFile.metadata.secret,
+      encryptedFile.metadata.salt,
+      encryptedFile.metadata.nonce,
+      encryptedData.toByteString(),
+      encryptedData.size,
+      encryptedFile.metadata.filename,
+    )
+    val encoded: EncodedContent = RemoteAttachment.decryptEncoded(encrypted)
+    val attachment = encoded.decoded<Attachment>()!!
+    val file = File.createTempFile(UUID.randomUUID().toString(), null)
+    file.writeBytes(attachment.data.toByteArray())
+    promise.resolve(DecryptedLocalAttachment(
+      fileUri = file.toURI().toString(),
+      mimeType = attachment.mimeType,
+      filename = attachment.filename
+    ).toJson())
+  }
+
+  @ReactMethod
+  fun sendEncodedContent(clientAddress: String, topic: String, encodedContentData: ReadableArray, promise: Promise) {
+    val conversation =
+      findConversation(
+        clientAddress = clientAddress,
+        topic = topic
+      ) ?: throw XMTPException("no conversation found for $topic")
+    val encodedContentDataList: List<Int> = (0 until encodedContentData.size()).map { encodedContentData.getInt(it) }
+    val encodedContentDataBytes =
+      encodedContentDataList.foldIndexed(ByteArray(encodedContentDataList.size)) { i, a, v ->
+        a.apply {
+          set(
+            i,
+            v.toByte()
+          )
+        }
+      }
+    val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
+
+    promise.resolve(conversation.send(encodedContent = encodedContent))
+  }
+
+  @ReactMethod
+  fun listConversations(clientAddress: String, promise: Promise) {
+    logV("listConversations")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val conversationList = client.conversations.list()
+    val result = conversationList.map { conversation ->
+      conversations[conversation.cacheKey(clientAddress)] = conversation
+      if (conversation.keyMaterial == null) {
+        logV("Null key material before encode conversation")
+      }
+      ConversationWrapper.encode(client, conversation)
+    }
+    promise.resolve(Arguments.fromList(result))
+  }
+
+  @ReactMethod
+  fun loadMessages(clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String?, promise: Promise) {
+    logV("loadMessages")
+    val conversation =
+      findConversation(
+        clientAddress = clientAddress,
+        topic = topic,
+      ) ?: throw XMTPException("no conversation found for $topic")
+    val beforeDate = if (before != null) Date(before) else null
+    val afterDate = if (after != null) Date(after) else null
+
+    promise.resolve(conversation.decryptedMessages(
+      limit = limit,
+      before = beforeDate,
+      after = afterDate,
+      direction = MessageApiOuterClass.SortDirection.valueOf(
+        direction ?: "SORT_DIRECTION_DESCENDING"
+      )
+    )
+      .map { DecodedMessageWrapper.encode(it) })
+  }
+
+  @ReactMethod
+  fun loadBatchMessages(clientAddress: String, topics: ReadableArray, promise: Promise) {
+    logV("loadBatchMessages")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val topicsList = mutableListOf<Pair<String, Pagination>>()
+    val _topicsList: List<String> = (0 until topics.size()).map { topics.getString(it) }
+
+    _topicsList.forEach {
+      val jsonObj = JSONObject(it)
+      val topic = jsonObj.get("topic").toString()
+      var limit: Int? = null
+      var before: Long? = null
+      var after: Long? = null
+      var direction: MessageApiOuterClass.SortDirection =
+        MessageApiOuterClass.SortDirection.SORT_DIRECTION_DESCENDING
+
+      try {
+        limit = jsonObj.get("limit").toString().toInt()
+        before = jsonObj.get("before").toString().toLong()
+        after = jsonObj.get("after").toString().toLong()
+        direction = MessageApiOuterClass.SortDirection.valueOf(
+          if (jsonObj.get("direction").toString().isNullOrBlank()) {
+            "SORT_DIRECTION_DESCENDING"
+          } else {
+            jsonObj.get("direction").toString()
+          }
+        )
+      } catch (e: Exception) {
+        Log.e(
+          "XMTPModule",
+          "Pagination given incorrect information ${e.message}"
+        )
+      }
+
+      val page = Pagination(
+        limit = if (limit != null && limit > 0) limit else null,
+        before = if (before != null && before > 0) Date(before) else null,
+        after = if (after != null && after > 0) Date(after) else null,
+        direction = direction
+      )
+
+      topicsList.add(Pair(topic, page))
+    }
+
+    promise.resolve(client.conversations.listBatchDecryptedMessages(topicsList)
+      .map { DecodedMessageWrapper.encode(it) })
+  }
+
+  @ReactMethod
+  fun sendMessage(clientAddress: String, conversationTopic: String, contentJson: String, promise: Promise) {
+    logV("sendMessage")
+    val conversation =
+      findConversation(
+        clientAddress = clientAddress,
+        topic = conversationTopic
+      )
+        ?: throw XMTPException("no conversation found for $conversationTopic")
+    val sending = ContentJson.fromJson(contentJson)
+    promise.resolve(conversation.send(
+      content = sending.content,
+      options = SendOptions(contentType = sending.type)
+    ))
+  }
+
+  @ReactMethod
+  fun prepareMessage(clientAddress: String, conversationTopic: String, contentJson: String, promise: Promise) {
+    logV("prepareMessage")
+    val conversation =
+      findConversation(
+        clientAddress = clientAddress,
+        topic = conversationTopic
+      )
+        ?: throw XMTPException("no conversation found for $conversationTopic")
+    val sending = ContentJson.fromJson(contentJson)
+    val prepared = conversation.prepareMessage(
+      content = sending.content,
+      options = SendOptions(contentType = sending.type)
+    )
+    val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
+    val preparedFile = File.createTempFile(prepared.messageId, null)
+    preparedFile.writeBytes(prepared.toSerializedData())
+    promise.resolve(PreparedLocalMessage(
+      messageId = prepared.messageId,
+      preparedFileUri = preparedFile.toURI().toString(),
+      preparedAt = preparedAtMillis,
+    ).toJson())
+  }
+
+  @ReactMethod
+  fun prepareEncodedMessage(clientAddress: String, conversationTopic: String, encodedContentData: ReadableArray, promise: Promise) {
+    logV("prepareEncodedMessage")
+    val conversation =
+      findConversation(
+        clientAddress = clientAddress,
+        topic = conversationTopic
+      )
+        ?: throw XMTPException("no conversation found for $conversationTopic")
+    val encodedContentDataList: List<Int> = (0 until encodedContentData.size()).map { encodedContentData.getInt(it) }
+    val encodedContentDataBytes =
+      encodedContentDataList.foldIndexed(ByteArray(encodedContentDataList.size)) { i, a, v ->
+        a.apply {
+          set(
+            i,
+            v.toByte()
+          )
+        }
+      }
+    val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
+
+    val prepared = conversation.prepareMessage(
+      encodedContent = encodedContent,
+    )
+    val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
+    val preparedFile = File.createTempFile(prepared.messageId, null)
+    preparedFile.writeBytes(prepared.toSerializedData())
+    promise.resolve(PreparedLocalMessage(
+      messageId = prepared.messageId,
+      preparedFileUri = preparedFile.toURI().toString(),
+      preparedAt = preparedAtMillis,
+    ).toJson())
+  }
+
+  @ReactMethod
+  fun sendPreparedMessage(clientAddress: String, preparedLocalMessageJson: String, promise: Promise) {
+    logV("sendPreparedMessage")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val local = PreparedLocalMessage.fromJson(preparedLocalMessageJson)
+    val preparedFileUrl = Uri.parse(local.preparedFileUri)
+    val contentResolver = reactApplicationContext.contentResolver!!
+    val preparedData = contentResolver.openInputStream(preparedFileUrl)!!
+      .use { it.buffered().readBytes() }
+    val prepared = PreparedMessage.fromSerializedData(preparedData)
+    client.publish(envelopes = prepared.envelopes)
+    try {
+      contentResolver.delete(preparedFileUrl, null, null)
+    } catch (ignore: Exception) {
+      /* ignore: the sending succeeds even if we fail to rm the tmp file afterward */
+    }
+    promise.resolve(prepared.messageId)
+  }
+
+  @ReactMethod
+  fun createConversation(clientAddress: String, peerAddress: String, contextJson: String, promise: Promise) {
+    logV("createConversation: $contextJson")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val context = JsonParser.parseString(contextJson).asJsonObject
+    val conversation = client.conversations.newConversation(
+      peerAddress,
+      context = InvitationV1ContextBuilder.buildFromConversation(
+        conversationId = when {
+          context.has("conversationID") -> context.get("conversationID").asString
+          else -> ""
+        },
+        metadata = when {
+          context.has("metadata") -> {
+            val metadata = context.get("metadata").asJsonObject
+            metadata.entrySet().associate { (key, value) -> key to value.asString }
+          }
+
+          else -> mapOf()
+        },
+      )
+    )
+    if (conversation.keyMaterial == null) {
+      logV("Null key material before encode conversation")
+    }
+    promise.resolve(ConversationWrapper.encode(client, conversation))
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun subscribeToConversations(clientAddress: String) {
+    logV("subscribeToConversations")
+    subscribeToConversationsPrivate(clientAddress = clientAddress)
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun subscribeToAllMessages(clientAddress: String) {
+    logV("subscribeToAllMessages")
+    subscribeToAllMessagesPrivate(clientAddress = clientAddress)
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun subscribeToMessages(clientAddress: String, topic: String) {
+    logV("subscribeToMessages")
+    subscribeToMessagesPrivate(
+      clientAddress = clientAddress,
+      topic = topic
+    )
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun unsubscribeFromConversations(clientAddress: String) {
+    logV("unsubscribeFromConversations")
+    subscriptions[getConversationsKey(clientAddress)]?.cancel()
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun unsubscribeFromAllMessages(clientAddress: String) {
+    logV("unsubscribeFromAllMessages")
+    subscriptions[getMessagesKey(clientAddress)]?.cancel()
+  }
+
+  @ReactMethod
+  fun unsubscribeFromMessages(clientAddress: String, topic: String) {
+    logV("unsubscribeFromMessages")
+    unsubscribeFromMessagesPrivate(
+      clientAddress = clientAddress,
+      topic = topic
+    )
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun registerPushToken(pushServer: String, token: String) {
+    logV("registerPushToken")
+    xmtpPush = XMTPPush(reactApplicationContext, pushServer)
+    xmtpPush?.register(token)
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun subscribePushTopics(topics: ReadableArray) {
+    logV("subscribePushTopics")
+    val topicsList: List<String> = (0 until topics.size()).map { topics.getString(it) }
+    if (topicsList.isNotEmpty()) {
+      if (xmtpPush == null) {
+        throw XMTPException("Push server not registered")
+      }
+      xmtpPush?.subscribe(topicsList)
+    }
+  }
+
+  @ReactMethod
+  fun decodeMessage(clientAddress: String, topic: String, encryptedMessage: String, promise: Promise) {
+    logV("decodeMessage")
+    val encryptedMessageData = Base64.decode(encryptedMessage, NO_WRAP)
+    val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
+    val conversation =
+      findConversation(
+        clientAddress = clientAddress,
+        topic = topic
+      )
+        ?: throw XMTPException("no conversation found for $topic")
+    val decodedMessage = conversation.decrypt(envelope)
+    promise.resolve(DecodedMessageWrapper.encode(decodedMessage))
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun isAllowed(clientAddress: String, address: String) {
+    logV("isAllowed")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    client.contacts.isAllowed(address)
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun isDenied(clientAddress: String, address: String) {
+    logV("isDenied")
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    client.contacts.isDenied(address)
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun denyContacts(clientAddress: String, addresses: ReadableArray) {
+    logV("denyContacts")
+    val addressesList: List<String> = (0 until addresses.size()).map { addresses.getString(it) }
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    client.contacts.deny(addressesList)
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun allowContacts(clientAddress: String, addresses: ReadableArray) {
+    val addressesList: List<String> = (0 until addresses.size()).map { addresses.getString(it) }
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    client.contacts.allow(addressesList)
+  }
+
+  @ReactMethod
+  fun refreshConsentList(clientAddress: String, promise: Promise) {
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    val consentList = client.contacts.refreshConsentList()
+    promise.resolve(consentList.entries.map { ConsentWrapper.encode(it.value) })
+  }
+
+  @ReactMethod
+  fun conversationConsentState(clientAddress: String, conversationTopic: String, promise: Promise) {
+    val conversation = findConversation(clientAddress, conversationTopic)
+      ?: throw XMTPException("no conversation found for $conversationTopic")
+    promise.resolve(consentStateToString(conversation.consentState()))
+  }
+
+  @ReactMethod
+  fun consentList(clientAddress: String, promise: Promise) {
+    val client = clients[clientAddress] ?: throw XMTPException("No client")
+    promise.resolve(client.contacts.consentList.entries.map { ConsentWrapper.encode(it.value) })
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
@@ -325,7 +793,7 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     return null
   }
 
-  private fun subscribeToConversations(clientAddress: String) {
+  private fun subscribeToConversationsPrivate(clientAddress: String) {
     val client = clients[clientAddress] ?: throw XMTPException("No client")
 
     subscriptions[getConversationsKey(clientAddress)]?.cancel()
@@ -355,7 +823,7 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  private fun subscribeToAllMessages(clientAddress: String) {
+  private fun subscribeToAllMessagesPrivate(clientAddress: String) {
     val client = clients[clientAddress] ?: throw XMTPException("No client")
 
     subscriptions[getMessagesKey(clientAddress)]?.cancel()
@@ -377,7 +845,7 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  private fun subscribeToMessages(clientAddress: String, topic: String) {
+  private fun subscribeToMessagesPrivate(clientAddress: String, topic: String) {
     val conversation =
       findConversation(
         clientAddress = clientAddress,
@@ -411,7 +879,7 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     return "conversations:$clientAddress"
   }
 
-  private fun unsubscribeFromMessages(
+  private fun unsubscribeFromMessagesPrivate(
     clientAddress: String,
     topic: String,
   ) {
