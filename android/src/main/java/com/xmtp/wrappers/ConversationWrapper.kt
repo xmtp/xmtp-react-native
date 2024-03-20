@@ -17,7 +17,11 @@ class ConversationWrapper {
           val metadata = conversation.conversationId?.let { conversation.toTopicData().invitation.context.metadataMap } ?: emptyMap() // Fetch metadata based on conversationId
           Arguments.createMap().apply {
             putString("conversationID", conversation.conversationId ?: "")
-            putMap("metadata", Arguments.makeNativeMap(metadata))
+            putMap("metadata", Arguments.createMap().apply {
+              metadata.entries.forEach {
+                putString(it.key, it.value)
+              }
+            } )
           }
         }
         else -> Arguments.createMap() // Create an empty map for other versions

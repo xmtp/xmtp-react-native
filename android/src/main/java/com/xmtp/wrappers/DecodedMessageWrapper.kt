@@ -12,7 +12,7 @@ class DecodedMessageWrapper {
             val message = encodeMap(model)
             return gson.toJson(message)
         }
-
+        //TODO: refactor encodeMap
         fun encodeMap(model: DecryptedMessage): Map<String, Any> = mapOf(
             "id" to model.id,
             "topic" to model.topic,

@@ -246,12 +246,10 @@ export async function createConversation<ContentTypes>(
 ): Promise<Conversation<ContentTypes>> {
   return new Conversation(
     client,
-    JSON.parse(
-      await XMTPModule.createConversation(
-        client.address,
-        getAddress(peerAddress),
-        JSON.stringify(context || {})
-      )
+    await XMTPModule.createConversation(
+      client.address,
+      getAddress(peerAddress),
+      JSON.stringify(context || {})
     )
   )
 }
@@ -310,7 +308,7 @@ export async function prepareMessage(
     conversationTopic,
     contentJson
   )
-  return JSON.parse(preparedJson)
+  return preparedJson
 }
 
 export async function prepareMessageWithContentType<T>(

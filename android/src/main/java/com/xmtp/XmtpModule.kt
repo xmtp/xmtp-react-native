@@ -87,7 +87,10 @@ class ReactNativeSigner(var module: XMTPModule, override var address: String) : 
 
   override suspend fun sign(data: ByteArray): Signature {
     val request = SignatureRequest(message = String(data, Charsets.UTF_8))
-    module.sendEvent("sign", Arguments.createMap().apply { putString("id",request.id); putString("message", request.message) })
+    module.sendEvent("sign", Arguments.createMap().apply {
+      putString("id",request.id)
+      putString("message", request.message)
+    })
     return suspendCancellableCoroutine { continuation ->
       continuations[request.id] = continuation
     }
@@ -241,7 +244,8 @@ class XMTPModule(reactContext: ReactApplicationContext) :
       clients[client.address] = client
       promise.resolve(client.address)
     } catch (e: Exception) {
-      throw XMTPException("Failed to create client: $e")
+      promise.reject("Failed to create client", e)
+      //throw XMTPException("Failed to create client: $e")
     }
   }
 
@@ -428,13 +432,17 @@ class XMTPModule(reactContext: ReactApplicationContext) :
       if (conversation.keyMaterial == null) {
         logV("Null key material before encode conversation")
       }
-      ConversationWrapper.encode(client, conversation)
+      ConversationWrapper.encodeToObj(client, conversation)
     }
-    promise.resolve(Arguments.fromList(result))
+    val array = Arguments.createArray()
+    result.map {
+      array.pushMap(it)
+    }
+    promise.resolve(array)
   }
 
   @ReactMethod
-  fun loadMessages(clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String?, promise: Promise) {
+  fun loadMessages(clientAddress: String, topic: String, limit: Int?, before: String?, after: String?, direction: String?, promise: Promise) {
     logV("loadMessages")
     val conversation =
       findConversation(
@@ -536,11 +544,12 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
     val preparedFile = File.createTempFile(prepared.messageId, null)
     preparedFile.writeBytes(prepared.toSerializedData())
-    promise.resolve(PreparedLocalMessage(
-      messageId = prepared.messageId,
-      preparedFileUri = preparedFile.toURI().toString(),
-      preparedAt = preparedAtMillis,
-    ).toJson())
+    val result = Arguments.createMap().apply {
+      putString("messageId",prepared.messageId)
+      putString("preparedFileUri", preparedFile.toURI().toString())
+      putDouble("preparedAt", preparedAtMillis.toDouble())
+    }
+    promise.resolve(result)
   }
 
   @ReactMethod
@@ -573,7 +582,7 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     promise.resolve(PreparedLocalMessage(
       messageId = prepared.messageId,
       preparedFileUri = preparedFile.toURI().toString(),
-      preparedAt = preparedAtMillis,
+      preparedAt = preparedAtMillis.toDouble(),
     ).toJson())
   }
 
@@ -621,7 +630,7 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     if (conversation.keyMaterial == null) {
       logV("Null key material before encode conversation")
     }
-    promise.resolve(ConversationWrapper.encode(client, conversation))
+    promise.resolve(ConversationWrapper.encodeToObj(client, conversation))
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)

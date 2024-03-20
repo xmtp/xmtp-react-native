@@ -6,7 +6,7 @@ import com.google.gson.JsonParser
 class PreparedLocalMessage(
     val messageId: String,
     val preparedFileUri: String,
-    val preparedAt: Long,
+    val preparedAt: Double,
 ) {
     companion object {
         fun fromJson(json: String): PreparedLocalMessage {
@@ -14,7 +14,7 @@ class PreparedLocalMessage(
             return PreparedLocalMessage(
                 obj.get("messageId").asString,
                 obj.get("preparedFileUri").asString,
-                obj.get("preparedAt").asNumber.toLong(),
+                obj.get("preparedAt").asNumber.toDouble(),
             )
         }
     }
