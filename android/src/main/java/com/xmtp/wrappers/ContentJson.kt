@@ -1,6 +1,8 @@
 package com.xmtp.wrappers
 
 import android.util.Base64
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.WritableMap
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -200,4 +202,54 @@ class ContentJson(
             }
         }
     }
+
+  fun toWritableMap(): WritableMap {
+    val map = Arguments.createMap()
+    when (type.id) {
+      ContentTypeText.id -> {
+        map.putString("text", content as String? ?: "")
+      }
+      ContentTypeAttachment.id -> {
+        val attachmentMap = Arguments.createMap()
+        val attachment = content as Attachment
+        attachmentMap.putString("filename", attachment.filename)
+        attachmentMap.putString("mimeType", attachment.mimeType)
+        attachmentMap.putString("data", bytesTo64(attachment.data.toByteArray()))
+        map.putMap("attachment", attachmentMap)
+      }
+      ContentTypeRemoteAttachment.id -> {
+        val remoteAttachmentMap = Arguments.createMap()
+        val remoteAttachment = content as RemoteAttachment
+        remoteAttachmentMap.putString("scheme", "https://")
+        remoteAttachmentMap.putString("url", remoteAttachment.url.toString())
+        val metadataMap = EncryptedAttachmentMetadata.fromRemoteAttachment(remoteAttachment).toJsonMap()
+        for ((key, value) in metadataMap.entries) {
+          remoteAttachmentMap.putString(key, value as String)
+        }
+        map.putMap("remoteAttachment", remoteAttachmentMap)
+      }
+      ContentTypeReaction.id -> {
+        val reactionMap = Arguments.createMap()
+        val reaction = content as Reaction
+        reactionMap.putString("reference", reaction.reference)
+        reactionMap.putString("action", reaction.action.javaClass.simpleName.lowercase())
+        reactionMap.putString("schema", reaction.schema.javaClass.simpleName.lowercase())
+        reactionMap.putString("content", reaction.content)
+        map.putMap("reaction", reactionMap)
+      }
+      ContentTypeReply.id -> {
+        // Similar conversion for Reply
+      }
+      ContentTypeReadReceipt.id -> {
+        val readReceiptMap = Arguments.createMap()
+        readReceiptMap.putString("readReceipt", "")
+        map.putMap("readReceipt", readReceiptMap)
+      }
+      else -> {
+        // Handle other content types
+      }
+    }
+    return map
+  }
+
 }

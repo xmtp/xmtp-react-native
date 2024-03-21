@@ -181,8 +181,8 @@ export async function listConversations<ContentTypes>(
   client: Client<ContentTypes>
 ): Promise<Conversation<ContentTypes>[]> {
   return (await XMTPModule.listConversations(client.address)).map(
-    (json: string) => {
-      return new Conversation(client, JSON.parse(json))
+    (conversation: Conversation<ContentTypes>) => {
+      return new Conversation(client, conversation)
     }
   )
 }
@@ -201,14 +201,16 @@ export async function listMessages<ContentTypes>(
   const messages = await XMTPModule.loadMessages(
     client.address,
     conversationTopic,
-    limit,
-    typeof before === 'number' ? before : before?.getTime(),
-    typeof after === 'number' ? after : after?.getTime(),
+    limit?.toString(),
+    typeof before === 'number'
+      ? before.toString()
+      : before?.getTime().toString(),
+    typeof after === 'number' ? after.toString() : after?.getTime().toString(),
     direction || 'SORT_DIRECTION_DESCENDING'
   )
 
-  return messages.map((json: string) => {
-    return DecodedMessage.from(json, client)
+  return messages.map((msg: DecodedMessage) => {
+    return DecodedMessage.fromObject(msg, client)
   })
 }
 
@@ -233,8 +235,8 @@ export async function listBatchMessages<ContentTypes>(
   })
   const messages = await XMTPModule.loadBatchMessages(client.address, topics)
 
-  return messages.map((json: string) => {
-    return DecodedMessage.from(json, client)
+  return messages.map((msg: DecodedMessage) => {
+    return DecodedMessage.fromObject(msg, client)
   })
 }
 
@@ -244,7 +246,7 @@ export async function createConversation<ContentTypes>(
   peerAddress: string,
   context?: ConversationContext
 ): Promise<Conversation<ContentTypes>> {
-  return new Conversation(
+  const conversation = new Conversation(
     client,
     await XMTPModule.createConversation(
       client.address,
@@ -252,6 +254,7 @@ export async function createConversation<ContentTypes>(
       JSON.stringify(context || {})
     )
   )
+  return conversation
 }
 
 export async function sendWithContentType<T>(

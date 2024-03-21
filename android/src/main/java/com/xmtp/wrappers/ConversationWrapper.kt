@@ -14,20 +14,18 @@ class ConversationWrapper {
     fun encodeToObj(client: Client, conversation: Conversation): WritableMap {
       val context = when (conversation.version) {
         Conversation.Version.V2 -> {
-          val metadata = conversation.conversationId?.let { conversation.toTopicData().invitation.context.metadataMap } ?: emptyMap() // Fetch metadata based on conversationId
+          val metadata = conversation.conversationId?.let {
+            conversation.toTopicData().invitation.context.metadataMap ?: emptyMap()
+          } ?: emptyMap()
           Arguments.createMap().apply {
             putString("conversationID", conversation.conversationId ?: "")
-            putMap("metadata", Arguments.createMap().apply {
-              metadata.entries.forEach {
-                putString(it.key, it.value)
-              }
-            } )
+            putMap("metadata", metadata.toWritableMap())
           }
         }
-        else -> Arguments.createMap() // Create an empty map for other versions
+        else -> Arguments.createMap()
       }
 
-      val result = Arguments.createMap().apply {
+    val result = Arguments.createMap().apply {
         putString("clientAddress", client.address)
         putDouble("createdAt", conversation.createdAt.time.toDouble())
         putMap("context", context)
@@ -44,6 +42,14 @@ class ConversationWrapper {
       val gson = GsonBuilder().create()
       val obj = encodeToObj(client, conversation)
       return gson.toJson(obj)
+    }
+
+    private fun Map<String, String>.toWritableMap(): WritableMap {
+      val writableMap = Arguments.createMap()
+      forEach { (key, value) ->
+        writableMap.putString(key, value)
+      }
+      return writableMap
     }
   }
 }

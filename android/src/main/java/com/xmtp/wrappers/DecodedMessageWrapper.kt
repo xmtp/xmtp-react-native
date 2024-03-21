@@ -1,5 +1,7 @@
 package com.xmtp.wrappers
 
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.WritableMap
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.messages.DecryptedMessage
@@ -12,15 +14,18 @@ class DecodedMessageWrapper {
             val message = encodeMap(model)
             return gson.toJson(message)
         }
-        //TODO: refactor encodeMap
-        fun encodeMap(model: DecryptedMessage): Map<String, Any> = mapOf(
-            "id" to model.id,
-            "topic" to model.topic,
-            "contentTypeId" to model.encodedContent.type.description,
-            "content" to ContentJson(model.encodedContent).toJsonMap(),
-            "senderAddress" to model.senderAddress,
-            "sent" to model.sentAt.time,
-            "fallback" to model.encodedContent.fallback
-        )
+
+      fun encodeMap(model: DecryptedMessage): WritableMap {
+        val result = Arguments.createMap().apply {
+          putString("id", model.id)
+          putString("topic", model.topic)
+          putString("contentTypeId", model.encodedContent.type.description)
+          putMap("content", ContentJson(model.encodedContent).toWritableMap())
+          putString("senderAddress", model.senderAddress)
+          putDouble("sent", model.sentAt.time.toDouble())
+          putString("fallback", model.encodedContent.fallback)
+        }
+        return result
+      }
     }
 }

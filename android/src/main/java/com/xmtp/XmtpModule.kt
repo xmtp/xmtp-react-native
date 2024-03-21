@@ -442,25 +442,31 @@ class XMTPModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun loadMessages(clientAddress: String, topic: String, limit: Int?, before: String?, after: String?, direction: String?, promise: Promise) {
+  fun loadMessages(clientAddress: String, topic: String, limit: String?, before: String?, after: String?, direction: String?, promise: Promise) {
     logV("loadMessages")
     val conversation =
       findConversation(
         clientAddress = clientAddress,
         topic = topic,
       ) ?: throw XMTPException("no conversation found for $topic")
-    val beforeDate = if (before != null) Date(before) else null
-    val afterDate = if (after != null) Date(after) else null
+    val beforeDate = if (before != null) Date(before.toLong()) else null
+    val afterDate = if (after != null) Date(after.toLong()) else null
 
-    promise.resolve(conversation.decryptedMessages(
-      limit = limit,
+    val result = conversation.decryptedMessages(
+      limit = limit?.toInt(),
       before = beforeDate,
       after = afterDate,
       direction = MessageApiOuterClass.SortDirection.valueOf(
         direction ?: "SORT_DIRECTION_DESCENDING"
       )
     )
-      .map { DecodedMessageWrapper.encode(it) })
+      .map { DecodedMessageWrapper.encodeMap(it) }
+
+    val array = Arguments.createArray()
+    result.map {
+      array.pushMap(it)
+    }
+    promise.resolve(array)
   }
 
   @ReactMethod
@@ -507,8 +513,14 @@ class XMTPModule(reactContext: ReactApplicationContext) :
       topicsList.add(Pair(topic, page))
     }
 
-    promise.resolve(client.conversations.listBatchDecryptedMessages(topicsList)
-      .map { DecodedMessageWrapper.encode(it) })
+    val result = client.conversations.listBatchDecryptedMessages(topicsList)
+      .map { DecodedMessageWrapper.encodeMap(it) }
+
+    val array = Arguments.createArray()
+    result.map {
+      array.pushMap(it)
+    }
+    promise.resolve(array)
   }
 
   @ReactMethod
@@ -630,22 +642,23 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     if (conversation.keyMaterial == null) {
       logV("Null key material before encode conversation")
     }
+    logV("createConversation $conversation")
     promise.resolve(ConversationWrapper.encodeToObj(client, conversation))
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
+  @ReactMethod
   fun subscribeToConversations(clientAddress: String) {
     logV("subscribeToConversations")
     subscribeToConversationsPrivate(clientAddress = clientAddress)
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
+  @ReactMethod
   fun subscribeToAllMessages(clientAddress: String) {
     logV("subscribeToAllMessages")
     subscribeToAllMessagesPrivate(clientAddress = clientAddress)
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
+  @ReactMethod
   fun subscribeToMessages(clientAddress: String, topic: String) {
     logV("subscribeToMessages")
     subscribeToMessagesPrivate(
@@ -654,13 +667,14 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     )
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
+  @ReactMethod
   fun unsubscribeFromConversations(clientAddress: String) {
     logV("unsubscribeFromConversations")
     subscriptions[getConversationsKey(clientAddress)]?.cancel()
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
+
+  @ReactMethod
   fun unsubscribeFromAllMessages(clientAddress: String) {
     logV("unsubscribeFromAllMessages")
     subscriptions[getMessagesKey(clientAddress)]?.cancel()
@@ -706,7 +720,7 @@ class XMTPModule(reactContext: ReactApplicationContext) :
       )
         ?: throw XMTPException("no conversation found for $topic")
     val decodedMessage = conversation.decrypt(envelope)
-    promise.resolve(DecodedMessageWrapper.encode(decodedMessage))
+    promise.resolve(DecodedMessageWrapper.encodeMap(decodedMessage))
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
@@ -841,10 +855,10 @@ class XMTPModule(reactContext: ReactApplicationContext) :
         client.conversations.streamAllDecryptedMessages().collect { message ->
           sendEvent(
             "message",
-            //mapOf(
-              //"clientAddress" to clientAddress,
-              //"message" to DecodedMessageWrapper.encodeMap(message),
-            //)
+            Arguments.createMap().apply {
+              putString("clientAddress", clientAddress)
+              putMap("message", DecodedMessageWrapper.encodeMap(message))
+            }
           )
         }
       } catch (e: Exception) {
@@ -867,10 +881,10 @@ class XMTPModule(reactContext: ReactApplicationContext) :
           conversation.streamDecryptedMessages().collect { message ->
             sendEvent(
               "message",
-              //mapOf(
-              //  "clientAddress" to clientAddress,
-              //  "message" to DecodedMessageWrapper.encodeMap(message),
-              //)
+              Arguments.createMap().apply {
+                putString("clientAddress", clientAddress)
+                putMap("message", DecodedMessageWrapper.encodeMap(message))
+              }
             )
           }
         } catch (e: Exception) {
