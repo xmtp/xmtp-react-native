@@ -306,7 +306,8 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     logV("getHmacKeys")
     val client = clients[clientAddress] ?: throw XMTPException("No client")
     val hmacKeys = client.conversations.getHmacKeys()
-    promise.resolve(hmacKeys.toByteArray().map { it.toInt() and 0xFF })
+    val result = hmacKeys.toByteArray().map { it.toInt() and 0xFF }
+    promise.resolve(Arguments.fromList(result))
   }
 
   // Import a conversation from its serialized topic data.
