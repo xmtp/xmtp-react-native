@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
+import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
@@ -24,6 +25,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
@@ -264,7 +266,7 @@ class XMTPModule : Module() {
         }
 
         // Export the conversation's serialized topic data.
-        AsyncFunction("exportConversationTopicData") { clientAddress: String, topic: String ->
+        AsyncFunction("exportConversationTopicData") Coroutine { clientAddress: String, topic: String ->
             logV("exportConversationTopicData")
             val conversation = findConversation(clientAddress, topic)
                 ?: throw XMTPException("no conversation found for $topic")
@@ -365,7 +367,7 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("sendEncodedContent") { clientAddress: String, topic: String, encodedContentData: List<Int> ->
+        AsyncFunction("sendEncodedContent") Coroutine { clientAddress: String, topic: String, encodedContentData: List<Int> ->
             val conversation =
                 findConversation(
                     clientAddress = clientAddress,
@@ -386,7 +388,7 @@ class XMTPModule : Module() {
             conversation.send(encodedContent = encodedContent)
         }
 
-        AsyncFunction("listConversations") { clientAddress: String ->
+        AsyncFunction("listConversations") Coroutine { clientAddress: String ->
             logV("listConversations")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val conversationList = client.conversations.list()
@@ -399,7 +401,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadMessages") { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
+        AsyncFunction("loadMessages") Coroutine { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
             logV("loadMessages")
             val conversation =
                 findConversation(
@@ -420,7 +422,7 @@ class XMTPModule : Module() {
                 .map { DecodedMessageWrapper.encode(it) }
         }
 
-        AsyncFunction("loadBatchMessages") { clientAddress: String, topics: List<String> ->
+        AsyncFunction("loadBatchMessages") Coroutine { clientAddress: String, topics: List<String> ->
             logV("loadBatchMessages")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val topicsList = mutableListOf<Pair<String, Pagination>>()
@@ -465,7 +467,7 @@ class XMTPModule : Module() {
                 .map { DecodedMessageWrapper.encode(it) }
         }
 
-        AsyncFunction("sendMessage") { clientAddress: String, conversationTopic: String, contentJson: String ->
+        AsyncFunction("sendMessage") Coroutine { clientAddress: String, conversationTopic: String, contentJson: String ->
             logV("sendMessage")
             val conversation =
                 findConversation(
@@ -480,7 +482,7 @@ class XMTPModule : Module() {
             )
         }
 
-        AsyncFunction("prepareMessage") { clientAddress: String, conversationTopic: String, contentJson: String ->
+        AsyncFunction("prepareMessage") Coroutine { clientAddress: String, conversationTopic: String, contentJson: String ->
             logV("prepareMessage")
             val conversation =
                 findConversation(
@@ -503,7 +505,7 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("prepareEncodedMessage") { clientAddress: String, conversationTopic: String, encodedContentData: List<Int> ->
+        AsyncFunction("prepareEncodedMessage") Coroutine { clientAddress: String, conversationTopic: String, encodedContentData: List<Int> ->
             logV("prepareEncodedMessage")
             val conversation =
                 findConversation(
@@ -536,7 +538,7 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("sendPreparedMessage") { clientAddress: String, preparedLocalMessageJson: String ->
+        AsyncFunction("sendPreparedMessage") Coroutine { clientAddress: String, preparedLocalMessageJson: String ->
             logV("sendPreparedMessage")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val local = PreparedLocalMessage.fromJson(preparedLocalMessageJson)
@@ -554,7 +556,7 @@ class XMTPModule : Module() {
             prepared.messageId
         }
 
-        AsyncFunction("createConversation") { clientAddress: String, peerAddress: String, contextJson: String ->
+        AsyncFunction("createConversation") Coroutine { clientAddress: String, peerAddress: String, contextJson: String ->
             logV("createConversation: $contextJson")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val context = JsonParser.parseString(contextJson).asJsonObject
@@ -591,7 +593,7 @@ class XMTPModule : Module() {
             subscribeToAllMessages(clientAddress = clientAddress)
         }
 
-        AsyncFunction("subscribeToMessages") { clientAddress: String, topic: String ->
+        AsyncFunction("subscribeToMessages") Coroutine { clientAddress: String, topic: String ->
             logV("subscribeToMessages")
             subscribeToMessages(
                 clientAddress = clientAddress,
@@ -609,7 +611,7 @@ class XMTPModule : Module() {
             subscriptions[getMessagesKey(clientAddress)]?.cancel()
         }
 
-        AsyncFunction("unsubscribeFromMessages") { clientAddress: String, topic: String ->
+        AsyncFunction("unsubscribeFromMessages") Coroutine { clientAddress: String, topic: String ->
             logV("unsubscribeFromMessages")
             unsubscribeFromMessages(
                 clientAddress = clientAddress,
@@ -633,7 +635,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("decodeMessage") { clientAddress: String, topic: String, encryptedMessage: String ->
+        AsyncFunction("decodeMessage") Coroutine { clientAddress: String, topic: String, encryptedMessage: String ->
             logV("decodeMessage")
             val encryptedMessageData = Base64.decode(encryptedMessage, NO_WRAP)
             val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
@@ -659,13 +661,13 @@ class XMTPModule : Module() {
             client.contacts.isDenied(address)
         }
 
-        AsyncFunction("denyContacts") { clientAddress: String, addresses: List<String> ->
+        AsyncFunction("denyContacts") Coroutine { clientAddress: String, addresses: List<String> ->
             logV("denyContacts")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             client.contacts.deny(addresses)
         }
 
-        AsyncFunction("allowContacts") { clientAddress: String, addresses: List<String> ->
+        AsyncFunction("allowContacts") Coroutine { clientAddress: String, addresses: List<String> ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             client.contacts.allow(addresses)
         }
@@ -676,7 +678,7 @@ class XMTPModule : Module() {
             consentList.entries.map { ConsentWrapper.encode(it.value) }
         }
 
-        AsyncFunction("conversationConsentState") { clientAddress: String, conversationTopic: String ->
+        AsyncFunction("conversationConsentState") Coroutine { clientAddress: String, conversationTopic: String ->
             val conversation = findConversation(clientAddress, conversationTopic)
                 ?: throw XMTPException("no conversation found for $conversationTopic")
             consentStateToString(conversation.consentState())
@@ -702,7 +704,7 @@ class XMTPModule : Module() {
     // Helpers
     //
 
-    private fun findConversation(
+    private suspend fun findConversation(
         clientAddress: String,
         topic: String,
     ): Conversation? {
@@ -775,7 +777,7 @@ class XMTPModule : Module() {
         }
     }
 
-    private fun subscribeToMessages(clientAddress: String, topic: String) {
+    private suspend fun subscribeToMessages(clientAddress: String, topic: String) {
         val conversation =
             findConversation(
                 clientAddress = clientAddress,
@@ -809,7 +811,7 @@ class XMTPModule : Module() {
         return "conversations:$clientAddress"
     }
 
-    private fun unsubscribeFromMessages(
+    private suspend fun unsubscribeFromMessages(
         clientAddress: String,
         topic: String,
     ) {
