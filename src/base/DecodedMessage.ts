@@ -1,13 +1,9 @@
 import { Client } from './Client'
 import {
-  ContentCodec,
   JSContentCodec,
   NativeContentCodec,
   NativeMessageContent,
 } from './ContentCodec'
-import { ReplyCodec } from './NativeCodecs/ReplyCodec'
-import { TextCodec } from './NativeCodecs/TextCodec'
-import { Buffer } from 'buffer'
 
 export class DecodedMessage<ContentTypes = any> {
   client: Client<ContentTypes>
@@ -81,9 +77,8 @@ export class DecodedMessage<ContentTypes = any> {
   }
 
   content(): ContentTypes {
-    const encodedJSON = this.nativeContent.encoded
-    if (encodedJSON) {
-      const encoded = JSON.parse(encodedJSON)
+    const { encoded } = this.nativeContent
+    if (encoded) {
       const codec = this.client.codecRegistry[
         this.contentTypeId
       ] as JSContentCodec<ContentTypes>
@@ -91,9 +86,6 @@ export class DecodedMessage<ContentTypes = any> {
         throw new Error(
           `no content type found ${JSON.stringify(this.contentTypeId)}`
         )
-      }
-      if (encoded.content) {
-        encoded.content = new Uint8Array(Buffer.from(encoded.content, 'base64'))
       }
       return codec.decode(encoded)
     } else {

@@ -246,10 +246,32 @@ class ContentJson(
         map.putMap("readReceipt", readReceiptMap)
       }
       else -> {
-        // Handle other content types
+        val encodedContentMap = Arguments.createMap()
+        encodedContent?.let {
+          val typeMap = Arguments.createMap()
+          typeMap.putString("authorityId", encodedContent.type.authorityId)
+          typeMap.putString("typeId", encodedContent.type.typeId)
+          typeMap.putInt("versionMajor", encodedContent.type.versionMajor)
+          typeMap.putInt("versionMinor", encodedContent.type.versionMinor)
+
+          encodedContentMap.putString("fallback", encodedContent.fallback)
+          encodedContentMap.putMap("parameters", encodedContent.parametersMap.toWritableMap())
+          encodedContentMap.putMap("type", typeMap)
+          val result = encodedContent.content.toByteArray().map { it.toInt() and 0xFF }
+          encodedContentMap.putArray("content", Arguments.fromList(result))
+        }
+        map.putMap("encoded", encodedContentMap)
       }
     }
     return map
+  }
+
+  private fun Map<String, String>.toWritableMap(): WritableMap {
+    val writableMap = Arguments.createMap()
+    forEach { (key, value) ->
+      writableMap.putString(key, value)
+    }
+    return writableMap
   }
 
 }

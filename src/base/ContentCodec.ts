@@ -1,7 +1,4 @@
 import { content } from '@xmtp/proto'
-import { ReadReceiptCodec } from './NativeCodecs/ReadReceiptCodec'
-import { TextCodec } from './NativeCodecs/TextCodec'
-import { ReplyCodec } from './NativeCodecs/ReplyCodec'
 
 export type EncodedContent = content.EncodedContent
 export type ContentTypeId = content.ContentTypeId
@@ -93,7 +90,7 @@ export type NativeMessageContent = {
   attachment?: StaticAttachmentContent
   remoteAttachment?: RemoteAttachmentContent
   readReceipt?: ReadReceiptContent
-  encoded?: string
+  encoded?: EncodedContent
 }
 
 export interface JSContentCodec<T> {
