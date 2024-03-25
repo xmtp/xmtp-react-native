@@ -724,21 +724,21 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     promise.resolve(DecodedMessageWrapper.encodeMap(decodedMessage))
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
-  fun isAllowed(clientAddress: String, address: String) {
+  @ReactMethod
+  fun isAllowed(clientAddress: String, address: String, promise: Promise) {
     logV("isAllowed")
     val client = clients[clientAddress] ?: throw XMTPException("No client")
-    client.contacts.isAllowed(address)
+    promise.resolve(client.contacts.isAllowed(address))
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
-  fun isDenied(clientAddress: String, address: String) {
+  @ReactMethod
+  fun isDenied(clientAddress: String, address: String, promise: Promise) {
     logV("isDenied")
     val client = clients[clientAddress] ?: throw XMTPException("No client")
-    client.contacts.isDenied(address)
+    promise.resolve(client.contacts.isDenied(address))
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
+  @ReactMethod
   fun denyContacts(clientAddress: String, addresses: ReadableArray) {
     logV("denyContacts")
     val addressesList: List<String> = (0 until addresses.size()).map { addresses.getString(it) }
@@ -746,7 +746,7 @@ class XMTPModule(reactContext: ReactApplicationContext) :
     client.contacts.deny(addressesList)
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
+  @ReactMethod
   fun allowContacts(clientAddress: String, addresses: ReadableArray) {
     val addressesList: List<String> = (0 until addresses.size()).map { addresses.getString(it) }
     val client = clients[clientAddress] ?: throw XMTPException("No client")
@@ -770,7 +770,13 @@ class XMTPModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun consentList(clientAddress: String, promise: Promise) {
     val client = clients[clientAddress] ?: throw XMTPException("No client")
-    promise.resolve(client.contacts.consentList.entries.map { ConsentWrapper.encode(it.value) })
+    promise.resolve(
+      Arguments.fromList(
+        client.contacts.consentList.entries.map {
+          ConsentWrapper.encode(it.value)
+        }
+      )
+    )
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
