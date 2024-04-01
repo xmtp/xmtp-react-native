@@ -1532,7 +1532,7 @@ test('can handle complex streaming setup', async () => {
     metadata: {},
   })
   const allConvMessages: DecodedMessage[] = []
-  conv1.streamMessages(async (message) => {
+  await conv1.streamMessages(async (message) => {
     allConvMessages.push(message)
   })
   await conv1.send({ text: 'Hello' })
@@ -1559,7 +1559,7 @@ test('can handle complex streaming setup', async () => {
     metadata: {},
   })
   const allConv3Messages: DecodedMessage[] = []
-  conv3.streamMessages(async (message) => {
+  await conv3.streamMessages(async (message) => {
     allConv3Messages.push(message)
   })
   await conv1.send({ text: 'Hello' })
@@ -1641,7 +1641,7 @@ test('can handle complex streaming setup with messages from self', async () => {
     metadata: {},
   })
   const allConvMessages: DecodedMessage[] = []
-  conv1.streamMessages(async (message) => {
+  await conv1.streamMessages(async (message) => {
     allConvMessages.push(message)
   })
   await conv1.send({ text: 'Hello' })
@@ -1668,7 +1668,7 @@ test('can handle complex streaming setup with messages from self', async () => {
     metadata: {},
   })
   const allConv3Messages: DecodedMessage[] = []
-  conv3.streamMessages(async (message) => {
+  await conv3.streamMessages(async (message) => {
     allConv3Messages.push(message)
   })
   await conv1.send({ text: 'Hello' })
