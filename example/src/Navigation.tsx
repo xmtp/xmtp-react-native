@@ -9,6 +9,7 @@ export type NavigationParamList = {
   group: { id: string }
   conversation: { topic: string }
   conversationCreate: undefined
+  streamTest: undefined
 }
 
 export const Navigator = createNativeStackNavigator<NavigationParamList>()
