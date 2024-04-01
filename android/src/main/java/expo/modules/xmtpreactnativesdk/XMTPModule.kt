@@ -473,7 +473,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listGroups") { clientAddress: String ->
+        AsyncFunction("listGroups") Coroutine { clientAddress: String ->
             logV("listGroups")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val groupList = client.conversations.listGroups()
@@ -483,7 +483,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listAll") { clientAddress: String ->
+        AsyncFunction("listAll") Coroutine { clientAddress: String ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val conversationContainerList = client.conversations.list(includeGroups = true)
             conversationContainerList.map { conversation ->
@@ -513,7 +513,7 @@ class XMTPModule : Module() {
                 .map { DecodedMessageWrapper.encode(it) }
         }
 
-        AsyncFunction("groupMessages") { clientAddress: String, id: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
+        AsyncFunction("groupMessages") Coroutine { clientAddress: String, id: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
             logV("groupMessages")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val beforeDate = if (before != null) Date(before) else null
@@ -589,7 +589,7 @@ class XMTPModule : Module() {
             )
         }
 
-        AsyncFunction("sendMessageToGroup") { clientAddress: String, id: String, contentJson: String ->
+        AsyncFunction("sendMessageToGroup") Coroutine { clientAddress: String, id: String, contentJson: String ->
             logV("sendMessageToGroup")
             val group =
                 findGroup(
@@ -705,7 +705,7 @@ class XMTPModule : Module() {
             ConversationWrapper.encode(client, conversation)
         }
 
-        AsyncFunction("createGroup") { clientAddress: String, peerAddresses: List<String>, permission: String ->
+        AsyncFunction("createGroup") Coroutine { clientAddress: String, peerAddresses: List<String>, permission: String ->
             logV("createGroup")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val permissionLevel = when (permission) {
@@ -716,7 +716,7 @@ class XMTPModule : Module() {
             GroupWrapper.encode(client, group)
         }
 
-        AsyncFunction("listMemberAddresses") { clientAddress: String, groupId: String ->
+        AsyncFunction("listMemberAddresses") Coroutine { clientAddress: String, groupId: String ->
             logV("listMembers")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val group = findGroup(clientAddress, groupId)
@@ -729,14 +729,14 @@ class XMTPModule : Module() {
             runBlocking { client.conversations.syncGroups() }
         }
 
-        AsyncFunction("syncGroup") { clientAddress: String, id: String ->
+        AsyncFunction("syncGroup") Coroutine { clientAddress: String, id: String ->
             logV("syncGroup")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val group = findGroup(clientAddress, id)
             runBlocking { group?.sync() }
         }
 
-        AsyncFunction("addGroupMembers") { clientAddress: String, id: String, peerAddresses: List<String> ->
+        AsyncFunction("addGroupMembers") Coroutine { clientAddress: String, id: String, peerAddresses: List<String> ->
             logV("addGroupMembers")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val group = findGroup(clientAddress, id)
@@ -744,7 +744,7 @@ class XMTPModule : Module() {
             runBlocking { group?.addMembers(peerAddresses) }
         }
 
-        AsyncFunction("removeGroupMembers") { clientAddress: String, id: String, peerAddresses: List<String> ->
+        AsyncFunction("removeGroupMembers") Coroutine { clientAddress: String, id: String, peerAddresses: List<String> ->
             logV("removeGroupMembers")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val group = findGroup(clientAddress, id)
@@ -752,7 +752,7 @@ class XMTPModule : Module() {
             runBlocking { group?.removeMembers(peerAddresses) }
         }
 
-        Function("isGroupActive") { clientAddress: String, id: String ->
+        AsyncFunction("isGroupActive") Coroutine { clientAddress: String, id: String ->
             logV("isGroupActive")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val group = findGroup(clientAddress, id)
@@ -760,7 +760,7 @@ class XMTPModule : Module() {
             group?.isActive()
         }
 
-        Function("isGroupAdmin") { clientAddress: String, id: String ->
+        AsyncFunction("isGroupAdmin") Coroutine { clientAddress: String, id: String ->
             logV("isGroupAdmin")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val group = findGroup(clientAddress, id)
@@ -801,7 +801,7 @@ class XMTPModule : Module() {
             )
         }
 
-        AsyncFunction("subscribeToGroupMessages") { clientAddress: String, id: String ->
+        AsyncFunction("subscribeToGroupMessages") Coroutine { clientAddress: String, id: String ->
             logV("subscribeToGroupMessages")
             subscribeToGroupMessages(
                 clientAddress = clientAddress,
@@ -837,7 +837,7 @@ class XMTPModule : Module() {
             )
         }
 
-        AsyncFunction("unsubscribeFromGroupMessages") { clientAddress: String, id: String ->
+        AsyncFunction("unsubscribeFromGroupMessages") Coroutine { clientAddress: String, id: String ->
             logV("unsubscribeFromGroupMessages")
             unsubscribeFromGroupMessages(
                 clientAddress = clientAddress,
@@ -925,14 +925,14 @@ class XMTPModule : Module() {
             preEnableIdentityCallbackDeferred?.complete(Unit)
         }
 
-        AsyncFunction("allowGroups") { clientAddress: String, groupIds: List<String> ->
+        AsyncFunction("allowGroups") Coroutine { clientAddress: String, groupIds: List<String> ->
             logV("allowGroups")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
             client.contacts.allowGroup(groupDataIds)
         }
 
-        AsyncFunction("denyGroups") { clientAddress: String, groupIds: List<String> ->
+        AsyncFunction("denyGroups") Coroutine { clientAddress: String, groupIds: List<String> ->
             logV("denyGroups")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
@@ -977,7 +977,7 @@ class XMTPModule : Module() {
         return null
     }
 
-    private fun findGroup(
+    private suspend fun findGroup(
         clientAddress: String,
         id: String,
     ): Group? {
@@ -1147,7 +1147,7 @@ class XMTPModule : Module() {
             }
     }
 
-    private fun subscribeToGroupMessages(clientAddress: String, id: String) {
+    private suspend fun subscribeToGroupMessages(clientAddress: String, id: String) {
         val group =
             findGroup(
                 clientAddress = clientAddress,
@@ -1202,7 +1202,7 @@ class XMTPModule : Module() {
         subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
     }
 
-    private fun unsubscribeFromGroupMessages(
+    private suspend fun unsubscribeFromGroupMessages(
         clientAddress: String,
         id: String,
     ) {
