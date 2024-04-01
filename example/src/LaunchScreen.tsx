@@ -114,6 +114,14 @@ export default function LaunchScreen(
           accessibilityLabel="Unit-tests"
         />
       </View>
+      <View key="stream-tests" style={{ margin: 16, marginTop: 16 }}>
+        <Button
+          color="green"
+          title="Create Stream Tests"
+          onPress={() => navigation.navigate('streamTest')}
+          accessibilityLabel="Unit-tests"
+        />
+      </View>
       <View style={styles.divider} />
       <Text style={styles.title}>Test Conversations</Text>
       <View style={styles.row}>
@@ -147,22 +155,6 @@ export default function LaunchScreen(
       <View style={styles.row}>
         <Text style={styles.label}>External Wallet:</Text>
         <ConnectWallet theme="dark" />
-      </View>
-      <View key="stream-tests" style={{ margin: 16, marginTop: 16 }}>
-        <Button
-          color="green"
-          title="Create Stream Tests"
-          onPress={() => navigation.navigate('streamTest')}
-          accessibilityLabel="Unit-tests"
-        />
-      </View>
-      <View key="stream-tests" style={{ margin: 16, marginTop: 16 }}>
-        <Button
-          color="green"
-          title="Create Stream Tests"
-          onPress={() => navigation.navigate('streamTest')}
-          accessibilityLabel="Unit-tests"
-        />
       </View>
       {signer && (
         <>
