@@ -148,6 +148,14 @@ export default function LaunchScreen(
         <Text style={styles.label}>External Wallet:</Text>
         <ConnectWallet theme="dark" />
       </View>
+      <View key="stream-tests" style={{ margin: 16, marginTop: 16 }}>
+        <Button
+          color="green"
+          title="Create Stream Tests"
+          onPress={() => navigation.navigate('streamTest')}
+          accessibilityLabel="Unit-tests"
+        />
+      </View>
       {signer && (
         <>
           <View key="connected-dev" style={{ margin: 16 }}>

@@ -9,6 +9,10 @@ import {
 import { TextCodec } from './NativeCodecs/TextCodec'
 import { DefaultContentTypes } from './types/DefaultContentType'
 
+const allowEmptyProperties: (keyof NativeMessageContent)[] = [
+  'text',
+  'readReceipt',
+]
 export class DecodedMessage<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
@@ -106,7 +110,9 @@ export class DecodedMessage<
       for (const codec of Object.values(this.client.codecRegistry)) {
         if (
           ('contentKey' in codec && this.nativeContent[codec.contentKey]) ||
-          this.nativeContent.hasOwnProperty('text')
+          allowEmptyProperties.some((prop) =>
+            this.nativeContent.hasOwnProperty(prop)
+          )
         ) {
           return (
             codec as NativeContentCodec<
