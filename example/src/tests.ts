@@ -62,7 +62,7 @@ class NumberCodec implements JSContentCodec<NumberRef> {
   }
 
   fallback(content: NumberRef): string | undefined {
-    return 'a billion'
+    return undefined
   }
 }
 
@@ -787,7 +787,7 @@ test('can send read receipts', async () => {
     throw Error('Unexpected message content ' + bobMessages[0].contentTypeId)
   }
 
-  if (bobMessages[0].fallback) {
+  if (bobMessages[0].fallback !== undefined) {
     throw Error('Unexpected message fallback ' + bobMessages[0].fallback)
   }
 
@@ -1022,6 +1022,11 @@ test('register and use custom content types', async () => {
   assert(
     messageContent === 12,
     'did not get content properly: ' + JSON.stringify(messageContent)
+  )
+
+  assert(
+    message.fallback === undefined,
+    'did not get content properly: ' + JSON.stringify(message.fallback)
   )
 
   return true
