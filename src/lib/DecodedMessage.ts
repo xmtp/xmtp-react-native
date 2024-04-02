@@ -1,13 +1,11 @@
+import { Buffer } from 'buffer'
+
 import { Client } from './Client'
 import {
-  ContentCodec,
   JSContentCodec,
   NativeContentCodec,
   NativeMessageContent,
 } from './ContentCodec'
-import { ReplyCodec } from './NativeCodecs/ReplyCodec'
-import { TextCodec } from './NativeCodecs/TextCodec'
-import { Buffer } from 'buffer'
 
 const allowEmptyProperties: (keyof NativeMessageContent)[] = [
   'text',
@@ -81,7 +79,8 @@ export class DecodedMessage<ContentTypes = any> {
     this.senderAddress = senderAddress
     this.sent = sent
     this.nativeContent = content
-    this.fallback = fallback
+    // undefined comes back as null when bridged, ensure undefined so integrators don't have to add a new check for null as well
+    this.fallback = fallback ?? undefined
   }
 
   content(): ContentTypes {
