@@ -5,6 +5,9 @@ import XMTP
 // into react native.
 struct DecodedMessageWrapper {
 	static func encodeToObj(_ model: XMTP.DecryptedMessage, client: Client) throws -> [String: Any] {
+    // Swift Protos don't support null values and will always put the default ""
+    // Check if there is a fallback, if there is then make it the set fallback, if not null
+		let fallback = model.encodedContent.hasFallback ? model.encodedContent.fallback : nil
 		return [
 			"id": model.id,
 			"topic": model.topic,
@@ -12,7 +15,7 @@ struct DecodedMessageWrapper {
 			"content": try ContentJson.fromEncoded(model.encodedContent, client: client).toJsonMap() as Any,
 			"senderAddress": model.senderAddress,
 			"sent": UInt64(model.sentAt.timeIntervalSince1970 * 1000),
-			"fallback": model.encodedContent.fallback,
+			"fallback": fallback,
 		]
 	}
 

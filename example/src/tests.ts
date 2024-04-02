@@ -31,6 +31,20 @@ const ContentTypeNumber: ContentTypeId = {
   versionMinor: 0,
 }
 
+const ContentTypeNumberWithUndefinedFallback: ContentTypeId = {
+  authorityId: 'org',
+  typeId: 'number_undefined_fallback',
+  versionMajor: 1,
+  versionMinor: 0,
+}
+
+const ContentTypeNumberWithEmptyFallback: ContentTypeId = {
+  authorityId: 'org',
+  typeId: 'number_empty_fallback',
+  versionMajor: 1,
+  versionMinor: 0,
+}
+
 export type NumberRef = {
   topNumber: {
     bottomNumber: number
@@ -63,6 +77,20 @@ class NumberCodec implements JSContentCodec<NumberRef> {
 
   fallback(content: NumberRef): string | undefined {
     return 'a billion'
+  }
+}
+
+class NumberCodecUndefinedFallback extends NumberCodec {
+  contentType = ContentTypeNumberWithUndefinedFallback
+  fallback(content: NumberRef): string | undefined {
+    return undefined
+  }
+}
+
+class NumberCodecEmptyFallback extends NumberCodec {
+  contentType = ContentTypeNumberWithEmptyFallback
+  fallback(content: NumberRef): string | undefined {
+    return ''
   }
 }
 
@@ -1181,6 +1209,62 @@ test('correctly handles lowercase addresses', async () => {
       `contacts denied by bo should be denied not ${allowedLowercaseState}`
     )
   }
+  return true
+})
+
+test('handle fallback types appropriately', async () => {
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [
+      new NumberCodecEmptyFallback(),
+      new NumberCodecUndefinedFallback(),
+    ],
+  })
+  const alice = await Client.createRandom({
+    env: 'local',
+  })
+  bob.register(new NumberCodecEmptyFallback())
+  bob.register(new NumberCodecUndefinedFallback())
+  const bobConvo = await bob.conversations.newConversation(alice.address)
+  const aliceConvo = await alice.conversations.newConversation(bob.address)
+
+  await bobConvo.send(12, { contentType: ContentTypeNumberWithEmptyFallback })
+
+  await bobConvo.send(12, {
+    contentType: ContentTypeNumberWithUndefinedFallback,
+  })
+
+  const messages = await aliceConvo.messages()
+  assert(messages.length === 2, 'did not get messages')
+
+  const messageUndefinedFallback = messages[0]
+  const messageWithDefinedFallback = messages[1]
+
+  let message1Content = undefined
+  try {
+    message1Content = messageUndefinedFallback.content()
+  } catch {
+    message1Content = messageUndefinedFallback.fallback
+  }
+
+  assert(
+    message1Content === undefined,
+    'did not get content properly when empty fallback: ' +
+      JSON.stringify(message1Content)
+  )
+
+  let message2Content = undefined
+  try {
+    message2Content = messageWithDefinedFallback.content()
+  } catch {
+    message2Content = messageWithDefinedFallback.fallback
+  }
+
+  assert(
+    message2Content === '',
+    'did not get content properly: ' + JSON.stringify(message2Content)
+  )
+
   return true
 })
 
