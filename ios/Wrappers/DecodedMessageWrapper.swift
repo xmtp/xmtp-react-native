@@ -5,6 +5,18 @@ import XMTP
 // into react native.
 struct DecodedMessageWrapper {
 	static func encodeToObj(_ model: XMTP.DecryptedMessage, client: Client) throws -> [String: Any] {
+		let codec = client.codecRegistry.find(for: model.encodedContent.type)
+		var fallback: String?
+		switch codec.contentType {
+		case ContentTypeReadReceipt:
+			let content = try codec.decode(content: model.encodedContent, client: client) as! ReadReceipt
+			fallback = try (codec as! ReadReceiptCodec).fallback(content: content)
+		case ContentTypeText:
+			let content = try codec.decode(content: model.encodedContent, client: client) as! String
+			fallback = try (codec as! TextCodec).fallback(content: content)
+		default:
+			fallback = model.encodedContent.fallback
+		}
 		return [
 			"id": model.id,
 			"topic": model.topic,
@@ -12,7 +24,7 @@ struct DecodedMessageWrapper {
 			"content": try ContentJson.fromEncoded(model.encodedContent, client: client).toJsonMap() as Any,
 			"senderAddress": model.senderAddress,
 			"sent": UInt64(model.sentAt.timeIntervalSince1970 * 1000),
-			"fallback": model.encodedContent.fallback,
+			"fallback": fallback,
 		]
 	}
 
