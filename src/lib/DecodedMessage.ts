@@ -85,7 +85,8 @@ export class DecodedMessage<
     this.senderAddress = senderAddress
     this.sent = sent
     this.nativeContent = content
-    this.fallback = fallback
+    // undefined comes back as null when bridged, ensure undefined so integrators don't have to add a new check for null as well
+    this.fallback = fallback ?? undefined
   }
 
   content(): ExtractDecodedType<[...ContentTypes, TextCodec][number] | string> {
