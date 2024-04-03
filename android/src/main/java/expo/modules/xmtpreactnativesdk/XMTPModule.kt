@@ -479,6 +479,29 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("listGroups") Coroutine { clientAddress: String ->
+            withContext(Dispatchers.IO) {
+                logV("listGroups")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val groupList = client.conversations.listGroups()
+                groupList.map { group ->
+                    groups[group.cacheKey(clientAddress)] = group
+                    GroupWrapper.encode(client, group)
+                }
+            }
+        }
+
+        AsyncFunction("listAll") Coroutine { clientAddress: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val conversationContainerList = client.conversations.list(includeGroups = true)
+                conversationContainerList.map { conversation ->
+                    conversations[conversation.cacheKey(clientAddress)] = conversation
+                    ConversationContainerWrapper.encode(client, conversation)
+                }
+            }
+        }
+
         AsyncFunction("loadMessages") Coroutine { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
             withContext(Dispatchers.IO) {
                 logV("loadMessages")
@@ -499,6 +522,24 @@ class XMTPModule : Module() {
                     )
                 )
                     .map { DecodedMessageWrapper.encode(it) }
+            }
+        }
+
+        AsyncFunction("groupMessages") Coroutine { clientAddress: String, id: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
+            withContext(Dispatchers.IO) {
+                logV("groupMessages")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val beforeDate = if (before != null) Date(before) else null
+                val afterDate = if (after != null) Date(after) else null
+                val group = findGroup(clientAddress, id)
+                group?.decryptedMessages(
+                    limit = limit,
+                    before = beforeDate,
+                    after = afterDate,
+                    direction = MessageApiOuterClass.SortDirection.valueOf(
+                        direction ?: "SORT_DIRECTION_DESCENDING"
+                    )
+                )?.map { DecodedMessageWrapper.encode(it) }
             }
         }
 
@@ -560,6 +601,23 @@ class XMTPModule : Module() {
                         ?: throw XMTPException("no conversation found for $conversationTopic")
                 val sending = ContentJson.fromJson(contentJson)
                 conversation.send(
+                    content = sending.content,
+                    options = SendOptions(contentType = sending.type)
+                )
+            }
+        }
+
+        AsyncFunction("sendMessageToGroup") Coroutine { clientAddress: String, id: String, contentJson: String ->
+            withContext(Dispatchers.IO) {
+                logV("sendMessageToGroup")
+                val group =
+                    findGroup(
+                        clientAddress = clientAddress,
+                        id = id
+                    )
+                        ?: throw XMTPException("no group found for $id")
+                val sending = ContentJson.fromJson(contentJson)
+                group.send(
                     content = sending.content,
                     options = SendOptions(contentType = sending.type)
                 )
@@ -675,6 +733,84 @@ class XMTPModule : Module() {
                 ConversationWrapper.encode(client, conversation)
             }
         }
+        AsyncFunction("createGroup") Coroutine { clientAddress: String, peerAddresses: List<String>, permission: String ->
+            withContext(Dispatchers.IO) {
+                logV("createGroup")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val permissionLevel = when (permission) {
+                    "creator_admin" -> GroupPermissions.GROUP_CREATOR_IS_ADMIN
+                    else -> GroupPermissions.EVERYONE_IS_ADMIN
+                }
+                val group = client.conversations.newGroup(peerAddresses, permissionLevel)
+                GroupWrapper.encode(client, group)
+            }
+        }
+
+        AsyncFunction("listMemberAddresses") Coroutine { clientAddress: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("listMembers")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, groupId)
+                group?.memberAddresses()
+            }
+        }
+
+        AsyncFunction("syncGroups") Coroutine { clientAddress: String ->
+            withContext(Dispatchers.IO) {
+                logV("syncGroups")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                client.conversations.syncGroups()
+            }
+        }
+
+        AsyncFunction("syncGroup") Coroutine { clientAddress: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("syncGroup")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+                group?.sync()
+            }
+        }
+
+        AsyncFunction("addGroupMembers") Coroutine { clientAddress: String, id: String, peerAddresses: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("addGroupMembers")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.addMembers(peerAddresses)
+            }
+        }
+
+        AsyncFunction("removeGroupMembers") Coroutine { clientAddress: String, id: String, peerAddresses: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("removeGroupMembers")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.removeMembers(peerAddresses)
+            }
+        }
+
+        AsyncFunction("isGroupActive") Coroutine { clientAddress: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("isGroupActive")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.isActive()
+            }
+        }
+
+        AsyncFunction("isGroupAdmin") Coroutine { clientAddress: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("isGroupAdmin")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.isAdmin()
+            }
+        }
 
         Function("subscribeToConversations") { clientAddress: String ->
             logV("subscribeToConversations")
@@ -711,6 +847,16 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("subscribeToGroupMessages") Coroutine { clientAddress: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("subscribeToGroupMessages")
+                subscribeToGroupMessages(
+                    clientAddress = clientAddress,
+                    id = id
+                )
+            }
+        }
+
         Function("unsubscribeFromConversations") { clientAddress: String ->
             logV("unsubscribeFromConversations")
             subscriptions[getConversationsKey(clientAddress)]?.cancel()
@@ -737,6 +883,16 @@ class XMTPModule : Module() {
                 unsubscribeFromMessages(
                     clientAddress = clientAddress,
                     topic = topic
+                )
+            }
+        }
+
+        AsyncFunction("unsubscribeFromGroupMessages") Coroutine { clientAddress: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("unsubscribeFromGroupMessages")
+                unsubscribeFromGroupMessages(
+                    clientAddress = clientAddress,
+                    id = id
                 )
             }
         }
