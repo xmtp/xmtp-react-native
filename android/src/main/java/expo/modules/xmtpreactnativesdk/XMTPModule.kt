@@ -66,6 +66,7 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import com.facebook.common.util.Hex
+import org.xmtp.android.library.messages.Topic
 
 class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
@@ -812,6 +813,29 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("processGroupMessage") Coroutine { clientAddress: String, topic: String, encryptedMessage: String ->
+            withContext(Dispatchers.IO) {
+                logV("processGroupMessage")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, getGroupIdFromTopic(topic))
+
+                val message = group?.processMessage(Base64.decode(encryptedMessage, NO_WRAP))
+                    ?: throw XMTPException("could not decrypt message for $topic")
+                DecodedMessageWrapper.encodeMap(message.decrypt())
+            }
+        }
+
+        AsyncFunction("processWelcomeMessage") Coroutine { clientAddress: String, encryptedMessage: String ->
+            withContext(Dispatchers.IO) {
+                logV("isGroupAdmin")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+                val group =
+                    client.conversations.fromWelcome(Base64.decode(encryptedMessage, NO_WRAP))
+                GroupWrapper.encode(client, group)
+            }
+        }
+
         Function("subscribeToConversations") { clientAddress: String ->
             logV("subscribeToConversations")
             subscribeToConversations(clientAddress = clientAddress)
@@ -1015,6 +1039,12 @@ class XMTPModule : Module() {
     //
     // Helpers
     //
+
+    private fun getGroupIdFromTopic(topic: String): String {
+        val pattern = "/xmtp/mls/1/g-(.*?)/proto".toRegex()
+        val matchResult = pattern.find(topic)
+        return matchResult?.groups?.get(1)?.value ?: ""
+    }
 
     private suspend fun findConversation(
         clientAddress: String,
