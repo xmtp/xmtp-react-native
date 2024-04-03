@@ -267,10 +267,12 @@ class XMTPModule : Module() {
 
         // Export the conversation's serialized topic data.
         AsyncFunction("exportConversationTopicData") Coroutine { clientAddress: String, topic: String ->
-            logV("exportConversationTopicData")
-            val conversation = findConversation(clientAddress, topic)
-                ?: throw XMTPException("no conversation found for $topic")
-            Base64.encodeToString(conversation.toTopicData().toByteArray(), NO_WRAP)
+            withContext(Dispatchers.IO) {
+                logV("exportConversationTopicData")
+                val conversation = findConversation(clientAddress, topic)
+                    ?: throw XMTPException("no conversation found for $topic")
+                Base64.encodeToString(conversation.toTopicData().toByteArray(), NO_WRAP)
+            }
         }
 
         AsyncFunction("getHmacKeys") { clientAddress: String ->
@@ -368,219 +370,238 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("sendEncodedContent") Coroutine { clientAddress: String, topic: String, encodedContentData: List<Int> ->
-            val conversation =
-                findConversation(
-                    clientAddress = clientAddress,
-                    topic = topic
-                ) ?: throw XMTPException("no conversation found for $topic")
+            withContext(Dispatchers.IO) {
+                val conversation =
+                    findConversation(
+                        clientAddress = clientAddress,
+                        topic = topic
+                    ) ?: throw XMTPException("no conversation found for $topic")
 
-            val encodedContentDataBytes =
-                encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
-                    a.apply {
-                        set(
-                            i,
-                            v.toByte()
-                        )
+                val encodedContentDataBytes =
+                    encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
+                        a.apply {
+                            set(
+                                i,
+                                v.toByte()
+                            )
+                        }
                     }
-                }
-            val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
+                val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
 
-            conversation.send(encodedContent = encodedContent)
+                conversation.send(encodedContent = encodedContent)
+            }
         }
 
         AsyncFunction("listConversations") Coroutine { clientAddress: String ->
-            logV("listConversations")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val conversationList = client.conversations.list()
-            conversationList.map { conversation ->
-                conversations[conversation.cacheKey(clientAddress)] = conversation
+            withContext(Dispatchers.IO) {
+                logV("listConversations")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val conversationList = client.conversations.list()
+                conversationList.map { conversation ->
+                    conversations[conversation.cacheKey(clientAddress)] = conversation
+                    if (conversation.keyMaterial == null) {
+                        logV("Null key material before encode conversation")
+                    }
+                    ConversationWrapper.encode(client, conversation)
+                }
+            }
+        }
+
+        AsyncFunction("loadMessages") Coroutine { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
+            withContext(Dispatchers.IO) {
+                logV("loadMessages")
+                val conversation =
+                    findConversation(
+                        clientAddress = clientAddress,
+                        topic = topic,
+                    ) ?: throw XMTPException("no conversation found for $topic")
+                val beforeDate = if (before != null) Date(before) else null
+                val afterDate = if (after != null) Date(after) else null
+
+                conversation.decryptedMessages(
+                    limit = limit,
+                    before = beforeDate,
+                    after = afterDate,
+                    direction = MessageApiOuterClass.SortDirection.valueOf(
+                        direction ?: "SORT_DIRECTION_DESCENDING"
+                    )
+                )
+                    .map { DecodedMessageWrapper.encode(it) }
+            }
+        }
+
+        AsyncFunction("loadBatchMessages") Coroutine { clientAddress: String, topics: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("loadBatchMessages")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val topicsList = mutableListOf<Pair<String, Pagination>>()
+                topics.forEach {
+                    val jsonObj = JSONObject(it)
+                    val topic = jsonObj.get("topic").toString()
+                    var limit: Int? = null
+                    var before: Long? = null
+                    var after: Long? = null
+                    var direction: MessageApiOuterClass.SortDirection =
+                        MessageApiOuterClass.SortDirection.SORT_DIRECTION_DESCENDING
+
+                    try {
+                        limit = jsonObj.get("limit").toString().toInt()
+                        before = jsonObj.get("before").toString().toLong()
+                        after = jsonObj.get("after").toString().toLong()
+                        direction = MessageApiOuterClass.SortDirection.valueOf(
+                            if (jsonObj.get("direction").toString().isNullOrBlank()) {
+                                "SORT_DIRECTION_DESCENDING"
+                            } else {
+                                jsonObj.get("direction").toString()
+                            }
+                        )
+                    } catch (e: Exception) {
+                        Log.e(
+                            "XMTPModule",
+                            "Pagination given incorrect information ${e.message}"
+                        )
+                    }
+
+                    val page = Pagination(
+                        limit = if (limit != null && limit > 0) limit else null,
+                        before = if (before != null && before > 0) Date(before) else null,
+                        after = if (after != null && after > 0) Date(after) else null,
+                        direction = direction
+                    )
+
+                    topicsList.add(Pair(topic, page))
+                }
+
+                client.conversations.listBatchDecryptedMessages(topicsList)
+                    .map { DecodedMessageWrapper.encode(it) }
+            }
+        }
+
+        AsyncFunction("sendMessage") Coroutine { clientAddress: String, conversationTopic: String, contentJson: String ->
+            withContext(Dispatchers.IO) {
+                logV("sendMessage")
+                val conversation =
+                    findConversation(
+                        clientAddress = clientAddress,
+                        topic = conversationTopic
+                    )
+                        ?: throw XMTPException("no conversation found for $conversationTopic")
+                val sending = ContentJson.fromJson(contentJson)
+                conversation.send(
+                    content = sending.content,
+                    options = SendOptions(contentType = sending.type)
+                )
+            }
+        }
+
+        AsyncFunction("prepareMessage") Coroutine { clientAddress: String, conversationTopic: String, contentJson: String ->
+            withContext(Dispatchers.IO) {
+                logV("prepareMessage")
+                val conversation =
+                    findConversation(
+                        clientAddress = clientAddress,
+                        topic = conversationTopic
+                    )
+                        ?: throw XMTPException("no conversation found for $conversationTopic")
+                val sending = ContentJson.fromJson(contentJson)
+                val prepared = conversation.prepareMessage(
+                    content = sending.content,
+                    options = SendOptions(contentType = sending.type)
+                )
+                val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
+                val preparedFile = File.createTempFile(prepared.messageId, null)
+                preparedFile.writeBytes(prepared.toSerializedData())
+                PreparedLocalMessage(
+                    messageId = prepared.messageId,
+                    preparedFileUri = preparedFile.toURI().toString(),
+                    preparedAt = preparedAtMillis,
+                ).toJson()
+            }
+        }
+
+        AsyncFunction("prepareEncodedMessage") Coroutine { clientAddress: String, conversationTopic: String, encodedContentData: List<Int> ->
+            withContext(Dispatchers.IO) {
+                logV("prepareEncodedMessage")
+                val conversation =
+                    findConversation(
+                        clientAddress = clientAddress,
+                        topic = conversationTopic
+                    )
+                        ?: throw XMTPException("no conversation found for $conversationTopic")
+
+                val encodedContentDataBytes =
+                    encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
+                        a.apply {
+                            set(
+                                i,
+                                v.toByte()
+                            )
+                        }
+                    }
+                val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
+
+                val prepared = conversation.prepareMessage(
+                    encodedContent = encodedContent,
+                )
+                val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
+                val preparedFile = File.createTempFile(prepared.messageId, null)
+                preparedFile.writeBytes(prepared.toSerializedData())
+                PreparedLocalMessage(
+                    messageId = prepared.messageId,
+                    preparedFileUri = preparedFile.toURI().toString(),
+                    preparedAt = preparedAtMillis,
+                ).toJson()
+            }
+        }
+
+        AsyncFunction("sendPreparedMessage") Coroutine { clientAddress: String, preparedLocalMessageJson: String ->
+            withContext(Dispatchers.IO) {
+                logV("sendPreparedMessage")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val local = PreparedLocalMessage.fromJson(preparedLocalMessageJson)
+                val preparedFileUrl = Uri.parse(local.preparedFileUri)
+                val contentResolver = appContext.reactContext?.contentResolver!!
+                val preparedData = contentResolver.openInputStream(preparedFileUrl)!!
+                    .use { it.buffered().readBytes() }
+                val prepared = PreparedMessage.fromSerializedData(preparedData)
+                client.publish(envelopes = prepared.envelopes)
+                try {
+                    contentResolver.delete(preparedFileUrl, null, null)
+                } catch (ignore: Exception) {
+                    /* ignore: the sending succeeds even if we fail to rm the tmp file afterward */
+                }
+                prepared.messageId
+            }
+        }
+
+        AsyncFunction("createConversation") Coroutine { clientAddress: String, peerAddress: String, contextJson: String ->
+            withContext(Dispatchers.IO) {
+                logV("createConversation: $contextJson")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val context = JsonParser.parseString(contextJson).asJsonObject
+                val conversation = client.conversations.newConversation(
+                    peerAddress,
+                    context = InvitationV1ContextBuilder.buildFromConversation(
+                        conversationId = when {
+                            context.has("conversationID") -> context.get("conversationID").asString
+                            else -> ""
+                        },
+                        metadata = when {
+                            context.has("metadata") -> {
+                                val metadata = context.get("metadata").asJsonObject
+                                metadata.entrySet()
+                                    .associate { (key, value) -> key to value.asString }
+                            }
+
+                            else -> mapOf()
+                        },
+                    )
+                )
                 if (conversation.keyMaterial == null) {
                     logV("Null key material before encode conversation")
                 }
                 ConversationWrapper.encode(client, conversation)
             }
-        }
-
-        AsyncFunction("loadMessages") Coroutine { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
-            logV("loadMessages")
-            val conversation =
-                findConversation(
-                    clientAddress = clientAddress,
-                    topic = topic,
-                ) ?: throw XMTPException("no conversation found for $topic")
-            val beforeDate = if (before != null) Date(before) else null
-            val afterDate = if (after != null) Date(after) else null
-
-            conversation.decryptedMessages(
-                limit = limit,
-                before = beforeDate,
-                after = afterDate,
-                direction = MessageApiOuterClass.SortDirection.valueOf(
-                    direction ?: "SORT_DIRECTION_DESCENDING"
-                )
-            )
-                .map { DecodedMessageWrapper.encode(it) }
-        }
-
-        AsyncFunction("loadBatchMessages") Coroutine { clientAddress: String, topics: List<String> ->
-            logV("loadBatchMessages")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val topicsList = mutableListOf<Pair<String, Pagination>>()
-            topics.forEach {
-                val jsonObj = JSONObject(it)
-                val topic = jsonObj.get("topic").toString()
-                var limit: Int? = null
-                var before: Long? = null
-                var after: Long? = null
-                var direction: MessageApiOuterClass.SortDirection =
-                    MessageApiOuterClass.SortDirection.SORT_DIRECTION_DESCENDING
-
-                try {
-                    limit = jsonObj.get("limit").toString().toInt()
-                    before = jsonObj.get("before").toString().toLong()
-                    after = jsonObj.get("after").toString().toLong()
-                    direction = MessageApiOuterClass.SortDirection.valueOf(
-                        if (jsonObj.get("direction").toString().isNullOrBlank()) {
-                            "SORT_DIRECTION_DESCENDING"
-                        } else {
-                            jsonObj.get("direction").toString()
-                        }
-                    )
-                } catch (e: Exception) {
-                    Log.e(
-                        "XMTPModule",
-                        "Pagination given incorrect information ${e.message}"
-                    )
-                }
-
-                val page = Pagination(
-                    limit = if (limit != null && limit > 0) limit else null,
-                    before = if (before != null && before > 0) Date(before) else null,
-                    after = if (after != null && after > 0) Date(after) else null,
-                    direction = direction
-                )
-
-                topicsList.add(Pair(topic, page))
-            }
-
-            client.conversations.listBatchDecryptedMessages(topicsList)
-                .map { DecodedMessageWrapper.encode(it) }
-        }
-
-        AsyncFunction("sendMessage") Coroutine { clientAddress: String, conversationTopic: String, contentJson: String ->
-            logV("sendMessage")
-            val conversation =
-                findConversation(
-                    clientAddress = clientAddress,
-                    topic = conversationTopic
-                )
-                    ?: throw XMTPException("no conversation found for $conversationTopic")
-            val sending = ContentJson.fromJson(contentJson)
-            conversation.send(
-                content = sending.content,
-                options = SendOptions(contentType = sending.type)
-            )
-        }
-
-        AsyncFunction("prepareMessage") Coroutine { clientAddress: String, conversationTopic: String, contentJson: String ->
-            logV("prepareMessage")
-            val conversation =
-                findConversation(
-                    clientAddress = clientAddress,
-                    topic = conversationTopic
-                )
-                    ?: throw XMTPException("no conversation found for $conversationTopic")
-            val sending = ContentJson.fromJson(contentJson)
-            val prepared = conversation.prepareMessage(
-                content = sending.content,
-                options = SendOptions(contentType = sending.type)
-            )
-            val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
-            val preparedFile = File.createTempFile(prepared.messageId, null)
-            preparedFile.writeBytes(prepared.toSerializedData())
-            PreparedLocalMessage(
-                messageId = prepared.messageId,
-                preparedFileUri = preparedFile.toURI().toString(),
-                preparedAt = preparedAtMillis,
-            ).toJson()
-        }
-
-        AsyncFunction("prepareEncodedMessage") Coroutine { clientAddress: String, conversationTopic: String, encodedContentData: List<Int> ->
-            logV("prepareEncodedMessage")
-            val conversation =
-                findConversation(
-                    clientAddress = clientAddress,
-                    topic = conversationTopic
-                )
-                    ?: throw XMTPException("no conversation found for $conversationTopic")
-
-            val encodedContentDataBytes =
-                encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
-                    a.apply {
-                        set(
-                            i,
-                            v.toByte()
-                        )
-                    }
-                }
-            val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
-
-            val prepared = conversation.prepareMessage(
-                encodedContent = encodedContent,
-            )
-            val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
-            val preparedFile = File.createTempFile(prepared.messageId, null)
-            preparedFile.writeBytes(prepared.toSerializedData())
-            PreparedLocalMessage(
-                messageId = prepared.messageId,
-                preparedFileUri = preparedFile.toURI().toString(),
-                preparedAt = preparedAtMillis,
-            ).toJson()
-        }
-
-        AsyncFunction("sendPreparedMessage") Coroutine { clientAddress: String, preparedLocalMessageJson: String ->
-            logV("sendPreparedMessage")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val local = PreparedLocalMessage.fromJson(preparedLocalMessageJson)
-            val preparedFileUrl = Uri.parse(local.preparedFileUri)
-            val contentResolver = appContext.reactContext?.contentResolver!!
-            val preparedData = contentResolver.openInputStream(preparedFileUrl)!!
-                .use { it.buffered().readBytes() }
-            val prepared = PreparedMessage.fromSerializedData(preparedData)
-            client.publish(envelopes = prepared.envelopes)
-            try {
-                contentResolver.delete(preparedFileUrl, null, null)
-            } catch (ignore: Exception) {
-                /* ignore: the sending succeeds even if we fail to rm the tmp file afterward */
-            }
-            prepared.messageId
-        }
-
-        AsyncFunction("createConversation") Coroutine { clientAddress: String, peerAddress: String, contextJson: String ->
-            logV("createConversation: $contextJson")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val context = JsonParser.parseString(contextJson).asJsonObject
-            val conversation = client.conversations.newConversation(
-                peerAddress,
-                context = InvitationV1ContextBuilder.buildFromConversation(
-                    conversationId = when {
-                        context.has("conversationID") -> context.get("conversationID").asString
-                        else -> ""
-                    },
-                    metadata = when {
-                        context.has("metadata") -> {
-                            val metadata = context.get("metadata").asJsonObject
-                            metadata.entrySet().associate { (key, value) -> key to value.asString }
-                        }
-
-                        else -> mapOf()
-                    },
-                )
-            )
-            if (conversation.keyMaterial == null) {
-                logV("Null key material before encode conversation")
-            }
-            ConversationWrapper.encode(client, conversation)
         }
 
         Function("subscribeToConversations") { clientAddress: String ->
@@ -594,11 +615,13 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("subscribeToMessages") Coroutine { clientAddress: String, topic: String ->
-            logV("subscribeToMessages")
-            subscribeToMessages(
-                clientAddress = clientAddress,
-                topic = topic
-            )
+            withContext(Dispatchers.IO) {
+                logV("subscribeToMessages")
+                subscribeToMessages(
+                    clientAddress = clientAddress,
+                    topic = topic
+                )
+            }
         }
 
         Function("unsubscribeFromConversations") { clientAddress: String ->
@@ -612,11 +635,13 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("unsubscribeFromMessages") Coroutine { clientAddress: String, topic: String ->
-            logV("unsubscribeFromMessages")
-            unsubscribeFromMessages(
-                clientAddress = clientAddress,
-                topic = topic
-            )
+            withContext(Dispatchers.IO) {
+                logV("unsubscribeFromMessages")
+                unsubscribeFromMessages(
+                    clientAddress = clientAddress,
+                    topic = topic
+                )
+            }
         }
 
         Function("registerPushToken") { pushServer: String, token: String ->
@@ -636,17 +661,19 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("decodeMessage") Coroutine { clientAddress: String, topic: String, encryptedMessage: String ->
-            logV("decodeMessage")
-            val encryptedMessageData = Base64.decode(encryptedMessage, NO_WRAP)
-            val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
-            val conversation =
-                findConversation(
-                    clientAddress = clientAddress,
-                    topic = topic
-                )
-                    ?: throw XMTPException("no conversation found for $topic")
-            val decodedMessage = conversation.decrypt(envelope)
-            DecodedMessageWrapper.encode(decodedMessage)
+            withContext(Dispatchers.IO) {
+                logV("decodeMessage")
+                val encryptedMessageData = Base64.decode(encryptedMessage, NO_WRAP)
+                val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
+                val conversation =
+                    findConversation(
+                        clientAddress = clientAddress,
+                        topic = topic
+                    )
+                        ?: throw XMTPException("no conversation found for $topic")
+                val decodedMessage = conversation.decrypt(envelope)
+                DecodedMessageWrapper.encode(decodedMessage)
+            }
         }
 
         AsyncFunction("isAllowed") { clientAddress: String, address: String ->
@@ -662,14 +689,18 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("denyContacts") Coroutine { clientAddress: String, addresses: List<String> ->
-            logV("denyContacts")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.deny(addresses)
+            withContext(Dispatchers.IO) {
+                logV("denyContacts")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                client.contacts.deny(addresses)
+            }
         }
 
         AsyncFunction("allowContacts") Coroutine { clientAddress: String, addresses: List<String> ->
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.allow(addresses)
+            withContext(Dispatchers.IO) {
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                client.contacts.allow(addresses)
+            }
         }
 
         AsyncFunction("refreshConsentList") { clientAddress: String ->
@@ -679,9 +710,11 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("conversationConsentState") Coroutine { clientAddress: String, conversationTopic: String ->
-            val conversation = findConversation(clientAddress, conversationTopic)
-                ?: throw XMTPException("no conversation found for $conversationTopic")
-            consentStateToString(conversation.consentState())
+            withContext(Dispatchers.IO) {
+                val conversation = findConversation(clientAddress, conversationTopic)
+                    ?: throw XMTPException("no conversation found for $conversationTopic")
+                consentStateToString(conversation.consentState())
+            }
         }
 
         AsyncFunction("consentList") { clientAddress: String ->
