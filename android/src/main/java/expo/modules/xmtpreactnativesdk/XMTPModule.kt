@@ -389,15 +389,17 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("listConversations") Coroutine { clientAddress: String ->
-            logV("listConversations")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val conversationList = client.conversations.list()
-            conversationList.map { conversation ->
-                conversations[conversation.cacheKey(clientAddress)] = conversation
-                if (conversation.keyMaterial == null) {
-                    logV("Null key material before encode conversation")
+            withContext(Dispatchers.IO) {
+                logV("listConversations")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val conversationList = client.conversations.list()
+                conversationList.map { conversation ->
+                    conversations[conversation.cacheKey(clientAddress)] = conversation
+                    if (conversation.keyMaterial == null) {
+                        logV("Null key material before encode conversation")
+                    }
+                    ConversationWrapper.encode(client, conversation)
                 }
-                ConversationWrapper.encode(client, conversation)
             }
         }
 
