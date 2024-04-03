@@ -714,6 +714,36 @@ public class XMTPModule: Module {
 			
 			return try group.isAdmin()
 		}
+		
+		AsyncFunction("processGroupMessage") { (clientAddress: String, topic: String, encryptedMessage: String) -> String in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}			
+			
+			guard let group = try await findGroup(clientAddress: clientAddress, id: getGroupIdFromTopic(topic: topic)) else {
+				throw Error.conversationNotFound("no group found for \(topic)")
+			}
+			
+			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
+				throw Error.noMessage
+			}
+			let decodedMessage = try await group.processMessageDecrypted(envelopeBytes: encryptedMessageData)
+			return try DecodedMessageWrapper.encode(decodedMessage, client: client)
+		}
+
+		AsyncFunction("processWelcomeMessage") { (clientAddress: String, encryptedMessage: String) -> String in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
+				throw Error.noMessage
+			}
+			guard let group = try await client.conversations.fromWelcome(envelopeBytes: encryptedMessageData) else {
+				throw Error.conversationNotFound("no group found")
+			}
+
+			return try GroupWrapper.encode(group, client: client)
+		}
 
 		AsyncFunction("subscribeToConversations") { (clientAddress: String) in
 			try await subscribeToConversations(clientAddress: clientAddress)
@@ -917,6 +947,23 @@ public class XMTPModule: Module {
 	//
 	// Helpers
 	//
+	
+	private func getGroupIdFromTopic(topic: String) -> String {
+		let pattern = "/xmtp/mls/1/g-(.*?)/proto"
+		do {
+			let regex = try NSRegularExpression(pattern: pattern)
+			let nsRange = NSRange(topic.startIndex..<topic.endIndex, in: topic)
+			if let match = regex.firstMatch(in: topic, options: [], range: nsRange) {
+				let range = match.range(at: 1)
+				if let swiftRange = Range(range, in: topic) {
+					return String(topic[swiftRange])
+				}
+			}
+		} catch {
+			print("Invalid regular expression")
+		}
+		return ""
+	}
 
 	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, mlsAlpha: Bool = false, encryptionKey: Data? = nil, dbPath: String? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.

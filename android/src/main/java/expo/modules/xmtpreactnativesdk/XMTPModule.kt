@@ -827,7 +827,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("processWelcomeMessage") Coroutine { clientAddress: String, encryptedMessage: String ->
             withContext(Dispatchers.IO) {
-                logV("isGroupAdmin")
+                logV("processWelcomeMessage")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
 
                 val group =
