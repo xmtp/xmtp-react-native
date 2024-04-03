@@ -263,7 +263,9 @@ export async function getHmacKeys(
   return keystore.GetConversationHmacKeysResponse.decode(array)
 }
 
-export async function importConversationTopicData<ContentTypes extends ContentCodec<unknown>[],>(
+export async function importConversationTopicData<
+  ContentTypes extends ContentCodec<unknown>[],
+>(
   client: Client<ContentTypes>,
   topicData: string
 ): Promise<Conversation<ContentTypes>> {
@@ -696,6 +698,34 @@ export async function isGroupDenied(
   groupId: string
 ): Promise<boolean> {
   return XMTPModule.isGroupDenied(clientAddress, groupId)
+}
+
+export async function processGroupMessage<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  topic: string,
+  encryptedMessage: string
+): Promise<DecodedMessage<ContentTypes>> {
+  const json = XMTPModule.processGroupMessage(
+    client.address,
+    topic,
+    encryptedMessage
+  )
+  return DecodedMessage.from(json, client)
+}
+
+export async function processWelcomeMessage<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  encryptedMessage: string
+): Promise<Group<ContentTypes>> {
+  const json = await XMTPModule.processWelcomeMessage(
+    client.address,
+    encryptedMessage
+  )
+  return new Group(client, JSON.parse(json))
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
