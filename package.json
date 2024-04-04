@@ -26,7 +26,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace react-native-xmtp-example",
+    "example": "yarn workspace xmtp-react-native-sdk-example",
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
