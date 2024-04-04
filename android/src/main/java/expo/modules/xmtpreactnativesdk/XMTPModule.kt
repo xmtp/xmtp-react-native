@@ -813,14 +813,14 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("processGroupMessage") Coroutine { clientAddress: String, topic: String, encryptedMessage: String ->
+        AsyncFunction("processGroupMessage") Coroutine { clientAddress: String, id: String, encryptedMessage: String ->
             withContext(Dispatchers.IO) {
                 logV("processGroupMessage")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val group = findGroup(clientAddress, getGroupIdFromTopic(topic))
+                val group = findGroup(clientAddress, id)
 
                 val message = group?.processMessage(Base64.decode(encryptedMessage, NO_WRAP))
-                    ?: throw XMTPException("could not decrypt message for $topic")
+                    ?: throw XMTPException("could not decrypt message for $id")
                 DecodedMessageWrapper.encodeMap(message.decrypt())
             }
         }
@@ -1039,12 +1039,6 @@ class XMTPModule : Module() {
     //
     // Helpers
     //
-
-    private fun getGroupIdFromTopic(topic: String): String {
-        val pattern = "/xmtp/mls/1/g-(.*?)/proto".toRegex()
-        val matchResult = pattern.find(topic)
-        return matchResult?.groups?.get(1)?.value ?: ""
-    }
 
     private suspend fun findConversation(
         clientAddress: String,

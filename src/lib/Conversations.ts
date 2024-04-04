@@ -321,6 +321,18 @@ export default class Conversations<
     this.subscriptions[EventTypes.AllGroupMessage] = subscription
   }
 
+  async fromWelcome(encryptedMessage: string): Promise<Group<ContentTypes>> {
+    try {
+      return await XMTPModule.processWelcomeMessage(
+        this.client,
+        encryptedMessage
+      )
+    } catch (e) {
+      console.info('ERROR in processWelcomeMessage()', e)
+      throw e
+    }
+  }
+
   /**
    * Cancels the stream for new conversations.
    */

@@ -715,13 +715,13 @@ public class XMTPModule: Module {
 			return try group.isAdmin()
 		}
 		
-		AsyncFunction("processGroupMessage") { (clientAddress: String, topic: String, encryptedMessage: String) -> String in
+		AsyncFunction("processGroupMessage") { (clientAddress: String, id: String, encryptedMessage: String) -> String in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}			
 			
-			guard let group = try await findGroup(clientAddress: clientAddress, id: getGroupIdFromTopic(topic: topic)) else {
-				throw Error.conversationNotFound("no group found for \(topic)")
+			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			
 			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
@@ -947,23 +947,6 @@ public class XMTPModule: Module {
 	//
 	// Helpers
 	//
-	
-	private func getGroupIdFromTopic(topic: String) -> String {
-		let pattern = "/xmtp/mls/1/g-(.*?)/proto"
-		do {
-			let regex = try NSRegularExpression(pattern: pattern)
-			let nsRange = NSRange(topic.startIndex..<topic.endIndex, in: topic)
-			if let match = regex.firstMatch(in: topic, options: [], range: nsRange) {
-				let range = match.range(at: 1)
-				if let swiftRange = Range(range, in: topic) {
-					return String(topic[swiftRange])
-				}
-			}
-		} catch {
-			print("Invalid regular expression")
-		}
-		return ""
-	}
 
 	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, mlsAlpha: Bool = false, encryptionKey: Data? = nil, dbPath: String? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.

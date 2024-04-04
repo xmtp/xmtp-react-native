@@ -704,12 +704,12 @@ export async function processGroupMessage<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  topic: string,
+  id: string,
   encryptedMessage: string
 ): Promise<DecodedMessage<ContentTypes>> {
   const json = XMTPModule.processGroupMessage(
     client.address,
-    topic,
+    id,
     encryptedMessage
   )
   return DecodedMessage.from(json, client)
