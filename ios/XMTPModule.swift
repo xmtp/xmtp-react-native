@@ -807,9 +807,29 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("subscribePushTopics") { (topics: [String]) in
+		AsyncFunction("subscribePushTopics") { (clientAddress: String, topics: [String]) in
 			do {
-				try await XMTPPush.shared.subscribe(topics: topics)
+				guard let client = await clientsManager.getClient(key: clientAddress) else {
+					throw Error.noClient
+				}
+				let hmacKeysResult = await client.conversations.getHmacKeys()
+				let subscriptions = topics.map { topic -> NotificationSubscription in
+					let hmacKeys = hmacKeysResult.hmacKeys
+
+					let result = hmacKeys[topic]?.values.map { hmacKey -> NotificationSubscriptionHmacKey in
+						NotificationSubscriptionHmacKey.with { sub_key in
+							sub_key.key = hmacKey.hmacKey
+							sub_key.thirtyDayPeriodsSinceEpoch = UInt32(hmacKey.thirtyDayPeriodsSinceEpoch)
+						}
+					}
+
+					return NotificationSubscription.with { sub in
+						sub.hmacKeys = result ?? []
+						sub.topic = topic
+					}
+				}
+
+				try await XMTPPush.shared.subscribeWithMetadata(subscriptions: subscriptions)
 			} catch {
 				print("Error subscribing: \(error)")
 			}

@@ -1,11 +1,17 @@
+import { Client } from './Client'
 import * as XMTPModule from '../index'
 
-export class XMTPPush {
+export default class XMTPPush {
+  client: Client<any>
+
+  constructor(client: Client<any>) {
+    this.client = client
+  }
   static register(server: string, token: string) {
     XMTPModule.registerPushToken(server, token)
   }
 
-  static subscribe(topics: string[]) {
-    XMTPModule.subscribePushTopics(topics)
+  subscribe(topics: string[]) {
+    XMTPModule.subscribePushTopics(this.client.address, topics)
   }
 }

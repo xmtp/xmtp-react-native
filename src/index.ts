@@ -576,8 +576,8 @@ export function registerPushToken(pushServer: string, token: string) {
   return XMTPModule.registerPushToken(pushServer, token)
 }
 
-export function subscribePushTopics(topics: string[]) {
-  return XMTPModule.subscribePushTopics(topics)
+export function subscribePushTopics(clientAddress: string, topics: string[]) {
+  return XMTPModule.subscribePushTopics(clientAddress, topics)
 }
 
 export async function decodeMessage<
