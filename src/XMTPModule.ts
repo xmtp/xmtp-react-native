@@ -1,5 +1,4 @@
-import { requireNativeModule } from 'expo-modules-core'
+import { NativeModules } from 'react-native'
 
-// It loads the native module object from the JSI or falls back to
-// the bridge module (from NativeModulesProxy) if the remote debugger is on.
-export default requireNativeModule('XMTP')
+const { XMTPModule } = NativeModules
+export default XMTPModule

@@ -1,4 +1,4 @@
-package expo.modules.xmtpreactnativesdk.wrappers
+package com.xmtpreactnativesdk.wrappers
 
 import android.util.Base64
 import com.google.gson.GsonBuilder

@@ -1,5 +1,5 @@
 import { content, keystore } from '@xmtp/proto'
-import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
+import { NativeEventEmitter } from 'react-native'
 
 import { Client } from '.'
 import { ConversationContext } from './XMTP.types'
@@ -458,7 +458,7 @@ export function preCreateIdentityCallbackCompleted() {
   XMTPModule.preCreateIdentityCallbackCompleted()
 }
 
-export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
+export const emitter = new NativeEventEmitter(XMTPModule)
 
 export * from './lib/ContentCodec'
 export { Client } from './lib/Client'

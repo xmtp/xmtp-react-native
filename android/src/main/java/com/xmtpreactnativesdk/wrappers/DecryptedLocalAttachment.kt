@@ -1,4 +1,4 @@
-package expo.modules.xmtpreactnativesdk.wrappers
+package com.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject

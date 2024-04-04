@@ -1,10 +1,8 @@
-package expo.modules.xmtpreactnativesdk.wrappers
+package com.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.ConsentListEntry
 import org.xmtp.android.library.ConsentState
-import org.xmtp.android.library.codecs.description
-import org.xmtp.android.library.messages.DecryptedMessage
 
 class ConsentWrapper {
 

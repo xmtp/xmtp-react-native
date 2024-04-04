@@ -1,4 +1,4 @@
-package expo.modules.xmtpreactnativesdk.wrappers
+package com.xmtpreactnativesdk.wrappers
 
 import com.facebook.common.util.Hex
 import com.google.gson.JsonObject

@@ -874,5 +874,3 @@ class XMTPModule : Module() {
         preCreateIdentityCallbackDeferred = null
     }
 }
-
-
