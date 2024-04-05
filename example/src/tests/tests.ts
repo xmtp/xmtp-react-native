@@ -8,7 +8,7 @@ import { PrivateKeyAccount } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, delayToPropogate } from './test-utils'
+import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
   Query,
   JSContentCodec,
@@ -334,13 +334,20 @@ test('canMessage', async () => {
     throw new Error('should be able to message v2 client')
   }
 
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+
   const caro = await Client.createRandom({
     env: 'local',
     enableAlphaMls: true,
+    dbEncryptionKey: keyBytes,
   })
   const chux = await Client.createRandom({
     env: 'local',
     enableAlphaMls: true,
+    dbEncryptionKey: keyBytes,
   })
 
   const canMessageV3 = await caro.canGroupMessage([chux.address])
@@ -1320,12 +1327,8 @@ test('instantiate frames client correctly', async () => {
 
 // Skipping this test as it's not something supported right now
 test('can stream all conversation Messages from multiple clients', async () => {
-  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
+  const [alix, bo, caro] = await createClients(3)
+
   if (bo.address === alix.address) {
     throw Error('Bo and Alix should have different addresses')
   }
@@ -1384,12 +1387,8 @@ test('can stream all conversation Messages from multiple clients', async () => {
 })
 
 test('can stream all conversation Messages from multiple clients - swapped', async () => {
-  const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
-  const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
-  await delayToPropogate()
+  const [alix, bo, caro] = await createClients(3)
+
   if (bo.address === alix.address) {
     throw Error('Bo and Alix should have different addresses')
   }
