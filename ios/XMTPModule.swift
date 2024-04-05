@@ -690,38 +690,15 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("subscribePushTopics") { (topics: [String]) in
-			do {
-				try await XMTPPush.shared.subscribe(topics: topics)
-			} catch {
-				print("Error subscribing: \(error)")
-			}
-		}
 		AsyncFunction("removeGroupMembers") { (clientAddress: String, id: String, peerAddresses: [String]) in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
 
-		AsyncFunction("decodeMessage") { (clientAddress: String, topic: String, encryptedMessage: String, conversationID: String?) -> String in
-			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8))else {
-				throw Error.noMessage
-			}
 			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 
-			let envelope = XMTP.Envelope.with { envelope in
-				envelope.message = encryptedMessageData
-				envelope.contentTopic = topic
-			}
-
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic, conversationID: conversationID) else {
-				throw Error.conversationNotFound("no conversation found for \(topic)")
-			}
-			let decodedMessage = try conversation.decode(envelope)
-			return try DecodedMessageWrapper.encode(decodedMessage)
-		}
-  }
 			try await group.removeMembers(addresses: peerAddresses)
 		}
 		
