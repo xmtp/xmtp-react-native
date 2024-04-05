@@ -1,7 +1,7 @@
 import { Client } from './Client'
 import * as XMTPModule from '../index'
 
-export default class XMTPPush {
+export class XMTPPush {
   client: Client<any>
 
   constructor(client: Client<any>) {
