@@ -66,6 +66,8 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import com.facebook.common.util.Hex
+import org.xmtp.android.library.messages.Topic
+import org.xmtp.android.library.push.Service
 
 class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
@@ -812,6 +814,29 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("processGroupMessage") Coroutine { clientAddress: String, id: String, encryptedMessage: String ->
+            withContext(Dispatchers.IO) {
+                logV("processGroupMessage")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                val message = group?.processMessage(Base64.decode(encryptedMessage, NO_WRAP))
+                    ?: throw XMTPException("could not decrypt message for $id")
+                DecodedMessageWrapper.encodeMap(message.decrypt())
+            }
+        }
+
+        AsyncFunction("processWelcomeMessage") Coroutine { clientAddress: String, encryptedMessage: String ->
+            withContext(Dispatchers.IO) {
+                logV("processWelcomeMessage")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+                val group =
+                    client.conversations.fromWelcome(Base64.decode(encryptedMessage, NO_WRAP))
+                GroupWrapper.encode(client, group)
+            }
+        }
+
         Function("subscribeToConversations") { clientAddress: String ->
             logV("subscribeToConversations")
             subscribeToConversations(clientAddress = clientAddress)
@@ -903,13 +928,34 @@ class XMTPModule : Module() {
             xmtpPush?.register(token)
         }
 
-        Function("subscribePushTopics") { topics: List<String> ->
+        Function("subscribePushTopics") { clientAddress: String, topics: List<String> ->
             logV("subscribePushTopics")
             if (topics.isNotEmpty()) {
                 if (xmtpPush == null) {
                     throw XMTPException("Push server not registered")
                 }
-                xmtpPush?.subscribe(topics)
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+                val hmacKeysResult = client.conversations.getHmacKeys()
+                val subscriptions = topics.map {
+                    val hmacKeys = hmacKeysResult.hmacKeysMap
+                    val result = hmacKeys[it]?.valuesList?.map { hmacKey ->
+                        Service.Subscription.HmacKey.newBuilder().also { sub_key ->
+                            sub_key.key = hmacKey.hmacKey
+                            sub_key.thirtyDayPeriodsSinceEpoch = hmacKey.thirtyDayPeriodsSinceEpoch
+                        }.build()
+                    }
+
+                    Service.Subscription.newBuilder().also { sub ->
+                        sub.addAllHmacKeys(result)
+                        if (!result.isNullOrEmpty()) {
+                            sub.addAllHmacKeys(result)
+                        }
+                        sub.topic = it
+                    }.build()
+                }
+
+                xmtpPush?.subscribeWithMetadata(subscriptions)
             }
         }
 

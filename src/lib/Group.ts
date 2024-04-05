@@ -180,4 +180,19 @@ export class Group<
   async isAdmin(): Promise<boolean> {
     return XMTP.isGroupAdmin(this.client.address, this.id)
   }
+
+  async processMessage(
+    encryptedMessage: string
+  ): Promise<DecodedMessage<ContentTypes>> {
+    try {
+      return await XMTP.processGroupMessage(
+        this.client,
+        this.id,
+        encryptedMessage
+      )
+    } catch (e) {
+      console.info('ERROR in processGroupMessage()', e)
+      throw e
+    }
+  }
 }
