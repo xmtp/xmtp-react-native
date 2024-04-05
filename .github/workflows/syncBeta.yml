@@ -1,0 +1,19 @@
+name: Auto PR Creation
+on:
+  schedule:
+    - cron: '5 9 * * 5' # Runs at 1:05 AM PT(-8) every Monday (time in UTC)
+  workflow_dispatch:
+  
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Create Pull Request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: "main"
+          destination_branch: "beta"
+          pr_title: "`main` => `beta`"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
