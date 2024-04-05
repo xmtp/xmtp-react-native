@@ -23,6 +23,13 @@ actor IsolatedManager<T> {
 	}
 }
 
+struct PaginationJson: Codable {
+    let limit: Int?
+    let before: Int?
+    let after: Int?
+    let direction: String
+}
+
 public class XMTPModule: Module {
 	var signer: ReactNativeSigner?
 	let clientsManager = ClientsManager()
@@ -574,11 +581,18 @@ public class XMTPModule: Module {
 			try await client.contacts.allow(addresses: addresses)
 		}
 
-		AsyncFunction("refreshConsentList") { (clientAddress: String) -> [String] in
+    AsyncFunction("refreshConsentList") { (clientAddress: String, paginationString: String?) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			let consentList = try await client.contacts.refreshConsentList()
+      let consentList: ConsentList
+      if let paginationString = paginationString,
+        let data = paginationString.data(using: .utf8),
+        let pagination = try? JSONDecoder().decode(PaginationJson.self, from: data) {
+          consentList = try await client.contacts.refreshConsentList(pagination: pagination)
+      } else {
+        consentList = try await client.contacts.refreshConsentList()
+      }
 
 			return try consentList.entries.compactMap { entry in
 				try ConsentWrapper.encode(entry.value)
