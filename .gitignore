@@ -60,3 +60,7 @@ android/keystores/debug.keystore
 
 # Expo
 .expo/*
+
+# Typedocs
+docs/
+**/.yarn/*

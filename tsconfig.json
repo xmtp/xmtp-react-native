@@ -2,9 +2,8 @@
 {
   "extends": "expo-module-scripts/tsconfig.base",
   "compilerOptions": {
-    "lib": ["es2015", "DOM"],
     "outDir": "./build"
   },
   "include": ["./src"],
-  "exclude": ["**/__mocks__/*", "**/__tests__/*", "**/__stories__/*"]
+  "exclude": ["**/__mocks__/*", "**/__tests__/*"]
 }
