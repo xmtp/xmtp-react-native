@@ -26,10 +26,16 @@ export async function createClients(
 ): Promise<Client<any>[]> {
   const clients = []
   for (let i = 0; i < numClients; i++) {
+    const keyBytes = new Uint8Array([
+      233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+      166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135,
+      145,
+    ])
     clients.push(
       await Client.createRandom({
         env: 'local',
         enableAlphaMls: true,
+        dbEncryptionKey: keyBytes,
       })
     )
   }

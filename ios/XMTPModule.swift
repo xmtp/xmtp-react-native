@@ -714,6 +714,36 @@ public class XMTPModule: Module {
 			
 			return try group.isAdmin()
 		}
+		
+		AsyncFunction("processGroupMessage") { (clientAddress: String, id: String, encryptedMessage: String) -> String in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}			
+			
+			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+			
+			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
+				throw Error.noMessage
+			}
+			let decodedMessage = try await group.processMessageDecrypted(envelopeBytes: encryptedMessageData)
+			return try DecodedMessageWrapper.encode(decodedMessage, client: client)
+		}
+
+		AsyncFunction("processWelcomeMessage") { (clientAddress: String, encryptedMessage: String) -> String in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
+				throw Error.noMessage
+			}
+			guard let group = try await client.conversations.fromWelcome(envelopeBytes: encryptedMessageData) else {
+				throw Error.conversationNotFound("no group found")
+			}
+
+			return try GroupWrapper.encode(group, client: client)
+		}
 
 		AsyncFunction("subscribeToConversations") { (clientAddress: String) in
 			try await subscribeToConversations(clientAddress: clientAddress)
@@ -777,9 +807,29 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("subscribePushTopics") { (topics: [String]) in
+		AsyncFunction("subscribePushTopics") { (clientAddress: String, topics: [String]) in
 			do {
-				try await XMTPPush.shared.subscribe(topics: topics)
+				guard let client = await clientsManager.getClient(key: clientAddress) else {
+					throw Error.noClient
+				}
+				let hmacKeysResult = await client.conversations.getHmacKeys()
+				let subscriptions = topics.map { topic -> NotificationSubscription in
+					let hmacKeys = hmacKeysResult.hmacKeys
+
+					let result = hmacKeys[topic]?.values.map { hmacKey -> NotificationSubscriptionHmacKey in
+						NotificationSubscriptionHmacKey.with { sub_key in
+							sub_key.key = hmacKey.hmacKey
+							sub_key.thirtyDayPeriodsSinceEpoch = UInt32(hmacKey.thirtyDayPeriodsSinceEpoch)
+						}
+					}
+
+					return NotificationSubscription.with { sub in
+						sub.hmacKeys = result ?? []
+						sub.topic = topic
+					}
+				}
+
+				try await XMTPPush.shared.subscribeWithMetadata(subscriptions: subscriptions)
 			} catch {
 				print("Error subscribing: \(error)")
 			}
