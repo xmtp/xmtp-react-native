@@ -31,7 +31,7 @@
     "react-native-crypto": "^2.2.0",
     "react-native-encrypted-storage": "^4.0.3",
     "react-native-fs": "^2.20.0",
-    "react-native-get-random-values": "^1.10.0",
+    "react-native-get-random-values": "^1.11.0",
     "react-native-mmkv": "^2.8.0",
     "react-native-modal-selector": "^2.1.2",
     "react-native-quick-base64": "^2.0.8",
