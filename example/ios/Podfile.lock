@@ -445,7 +445,7 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.9.6):
+  - XMTP (0.10.0):
     - Connect-Swift (= 0.12.0)
     - GzipSwift
     - LibXMTP (= 0.4.3-beta4)
@@ -454,7 +454,7 @@ PODS:
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 0.9.6)
+    - XMTP (= 0.10.0)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
