@@ -45,7 +45,16 @@ export class Group<
     return this.client.address
   }
 
-  async memberAddresses(skipSync = false): Promise<string[]> {
+  /**
+   * This method returns an array of addresses associated with the group.
+   *
+   * @param {boolean} skipSync - Optional flag to skip syncing members with the network before returning. Defaults to false.
+   * If skipSync set to true, the method will return the array of member addresses already known from the last network sync.
+   * Setting skipSync to true is an optional optimization to immediately return all members without
+   * fetching from the network first. This is useful for clients who prefer to manage syncing logic themselves via the sync() method.
+   * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
+   */
+  async memberAddresses(skipSync: boolean = false): Promise<string[]> {
     if (!skipSync) {
       await this.sync()
     }
@@ -123,8 +132,8 @@ export class Group<
   }
 
   /**
-   * Executes a network request to fetch the latest messages associated with the group
-   * and save them to the local state.
+   * Executes a network request to fetch the latest messages and membership changes
+   * associated with the group and saves them to the local state.
    */
   async sync() {
     await XMTP.syncGroup(this.client.address, this.id)

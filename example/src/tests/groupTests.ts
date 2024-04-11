@@ -1199,6 +1199,72 @@ test('can check if group is denied', async () => {
   return true
 })
 
+test('skipSync parameter behaves as expected', async () => {
+  const [alix, bo, caro] = await createClients(3)
+  const alixGroup = await alix.conversations.newGroup([bo.address])
+
+  await alixGroup.send({ text: 'hello' })
+
+  // List groups with skipSync true will return empty until the first sync
+  let boGroups = await bo.conversations.listGroups(true)
+  assert(boGroups.length === 0, 'num groups for bo is 0 until we sync')
+
+  await bo.conversations.syncGroups()
+
+  boGroups = await bo.conversations.listGroups(true)
+  assert(boGroups.length === 1, 'num groups for bo is 1')
+
+  // Num members will include the initial num of members even before sync
+  let numMembers = (await boGroups[0].memberAddresses(true)).length
+  assert(numMembers === 2, 'num members should be 2')
+
+  // Num messages for a group will be 0 until we sync the group
+  let numMessages = (await boGroups[0].messages(true)).length
+  assert(numMessages === 0, 'num members should be 1')
+
+  await bo.conversations.syncGroups()
+
+  // Num messages is still 0 because we didnt sync the group itself
+  numMessages = (await boGroups[0].messages(true)).length
+  assert(numMessages === 0, 'num messages should be 0')
+
+  await boGroups[0].sync()
+
+  // after syncing the group we now see the correct number of messages
+  numMessages = (await boGroups[0].messages(true)).length
+  assert(numMessages === 1, 'num members should be 1')
+
+  await alixGroup.addMembers([caro.address])
+
+  numMembers = (await boGroups[0].memberAddresses(true)).length
+  assert(numMembers === 2, 'num members should be 2')
+
+  await bo.conversations.syncGroups()
+
+  // Even though we synced the groups, we need to sync the group itself to see the new member
+  numMembers = (await boGroups[0].memberAddresses(true)).length
+  assert(numMembers === 2, 'num members should be 2')
+
+  await boGroups[0].sync()
+
+  numMembers = (await boGroups[0].memberAddresses(true)).length
+  assert(numMembers === 3, 'num members should be 3')
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _alixGroup2 = await alix.conversations.newGroup([
+    bo.address,
+    caro.address,
+  ])
+  boGroups = await bo.conversations.listGroups()
+  assert(boGroups.length === 2, 'num groups for bo is 2')
+
+  // Even before syncing the group, syncGroups will return the initial number of members
+  numMembers = (await boGroups[1].memberAddresses(true)).length
+  assert(numMembers === 3, 'num members should be 3')
+
+  return true
+})
+
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
 //   const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
