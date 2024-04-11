@@ -78,9 +78,13 @@ export default class Conversations<
   /**
    * This method returns a list of all groups that the client is a member of.
    *
+   * @param {boolean} skipSync - Optional flag to skip syncing groups with the network before listing. Defaults to false.
+   * If skipSync set to true, the method will return the list of groups already known from the last network sync.
+   * Setting skipSync to true is an optional optimization to immediately list all conversations and groups without
+   * fetching from the network first. This is useful for clients who prefer to manage syncing logic themselves via the syncGroups() method.
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
-  async listGroups(skipSync = false): Promise<Group<ContentTypes>[]> {
+  async listGroups(skipSync: boolean = false): Promise<Group<ContentTypes>[]> {
     if (!skipSync) {
       await this.syncGroups()
     }
@@ -96,9 +100,18 @@ export default class Conversations<
   /**
    * This method returns a list of all conversations and groups that the client is a member of.
    *
+   * @param {boolean} skipSync - Optional flag to skip syncing groups with the network before listing. Defaults to false.
+   * If skipSync set to true, the method will return the list of groups already known from the last network sync.
+   * Setting skipSync to true is an optional optimization to immediately list all conversations and groups without
+   * fetching from the network first. This is useful for clients who prefer to manage syncing logic themselves via the syncGroups() method.
    * @returns {Promise<ConversationContainer[]>} A Promise that resolves to an array of ConversationContainer objects.
    */
-  async listAll(): Promise<ConversationContainer<ContentTypes>[]> {
+  async listAll(
+    skipSync: boolean = false
+  ): Promise<ConversationContainer<ContentTypes>[]> {
+    if (!skipSync) {
+      await this.syncGroups()
+    }
     const result = await XMTPModule.listAll(this.client)
 
     for (const conversationContainer of result) {
@@ -159,6 +172,10 @@ export default class Conversations<
     )
   }
 
+  /**
+   * Executes a network request to fetch the latest list of groups assoociated with the client
+   * and save them to the local state.
+   */
   async syncGroups() {
     await XMTPModule.syncGroups(this.client.address)
   }
