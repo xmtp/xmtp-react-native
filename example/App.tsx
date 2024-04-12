@@ -14,7 +14,6 @@ import { XmtpProvider } from 'xmtp-react-native-sdk'
 
 import ConversationCreateScreen from './src/ConversationCreateScreen'
 import ConversationScreen from './src/ConversationScreen'
-import GroupScreen from './src/GroupScreen'
 import HomeScreen from './src/HomeScreen'
 import LaunchScreen from './src/LaunchScreen'
 import { Navigator } from './src/Navigation'
@@ -90,11 +89,6 @@ export default function App() {
                 component={ConversationScreen}
                 options={{ title: 'Conversation' }}
                 initialParams={{ topic: '' }}
-              />
-              <Navigator.Screen
-                name="group"
-                component={GroupScreen}
-                options={{ title: 'Group' }}
               />
               <Navigator.Screen
                 name="conversationCreate"

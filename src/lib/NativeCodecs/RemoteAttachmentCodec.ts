@@ -8,7 +8,7 @@ import {
 export class RemoteAttachmentCodec
   implements NativeContentCodec<RemoteAttachmentContent>
 {
-  contentKey: 'remoteAttachment' = 'remoteAttachment'
+  contentKey: string = 'remoteAttachment'
 
   contentType: ContentTypeId = {
     authorityId: 'xmtp.org',

@@ -1,5 +1,5 @@
 import { Client } from './Client'
-import { ConsentListEntry, ConsentState } from './ConsentListEntry'
+import { ConsentListEntry } from './ConsentListEntry'
 import * as XMTPModule from '../index'
 import { getAddress } from '../utils/address'
 
@@ -40,21 +40,5 @@ export default class Contacts {
 
   async consentList(): Promise<ConsentListEntry[]> {
     return await XMTPModule.consentList(this.client.address)
-  }
-
-  async allowGroups(groupIds: string[]): Promise<void> {
-    return await XMTPModule.allowGroups(this.client.address, groupIds)
-  }
-
-  async denyGroups(groupIds: string[]): Promise<void> {
-    return await XMTPModule.denyGroups(this.client.address, groupIds)
-  }
-
-  async isGroupAllowed(groupId: string): Promise<boolean> {
-    return await XMTPModule.isGroupAllowed(this.client.address, groupId)
-  }
-
-  async isGroupDenied(groupId: string): Promise<boolean> {
-    return await XMTPModule.isGroupDenied(this.client.address, groupId)
   }
 }
