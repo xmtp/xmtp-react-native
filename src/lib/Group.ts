@@ -45,7 +45,16 @@ export class Group<
     return this.client.address
   }
 
-  async memberAddresses(skipSync = false): Promise<string[]> {
+  /**
+   * This method returns an array of addresses associated with the group.
+   *
+   * @param {boolean} skipSync - Optional flag to skip syncing members with the network before returning. Defaults to false.
+   * If skipSync set to true, the method will return the array of member addresses already known from the last network sync.
+   * Setting skipSync to true is an optional optimization to immediately return all members without
+   * fetching from the network first. This is useful for clients who prefer to manage syncing logic themselves via the sync() method.
+   * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
+   */
+  async memberAddresses(skipSync: boolean = false): Promise<string[]> {
     if (!skipSync) {
       await this.sync()
     }
@@ -86,6 +95,19 @@ export class Group<
     }
   }
 
+  /**
+   * This method returns an array of messages associated with the group.
+   *
+   * @param {boolean} skipSync - Optional flag to skip syncing messages with the network before returning. Defaults to false.
+   * If skipSync set to true, the method will return the array of messages already known from the last network sync.
+   * Setting skipSync to true is an optional optimization to immediately return all messages without
+   * fetching from the network first. This is useful for clients who prefer to manage syncing logic themselves via the sync() method.
+   * @param {number | undefined} limit - Optional maximum number of messages to return.
+   * @param {number | Date | undefined} before - Optional filter for specifying the maximum timestamp of messages to return.
+   * @param {number | Date | undefined} after - Optional filter for specifying the minimum timestamp of messages to return.
+   * @param direction - Optional parameter to specify the time ordering of the messages to return.
+   * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
+   */
   async messages(
     skipSync: boolean = false,
     limit?: number | undefined,
@@ -109,6 +131,10 @@ export class Group<
     )
   }
 
+  /**
+   * Executes a network request to fetch the latest messages and membership changes
+   * associated with the group and saves them to the local state.
+   */
   async sync() {
     await XMTP.syncGroup(this.client.address, this.id)
   }
