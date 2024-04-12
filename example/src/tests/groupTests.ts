@@ -1265,6 +1265,48 @@ test('skipSync parameter behaves as expected', async () => {
   return true
 })
 
+test('can read and update group name', async () => {
+  const [alix, bo, caro] = await createClients(3)
+  const alixGroup = await alix.conversations.newGroup([bo.address])
+
+  let groupName = await alixGroup.groupName()
+
+  assert(groupName === 'New Group', 'group name should be "New Group"')
+
+  await alixGroup.updateGroupName('Test name update 1')
+
+  groupName = await alixGroup.groupName()
+
+  assert(
+    groupName === 'Test name update 1',
+    'group name should be "Test name update 1"'
+  )
+
+  const boGroup = (await bo.conversations.listGroups())[0]
+  groupName = await boGroup.groupName(true)
+
+  assert(groupName === 'New Group', 'group name should be "New Group"')
+
+  await boGroup.sync()
+
+  groupName = await boGroup.groupName(true)
+
+  assert(
+    groupName === 'Test name update 1',
+    'group name should be "Test name update 1"'
+  )
+
+  await alixGroup.addMembers([caro.address])
+  const caroGroup = (await caro.conversations.listGroups())[0]
+
+  groupName = await caroGroup.groupName(true)
+  assert(
+    groupName === 'Test name update 1',
+    'group name should be "Test name update 1"'
+  )
+  return true
+})
+
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
 //   const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })

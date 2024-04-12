@@ -794,6 +794,26 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("groupName") Coroutine { clientAddress: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("groupName")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.name
+            }
+        }
+
+        AsyncFunction("updateGroupName") Coroutine { clientAddress: String, id: String, groupName: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupName")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.updateGroupName(groupName)
+            }
+        }
+
         AsyncFunction("isGroupActive") Coroutine { clientAddress: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupActive")
@@ -1002,10 +1022,12 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("refreshConsentList") { clientAddress: String ->
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val consentList = client.contacts.refreshConsentList()
-            consentList.entries.map { ConsentWrapper.encode(it.value) }
+        AsyncFunction("refreshConsentList") Coroutine { clientAddress: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val consentList = client.contacts.refreshConsentList()
+                consentList.entries.map { ConsentWrapper.encode(it.value) }
+            }
         }
 
         AsyncFunction("conversationConsentState") Coroutine { clientAddress: String, conversationTopic: String ->
