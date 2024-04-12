@@ -31,39 +31,41 @@ import {
   StaticAttachmentContent,
   ReplyContent,
   useClient,
+  GroupChangeContent,
 } from 'xmtp-react-native-sdk'
 import { ConversationSendPayload } from 'xmtp-react-native-sdk/lib/types'
 
 import { NavigationParamList } from './Navigation'
 import { SupportedContentTypes } from './contentTypes/contentTypes'
 import {
-  useConversation,
-  useMessage,
-  useMessageReactions,
-  useMessages,
+  useGroupMessageReactions,
   useLoadRemoteAttachment,
   usePrepareRemoteAttachment,
+  useGroupMessages,
+  useGroup,
+  useGroupMessage,
 } from './hooks'
 
 type Attachment = {
   file?: DocumentPickerAsset
   image?: ImagePickerAsset
 }
+
 const hiddenMessageTypes = ['xmtp.org/reaction:1.0']
 
-/// Show the messages in a conversation.
-export default function ConversationScreen({
+/// Show the messages in a group.
+export default function GroupScreen({
   route,
-}: NativeStackScreenProps<NavigationParamList, 'conversation'>) {
-  const { topic } = route.params
+}: NativeStackScreenProps<NavigationParamList, 'group'>) {
+  const { id } = route.params
   const messageListRef = useRef<FlatList>(null)
   const {
     data: messages,
     refetch: refreshMessages,
     isFetching,
     isRefetching,
-  } = useMessages({ topic })
-  const { data: conversation } = useConversation({ topic })
+  } = useGroupMessages({ id })
+  const { data: group } = useGroup({ groupId: id })
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [text, setText] = useState('')
   const [isShowingAttachmentModal, setShowingAttachmentModal] = useState(false)
@@ -97,7 +99,7 @@ export default function ConversationScreen({
             },
           } as ConversationSendPayload<SupportedContentTypes>)
         : content
-      await conversation!.send(content)
+      await group!.send(content)
       await refreshMessages()
       setReplyingTo(null)
     } catch (e) {
@@ -133,7 +135,7 @@ export default function ConversationScreen({
   )
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flexGrow: 1 }}>
       <KeyboardAvoidingView
         behavior="padding"
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
@@ -171,7 +173,7 @@ export default function ConversationScreen({
             ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
             renderItem={({ item: message, index }) => (
               <MessageItem
-                topic={topic}
+                groupId={id}
                 messageId={message.id}
                 onReply={() => setReplyingTo(message.id)}
                 onMessageReferencePress={scrollToMessageId}
@@ -198,7 +200,7 @@ export default function ConversationScreen({
               >
                 {replyingTo && (
                   <ReplyInputHeader
-                    topic={topic}
+                    groupId={id}
                     replyingToMessageId={replyingTo}
                     onCancel={() => setReplyingTo(null)}
                     onPress={() => scrollToMessageId(replyingTo!)}
@@ -207,7 +209,7 @@ export default function ConversationScreen({
                 {attachment && (
                   <>
                     <AttachmentInputHeader
-                      topic={topic}
+                      groupId={id}
                       attachment={attachment}
                       onPress={() => setAttachmentPreviewing(true)}
                       onRemove={() => setAttachment(null)}
@@ -247,9 +249,7 @@ export default function ConversationScreen({
                       <Button
                         title="Send"
                         onPress={sendRemoteAttachmentMessage}
-                        disabled={
-                          isSending || !conversation || !remoteAttachment
-                        }
+                        disabled={isSending || !group || !remoteAttachment}
                       />
                     </>
                   ) : (
@@ -272,7 +272,7 @@ export default function ConversationScreen({
                       <Button
                         title="Send"
                         onPress={sendTextMessage}
-                        disabled={isSending || !conversation || !text.length}
+                        disabled={isSending || !group || !text.length}
                       />
                     </>
                   )}
@@ -334,12 +334,12 @@ function AttachmentPreviewModal({
 }
 
 function AttachmentInputHeader({
-  topic,
+  groupId,
   attachment,
   onPress,
   onRemove,
 }: {
-  topic: string
+  groupId: string
   attachment: Attachment
   onPress: () => void
   onRemove: () => void
@@ -417,18 +417,18 @@ function AttachmentInputHeader({
 }
 
 function ReplyInputHeader({
-  topic,
+  groupId,
   replyingToMessageId,
   onCancel,
   onPress,
 }: {
-  topic: string
+  groupId: string
   replyingToMessageId: string
   onCancel: () => void
   onPress: () => void
 }) {
-  const { message, isSenderMe } = useMessage({
-    topic,
+  const { message, isSenderMe } = useGroupMessage({
+    groupId,
     messageId: replyingToMessageId,
   })
   return (
@@ -791,16 +791,16 @@ function MessageReactions({
 }
 
 function ReplyMessageHeader({
-  topic,
+  groupId,
   parentMessageId,
   onPress,
 }: {
-  topic: string
+  groupId: string
   parentMessageId: string
   onPress: () => void
 }) {
-  const { isSenderMe, message } = useMessage({
-    topic,
+  const { isSenderMe, message } = useGroupMessage({
+    groupId,
     messageId: parentMessageId,
   })
   if (!message) {
@@ -887,22 +887,22 @@ function ReplyMessageHeader({
 }
 
 function MessageItem({
-  topic,
+  groupId,
   messageId,
   showSender,
   onReply,
   onMessageReferencePress,
 }: {
-  topic: string
+  groupId: string
   messageId: string
   showSender: boolean
   onReply: () => void
   onMessageReferencePress: (messageId: string) => void
 }) {
   const [showNewReaction, setShowNewReaction] = useState(false)
-  const { reactions } = useMessageReactions({ topic, messageId })
-  const { message, isSenderMe, performReaction } = useMessage({
-    topic,
+  const { reactions } = useGroupMessageReactions({ groupId, messageId })
+  const { message, isSenderMe, performReaction } = useGroupMessage({
+    groupId,
     messageId,
   })
   if (!(message instanceof DecodedMessage)) {
@@ -920,7 +920,7 @@ function MessageItem({
       {replyingTo && (
         <ReplyMessageHeader
           onPress={() => onMessageReferencePress(replyingTo!)}
-          topic={topic}
+          groupId={groupId}
           parentMessageId={replyingTo!}
         />
       )}
@@ -1070,6 +1070,53 @@ function RemoteAttachmentMessageContents({
   )
 }
 
+function formatAddress(address: string) {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`
+}
+
+function GroupChangeContents({ content }: { content: GroupChangeContent }) {
+  return (
+    <>
+      {content.membersAdded.length > 0 &&
+        (content.membersAdded.length === 1 ? (
+          <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
+            {`${formatAddress(
+              content.membersAdded[0].address
+            )} has been added by ${formatAddress(
+              content.membersAdded[0].initiatedByAddress
+            )}`}
+          </Text>
+        ) : (
+          <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
+            {`${
+              content.membersAdded.length
+            } members have been added by ${formatAddress(
+              content.membersAdded[0].initiatedByAddress
+            )}`}
+          </Text>
+        ))}
+      {content.membersRemoved.length > 0 &&
+        (content.membersRemoved.length === 1 ? (
+          <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
+            {`${formatAddress(
+              content.membersRemoved[0].address
+            )} has been removed by ${formatAddress(
+              content.membersRemoved[0].initiatedByAddress
+            )}`}
+          </Text>
+        ) : (
+          <Text style={{ opacity: 0.5, fontStyle: 'italic', flexWrap: 'wrap' }}>
+            {`${
+              content.membersRemoved.length
+            } members have been removed by ${formatAddress(
+              content.membersRemoved[0].initiatedByAddress
+            )}`}
+          </Text>
+        ))}
+    </>
+  )
+}
+
 function MessageContents({
   contentTypeId,
   content,
@@ -1124,8 +1171,10 @@ function MessageContents({
       </View>
     )
   }
+  if (contentTypeId === 'xmtp.org/group_membership_change:1.0') {
+    return <GroupChangeContents content={content} />
+  }
 
-  // console.log("unsupported content", content);
   return (
     <>
       <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>

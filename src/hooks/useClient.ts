@@ -3,13 +3,18 @@ import { useCallback, useRef, useState } from 'react'
 import { useXmtp } from './useXmtp'
 import { Client, ClientOptions } from '../lib/Client'
 import { Signer } from '../lib/Signer'
+import { DefaultContentTypes } from '../lib/types/DefaultContentType'
 
 interface InitializeClientOptions {
   signer: Signer | null
   options?: ClientOptions
 }
 
-export const useClient = (onError?: (e: Error) => void) => {
+export const useClient = <
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  onError?: (e: Error) => void
+) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   // client is initializing
@@ -71,7 +76,7 @@ export const useClient = (onError?: (e: Error) => void) => {
   }, [client, setClient])
 
   return {
-    client,
+    client: client as Client<ContentTypes> | null,
     error,
     initialize,
     disconnect,
