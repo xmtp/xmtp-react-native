@@ -8,7 +8,7 @@ import {
 export class StaticAttachmentCodec
   implements NativeContentCodec<StaticAttachmentContent>
 {
-  contentKey: 'attachment' = 'attachment'
+  contentKey: string = 'attachment'
 
   contentType: ContentTypeId = {
     authorityId: 'xmtp.org',

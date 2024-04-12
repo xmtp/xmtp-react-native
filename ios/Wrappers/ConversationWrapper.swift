@@ -23,7 +23,7 @@ struct ConversationWrapper {
 			"createdAt": UInt64(conversation.createdAt.timeIntervalSince1970 * 1000),
 			"context": context,
 			"peerAddress": conversation.peerAddress,
-			"version": "DIRECT",
+			"version": conversation.version == .v1 ? "v1" : "v2",
 			"conversationID": conversation.conversationID ?? "",
 			"keyMaterial": conversation.keyMaterial?.base64EncodedString() ?? ""
 		]

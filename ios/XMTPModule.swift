@@ -1,6 +1,5 @@
 import ExpoModulesCore
 import XMTP
-import LibXMTP
 
 extension Conversation {
 	static func cacheKeyForTopic(clientAddress: String, topic: String) -> String {
@@ -9,16 +8,6 @@ extension Conversation {
 
 	func cacheKey(_ clientAddress: String) -> String {
 		return Conversation.cacheKeyForTopic(clientAddress: clientAddress, topic: topic)
-	}
-}
-
-extension XMTP.Group {
-	static func cacheKeyForId(clientAddress: String, id: String) -> String {
-		return "\(clientAddress):\(id)"
-	}
-	
-	func cacheKey(_ clientAddress: String) -> String {
-		return XMTP.Group.cacheKeyForId(clientAddress: clientAddress, id: id.toHex)
 	}
 }
 
@@ -38,7 +27,6 @@ public class XMTPModule: Module {
 	var signer: ReactNativeSigner?
 	let clientsManager = ClientsManager()
 	let conversationsManager = IsolatedManager<Conversation>()
-	let groupsManager = IsolatedManager<XMTP.Group>()
 	let subscriptionsManager = IsolatedManager<Task<Void, Never>>()
 	private var preEnableIdentityCallbackDeferred: DispatchSemaphore?
 	private var preCreateIdentityCallbackDeferred: DispatchSemaphore?
@@ -59,29 +47,13 @@ public class XMTPModule: Module {
 	}
 
 	enum Error: Swift.Error {
-		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String), mlsNotEnabled(String), invalidString
+		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String)
 	}
 
 	public func definition() -> ModuleDefinition {
 		Name("XMTP")
 
-		Events(
-            // Auth
-            "sign",
-            "authed",
-            "preCreateIdentityCallback",
-            "preEnableIdentityCallback",
-            // Conversations
-            "conversation",
-            "group",
-            "conversationContainer",
-            "message",
-            "allGroupMessage",
-            // Conversation
-            "conversationMessage",
-            // Group
-            "groupMessage"
-        )
+		Events("sign", "authed", "conversation", "message", "preEnableIdentityCallback", "preCreateIdentityCallback")
 
 		AsyncFunction("address") { (clientAddress: String) -> String in
 			if let client = await clientsManager.getClient(key: clientAddress) {
@@ -91,19 +63,10 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("deleteLocalDatabase") { (clientAddress: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-			try client.deleteLocalDatabase()
-		}
-
 		//
 		// Auth functions
 		//
-		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, enableAlphaMls: Bool?, dbEncryptionKey: [UInt8]?, dbPath: String?) in
-			try requireNotProductionEnvForAlphaMLS(enableAlphaMls: enableAlphaMls, environment: environment)
-			
+		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) in
 			let signer = ReactNativeSigner(module: self, address: address)
 			self.signer = signer
 			if(hasCreateIdentityCallback ?? false) {
@@ -114,9 +77,7 @@ public class XMTPModule: Module {
 			}
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
-			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
-			
-			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbPath: dbPath)
+			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 			try await clientsManager.updateClient(key: address, client: await XMTP.Client.create(account: signer, options: options))
 			self.signer = nil
 			sendEvent("authed")
@@ -127,9 +88,7 @@ public class XMTPModule: Module {
 		}
 
 		// Generate a random wallet and set the client to that
-		AsyncFunction("createRandom") { (environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, enableAlphaMls: Bool?, dbEncryptionKey: [UInt8]?, dbPath: String?) -> String in
-			try requireNotProductionEnvForAlphaMLS(enableAlphaMls: enableAlphaMls, environment: environment)
-
+		AsyncFunction("createRandom") { (environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) -> String in
 			let privateKey = try PrivateKey.generate()
 			if(hasCreateIdentityCallback ?? false) {
 				preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
@@ -139,9 +98,8 @@ public class XMTPModule: Module {
 			}
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
-			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
 
-			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbPath: dbPath)
+			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 			let client = try await Client.create(account: privateKey, options: options)
 
 			await clientsManager.updateClient(key: client.address, client: client)
@@ -149,17 +107,15 @@ public class XMTPModule: Module {
 		}
 
 		// Create a client using its serialized key bundle.
-		AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Bool?, dbEncryptionKey: [UInt8]?, dbPath: String?) -> String in
-			try requireNotProductionEnvForAlphaMLS(enableAlphaMls: enableAlphaMls, environment: environment)
-
+		AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?) -> String in
 			do {
 				guard let keyBundleData = Data(base64Encoded: keyBundle),
 				      let bundle = try? PrivateKeyBundle(serializedData: keyBundleData)
 				else {
 					throw Error.invalidKeyBundle
 				}
-				let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
-				let options = createClientConfig(env: environment, appVersion: appVersion, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbPath: dbPath)
+
+				let options = createClientConfig(env: environment, appVersion: appVersion)
 				let client = try await Client.from(bundle: bundle, options: options)
 				await clientsManager.updateClient(key: client.address, client: client)
 				return client.address
@@ -237,14 +193,6 @@ public class XMTPModule: Module {
 			}
 
 			return try await client.canMessage(peerAddress)
-		}
-		
-		AsyncFunction("canGroupMessage") { (clientAddress: String, peerAddresses: [String]) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-
-			return try await client.canMessageV3(addresses: peerAddresses)
 		}
 
 		AsyncFunction("staticCanMessage") { (peerAddress: String, environment: String, appVersion: String?) -> Bool in
@@ -341,51 +289,6 @@ public class XMTPModule: Module {
 				return results
 			}
 		}
-		
-		AsyncFunction("listGroups") { (clientAddress: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-			let groupList = try await client.conversations.groups()
-			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
-				for group in groupList {
-					taskGroup.addTask {
-						await self.groupsManager.set(group.cacheKey(clientAddress), group)
-						return try GroupWrapper.encode(group, client: client)
-					}
-				}
-
-				var results: [String] = []
-				for try await result in taskGroup {
-					results.append(result)
-				}
-
-				return results
-			}
-		}
-		
-		AsyncFunction("listAll") { (clientAddress: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-			let conversationContainerList = try await client.conversations.list(includeGroups: true)
-			
-			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
-				for conversation in conversationContainerList {
-					taskGroup.addTask {
-						await self.conversationsManager.set(conversation.cacheKey(clientAddress), conversation)
-						return try ConversationContainerWrapper.encode(conversation, client: client)
-					}
-				}
-
-				var results: [String] = []
-				for try await result in taskGroup {
-					results.append(result)
-				}
-
-				return results
-			}
-		}
 
 		AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
 			let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil
@@ -408,35 +311,8 @@ public class XMTPModule: Module {
 				direction: PagingInfoSortDirection(rawValue: sortDirection)
 			)
 
-			return decryptedMessages.compactMap { msg in
-				do {
-					return try DecodedMessageWrapper.encode(msg, client: client)
-				} catch {
-					print("discarding message, unable to encode wrapper \(msg.id)")
-					return nil
-				}
-			}
-		}
-		
-		AsyncFunction("groupMessages") { (clientAddress: String, id: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-			
-			let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil
-			let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!) / 1000) : nil
+			print("GOT HERE AGAIN", decryptedMessages)
 
-			let sortDirection: Int = (direction != nil && direction == "SORT_DIRECTION_ASCENDING") ? 1 : 2
-
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
-			}
-			let decryptedMessages = try await group.decryptedMessages(
-				before: beforeDate,
-				after: afterDate,
-				limit: limit,
-				direction: PagingInfoSortDirection(rawValue: sortDirection))
-			
 			return decryptedMessages.compactMap { msg in
 				do {
 					return try DecodedMessageWrapper.encode(msg, client: client)
@@ -512,18 +388,6 @@ public class XMTPModule: Module {
 
 			let sending = try ContentJson.fromJson(contentJson)
 			return try await conversation.send(
-				content: sending.content,
-				options: SendOptions(contentType: sending.type)
-			)
-		}
-		
-		AsyncFunction("sendMessageToGroup") { (clientAddress: String, id: String, contentJson: String) -> String in
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
-			}
-
-			let sending = try ContentJson.fromJson(contentJson)
-			return try await group.send(
 				content: sending.content,
 				options: SendOptions(contentType: sending.type)
 			)
@@ -619,158 +483,17 @@ public class XMTPModule: Module {
 				throw error
 			}
 		}
-		
-		AsyncFunction("createGroup") { (clientAddress: String, peerAddresses: [String], permission: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-			let permissionLevel: GroupPermissions = {
-				switch permission {
-				case "creator_admin":
-					return .groupCreatorIsAdmin
-				default:
-					return .everyoneIsAdmin
-				}
-			}()
-			do {
-				let group = try await client.conversations.newGroup(with: peerAddresses, permissions: permissionLevel)
-				return try GroupWrapper.encode(group, client: client)
-			} catch {
-				print("ERRRO!: \(error.localizedDescription)")
-				throw error
-			}
-		}
-		
-		AsyncFunction("listMemberAddresses") { (clientAddress: String, groupId: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-
-			guard let group = try await findGroup(clientAddress: clientAddress, id: groupId) else {
-				throw Error.conversationNotFound("no group found for \(groupId)")
-			}
-			return group.memberAddresses
-		}
-		
-		AsyncFunction("syncGroups") { (clientAddress: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-			try await client.conversations.sync()
-		}
-
-		AsyncFunction("syncGroup") { (clientAddress: String, id: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
-			}
-			try await group.sync()
-		}
-
-		AsyncFunction("addGroupMembers") { (clientAddress: String, id: String, peerAddresses: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
-			}
-			try await group.addMembers(addresses: peerAddresses)
-		}
-
-		AsyncFunction("removeGroupMembers") { (clientAddress: String, id: String, peerAddresses: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
-			}
-
-			try await group.removeMembers(addresses: peerAddresses)
-		}
-		
-		AsyncFunction("isGroupActive") { (clientAddress: String, id: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
-			}
-			
-			return try group.isActive()
-		}
-		
-		AsyncFunction("isGroupAdmin") { (clientAddress: String, id: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
-			}
-			
-			return try group.isAdmin()
-		}
-		
-		AsyncFunction("processGroupMessage") { (clientAddress: String, id: String, encryptedMessage: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}			
-			
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
-			}
-			
-			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
-				throw Error.noMessage
-			}
-			let decodedMessage = try await group.processMessageDecrypted(envelopeBytes: encryptedMessageData)
-			return try DecodedMessageWrapper.encode(decodedMessage, client: client)
-		}
-
-		AsyncFunction("processWelcomeMessage") { (clientAddress: String, encryptedMessage: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
-			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
-				throw Error.noMessage
-			}
-			guard let group = try await client.conversations.fromWelcome(envelopeBytes: encryptedMessageData) else {
-				throw Error.conversationNotFound("no group found")
-			}
-
-			return try GroupWrapper.encode(group, client: client)
-		}
 
 		AsyncFunction("subscribeToConversations") { (clientAddress: String) in
 			try await subscribeToConversations(clientAddress: clientAddress)
 		}
 
-		AsyncFunction("subscribeToAllMessages") { (clientAddress: String, includeGroups: Bool) in
-			try await subscribeToAllMessages(clientAddress: clientAddress, includeGroups: includeGroups)
-		}
-		
-		AsyncFunction("subscribeToAllGroupMessages") { (clientAddress: String) in
-			try await subscribeToAllGroupMessages(clientAddress: clientAddress)
+		AsyncFunction("subscribeToAllMessages") { (clientAddress: String) in
+			try await subscribeToAllMessages(clientAddress: clientAddress)
 		}
 
 		AsyncFunction("subscribeToMessages") { (clientAddress: String, topic: String) in
 			try await subscribeToMessages(clientAddress: clientAddress, topic: topic)
-		}
-		
-		AsyncFunction("subscribeToGroups") { (clientAddress: String) in
-			try await subscribeToGroups(clientAddress: clientAddress)
-		}
-		
-		AsyncFunction("subscribeToAll") { (clientAddress: String) in
-			try await subscribeToAll(clientAddress: clientAddress)
-		}
-
-		AsyncFunction("subscribeToGroupMessages") { (clientAddress: String, id: String) in
-			try await subscribeToGroupMessages(clientAddress: clientAddress, id: id)
 		}
 
 		AsyncFunction("unsubscribeFromConversations") { (clientAddress: String) in
@@ -780,23 +503,10 @@ public class XMTPModule: Module {
 		AsyncFunction("unsubscribeFromAllMessages") { (clientAddress: String) in
 			await subscriptionsManager.get(getMessagesKey(clientAddress: clientAddress))?.cancel()
 		}
-		
-		AsyncFunction("unsubscribeFromAllGroupMessages") { (clientAddress: String) in
-			await subscriptionsManager.get(getGroupMessagesKey(clientAddress: clientAddress))?.cancel()
-		}
-
 
 		AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String) in
 			try await unsubscribeFromMessages(clientAddress: clientAddress, topic: topic)
 		}
-		
-		AsyncFunction("unsubscribeFromGroupMessages") { (clientAddress: String, id: String) in
-			try await unsubscribeFromGroupMessages(clientAddress: clientAddress, id: id)
-		}
-		
-		AsyncFunction("unsubscribeFromGroups") { (clientAddress: String) in
-			await subscriptionsManager.get(getGroupsKey(clientAddress: clientAddress))?.cancel()
-	   }
 
 		AsyncFunction("registerPushToken") { (pushServer: String, token: String) in
 			XMTPPush.shared.setPushServer(pushServer)
@@ -807,29 +517,9 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("subscribePushTopics") { (clientAddress: String, topics: [String]) in
+		AsyncFunction("subscribePushTopics") { (topics: [String]) in
 			do {
-				guard let client = await clientsManager.getClient(key: clientAddress) else {
-					throw Error.noClient
-				}
-				let hmacKeysResult = await client.conversations.getHmacKeys()
-				let subscriptions = topics.map { topic -> NotificationSubscription in
-					let hmacKeys = hmacKeysResult.hmacKeys
-
-					let result = hmacKeys[topic]?.values.map { hmacKey -> NotificationSubscriptionHmacKey in
-						NotificationSubscriptionHmacKey.with { sub_key in
-							sub_key.key = hmacKey.hmacKey
-							sub_key.thirtyDayPeriodsSinceEpoch = UInt32(hmacKey.thirtyDayPeriodsSinceEpoch)
-						}
-					}
-
-					return NotificationSubscription.with { sub in
-						sub.hmacKeys = result ?? []
-						sub.topic = topic
-					}
-				}
-
-				try await XMTPPush.shared.subscribeWithMetadata(subscriptions: subscriptions)
+				try await XMTPPush.shared.subscribe(topics: topics)
 			} catch {
 				print("Error subscribing: \(error)")
 			}
@@ -926,49 +616,13 @@ public class XMTPModule: Module {
 				self.preCreateIdentityCallbackDeferred = nil
 			}
 		}
-    
-    AsyncFunction("allowGroups") { (clientAddress: String, groupIds: [String]) in
-      guard let client = await clientsManager.getClient(key: clientAddress) else {
-        throw Error.noClient
-      }
-      let groupDataIds = groupIds.compactMap { Data(hex: $0) }
-      try await client.contacts.allowGroup(groupIds: groupDataIds)
-    }
-    
-    AsyncFunction("denyGroups") { (clientAddress: String, groupIds: [String]) in
-      guard let client = await clientsManager.getClient(key: clientAddress) else {
-        throw Error.noClient
-      }
-      let groupDataIds = groupIds.compactMap { Data(hex: $0) }
-      try await client.contacts.denyGroup(groupIds: groupDataIds)
-    }
-
-    AsyncFunction("isGroupAllowed") { (clientAddress: String, groupId: String) -> Bool in
-      guard let client = await clientsManager.getClient(key: clientAddress) else {
-        throw Error.noClient
-      }
-      guard let groupDataId = Data(hex: groupId) else {
-        throw Error.invalidString
-      }
-      return try await client.contacts.isGroupAllowed(groupId: groupDataId)
-    }
-    
-    AsyncFunction("isGroupDenied") { (clientAddress: String, groupId: String) -> Bool in
-      guard let client = await clientsManager.getClient(key: clientAddress) else {
-        throw Error.invalidString
-      }
-      guard let groupDataId = Data(hex: groupId) else {
-        throw Error.invalidString
-      }
-      return try await client.contacts.isGroupDenied(groupId: groupDataId)
-		}
 	}
 
 	//
 	// Helpers
 	//
 
-	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, mlsAlpha: Bool = false, encryptionKey: Data? = nil, dbPath: String? = nil) -> XMTP.ClientOptions {
+	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
 		switch env {
 		case "local":
@@ -976,19 +630,19 @@ public class XMTPModule: Module {
 				env: XMTP.XMTPEnvironment.local,
 				isSecure: false,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: mlsAlpha, mlsEncryptionKey: encryptionKey, mlsDbPath: dbPath)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 		case "production":
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
 				isSecure: true,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: false, mlsEncryptionKey: encryptionKey, mlsDbPath: dbPath)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 		default:
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
 				isSecure: true,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: mlsAlpha, mlsEncryptionKey: encryptionKey, mlsDbPath: dbPath)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
 		}
 	}
 
@@ -1007,23 +661,6 @@ public class XMTPModule: Module {
 
 		return nil
 	}
-	
-	func findGroup(clientAddress: String, id: String) async throws -> XMTP.Group? {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
-			throw Error.noClient
-		}
-
-		let cacheKey = XMTP.Group.cacheKeyForId(clientAddress: clientAddress, id: id)
-		if let group = await groupsManager.get(cacheKey) {
-			return group
-		} else if let group = try await client.conversations.groups().first(where: { $0.id.toHex == id }) {
-			await groupsManager.set(cacheKey, group)
-			return group
-		}
-
-		return nil
-	}
-
 
 	func subscribeToConversations(clientAddress: String) async throws {
 		guard let client = await clientsManager.getClient(key: clientAddress) else {
@@ -1046,7 +683,7 @@ public class XMTPModule: Module {
 		})
 	}
 
-	func subscribeToAllMessages(clientAddress: String, includeGroups: Bool = false) async throws {
+	func subscribeToAllMessages(clientAddress: String) async throws {
 		guard let client = await clientsManager.getClient(key: clientAddress) else {
 			return
 		}
@@ -1054,34 +691,9 @@ public class XMTPModule: Module {
 		await subscriptionsManager.get(getMessagesKey(clientAddress: clientAddress))?.cancel()
 		await subscriptionsManager.set(getMessagesKey(clientAddress: clientAddress), Task {
 			do {
-				for try await message in await client.conversations.streamAllDecryptedMessages(includeGroups: includeGroups) {
+				for try await message in try await client.conversations.streamAllDecryptedMessages() {
 					do {
 						try sendEvent("message", [
-							"clientAddress": clientAddress,
-							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
-						])
-					} catch {
-						print("discarding message, unable to encode wrapper \(message.id)")
-					}
-				}
-			} catch {
-				print("Error in all messages subscription: \(error)")
-				await subscriptionsManager.get(getMessagesKey(clientAddress: clientAddress))?.cancel()
-			}
-		})
-	}
-	
-	func subscribeToAllGroupMessages(clientAddress: String) async throws {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
-			return
-		}
-
-		await subscriptionsManager.get(getGroupMessagesKey(clientAddress: clientAddress))?.cancel()
-		await subscriptionsManager.set(getGroupMessagesKey(clientAddress: clientAddress), Task {
-			do {
-				for try await message in await client.conversations.streamAllGroupDecryptedMessages() {
-					do {
-            try sendEvent("allGroupMessage", [
 							"clientAddress": clientAddress,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
 						])
@@ -1110,10 +722,9 @@ public class XMTPModule: Module {
 			do {
 				for try await message in conversation.streamDecryptedMessages() {
 					do {
-						try sendEvent("conversationMessage", [
+						try sendEvent("message", [
 							"clientAddress": clientAddress,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
-              "topic": topic
 						])
 					} catch {
 						print("discarding message, unable to encode wrapper \(message.id)")
@@ -1125,78 +736,6 @@ public class XMTPModule: Module {
 			}
 		})
 	}
-	
-	func subscribeToGroups(clientAddress: String) async throws {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
-			return
-		}
-		await subscriptionsManager.get(getGroupsKey(clientAddress: clientAddress))?.cancel()
-		await subscriptionsManager.set(getGroupsKey(clientAddress: clientAddress), Task {
-			do {
-				for try await group in try await client.conversations.streamGroups() {
-					try sendEvent("group", [
-						"clientAddress": clientAddress,
-						"group": GroupWrapper.encodeToObj(group, client: client),
-					])
-				}
-			} catch {
-				print("Error in groups subscription: \(error)")
-				await subscriptionsManager.get(getGroupsKey(clientAddress: clientAddress))?.cancel()
-			}
-		})
-	}
-	
-	func subscribeToAll(clientAddress: String) async throws {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
-			return
-		}
-
-		await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
-		await subscriptionsManager.set(getConversationsKey(clientAddress: clientAddress), Task {
-			do {
-				for try await conversation in await client.conversations.streamAll() {
-					try sendEvent("conversationContainer", [
-						"clientAddress": clientAddress,
-						"conversationContainer": ConversationContainerWrapper.encodeToObj(conversation, client: client),
-					])
-				}
-			} catch {
-				print("Error in all conversations subscription: \(error)")
-				await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
-			}
-		})
-	}
-	
-	func subscribeToGroupMessages(clientAddress: String, id: String) async throws {
-		guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-			return
-		}
-
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
-			throw Error.noClient
-		}
-
-		await subscriptionsManager.get(group.cacheKey(clientAddress))?.cancel()
-		await subscriptionsManager.set(group.cacheKey(clientAddress), Task {
-			do {
-				for try await message in group.streamDecryptedMessages() {
-					do {
-						try sendEvent("groupMessage", [
-							"clientAddress": clientAddress,
-							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
-              "groupId": id,
-						])
-					} catch {
-						print("discarding message, unable to encode wrapper \(message.id)")
-					}
-				}
-			} catch {
-				print("Error in group messages subscription: \(error)")
-				await subscriptionsManager.get(group.cacheKey(clientAddress))?.cancel()
-			}
-		})
-	}
-	
 
 	func unsubscribeFromMessages(clientAddress: String, topic: String) async throws {
 		guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
@@ -1205,29 +744,13 @@ public class XMTPModule: Module {
 
 		await subscriptionsManager.get(conversation.cacheKey(clientAddress))?.cancel()
 	}
-	
-	func unsubscribeFromGroupMessages(clientAddress: String, id: String) async throws {
-		guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
-			return
-		}
-
-		await subscriptionsManager.get(group.cacheKey(clientAddress))?.cancel()
-	}
 
 	func getMessagesKey(clientAddress: String) -> String {
 		return "messages:\(clientAddress)"
 	}
-	
-	func getGroupMessagesKey(clientAddress: String) -> String {
-		return "groupMessages:\(clientAddress)"
-	}
 
 	func getConversationsKey(clientAddress: String) -> String {
 		return "conversations:\(clientAddress)"
-	}
-	
-	func getGroupsKey(clientAddress: String) -> String {
-		return "groups:\(clientAddress)"
 	}
 
 	func preEnableIdentityCallback() {
@@ -1238,11 +761,5 @@ public class XMTPModule: Module {
 	func preCreateIdentityCallback() {
 		sendEvent("preCreateIdentityCallback")
 		self.preCreateIdentityCallbackDeferred?.wait()
-	}
-	
-	func requireNotProductionEnvForAlphaMLS(enableAlphaMls: Bool?, environment: String) throws {
-		if (enableAlphaMls == true && environment == "production") {
-			throw Error.mlsNotEnabled("Environment must be \"local\" or \"dev\" to enable alpha MLS")
-		}
 	}
 }

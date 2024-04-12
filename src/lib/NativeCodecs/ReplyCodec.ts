@@ -1,21 +1,17 @@
-import { TextCodec } from './TextCodec'
 import {
   ContentTypeId,
   NativeContentCodec,
   NativeMessageContent,
 } from '../ContentCodec'
-import { DefaultContentTypes } from '../types/DefaultContentType'
 
-export type ReplyContent<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
-> = {
+export type ReplyContent = {
   reference: string
-  content: [...ContentTypes, TextCodec][number] | string
+  content: any
   contentType: string
 }
 
 export class ReplyCodec implements NativeContentCodec<ReplyContent> {
-  contentKey: 'reply' = 'reply'
+  contentKey: string = 'reply'
 
   contentType: ContentTypeId = {
     authorityId: 'xmtp.org',

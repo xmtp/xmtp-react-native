@@ -5,7 +5,7 @@ import {
 } from '../ContentCodec'
 
 export class TextCodec implements NativeContentCodec<string> {
-  contentKey: 'text' = 'text'
+  contentKey: string = 'text'
 
   contentType: ContentTypeId = {
     authorityId: 'xmtp.org',
