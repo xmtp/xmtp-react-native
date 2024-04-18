@@ -705,9 +705,6 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addedByAddress") { (clientAddress: String, id: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
-				throw Error.noClient
-			}
 			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}

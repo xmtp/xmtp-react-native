@@ -807,10 +807,9 @@ class XMTPModule : Module() {
         AsyncFunction("addedByAddress") Coroutine { clientAddress: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("addedByAddress")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val group = findGroup(clientAddress, id)
+                val group = findGroup(clientAddress, id) ?: throw XMTPException("No group found")
 
-                group?.addedByAddress()
+                group.addedByAddress()
             }
         }
 
