@@ -909,6 +909,13 @@ public class XMTPModule: Module {
 			}
 			return ConsentWrapper.consentStateToString(state: await conversation.consentState())
 		}
+		
+		AsyncFunction("groupConsentState") { (clientAddress: String, groupId: String) -> String in
+			guard let group = try await findGroup(clientAddress: clientAddress, id: groupId) else {
+				throw Error.conversationNotFound("no group found for \(groupId)")
+			}
+			return ConsentWrapper.consentStateToString(state: await XMTP.Conversation.group(group).consentState())
+		}
 
 		AsyncFunction("consentList") { (clientAddress: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
