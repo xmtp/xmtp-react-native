@@ -1,6 +1,13 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import React, { useCallback, useEffect, useState } from 'react'
-import { Button, FlatList, Text, View, Switch, Pressable } from 'react-native'
+import {
+  Button,
+  FlatList,
+  Text,
+  View,
+  Switch,
+  useWindowDimensions,
+  Pressable,
+} from 'react-native'
 
 import { Client, Conversation, DecodedMessage } from '../../src'
 
@@ -96,7 +103,7 @@ const ConversationItem = ({
     let sub: (() => void) | undefined = undefined
 
     const setSub = async () => {
-      sub = await conversation?.streamMessages(async (message) => {
+      sub = conversation?.streamMessages(async (message) => {
         setMessages((prev) => [...prev, message])
       })
     }
@@ -181,6 +188,7 @@ interface StreamEvent {
 
 export default function StreamScreen() {
   const client = useClient()
+  const { width, height } = useWindowDimensions()
   const [showEvents, setShowEvents] = useState<boolean>(false)
   const [conversations, setConversations] = useState<boolean[]>([])
   const [stream, setStream] = useState<boolean>(true)

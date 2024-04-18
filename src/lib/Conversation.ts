@@ -1,27 +1,18 @@
-import {
-  ConversationVersion,
-  ConversationContainer,
-} from './ConversationContainer'
-import { ConversationSendPayload } from './types/ConversationCodecs'
-import { DefaultContentTypes } from './types/DefaultContentType'
-import { EventTypes } from './types/EventTypes'
-import { SendOptions } from './types/SendOptions'
+import { DecodedMessage } from './DecodedMessage'
 import * as XMTP from '../index'
-import {
-  ConversationContext,
-  DecodedMessage,
-  PreparedLocalMessage,
-} from '../index'
+import { ConversationContext, PreparedLocalMessage } from '../index'
 
-export class Conversation<ContentTypes extends DefaultContentTypes>
-  implements ConversationContainer<ContentTypes>
-{
+export type SendOptions = {
+  contentType?: XMTP.ContentTypeId
+}
+
+export class Conversation<ContentTypes> {
   client: XMTP.Client<ContentTypes>
   createdAt: number
   context?: ConversationContext
   topic: string
   peerAddress: string
-  version = ConversationVersion.DIRECT
+  version: string
   conversationID?: string | undefined
   /**
    * Base64 encoded key material for the conversation.
@@ -35,6 +26,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       context?: ConversationContext
       topic: string
       peerAddress: string
+      version: string
       conversationID?: string | undefined
       keyMaterial?: string | undefined
     }
@@ -44,6 +36,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
     this.context = params.context
     this.topic = params.topic
     this.peerAddress = params.peerAddress
+    this.version = params.version
     this.conversationID = params.conversationID
     this.keyMaterial = params.keyMaterial
   }
@@ -81,7 +74,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       | undefined
   ): Promise<DecodedMessage<ContentTypes>[]> {
     try {
-      const messages = await XMTP.listMessages<ContentTypes>(
+      const messages = await XMTP.listMessages(
         this.client,
         this.topic,
         limit,
@@ -127,10 +120,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
    *
    * @todo Support specifying a conversation ID in future implementations.
    */
-  async send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
-    content: ConversationSendPayload<SendContentTypes>,
-    opts?: SendOptions
-  ): Promise<string> {
+  async send(content: any, opts?: SendOptions): Promise<string> {
     if (opts && opts.contentType) {
       return await this._sendWithJSCodec(content, opts.contentType)
     }
@@ -164,7 +154,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       this.client.address,
       this.topic,
       content,
-      codec
+      codec,
     )
   }
 
@@ -183,10 +173,8 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
    * @returns {Promise<PreparedLocalMessage>} A Promise that resolves to a `PreparedLocalMessage` object.
    * @throws {Error} Throws an error if there is an issue with preparing the message.
    */
-  async prepareMessage<
-    PrepareContentTypes extends DefaultContentTypes = ContentTypes,
-  >(
-    content: ConversationSendPayload<PrepareContentTypes>,
+  async prepareMessage(
+    content: any,
     opts?: SendOptions
   ): Promise<PreparedLocalMessage> {
     if (opts && opts.contentType) {
@@ -232,9 +220,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
    * @returns {Promise<DecodedMessage>} A Promise that resolves to a `DecodedMessage` object.
    * @throws {Error} Throws an error if there is an issue with decoding the message.
    */
-  async decodeMessage(
-    encryptedMessage: string
-  ): Promise<DecodedMessage<ContentTypes>> {
+  async decodeMessage(encryptedMessage: string): Promise<DecodedMessage> {
     try {
       return await XMTP.decodeMessage(
         this.client.address,
@@ -269,27 +255,21 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
    * @param {Function} callback - A callback function that will be invoked with the new DecodedMessage when a message is received.
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
-  async streamMessages(
-    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
-  ): Promise<() => void> {
-    await XMTP.subscribeToMessages(this.client.address, this.topic)
+  streamMessages(
+    callback: (message: DecodedMessage) => Promise<void>
+  ): () => void {
+    XMTP.subscribeToMessages(this.client.address, this.topic)
     const hasSeen = {}
     const messageSubscription = XMTP.emitter.addListener(
-      EventTypes.ConversationMessage,
+      'message',
       async ({
         clientAddress,
         message,
-        topic,
       }: {
         clientAddress: string
-        message: DecodedMessage<ContentTypes>
-        topic: string
+        message: DecodedMessage
       }) => {
-        // Long term these checks should be able to be done on the native layer as well, but additional checks in JS for safety
         if (clientAddress !== this.client.address) {
-          return
-        }
-        if (topic !== this.topic) {
           return
         }
         if (hasSeen[message.id]) {
@@ -303,9 +283,9 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       }
     )
 
-    return async () => {
+    return () => {
       messageSubscription.remove()
-      await XMTP.unsubscribeFromMessages(this.client.address, this.topic)
+      XMTP.unsubscribeFromMessages(this.client.address, this.topic)
     }
   }
 }
