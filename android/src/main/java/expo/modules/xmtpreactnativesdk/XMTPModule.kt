@@ -804,6 +804,16 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("addedByAddress") Coroutine { clientAddress: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("addedByAddress")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.addedByAddress()
+            }
+        }
+
         AsyncFunction("isGroupAdmin") Coroutine { clientAddress: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupAdmin")
