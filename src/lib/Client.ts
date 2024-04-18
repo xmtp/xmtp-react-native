@@ -9,24 +9,25 @@ import type {
   PreparedLocalMessage,
 } from './ContentCodec'
 import Conversations from './Conversations'
-import { DecodedMessage } from './DecodedMessage'
 import { TextCodec } from './NativeCodecs/TextCodec'
 import { Query } from './Query'
 import { Signer, getSigner } from './Signer'
+import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
+import { DecodedMessage } from '../index'
 
 declare const Buffer
 
-export type GetMessageContentTypeFromClient<C> = C extends Client<infer T>
-  ? T
-  : never
+export type GetMessageContentTypeFromClient<C> =
+  C extends Client<infer T> ? T : never
 
-export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
-  ? T
-  : never
+export type ExtractDecodedType<C> =
+  C extends XMTPModule.ContentCodec<infer T> ? T : never
 
-export class Client<ContentTypes> {
+export class Client<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+> {
   address: string
   conversations: Conversations<ContentTypes>
   contacts: Contacts
@@ -44,15 +45,11 @@ export class Client<ContentTypes> {
    * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
    */
   static async create<
-    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
+    ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
     wallet: Signer | WalletClient | null,
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
-  ): Promise<
-    Client<
-      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
-    >
-  > {
+  ): Promise<Client<ContentCodecs>> {
     const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
@@ -60,11 +57,7 @@ export class Client<ContentTypes> {
     if (!signer) {
       throw new Error('Signer is not configured')
     }
-    return new Promise<
-      Client<
-        ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
-      >
-    >((resolve, reject) => {
+    return new Promise<Client<ContentCodecs>>((resolve, reject) => {
       ;(async () => {
         this.signSubscription = XMTPModule.emitter.addListener(
           'sign',
@@ -82,7 +75,7 @@ export class Client<ContentTypes> {
 
               const signature = Buffer.from(sigBytes).toString('base64')
 
-              XMTPModule.receiveSignature(request.id, signature)
+              await XMTPModule.receiveSignature(request.id, signature)
             } catch (e) {
               const errorMessage = 'ERROR in create. User rejected signature'
               console.info(errorMessage, e)
@@ -106,14 +99,19 @@ export class Client<ContentTypes> {
             resolve(new Client(address, opts?.codecs || []))
           }
         )
-        XMTPModule.auth(
+        await XMTPModule.auth(
           await signer.getAddress(),
           options.env,
           options.appVersion,
           Boolean(createSubscription),
-          Boolean(enableSubscription)
+          Boolean(enableSubscription),
+          Boolean(options.enableAlphaMls),
+          options.dbEncryptionKey,
+          options.dbPath
         )
-      })()
+      })().catch((error) => {
+        console.error('ERROR in create: ', error)
+      })
     })
   }
 
@@ -137,15 +135,9 @@ export class Client<ContentTypes> {
    * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance with a random address.
    */
-  static async createRandom<
-    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
-  >(
-    opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
-  ): Promise<
-    Client<
-      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
-    >
-  > {
+  static async createRandom<ContentTypes extends DefaultContentTypes>(
+    opts?: Partial<ClientOptions> & { codecs?: ContentTypes }
+  ): Promise<Client<ContentTypes>> {
     const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
@@ -153,7 +145,10 @@ export class Client<ContentTypes> {
       options.env,
       options.appVersion,
       Boolean(createSubscription),
-      Boolean(enableSubscription)
+      Boolean(enableSubscription),
+      Boolean(options.enableAlphaMls),
+      options.dbEncryptionKey,
+      options.dbPath
     )
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
@@ -172,26 +167,25 @@ export class Client<ContentTypes> {
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance based on the provided key bundle.
    */
   static async createFromKeyBundle<
-    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
+    ContentCodecs extends DefaultContentTypes = [],
   >(
     keyBundle: string,
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
-  ): Promise<
-    Client<
-      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
-    >
-  > {
+  ): Promise<Client<DefaultContentTypes>> {
     const options = defaultOptions(opts)
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
-      options.appVersion
+      options.appVersion,
+      Boolean(options.enableAlphaMls),
+      options.dbEncryptionKey,
+      options.dbPath
     )
     return new Client(address, opts?.codecs || [])
   }
 
   /**
-   * Determines whether the current user can send messages to a specified peer.
+   * Determines whether the current user can send messages to a specified peer over 1:1 conversations.
    *
    * This method checks if the specified peer has signed up for XMTP
    * and ensures that the message is not addressed to the sender (no self-messaging).
@@ -201,6 +195,25 @@ export class Client<ContentTypes> {
    */
   async canMessage(peerAddress: string): Promise<boolean> {
     return await XMTPModule.canMessage(this.address, peerAddress)
+  }
+
+  /**
+   * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
+   */
+  async deleteLocalDatabase() {
+    return await XMTPModule.deleteLocalDatabase(this.address)
+  }
+
+  /**
+   * Determines whether the current user can send messages to the specified peers over groups.
+   *
+   * This method checks if the specified peers are using clients that support group messaging.
+   *
+   * @param {string[]} addresses - The addresses of the peers to check for messaging eligibility.
+   * @returns {Promise<boolean[]>} A Promise resolving to true for peers where group messaging is allowed, and false otherwise.
+   */
+  async canGroupMessage(addresses: string[]): Promise<boolean> {
+    return await XMTPModule.canGroupMessage(this.address, addresses)
   }
 
   /**
@@ -241,16 +254,11 @@ export class Client<ContentTypes> {
     await callback?.()
   }
 
-  private static hasEventCallback(
-    event: string,
-    opts: CallbackOptions
-  ): boolean {
+  private static hasEventCallback(event: string, opts: ClientOptions): boolean {
     return opts?.[event] !== undefined
   }
 
-  private static async removeSubscription(
-    subscription?: Subscription
-  ): Promise<void> {
+  private static removeSubscription(subscription?: Subscription) {
     if (subscription) {
       subscription.remove()
     }
@@ -341,9 +349,11 @@ export class Client<ContentTypes> {
    * @returns {Promise<DecodedMessage[]>} A Promise that resolves to a list of batch messages.
    * @throws {Error} The error is logged, and the method gracefully returns an empty array.
    */
-  async listBatchMessages(queries: Query[]): Promise<DecodedMessage[]> {
+  async listBatchMessages(
+    queries: Query[]
+  ): Promise<DecodedMessage<ContentTypes>[]> {
     try {
-      return await XMTPModule.listBatchMessages(this, queries)
+      return await XMTPModule.listBatchMessages<ContentTypes>(this, queries)
     } catch (e) {
       console.info('ERROR in listBatchMessages', e)
       return []
@@ -402,8 +412,7 @@ export class Client<ContentTypes> {
   }
 }
 
-export type ClientOptions = NetworkOptions & CallbackOptions
-export type NetworkOptions = {
+export type ClientOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
    */
@@ -419,16 +428,29 @@ export type NetworkOptions = {
    * SDK updates, including deprecations and required upgrades.
    */
   appVersion?: string
+
+  /**
+   * Set optional callbacks for handling identity setup
+   */
+  preCreateIdentityCallback?: () => Promise<void> | void
+  preEnableIdentityCallback?: () => Promise<void> | void
+  /**
+   * Specify whether to enable Alpha version of MLS (Group Chat)
+   */
+  enableAlphaMls?: boolean
+  /**
+   * OPTIONAL specify the encryption key for the database
+   */
+  dbEncryptionKey?: Uint8Array
+  /**
+   * OPTIONAL specify the XMTP managed database path
+   */
+  dbPath?: string
 }
 
 export type KeyType = {
   kind: 'identity' | 'prekey'
   prekeyIndex?: number
-}
-
-export type CallbackOptions = {
-  preCreateIdentityCallback?: () => Promise<void> | void
-  preEnableIdentityCallback?: () => Promise<void> | void
 }
 
 /**
@@ -439,6 +461,9 @@ export type CallbackOptions = {
 export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
   const _defaultOptions: ClientOptions = {
     env: 'dev',
+    enableAlphaMls: false,
+    dbEncryptionKey: undefined,
+    dbPath: undefined,
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions
