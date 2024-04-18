@@ -890,7 +890,7 @@ public class XMTPModule: Module {
 			}
 			let consentList = try await client.contacts.refreshConsentList()
 
-			return try consentList.entries.compactMap { entry in
+			return try await consentList.entriesManager.map.compactMap { entry in
 				try ConsentWrapper.encode(entry.value)
 			}
 		}
@@ -906,7 +906,7 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			let entries = await client.contacts.consentList.entries
+			let entries = await client.contacts.consentList.entriesManager.map
 
 			return try entries.compactMap { entry in
 				try ConsentWrapper.encode(entry.value)
