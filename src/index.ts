@@ -602,6 +602,13 @@ export async function conversationConsentState(
   )
 }
 
+export async function groupConsentState(
+  clientAddress: string,
+  groupId: string
+): Promise<ConsentState> {
+  return await XMTPModule.groupConsentState(clientAddress, groupId)
+}
+
 export async function isAllowed(
   clientAddress: string,
   address: string

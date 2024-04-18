@@ -30,13 +30,14 @@ export class Group<
       peerAddresses: string[]
       adminAddress: string
       permissionLevel: 'everyone_admin' | 'creator_admin'
+      topic: string
     }
   ) {
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
     this.peerAddresses = params.peerAddresses
-    this.topic = params.id
+    this.topic = params.topic
     this.adminAddress = params.adminAddress
     this.permissionLevel = params.permissionLevel
   }
@@ -224,5 +225,9 @@ export class Group<
       console.info('ERROR in processGroupMessage()', e)
       throw e
     }
+  }
+
+  async consentState(): Promise<'allowed' | 'denied' | 'unknown'> {
+    return await XMTP.groupConsentState(this.clientAddress, this.id)
   }
 }
