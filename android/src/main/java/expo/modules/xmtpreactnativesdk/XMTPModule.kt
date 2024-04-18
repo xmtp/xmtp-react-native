@@ -1,6 +1,5 @@
 package expo.modules.xmtpreactnativesdk
 
-import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import android.util.Base64.NO_WRAP
@@ -8,7 +7,6 @@ import android.util.Log
 import androidx.core.net.toUri
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
-import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -19,8 +17,6 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
-import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -34,7 +30,6 @@ import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.Conversation
-import org.xmtp.android.library.Group
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreparedMessage
 import org.xmtp.android.library.SendOptions
@@ -54,20 +49,15 @@ import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.messages.getPublicKeyBundle
 import org.xmtp.android.library.push.XMTPPush
-import org.xmtp.android.library.toHex
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
-import uniffi.xmtpv3.GroupPermissions
 import java.io.File
 import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import com.facebook.common.util.Hex
-import org.xmtp.android.library.messages.Topic
-import org.xmtp.android.library.push.Service
 
 class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
@@ -111,15 +101,7 @@ fun Conversation.cacheKey(clientAddress: String): String {
     return "${clientAddress}:${topic}"
 }
 
-fun Group.cacheKey(clientAddress: String): String {
-    return "${clientAddress}:${id}"
-}
-
 class XMTPModule : Module() {
-
-    val context: Context
-        get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
-
     private fun apiEnvironments(env: String, appVersion: String?): ClientOptions.Api {
         return when (env) {
             "local" -> ClientOptions.Api(
@@ -147,7 +129,6 @@ class XMTPModule : Module() {
     private var signer: ReactNativeSigner? = null
     private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
     private val conversations: MutableMap<String, Conversation> = mutableMapOf()
-    private val groups: MutableMap<String, Group> = mutableMapOf()
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
     private var preEnableIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
     private var preCreateIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
@@ -156,22 +137,12 @@ class XMTPModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("XMTP")
         Events(
-            // Auth
             "sign",
             "authed",
-            "preCreateIdentityCallback",
-            "preEnableIdentityCallback",
-            // Conversations
             "conversation",
-            "group",
-            "conversationContainer",
             "message",
-            "allGroupMessage",
-            // Conversation
-            "conversationMessage",
-            // Group
-            "groupMessage"
-
+            "preEnableIdentityCallback",
+            "preCreateIdentityCallback"
         )
 
         Function("address") { clientAddress: String ->
@@ -180,17 +151,11 @@ class XMTPModule : Module() {
             client?.address ?: "No Client."
         }
 
-        AsyncFunction("deleteLocalDatabase") { clientAddress: String ->
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.deleteLocalDatabase()
-        }
-
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbPath: String? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
             logV("auth")
-            requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
 
@@ -202,20 +167,10 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (enableAlphaMls == true) context else null
-            val encryptionKeyBytes =
-                dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
-                    a.apply { set(i, v.toByte()) }
-                }
-
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback,
-                enableAlphaMls = enableAlphaMls == true,
-                appContext = context,
-                dbEncryptionKey = encryptionKeyBytes,
-                dbPath = dbPath
+                preEnableIdentityCallback = preEnableIdentityCallback
             )
             clients[address] = Client().create(account = reactSigner, options = options)
             ContentJson.Companion
@@ -229,9 +184,8 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbPath: String? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
             logV("createRandom")
-            requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val privateKey = PrivateKeyBuilder()
 
             if (hasCreateIdentityCallback == true)
@@ -242,20 +196,11 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (enableAlphaMls == true) context else null
-            val encryptionKeyBytes =
-                dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
-                    a.apply { set(i, v.toByte()) }
-                }
 
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback,
-                enableAlphaMls = enableAlphaMls == true,
-                appContext = context,
-                dbEncryptionKey = encryptionKeyBytes,
-                dbPath = dbPath
+                preEnableIdentityCallback = preEnableIdentityCallback
             )
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
@@ -263,23 +208,10 @@ class XMTPModule : Module() {
             randomClient.address
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbPath: String? ->
-            logV("createFromKeyBundle")
-            requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
-
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String? ->
             try {
-                val context = if (enableAlphaMls == true) context else null
-                val encryptionKeyBytes =
-                    dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
-                        a.apply { set(i, v.toByte()) }
-                    }
-                val options = ClientOptions(
-                    api = apiEnvironments(environment, appVersion),
-                    enableAlphaMls = enableAlphaMls == true,
-                    appContext = context,
-                    dbEncryptionKey = encryptionKeyBytes,
-                    dbPath = dbPath
-                )
+                logV("createFromKeyBundle")
+                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
                         Base64.decode(
@@ -371,12 +303,6 @@ class XMTPModule : Module() {
             val client = clients[clientAddress] ?: throw XMTPException("No client")
 
             client.canMessage(peerAddress)
-        }
-
-        AsyncFunction("canGroupMessage") { clientAddress: String, peerAddresses: List<String> ->
-            logV("canGroupMessage")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.canMessageV3(peerAddresses)
         }
 
         AsyncFunction("staticCanMessage") { peerAddress: String, environment: String, appVersion: String? ->
@@ -481,29 +407,6 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listGroups") Coroutine { clientAddress: String ->
-            withContext(Dispatchers.IO) {
-                logV("listGroups")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val groupList = client.conversations.listGroups()
-                groupList.map { group ->
-                    groups[group.cacheKey(clientAddress)] = group
-                    GroupWrapper.encode(client, group)
-                }
-            }
-        }
-
-        AsyncFunction("listAll") Coroutine { clientAddress: String ->
-            withContext(Dispatchers.IO) {
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val conversationContainerList = client.conversations.list(includeGroups = true)
-                conversationContainerList.map { conversation ->
-                    conversations[conversation.cacheKey(clientAddress)] = conversation
-                    ConversationContainerWrapper.encode(client, conversation)
-                }
-            }
-        }
-
         AsyncFunction("loadMessages") Coroutine { clientAddress: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
             withContext(Dispatchers.IO) {
                 logV("loadMessages")
@@ -524,24 +427,6 @@ class XMTPModule : Module() {
                     )
                 )
                     .map { DecodedMessageWrapper.encode(it) }
-            }
-        }
-
-        AsyncFunction("groupMessages") Coroutine { clientAddress: String, id: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
-            withContext(Dispatchers.IO) {
-                logV("groupMessages")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val beforeDate = if (before != null) Date(before) else null
-                val afterDate = if (after != null) Date(after) else null
-                val group = findGroup(clientAddress, id)
-                group?.decryptedMessages(
-                    limit = limit,
-                    before = beforeDate,
-                    after = afterDate,
-                    direction = MessageApiOuterClass.SortDirection.valueOf(
-                        direction ?: "SORT_DIRECTION_DESCENDING"
-                    )
-                )?.map { DecodedMessageWrapper.encode(it) }
             }
         }
 
@@ -603,23 +488,6 @@ class XMTPModule : Module() {
                         ?: throw XMTPException("no conversation found for $conversationTopic")
                 val sending = ContentJson.fromJson(contentJson)
                 conversation.send(
-                    content = sending.content,
-                    options = SendOptions(contentType = sending.type)
-                )
-            }
-        }
-
-        AsyncFunction("sendMessageToGroup") Coroutine { clientAddress: String, id: String, contentJson: String ->
-            withContext(Dispatchers.IO) {
-                logV("sendMessageToGroup")
-                val group =
-                    findGroup(
-                        clientAddress = clientAddress,
-                        id = id
-                    )
-                        ?: throw XMTPException("no group found for $id")
-                val sending = ContentJson.fromJson(contentJson)
-                group.send(
                     content = sending.content,
                     options = SendOptions(contentType = sending.type)
                 )
@@ -735,131 +603,15 @@ class XMTPModule : Module() {
                 ConversationWrapper.encode(client, conversation)
             }
         }
-        AsyncFunction("createGroup") Coroutine { clientAddress: String, peerAddresses: List<String>, permission: String ->
-            withContext(Dispatchers.IO) {
-                logV("createGroup")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val permissionLevel = when (permission) {
-                    "creator_admin" -> GroupPermissions.GROUP_CREATOR_IS_ADMIN
-                    else -> GroupPermissions.EVERYONE_IS_ADMIN
-                }
-                val group = client.conversations.newGroup(peerAddresses, permissionLevel)
-                GroupWrapper.encode(client, group)
-            }
-        }
-
-        AsyncFunction("listMemberAddresses") Coroutine { clientAddress: String, groupId: String ->
-            withContext(Dispatchers.IO) {
-                logV("listMembers")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val group = findGroup(clientAddress, groupId)
-                group?.memberAddresses()
-            }
-        }
-
-        AsyncFunction("syncGroups") Coroutine { clientAddress: String ->
-            withContext(Dispatchers.IO) {
-                logV("syncGroups")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                client.conversations.syncGroups()
-            }
-        }
-
-        AsyncFunction("syncGroup") Coroutine { clientAddress: String, id: String ->
-            withContext(Dispatchers.IO) {
-                logV("syncGroup")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val group = findGroup(clientAddress, id)
-                group?.sync()
-            }
-        }
-
-        AsyncFunction("addGroupMembers") Coroutine { clientAddress: String, id: String, peerAddresses: List<String> ->
-            withContext(Dispatchers.IO) {
-                logV("addGroupMembers")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val group = findGroup(clientAddress, id)
-
-                group?.addMembers(peerAddresses)
-            }
-        }
-
-        AsyncFunction("removeGroupMembers") Coroutine { clientAddress: String, id: String, peerAddresses: List<String> ->
-            withContext(Dispatchers.IO) {
-                logV("removeGroupMembers")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val group = findGroup(clientAddress, id)
-
-                group?.removeMembers(peerAddresses)
-            }
-        }
-
-        AsyncFunction("isGroupActive") Coroutine { clientAddress: String, id: String ->
-            withContext(Dispatchers.IO) {
-                logV("isGroupActive")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val group = findGroup(clientAddress, id)
-
-                group?.isActive()
-            }
-        }
-
-        AsyncFunction("isGroupAdmin") Coroutine { clientAddress: String, id: String ->
-            withContext(Dispatchers.IO) {
-                logV("isGroupAdmin")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val group = findGroup(clientAddress, id)
-
-                group?.isAdmin()
-            }
-        }
-
-        AsyncFunction("processGroupMessage") Coroutine { clientAddress: String, id: String, encryptedMessage: String ->
-            withContext(Dispatchers.IO) {
-                logV("processGroupMessage")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-                val group = findGroup(clientAddress, id)
-
-                val message = group?.processMessage(Base64.decode(encryptedMessage, NO_WRAP))
-                    ?: throw XMTPException("could not decrypt message for $id")
-                DecodedMessageWrapper.encodeMap(message.decrypt())
-            }
-        }
-
-        AsyncFunction("processWelcomeMessage") Coroutine { clientAddress: String, encryptedMessage: String ->
-            withContext(Dispatchers.IO) {
-                logV("processWelcomeMessage")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-
-                val group =
-                    client.conversations.fromWelcome(Base64.decode(encryptedMessage, NO_WRAP))
-                GroupWrapper.encode(client, group)
-            }
-        }
 
         Function("subscribeToConversations") { clientAddress: String ->
             logV("subscribeToConversations")
             subscribeToConversations(clientAddress = clientAddress)
         }
 
-        Function("subscribeToGroups") { clientAddress: String ->
-            logV("subscribeToGroups")
-            subscribeToGroups(clientAddress = clientAddress)
-        }
-
-        Function("subscribeToAll") { clientAddress: String ->
-            logV("subscribeToAll")
-            subscribeToAll(clientAddress = clientAddress)
-        }
-
-        Function("subscribeToAllMessages") { clientAddress: String, includeGroups: Boolean ->
+        Function("subscribeToAllMessages") { clientAddress: String ->
             logV("subscribeToAllMessages")
-            subscribeToAllMessages(clientAddress = clientAddress, includeGroups = includeGroups)
-        }
-
-        Function("subscribeToAllGroupMessages") { clientAddress: String ->
-            logV("subscribeToAllGroupMessages")
-            subscribeToAllGroupMessages(clientAddress = clientAddress)
+            subscribeToAllMessages(clientAddress = clientAddress)
         }
 
         AsyncFunction("subscribeToMessages") Coroutine { clientAddress: String, topic: String ->
@@ -872,34 +624,14 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("subscribeToGroupMessages") Coroutine { clientAddress: String, id: String ->
-            withContext(Dispatchers.IO) {
-                logV("subscribeToGroupMessages")
-                subscribeToGroupMessages(
-                    clientAddress = clientAddress,
-                    id = id
-                )
-            }
-        }
-
         Function("unsubscribeFromConversations") { clientAddress: String ->
             logV("unsubscribeFromConversations")
             subscriptions[getConversationsKey(clientAddress)]?.cancel()
         }
 
-        Function("unsubscribeFromGroups") { clientAddress: String ->
-            logV("unsubscribeFromGroups")
-            subscriptions[getGroupsKey(clientAddress)]?.cancel()
-        }
-
         Function("unsubscribeFromAllMessages") { clientAddress: String ->
             logV("unsubscribeFromAllMessages")
             subscriptions[getMessagesKey(clientAddress)]?.cancel()
-        }
-
-        Function("unsubscribeFromAllGroupMessages") { clientAddress: String ->
-            logV("unsubscribeFromAllGroupMessages")
-            subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
         }
 
         AsyncFunction("unsubscribeFromMessages") Coroutine { clientAddress: String, topic: String ->
@@ -912,50 +644,19 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("unsubscribeFromGroupMessages") Coroutine { clientAddress: String, id: String ->
-            withContext(Dispatchers.IO) {
-                logV("unsubscribeFromGroupMessages")
-                unsubscribeFromGroupMessages(
-                    clientAddress = clientAddress,
-                    id = id
-                )
-            }
-        }
-
         Function("registerPushToken") { pushServer: String, token: String ->
             logV("registerPushToken")
             xmtpPush = XMTPPush(appContext.reactContext!!, pushServer)
             xmtpPush?.register(token)
         }
 
-        Function("subscribePushTopics") { clientAddress: String, topics: List<String> ->
+        Function("subscribePushTopics") { topics: List<String> ->
             logV("subscribePushTopics")
             if (topics.isNotEmpty()) {
                 if (xmtpPush == null) {
                     throw XMTPException("Push server not registered")
                 }
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
-
-                val hmacKeysResult = client.conversations.getHmacKeys()
-                val subscriptions = topics.map {
-                    val hmacKeys = hmacKeysResult.hmacKeysMap
-                    val result = hmacKeys[it]?.valuesList?.map { hmacKey ->
-                        Service.Subscription.HmacKey.newBuilder().also { sub_key ->
-                            sub_key.key = hmacKey.hmacKey
-                            sub_key.thirtyDayPeriodsSinceEpoch = hmacKey.thirtyDayPeriodsSinceEpoch
-                        }.build()
-                    }
-
-                    Service.Subscription.newBuilder().also { sub ->
-                        sub.addAllHmacKeys(result)
-                        if (!result.isNullOrEmpty()) {
-                            sub.addAllHmacKeys(result)
-                        }
-                        sub.topic = it
-                    }.build()
-                }
-
-                xmtpPush?.subscribeWithMetadata(subscriptions)
+                xmtpPush?.subscribe(topics)
             }
         }
 
@@ -1032,32 +733,6 @@ class XMTPModule : Module() {
             logV("preEnableIdentityCallbackCompleted")
             preEnableIdentityCallbackDeferred?.complete(Unit)
         }
-
-        AsyncFunction("allowGroups") Coroutine { clientAddress: String, groupIds: List<String> ->
-            logV("allowGroups")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
-            client.contacts.allowGroup(groupDataIds)
-        }
-
-        AsyncFunction("denyGroups") Coroutine { clientAddress: String, groupIds: List<String> ->
-            logV("denyGroups")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
-            client.contacts.denyGroup(groupDataIds)
-        }
-
-        AsyncFunction("isGroupAllowed") { clientAddress: String, groupId: String ->
-            logV("isGroupAllowed")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.isGroupAllowed(Hex.hexStringToByteArray(groupId))
-        }
-
-        AsyncFunction("isGroupDenied") { clientAddress: String, groupId: String ->
-            logV("isGroupDenied")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.isGroupDenied(Hex.hexStringToByteArray(groupId))
-        }
     }
 
     //
@@ -1080,27 +755,6 @@ class XMTPModule : Module() {
             if (conversation != null) {
                 conversations[conversation.cacheKey(clientAddress)] = conversation
                 return conversation
-            }
-        }
-        return null
-    }
-
-    private suspend fun findGroup(
-        clientAddress: String,
-        id: String,
-    ): Group? {
-        val client = clients[clientAddress] ?: throw XMTPException("No client")
-
-        val cacheKey = "${clientAddress}:${id}"
-        val cacheGroup = groups[cacheKey]
-        if (cacheGroup != null) {
-            return cacheGroup
-        } else {
-            val group = client.conversations.listGroups()
-                .firstOrNull { it.id.toHex() == id }
-            if (group != null) {
-                groups[group.cacheKey(clientAddress)] = group
-                return group
             }
         }
         return null
@@ -1136,85 +790,15 @@ class XMTPModule : Module() {
         }
     }
 
-    private fun subscribeToGroups(clientAddress: String) {
-        val client = clients[clientAddress] ?: throw XMTPException("No client")
-
-        subscriptions[getGroupsKey(clientAddress)]?.cancel()
-        subscriptions[getGroupsKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                client.conversations.streamGroups().collect { group ->
-                    sendEvent(
-                        "group",
-                        mapOf(
-                            "clientAddress" to clientAddress,
-                            "group" to GroupWrapper.encodeToObj(client, group)
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in group subscription: $e")
-                subscriptions[getGroupsKey(clientAddress)]?.cancel()
-            }
-        }
-    }
-
-    private fun subscribeToAll(clientAddress: String) {
-        val client = clients[clientAddress] ?: throw XMTPException("No client")
-
-        subscriptions[getConversationsKey(clientAddress)]?.cancel()
-        subscriptions[getConversationsKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                client.conversations.streamAll().collect { conversation ->
-                    sendEvent(
-                        "conversationContainer",
-                        mapOf(
-                            "clientAddress" to clientAddress,
-                            "conversationContainer" to ConversationContainerWrapper.encodeToObj(
-                                client,
-                                conversation
-                            )
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in subscription to groups + conversations: $e")
-                subscriptions[getConversationsKey(clientAddress)]?.cancel()
-            }
-        }
-    }
-
-    private fun subscribeToAllMessages(clientAddress: String, includeGroups: Boolean = false) {
+    private fun subscribeToAllMessages(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
         subscriptions[getMessagesKey(clientAddress)]?.cancel()
         subscriptions[getMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.conversations.streamAllDecryptedMessages(includeGroups = includeGroups)
-                    .collect { message ->
-                        sendEvent(
-                            "message",
-                            mapOf(
-                                "clientAddress" to clientAddress,
-                                "message" to DecodedMessageWrapper.encodeMap(message),
-                            )
-                        )
-                    }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in all messages subscription: $e")
-                subscriptions[getMessagesKey(clientAddress)]?.cancel()
-            }
-        }
-    }
-
-    private fun subscribeToAllGroupMessages(clientAddress: String) {
-        val client = clients[clientAddress] ?: throw XMTPException("No client")
-
-        subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
-        subscriptions[getGroupMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                client.conversations.streamAllGroupDecryptedMessages().collect { message ->
+                client.conversations.streamAllDecryptedMessages().collect { message ->
                     sendEvent(
-                        "allGroupMessage",
+                        "message",
                         mapOf(
                             "clientAddress" to clientAddress,
                             "message" to DecodedMessageWrapper.encodeMap(message),
@@ -1222,8 +806,8 @@ class XMTPModule : Module() {
                     )
                 }
             } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in all group messages subscription: $e")
-                subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
+                Log.e("XMTPModule", "Error in all messages subscription: $e")
+                subscriptions[getMessagesKey(clientAddress)]?.cancel()
             }
         }
     }
@@ -1240,11 +824,10 @@ class XMTPModule : Module() {
                 try {
                     conversation.streamDecryptedMessages().collect { message ->
                         sendEvent(
-                            "conversationMessage",
+                            "message",
                             mapOf(
                                 "clientAddress" to clientAddress,
                                 "message" to DecodedMessageWrapper.encodeMap(message),
-                                "topic" to topic,
                             )
                         )
                     }
@@ -1255,47 +838,12 @@ class XMTPModule : Module() {
             }
     }
 
-    private suspend fun subscribeToGroupMessages(clientAddress: String, id: String) {
-        val group =
-            findGroup(
-                clientAddress = clientAddress,
-                id = id
-            ) ?: return
-        subscriptions[group.cacheKey(clientAddress)]?.cancel()
-        subscriptions[group.cacheKey(clientAddress)] =
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    group.streamDecryptedMessages().collect { message ->
-                        sendEvent(
-                            "groupMessage",
-                            mapOf(
-                                "clientAddress" to clientAddress,
-                                "message" to DecodedMessageWrapper.encodeMap(message),
-                                "groupId" to id,
-                            )
-                        )
-                    }
-                } catch (e: Exception) {
-                    Log.e("XMTPModule", "Error in messages subscription: $e")
-                    subscriptions[group.cacheKey(clientAddress)]?.cancel()
-                }
-            }
-    }
-
     private fun getMessagesKey(clientAddress: String): String {
         return "messages:$clientAddress"
     }
 
-    private fun getGroupMessagesKey(clientAddress: String): String {
-        return "groupMessages:$clientAddress"
-    }
-
     private fun getConversationsKey(clientAddress: String): String {
         return "conversations:$clientAddress"
-    }
-
-    private fun getGroupsKey(clientAddress: String): String {
-        return "groups:$clientAddress"
     }
 
     private suspend fun unsubscribeFromMessages(
@@ -1306,18 +854,6 @@ class XMTPModule : Module() {
             findConversation(
                 clientAddress = clientAddress,
                 topic = topic
-            ) ?: return
-        subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
-    }
-
-    private suspend fun unsubscribeFromGroupMessages(
-        clientAddress: String,
-        id: String,
-    ) {
-        val conversation =
-            findGroup(
-                clientAddress = clientAddress,
-                id = id
             ) ?: return
         subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
     }
@@ -1338,12 +874,6 @@ class XMTPModule : Module() {
         sendEvent("preCreateIdentityCallback")
         preCreateIdentityCallbackDeferred?.await()
         preCreateIdentityCallbackDeferred = null
-    }
-
-    private fun requireNotProductionEnvForAlphaMLS(enableAlphaMls: Boolean?, environment: String) {
-        if (enableAlphaMls == true && (environment == "production")) {
-            throw XMTPException("Environment must be \"local\" or \"dev\" to enable alpha MLS")
-        }
     }
 }
 

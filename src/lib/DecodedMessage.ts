@@ -1,21 +1,17 @@
 import { Buffer } from 'buffer'
 
-import { Client, ExtractDecodedType } from './Client'
+import { Client } from './Client'
 import {
   JSContentCodec,
   NativeContentCodec,
   NativeMessageContent,
 } from './ContentCodec'
-import { TextCodec } from './NativeCodecs/TextCodec'
-import { DefaultContentTypes } from './types/DefaultContentType'
 
 const allowEmptyProperties: (keyof NativeMessageContent)[] = [
   'text',
   'readReceipt',
 ]
-export class DecodedMessage<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
-> {
+export class DecodedMessage<ContentTypes = any> {
   client: Client<ContentTypes>
   id: string
   topic: string
@@ -25,10 +21,10 @@ export class DecodedMessage<
   nativeContent: NativeMessageContent
   fallback: string | undefined
 
-  static from<ContentTypes extends DefaultContentTypes = DefaultContentTypes>(
+  static from<ContentTypes>(
     json: string,
     client: Client<ContentTypes>
-  ): DecodedMessage<ContentTypes> {
+  ): DecodedMessage {
     const decoded = JSON.parse(json)
     return new DecodedMessage<ContentTypes>(
       client,
@@ -42,9 +38,7 @@ export class DecodedMessage<
     )
   }
 
-  static fromObject<
-    ContentTypes extends DefaultContentTypes = DefaultContentTypes,
-  >(
+  static fromObject<ContentTypes>(
     object: {
       id: string
       topic: string
@@ -89,15 +83,13 @@ export class DecodedMessage<
     this.fallback = fallback ?? undefined
   }
 
-  content(): ExtractDecodedType<[...ContentTypes, TextCodec][number] | string> {
+  content(): ContentTypes {
     const encodedJSON = this.nativeContent.encoded
     if (encodedJSON) {
       const encoded = JSON.parse(encodedJSON)
       const codec = this.client.codecRegistry[
         this.contentTypeId
-      ] as JSContentCodec<
-        ExtractDecodedType<[...ContentTypes, TextCodec][number]>
-      >
+      ] as JSContentCodec<ContentTypes>
       if (!codec) {
         throw new Error(
           `no content type found ${JSON.stringify(this.contentTypeId)}`
@@ -115,11 +107,9 @@ export class DecodedMessage<
             this.nativeContent.hasOwnProperty(prop)
           )
         ) {
-          return (
-            codec as NativeContentCodec<
-              ExtractDecodedType<[...ContentTypes, TextCodec][number]>
-            >
-          ).decode(this.nativeContent)
+          return (codec as NativeContentCodec<ContentTypes>).decode(
+            this.nativeContent
+          )
         }
       }
 

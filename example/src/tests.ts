@@ -8,7 +8,6 @@ import { PrivateKeyAccount } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
   Query,
   JSContentCodec,
@@ -18,7 +17,7 @@ import {
   RemoteAttachmentCodec,
   RemoteAttachmentContent,
   Signer,
-} from '../../../src/index'
+} from '../../src/index'
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
@@ -97,7 +96,23 @@ class NumberCodecEmptyFallback extends NumberCodec {
 
 const LONG_STREAM_DELAY = 20000
 
+export type Test = {
+  name: string
+  run: () => Promise<boolean>
+}
+
 export const tests: Test[] = []
+
+function assert(condition: boolean, msg: string) {
+  if (!condition) {
+    throw new Error(msg)
+  }
+}
+
+function delayToPropogate(): Promise<void> {
+  // delay 1s to avoid clobbering
+  return new Promise((r) => setTimeout(r, 100))
+}
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -244,9 +259,9 @@ test('can load 1995 conversations from dev network "2k lens convos" account', as
     xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
     'Address: ' + xmtpClient.address
   )
-  const start = Date.now()
+  let start = Date.now()
   const conversations = await xmtpClient.conversations.list()
-  const end = Date.now()
+  let end = Date.now()
   console.log(
     `Loaded ${conversations.length} conversations in ${end - start}ms`
   )
@@ -326,35 +341,11 @@ test('can pass a custom filter date and receive message objects with expected da
 })
 
 test('canMessage', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
-  const alix = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({ env: 'local' })
+  const alice = await Client.createRandom({ env: 'local' })
 
-  const canMessage = await bo.canMessage(alix.address)
-  if (!canMessage) {
-    throw new Error('should be able to message v2 client')
-  }
-
-  const keyBytes = new Uint8Array([
-    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
-  ])
-
-  const caro = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-    dbEncryptionKey: keyBytes,
-  })
-  const chux = await Client.createRandom({
-    env: 'local',
-    enableAlphaMls: true,
-    dbEncryptionKey: keyBytes,
-  })
-
-  const canMessageV3 = await caro.canGroupMessage([chux.address])
-  if (!canMessageV3) {
-    throw new Error('should be able to message v3 client')
-  }
-  return true
+  const canMessage = await bob.canMessage(alice.address)
+  return canMessage
 })
 
 test('fetch a public key bundle and sign a digest', async () => {
@@ -1049,16 +1040,10 @@ test('register and use custom content types', async () => {
   bob.register(new NumberCodec())
   alice.register(new NumberCodec())
 
-  await delayToPropogate()
-
   const bobConvo = await bob.conversations.newConversation(alice.address)
-  await delayToPropogate()
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
-  await bobConvo.send(
-    { topNumber: { bottomNumber: 12 } },
-    { contentType: ContentTypeNumber }
-  )
+  await bobConvo.send(12, { contentType: ContentTypeNumber })
 
   const messages = await aliceConvo.messages()
   assert(messages.length === 1, 'did not get messages')
@@ -1067,9 +1052,7 @@ test('register and use custom content types', async () => {
   const messageContent = message.content()
 
   assert(
-    typeof messageContent === 'object' &&
-      'topNumber' in messageContent &&
-      messageContent.topNumber.bottomNumber === 12,
+    messageContent === 12,
     'did not get content properly: ' + JSON.stringify(messageContent)
   )
 
@@ -1325,127 +1308,6 @@ test('instantiate frames client correctly', async () => {
   return true
 })
 
-// Skipping this test as it's not something supported right now
-test('can stream all conversation Messages from multiple clients', async () => {
-  const [alix, bo, caro] = await createClients(3)
-
-  if (bo.address === alix.address) {
-    throw Error('Bo and Alix should have different addresses')
-  }
-  if (bo.address === caro.address) {
-    throw Error('Bo and Caro should have different addresses')
-  }
-  if (alix.address === caro.address) {
-    throw Error('Alix and Caro should have different addresses')
-  }
-
-  // Setup stream
-  const allAlixMessages: DecodedMessage<any>[] = []
-  const allBoMessages: DecodedMessage<any>[] = []
-  const alixConvo = await caro.conversations.newConversation(alix.address)
-  const boConvo = await caro.conversations.newConversation(bo.address)
-
-  await alixConvo.streamMessages(async (message) => {
-    allAlixMessages.push(message)
-  })
-  await boConvo.streamMessages(async (message) => {
-    allBoMessages.push(message)
-  })
-
-  // Start Caro starts a new conversation.
-  await delayToPropogate()
-  await alixConvo.send({ text: `Message` })
-  await delayToPropogate()
-  if (allBoMessages.length !== 0) {
-    throw Error(
-      'Unexpected all conversations count for Bo ' + allBoMessages.length
-    )
-  }
-
-  if (allAlixMessages.length !== 1) {
-    throw Error(
-      'Unexpected all conversations count for Alix ' + allAlixMessages.length
-    )
-  }
-
-  const alixConv = (await alix.conversations.list())[0]
-  await alixConv.send({ text: `Message` })
-  await delayToPropogate()
-  if (allBoMessages.length !== 0) {
-    throw Error(
-      'Unexpected all conversations count for Bo ' + allBoMessages.length
-    )
-  }
-  // @ts-ignore-next-line
-  if (allAlixMessages.length !== 2) {
-    throw Error(
-      'Unexpected all conversations count for Alix ' + allAlixMessages.length
-    )
-  }
-
-  return true
-})
-
-test('can stream all conversation Messages from multiple clients - swapped', async () => {
-  const [alix, bo, caro] = await createClients(3)
-
-  if (bo.address === alix.address) {
-    throw Error('Bo and Alix should have different addresses')
-  }
-  if (bo.address === caro.address) {
-    throw Error('Bo and Caro should have different addresses')
-  }
-  if (alix.address === caro.address) {
-    throw Error('Alix and Caro should have different addresses')
-  }
-
-  // Setup stream
-  const allAlixMessages: DecodedMessage<any>[] = []
-  const allBoMessages: DecodedMessage<any>[] = []
-  const alixConvo = await caro.conversations.newConversation(alix.address)
-  const boConvo = await caro.conversations.newConversation(bo.address)
-
-  await boConvo.streamMessages(async (message) => {
-    allBoMessages.push(message)
-  })
-  await alixConvo.streamMessages(async (message) => {
-    allAlixMessages.push(message)
-  })
-
-  // Start Caro starts a new conversation.
-  await delayToPropogate()
-  await alixConvo.send({ text: `Message` })
-  await delayToPropogate()
-  if (allBoMessages.length !== 0) {
-    throw Error(
-      'Unexpected all conversations count for Bo ' + allBoMessages.length
-    )
-  }
-
-  if (allAlixMessages.length !== 1) {
-    throw Error(
-      'Unexpected all conversations count for Alix ' + allAlixMessages.length
-    )
-  }
-
-  const alixConv = (await alix.conversations.list())[0]
-  await alixConv.send({ text: `Message` })
-  await delayToPropogate()
-  if (allBoMessages.length !== 0) {
-    throw Error(
-      'Unexpected all conversations count for Bo ' + allBoMessages.length
-    )
-  }
-  // @ts-ignore-next-line
-  if (allAlixMessages.length !== 2) {
-    throw Error(
-      'Unexpected all conversations count for Alix ' + allAlixMessages.length
-    )
-  }
-
-  return true
-})
-
 test('generates and validates HMAC', async () => {
   const secret = crypto.getRandomValues(new Uint8Array(32))
   const info = crypto.getRandomValues(new Uint8Array(32))
@@ -1523,7 +1385,7 @@ test('fails to validate HMAC with wrong key', async () => {
 test('get all HMAC keys', async () => {
   const alice = await Client.createRandom({ env: 'local' })
 
-  const conversations: Conversation<any>[] = []
+  const conversations: Conversation<string | undefined>[] = []
 
   for (let i = 0; i < 5; i++) {
     const client = await Client.createRandom({ env: 'local' })
@@ -1619,7 +1481,7 @@ test('can handle complex streaming setup', async () => {
     metadata: {},
   })
   const allConvMessages: DecodedMessage[] = []
-  await conv1.streamMessages(async (message) => {
+  conv1.streamMessages(async (message) => {
     allConvMessages.push(message)
   })
   await conv1.send({ text: 'Hello' })
@@ -1646,7 +1508,7 @@ test('can handle complex streaming setup', async () => {
     metadata: {},
   })
   const allConv3Messages: DecodedMessage[] = []
-  await conv3.streamMessages(async (message) => {
+  conv3.streamMessages(async (message) => {
     allConv3Messages.push(message)
   })
   await conv1.send({ text: 'Hello' })
@@ -1728,7 +1590,7 @@ test('can handle complex streaming setup with messages from self', async () => {
     metadata: {},
   })
   const allConvMessages: DecodedMessage[] = []
-  await conv1.streamMessages(async (message) => {
+  conv1.streamMessages(async (message) => {
     allConvMessages.push(message)
   })
   await conv1.send({ text: 'Hello' })
@@ -1755,7 +1617,7 @@ test('can handle complex streaming setup with messages from self', async () => {
     metadata: {},
   })
   const allConv3Messages: DecodedMessage[] = []
-  await conv3.streamMessages(async (message) => {
+  conv3.streamMessages(async (message) => {
     allConv3Messages.push(message)
   })
   await conv1.send({ text: 'Hello' })
