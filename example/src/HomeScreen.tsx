@@ -103,7 +103,7 @@ function GroupListItem({
   const [getConsentState, setConsentState] = useState<string | undefined>()
 
   const denyGroup = async () => {
-    await client?.contacts.deny([group.id])
+    await client?.contacts.denyGroups([group.id])
     group
       .consentState()
       .then(setConsentState)
