@@ -14,6 +14,7 @@ import {
   Client,
   useXmtp,
   DecodedMessage,
+  addedByAddress,
 } from 'xmtp-react-native-sdk'
 import { Group } from 'xmtp-react-native-sdk/lib/Group'
 
@@ -99,12 +100,24 @@ function GroupListItem({
   const [messages, setMessages] = useState<
     DecodedMessage<SupportedContentTypes>[]
   >([])
+  const [getAddByAddressState, setAddByAddressState] = useState<
+    string | undefined
+  >()
 
   useEffect(() => {
     group
       ?.sync()
       .then(() => group.messages())
       .then(setMessages)
+      .then(() => group.addedByAddress())
+      .then((result) => client?.contacts.isDenied(result))
+      .then((result) => {
+        if (result) {
+          setAddByAddressState('The user that added you is blocked')
+        } else {
+          setAddByAddressState('')
+        }
+      })
       .catch((e) => {
         console.error('Error fetching group messages: ', e)
       })
@@ -132,6 +145,9 @@ function GroupListItem({
         <View style={{ padding: 4 }}>
           <Text numberOfLines={1} ellipsizeMode="tail">
             Fallback text
+          </Text>
+          <Text style={{ fontWeight: 'bold', color: 'red' }}>
+            {getAddByAddressState}
           </Text>
           {/* <Text>{lastMessage?.senderAddress}:</Text>
           <Text>{moment(lastMessage?.sent).fromNow()}</Text>
