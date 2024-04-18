@@ -665,6 +665,13 @@ export async function isGroupActive(
   return XMTPModule.isGroupActive(clientAddress, id)
 }
 
+export async function addedByAddress(
+  clientAddress: string,
+  id: string
+): Promise<string> {
+  return XMTPModule.addedByAddress(clientAddress, id)
+}
+
 export async function isGroupAdmin(
   clientAddress: string,
   id: string

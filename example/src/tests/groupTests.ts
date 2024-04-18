@@ -205,6 +205,22 @@ test('production MLS V3 client creation throws error', async () => {
   )
 })
 
+test('who added me to a group', async () => {
+  const [alixClient, boClient] = await createClients(2)
+  const alixGroup = await alixClient.conversations.newGroup([
+    boClient.address,
+   ])
+
+  const boGroup = (await boClient.conversations.listGroups())[0]
+  const addedByAddress = await boGroup.addedByAddress()
+
+  assert(
+    addedByAddress.toLocaleLowerCase === alixClient.address.toLocaleLowerCase,
+    `addedByAddress ${addedByAddress} does not match ${alixClient.address}`
+  )
+  return true
+})
+
 test('can message in a group', async () => {
   // Create three MLS enabled Clients
   const [alixClient, boClient, caroClient] = await createClients(3)

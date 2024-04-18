@@ -703,7 +703,15 @@ public class XMTPModule: Module {
 			
 			return try group.isActive()
 		}
-		
+
+		AsyncFunction("addedByAddress") { (clientAddress: String, id: String) -> String in
+			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+			
+			return try group.addedByAddress()
+		}
+
 		AsyncFunction("isGroupAdmin") { (clientAddress: String, id: String) -> Bool in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
