@@ -56,8 +56,6 @@
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
     "@types/react": "^18.2.39",
     "@types/react-native": "^0.72.7",
-    "@typescript-eslint/eslint-plugin": "^7.1.1",
-    "@typescript-eslint/parser": "^7.1.1",
     "eslint": "^8.54.0",
     "expo-module-scripts": "^3.0.4",
     "expo-modules-core": "^1.5.9",
