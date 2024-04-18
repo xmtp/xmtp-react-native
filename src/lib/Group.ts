@@ -203,6 +203,13 @@ export class Group<
     return XMTP.isGroupActive(this.client.address, this.id)
   }
 
+  async addedByAddress(skipSync = false): Promise<string> {
+    if (!skipSync) {
+      await this.sync()
+    }
+    return XMTP.addedByAddress(this.client.address, this.id)
+  }
+
   async isAdmin(): Promise<boolean> {
     return XMTP.isGroupAdmin(this.client.address, this.id)
   }
