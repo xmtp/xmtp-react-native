@@ -2,7 +2,7 @@ import {
   ConversationVersion,
   ConversationContainer,
 } from './ConversationContainer'
-import { DecodedMessage } from './DecodedMessage'
+import { DecodedMessage, MessageDeliveryStatus } from './DecodedMessage'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
@@ -116,7 +116,8 @@ export class Group<
     direction?:
       | 'SORT_DIRECTION_ASCENDING'
       | 'SORT_DIRECTION_DESCENDING'
-      | undefined
+      | undefined,
+    deliveryStatus?: MessageDeliveryStatus | undefined
   ): Promise<DecodedMessage<ContentTypes>[]> {
     if (!skipSync) {
       await this.sync()
@@ -127,7 +128,8 @@ export class Group<
       limit,
       before,
       after,
-      direction
+      direction,
+      deliveryStatus ?? MessageDeliveryStatus.ALL
     )
   }
 

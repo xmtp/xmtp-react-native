@@ -16,7 +16,7 @@ import {
   ConversationContainer,
   ConversationVersion,
 } from './lib/ConversationContainer'
-import { DecodedMessage } from './lib/DecodedMessage'
+import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
 import { Group } from './lib/Group'
 import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
@@ -165,7 +165,8 @@ export async function groupMessages<
   direction?:
     | 'SORT_DIRECTION_ASCENDING'
     | 'SORT_DIRECTION_DESCENDING'
-    | undefined
+    | undefined,
+  deliveryStatus?: MessageDeliveryStatus | undefined
 ): Promise<DecodedMessage<ContentTypes>[]> {
   const messages = await XMTPModule.groupMessages(
     client.address,
@@ -173,7 +174,8 @@ export async function groupMessages<
     limit,
     before,
     after,
-    direction
+    direction,
+    deliveryStatus
   )
   return messages.map((json: string) => {
     return DecodedMessage.from(json, client)
