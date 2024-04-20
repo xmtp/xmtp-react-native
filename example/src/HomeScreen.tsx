@@ -25,6 +25,8 @@ export default function HomeScreen() {
   } = useConversationList()
   return (
     <FlatList
+      testID="home-screen"
+      accessible={false}
       refreshing={isFetching || isRefetching}
       onRefresh={refetch}
       data={conversations || []}
