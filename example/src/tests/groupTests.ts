@@ -231,11 +231,9 @@ test('group message delivery status', async () => {
 
   const alexMessagesFiltered: DecodedMessage[] = await alixGroup.messages(
     true,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    MessageDeliveryStatus.UNPUBLISHED
+    {
+      deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
+    }
   )
 
   assert(
@@ -901,7 +899,9 @@ test('can paginate group messages', async () => {
   }
   await delayToPropogate()
   // bo can read messages from alix
-  const boMessages: DecodedMessage[] = await boGroups[0].messages(false, 1)
+  const boMessages: DecodedMessage[] = await boGroups[0].messages(false, {
+    limit: 1,
+  })
 
   if (boMessages.length !== 1) {
     throw Error(`Should limit just 1 message but was ${boMessages.length}`)
