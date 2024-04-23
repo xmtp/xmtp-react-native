@@ -6,6 +6,7 @@ import { DecodedMessage, MessageDeliveryStatus } from './DecodedMessage'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
+import { MessagesOptions } from './types/MessagesOptions'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 
@@ -110,26 +111,20 @@ export class Group<
    */
   async messages(
     skipSync: boolean = false,
-    limit?: number | undefined,
-    before?: number | Date | undefined,
-    after?: number | Date | undefined,
-    direction?:
-      | 'SORT_DIRECTION_ASCENDING'
-      | 'SORT_DIRECTION_DESCENDING'
-      | undefined,
-    deliveryStatus?: MessageDeliveryStatus | undefined
+    opts?: MessagesOptions
   ): Promise<DecodedMessage<ContentTypes>[]> {
     if (!skipSync) {
       await this.sync()
     }
+
     return await XMTP.groupMessages(
       this.client,
       this.id,
-      limit,
-      before,
-      after,
-      direction,
-      deliveryStatus ?? MessageDeliveryStatus.ALL
+      opts?.limit,
+      opts?.before,
+      opts?.after,
+      opts?.direction,
+      opts?.deliveryStatus ?? MessageDeliveryStatus.ALL
     )
   }
 
