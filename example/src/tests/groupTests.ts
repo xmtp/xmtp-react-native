@@ -1,5 +1,8 @@
 import RNFS from 'react-native-fs'
-import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
+import {
+  DecodedMessage,
+  MessageDeliveryStatus,
+} from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
   Test,
@@ -14,6 +17,7 @@ import {
   Group,
   ConversationContainer,
   ConversationVersion,
+  syncGroup,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -205,11 +209,69 @@ test('production MLS V3 client creation throws error', async () => {
   )
 })
 
+test('group message delivery status', async () => {
+  const [alixClient, boClient] = await createClients(2)
+  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+
+  await alixGroup.send('hello, world')
+
+  const alixMessages: DecodedMessage[] = await alixGroup.messages(true)
+
+  assert(
+    alixMessages.length === 2,
+    `the messages length should be 2 but was ${alixMessages.length}`
+  )
+
+  assert(
+    alixMessages[0].content() === 'hello, world',
+    `the message content should be hello, world not ${alixMessages[0].content()}`
+  )
+
+  assert(
+    alixMessages[0].deliveryStatus === 'UNPUBLISHED',
+    `the message should have a delivery status of UNPUBLISHED but was ${alixMessages[0].deliveryStatus}`
+  )
+
+  const alexMessagesFiltered: DecodedMessage[] = await alixGroup.messages(
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    MessageDeliveryStatus.UNPUBLISHED
+  )
+
+  assert(
+    alexMessagesFiltered.length === 1,
+    `the messages length should be 1 but was ${alexMessagesFiltered.length}`
+  )
+
+  const alixMessages2: DecodedMessage[] = await alixGroup.messages(false)
+
+  assert(
+    alixMessages2[0].deliveryStatus === 'PUBLISHED',
+    `the message should have a delivery status of PUBLISHED but was ${alixMessages2[0].deliveryStatus}`
+  )
+
+  const boGroup = (await boClient.conversations.listGroups())[0]
+  const boMessages: DecodedMessage[] = await boGroup.messages(true)
+
+  assert(
+    boMessages.length === 1,
+    `the messages length should be 1 but was ${boMessages.length}`
+  )
+
+  assert(
+    boMessages[0].deliveryStatus === 'PUBLISHED',
+    `the message should have a delivery status of PUBLISHED but was ${boMessages[0].deliveryStatus}`
+  )
+
+  return true
+})
+
 test('who added me to a group', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const alixGroup = await alixClient.conversations.newGroup([
-    boClient.address,
-   ])
+  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
 
   const boGroup = (await boClient.conversations.listGroups())[0]
   const addedByAddress = await boGroup.addedByAddress()
