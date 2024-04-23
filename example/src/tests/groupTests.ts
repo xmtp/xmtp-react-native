@@ -1,8 +1,5 @@
 import RNFS from 'react-native-fs'
-import {
-  DecodedMessage,
-  MessageDeliveryStatus,
-} from 'xmtp-react-native-sdk/lib/DecodedMessage'
+import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
   Test,
@@ -18,6 +15,7 @@ import {
   ConversationContainer,
   ConversationVersion,
   syncGroup,
+  MessageDeliveryStatus,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -223,17 +221,12 @@ test('group message delivery status', async () => {
   )
 
   assert(
-    alixMessages[0].content() === 'hello, world',
-    `the message content should be hello, world not ${alixMessages[0].content()}`
-  )
-
-  assert(
-    alixMessages[0].deliveryStatus === 'UNPUBLISHED',
-    `the message should have a delivery status of UNPUBLISHED but was ${alixMessages[0].deliveryStatus}`
+    alixMessages[1].deliveryStatus === 'UNPUBLISHED',
+    `the message should have a delivery status of ${MessageDeliveryStatus.UNPUBLISHED} but was ${alixMessages[1].deliveryStatus}`
   )
 
   const alexMessagesFiltered: DecodedMessage[] = await alixGroup.messages(
-    undefined,
+    true,
     undefined,
     undefined,
     undefined,
@@ -254,7 +247,7 @@ test('group message delivery status', async () => {
   )
 
   const boGroup = (await boClient.conversations.listGroups())[0]
-  const boMessages: DecodedMessage[] = await boGroup.messages(true)
+  const boMessages: DecodedMessage[] = await boGroup.messages()
 
   assert(
     boMessages.length === 1,

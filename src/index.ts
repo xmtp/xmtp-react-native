@@ -749,5 +749,5 @@ export {
 } from './lib/ConversationContainer'
 export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
-export { ConsentListEntry, DecodedMessage }
+export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus }
 export { Group } from './lib/Group'

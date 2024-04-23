@@ -25,7 +25,7 @@ class DecodedMessageWrapper {
                 "senderAddress" to model.senderAddress,
                 "sent" to model.sentAt.time,
                 "fallback" to fallback,
-                "deliveryStatus" to model.deliveryStatus.toString().lowercase()
+                "deliveryStatus" to model.deliveryStatus.toString()
             )
         }
     }
