@@ -175,10 +175,8 @@ function test(name: string, perform: () => Promise<boolean>) {
 }
 
 test('can make a client', async () => {
-  const client = await Client.createRandom({
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-  })
+  const [client] = await createClients(1)
+
   client.register(new RemoteAttachmentCodec())
   if (Object.keys(client.codecRegistry).length !== 2) {
     throw new Error(
@@ -260,8 +258,7 @@ test('can load 1995 conversations from dev network "2k lens convos" account', as
 
 test('can pass a custom filter date and receive message objects with expected dates', async () => {
   try {
-    const bob = await Client.createRandom({ env: 'local' })
-    const alice = await Client.createRandom({ env: 'local' })
+    const [bob, alice] = await createClients(2)
 
     if (bob.address === alice.address) {
       throw new Error('bob and alice should be different')
@@ -326,8 +323,7 @@ test('can pass a custom filter date and receive message objects with expected da
 })
 
 test('canMessage', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
-  const alix = await Client.createRandom({ env: 'local' })
+  const [bo, alix] = await createClients(2)
 
   const canMessage = await bo.canMessage(alix.address)
   if (!canMessage) {
@@ -384,8 +380,8 @@ test('createFromKeyBundle throws error for non string value', async () => {
 })
 
 test('canPrepareMessage', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  const alice = await Client.createRandom({ env: 'local' })
+  const [bob, alice] = await createClients(2)
+
   await delayToPropogate()
 
   const bobConversation = await bob.conversations.newConversation(alice.address)
@@ -411,9 +407,7 @@ test('canPrepareMessage', async () => {
 })
 
 test('can list batch messages', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const [bob, alice] = await createClients(2)
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -466,9 +460,7 @@ test('can list batch messages', async () => {
 })
 
 test('can paginate batch messages', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const [bob, alice] = await createClients(2)
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -570,9 +562,7 @@ test('can paginate batch messages', async () => {
 })
 
 test('can stream messages', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const [bob, alice] = await createClients(2)
   await delayToPropogate()
 
   // Record new conversation stream
@@ -669,9 +659,7 @@ test('can stream messages', async () => {
 })
 
 test('can stream conversations with delay', async () => {
-  const bo = await Client.createRandom({ env: 'dev' })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'dev' })
+  const [bo, alix] = await createClients(2)
   await delayToPropogate()
 
   const allConvos: Conversation<any>[] = []
@@ -711,14 +699,12 @@ test('can stream conversations with delay', async () => {
 })
 
 test('remote attachments should work', async () => {
-  const alice = await Client.createRandom({
-    env: 'local',
-    codecs: [new StaticAttachmentCodec(), new RemoteAttachmentCodec()],
-  })
-  const bob = await Client.createRandom({
-    env: 'local',
-    codecs: [new StaticAttachmentCodec(), new RemoteAttachmentCodec()],
-  })
+  const [bob, alice] = await createClients(2)
+  alice.register(new StaticAttachmentCodec())
+  alice.register(new RemoteAttachmentCodec())
+  bob.register(new StaticAttachmentCodec())
+  bob.register(new RemoteAttachmentCodec())
+
   const convo = await alice.conversations.newConversation(bob.address)
 
   // Alice is sending Bob a file from her phone.
@@ -800,9 +786,7 @@ test('remote attachments should work', async () => {
 })
 
 test('can send read receipts', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const [bob, alice] = await createClients(2)
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -836,9 +820,7 @@ test('can send read receipts', async () => {
 })
 
 test('can stream all messages', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local' })
+  const [bo, alix, caro] = await createClients(3)
   await delayToPropogate()
 
   // Record message stream across all conversations
@@ -862,7 +844,6 @@ test('can stream all messages', async () => {
   }
 
   // Starts a new conversation.
-  const caro = await Client.createRandom({ env: 'local' })
   const caroConvo = await caro.conversations.newConversation(alix.address)
   await delayToPropogate()
   for (let i = 0; i < 5; i++) {
@@ -892,9 +873,7 @@ test('can stream all messages', async () => {
 })
 
 test('can stream all msgs with delay', async () => {
-  const bo = await Client.createRandom({ env: 'dev' })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'dev' })
+  const [bo, alix, caro] = await createClients(3)
   await delayToPropogate()
 
   // Record message stream across all conversations
@@ -919,7 +898,6 @@ test('can stream all msgs with delay', async () => {
 
   await sleep(LONG_STREAM_DELAY)
   // Starts a new conversation.
-  const caro = await Client.createRandom({ env: 'dev' })
   const caroConvo = await caro.conversations.newConversation(alix.address)
   await delayToPropogate()
 
@@ -951,8 +929,7 @@ test('can stream all msgs with delay', async () => {
 })
 
 test('canManagePreferences', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
-  const alix = await Client.createRandom({ env: 'local' })
+  const [bo, alix] = await createClients(2)
   await delayToPropogate()
 
   const alixConversation = await bo.conversations.newConversation(alix.address)
@@ -1015,7 +992,7 @@ test('canManagePreferences', async () => {
 })
 
 test('is address on the XMTP network', async () => {
-  const alix = await Client.createRandom({ env: 'local' })
+  const [alix] = await createClients(1)
   const notOnNetwork = '0x0000000000000000000000000000000000000000'
 
   const isAlixAddressAvailable = await Client.canMessage(alix.address, {
@@ -1037,15 +1014,7 @@ test('is address on the XMTP network', async () => {
 })
 
 test('register and use custom content types', async () => {
-  const bob = await Client.createRandom({
-    env: 'local',
-    codecs: [new NumberCodec()],
-  })
-  const alice = await Client.createRandom({
-    env: 'local',
-    codecs: [new NumberCodec()],
-  })
-
+  const [bob, alice] = await createClients(2)
   bob.register(new NumberCodec())
   alice.register(new NumberCodec())
 
@@ -1077,14 +1046,7 @@ test('register and use custom content types', async () => {
 })
 
 test('register and use custom content types when preparing message', async () => {
-  const bob = await Client.createRandom({
-    env: 'local',
-    codecs: [new NumberCodec()],
-  })
-  const alice = await Client.createRandom({
-    env: 'local',
-    codecs: [new NumberCodec()],
-  })
+  const [bob, alice] = await createClients(2)
 
   bob.register(new NumberCodec())
   alice.register(new NumberCodec())
@@ -1150,9 +1112,7 @@ test('calls preEnableIdentityCallback when supplied', async () => {
 })
 
 test('returns keyMaterial for conversations', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const [bob, alice] = await createClients(2)
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -1178,9 +1138,7 @@ test('returns keyMaterial for conversations', async () => {
 })
 
 test('correctly handles lowercase addresses', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const [bob, alice] = await createClients(2)
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -1292,7 +1250,7 @@ test('handle fallback types appropriately', async () => {
 test('instantiate frames client correctly', async () => {
   const frameUrl =
     'https://fc-polls-five.vercel.app/polls/01032f47-e976-42ee-9e3d-3aac1324f4b8'
-  const client = await Client.createRandom({ env: 'local' })
+  const [client] = await createClients(1)
   const framesClient = new FramesClient(client)
   const metadata = await framesClient.proxy.readMetadata(frameUrl)
   if (!metadata) {
@@ -1521,12 +1479,12 @@ test('fails to validate HMAC with wrong key', async () => {
 })
 
 test('get all HMAC keys', async () => {
-  const alice = await Client.createRandom({ env: 'local' })
+  const [alice] = await createClients(1)
 
   const conversations: Conversation<any>[] = []
 
   for (let i = 0; i < 5; i++) {
-    const client = await Client.createRandom({ env: 'local' })
+    const [client] = await createClients(1)
     const convo = await alice.conversations.newConversation(client.address, {
       conversationID: `https://example.com/${i}`,
       metadata: {
@@ -1597,9 +1555,7 @@ test('get all HMAC keys', async () => {
 })
 
 test('can handle complex streaming setup', async () => {
-  const bo = await Client.createRandom({ env: 'dev' })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'dev' })
+  const [bo, alix] = await createClients(2)
   await delayToPropogate()
 
   const allConvos: Conversation<any>[] = []
@@ -1706,9 +1662,7 @@ test('can handle complex streaming setup', async () => {
 })
 
 test('can handle complex streaming setup with messages from self', async () => {
-  const bo = await Client.createRandom({ env: 'dev' })
-  await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'dev' })
+  const [bo, alix] = await createClients(2)
   await delayToPropogate()
 
   const allConvos: Conversation<any>[] = []

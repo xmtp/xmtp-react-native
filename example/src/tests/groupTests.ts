@@ -192,11 +192,17 @@ test('can make a MLS V3 client from bundle', async () => {
 })
 
 test('production MLS V3 client creation throws error', async () => {
+  const key = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+
   try {
     await Client.createRandom({
       env: 'production',
       appVersion: 'Testing/0.0.0',
       enableAlphaMls: true,
+      dbEncryptionKey: key,
     })
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
@@ -728,8 +734,7 @@ test('can stream all groups and conversations', async () => {
 })
 
 test('canMessage', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
-  const alix = await Client.createRandom({ env: 'local' })
+  const [bo, alix] = await createClients(2)
 
   const canMessage = await bo.canMessage(alix.address)
   if (!canMessage) {
