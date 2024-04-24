@@ -1199,6 +1199,12 @@ test('creating a group should allow group', async () => {
     throw Error('Group should be allowed')
   }
 
+  const state = await group.consentState()
+  assert(
+    state === 'allowed',
+    `the message should have a consent state of allowed but was ${state}`
+  )
+
   return true
 })
 

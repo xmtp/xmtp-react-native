@@ -100,16 +100,12 @@ function GroupListItem({
     DecodedMessage<SupportedContentTypes>[]
   >([])
   const lastMessage = messages?.[0]
-  const [getConsentState, setConsentState] = useState<string | undefined>()
+  const [consentState, setConsentState] = useState<string | undefined>()
 
   const denyGroup = async () => {
     await client?.contacts.denyGroups([group.id])
-    group
-      .consentState()
-      .then(setConsentState)
-      .catch((e) => {
-        console.error('Error denying contact: ', e)
-      })
+    const consent = await group.consentState()
+    setConsentState(consent)
   }
 
   useEffect(() => {
@@ -147,12 +143,12 @@ function GroupListItem({
           <Button
             title="Deny"
             onPress={denyGroup}
-            disabled={getConsentState === 'denied'}
+            disabled={consentState === 'denied'}
           />
         </View>
         <View style={{ padding: 4 }}>
           <Text style={{ fontWeight: 'bold', color: 'red' }}>
-            {getConsentState}
+            {consentState}
           </Text>
           <Text numberOfLines={1} ellipsizeMode="tail">
             {lastMessage?.fallback}
