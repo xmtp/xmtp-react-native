@@ -66,6 +66,7 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import com.facebook.common.util.Hex
+import org.xmtp.android.library.messages.MessageDeliveryStatus
 import org.xmtp.android.library.messages.Topic
 import org.xmtp.android.library.push.Service
 
@@ -527,7 +528,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("groupMessages") Coroutine { clientAddress: String, id: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
+        AsyncFunction("groupMessages") Coroutine { clientAddress: String, id: String, limit: Int?, before: Long?, after: Long?, direction: String?, deliveryStatus: String? ->
             withContext(Dispatchers.IO) {
                 logV("groupMessages")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
@@ -540,6 +541,9 @@ class XMTPModule : Module() {
                     after = afterDate,
                     direction = MessageApiOuterClass.SortDirection.valueOf(
                         direction ?: "SORT_DIRECTION_DESCENDING"
+                    ),
+                    deliveryStatus = MessageDeliveryStatus.valueOf(
+                        deliveryStatus ?: "ALL"
                     )
                 )?.map { DecodedMessageWrapper.encode(it) }
             }

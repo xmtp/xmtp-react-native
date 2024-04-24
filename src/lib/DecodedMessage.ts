@@ -13,6 +13,13 @@ const allowEmptyProperties: (keyof NativeMessageContent)[] = [
   'text',
   'readReceipt',
 ]
+export enum MessageDeliveryStatus {
+  UNPUBLISHED = 'UNPUBLISHED',
+  PUBLISHED = 'PUBLISHED',
+  FAILED = 'FAILED',
+  ALL = 'ALL',
+}
+
 export class DecodedMessage<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
@@ -24,6 +31,7 @@ export class DecodedMessage<
   sent: number // timestamp in milliseconds
   nativeContent: NativeMessageContent
   fallback: string | undefined
+  deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
 
   static from<ContentTypes extends DefaultContentTypes = DefaultContentTypes>(
     json: string,
@@ -38,7 +46,8 @@ export class DecodedMessage<
       decoded.senderAddress,
       decoded.sent,
       decoded.content,
-      decoded.fallback
+      decoded.fallback,
+      decoded.deliveryStatus
     )
   }
 
@@ -53,6 +62,7 @@ export class DecodedMessage<
       sent: number // timestamp in milliseconds
       content: any
       fallback: string | undefined
+      deliveryStatus: MessageDeliveryStatus | undefined
     },
     client: Client<ContentTypes>
   ): DecodedMessage<ContentTypes> {
@@ -64,7 +74,8 @@ export class DecodedMessage<
       object.senderAddress,
       object.sent,
       object.content,
-      object.fallback
+      object.fallback,
+      object.deliveryStatus
     )
   }
 
@@ -76,7 +87,8 @@ export class DecodedMessage<
     senderAddress: string,
     sent: number,
     content: any,
-    fallback: string | undefined
+    fallback: string | undefined,
+    deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
   ) {
     this.client = client
     this.id = id
@@ -87,6 +99,7 @@ export class DecodedMessage<
     this.nativeContent = content
     // undefined comes back as null when bridged, ensure undefined so integrators don't have to add a new check for null as well
     this.fallback = fallback ?? undefined
+    this.deliveryStatus = deliveryStatus
   }
 
   content(): ExtractDecodedType<[...ContentTypes, TextCodec][number] | string> {
