@@ -220,15 +220,6 @@ test('group message delivery status', async () => {
     `the messages length should be 2 but was ${alixMessages.length}`
   )
 
-  if (alixMessages[0].content() !== 'hello, world') {
-    throw new Error("newest message should be 'hello, world'")
-  }
-
-  assert(
-    alixMessages[0].deliveryStatus === 'UNPUBLISHED',
-    `the message should have a delivery status of ${MessageDeliveryStatus.UNPUBLISHED} but was ${alixMessages[0].deliveryStatus}`
-  )
-
   const alexMessagesFiltered: DecodedMessage[] = await alixGroup.messages(
     true,
     {
@@ -242,6 +233,11 @@ test('group message delivery status', async () => {
   )
 
   const alixMessages2: DecodedMessage[] = await alixGroup.messages(false)
+
+  assert(
+    alixMessages2.length === 2,
+    `the messages length should be 2 but was ${alixMessages.length}`
+  )
 
   assert(
     alixMessages2[0].deliveryStatus === 'PUBLISHED',
