@@ -1031,6 +1031,14 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("groupConsentState") Coroutine { clientAddress: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                val group = findGroup(clientAddress, groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                consentStateToString(Conversation.Group(group).consentState())
+            }
+        }
+
         AsyncFunction("consentList") { clientAddress: String ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             client.contacts.consentList.entries.map { ConsentWrapper.encode(it.value) }
