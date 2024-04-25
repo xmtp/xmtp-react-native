@@ -738,27 +738,10 @@ test('canMessage', async () => {
 
   const [caro, chux] = await createClients(2)
 
-  const canMessageV3 = await caro.canGroupMessage([
-    chux.address,
-    alix.address,
-    '0x0000000000000000000000000000000000000000',
-  ])
-
-  assert(
-    canMessageV3['0x0000000000000000000000000000000000000000'] === false,
-    `should not be able to message 0x0000000000000000000000000000000000000000`
-  )
-
-  assert(
-    canMessageV3[chux.address.toLowerCase()] === true,
-    `should be able to message ${chux.address}`
-  )
-
-  assert(
-    canMessageV3[alix.address.toLowerCase()] === true,
-    `should be able to message ${alix.address}`
-  )
-
+  const canMessageV3 = await caro.canGroupMessage([chux.address])
+  if (!canMessageV3) {
+    throw new Error('should be able to message v3 client')
+  }
   return true
 })
 
