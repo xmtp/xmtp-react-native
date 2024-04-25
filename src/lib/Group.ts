@@ -194,6 +194,18 @@ export class Group<
     return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
   }
 
+  async groupName(skipSync = false): Promise<string> {
+    if (!skipSync) {
+      await this.sync()
+    }
+
+    return XMTP.groupName(this.client.address, this.id)
+  }
+
+  async updateGroupName(groupName: string): Promise<void> {
+    return XMTP.updateGroupName(this.client.address, this.id, groupName)
+  }
+
   async isActive(skipSync = false): Promise<boolean> {
     if (!skipSync) {
       await this.sync()

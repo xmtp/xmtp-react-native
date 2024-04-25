@@ -800,6 +800,26 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("groupName") Coroutine { clientAddress: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("groupName")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.name
+            }
+        }
+
+        AsyncFunction("updateGroupName") Coroutine { clientAddress: String, id: String, groupName: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupName")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.updateGroupName(groupName)
+            }
+        }
+
         AsyncFunction("isGroupActive") Coroutine { clientAddress: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupActive")
