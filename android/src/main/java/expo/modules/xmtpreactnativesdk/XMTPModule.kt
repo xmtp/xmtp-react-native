@@ -374,10 +374,12 @@ class XMTPModule : Module() {
             client.canMessage(peerAddress)
         }
 
-        AsyncFunction("canGroupMessage") { clientAddress: String, peerAddresses: List<String> ->
-            logV("canGroupMessage")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.canMessageV3(peerAddresses)
+        AsyncFunction("canGroupMessage") Coroutine { clientAddress: String, peerAddresses: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("canGroupMessage")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                client.canMessageV3(peerAddresses)
+            }
         }
 
         AsyncFunction("staticCanMessage") { peerAddress: String, environment: String, appVersion: String? ->

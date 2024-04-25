@@ -728,20 +728,34 @@ test('can stream all groups and conversations', async () => {
 })
 
 test('canMessage', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
-  const alix = await Client.createRandom({ env: 'local' })
+  const [bo, alix, caro] = await createClients(3)
 
   const canMessage = await bo.canMessage(alix.address)
   if (!canMessage) {
     throw new Error('should be able to message v2 client')
   }
 
-  const [caro, chux] = await createClients(2)
+  const canMessageV3 = await caro.canGroupMessage([
+    caro.address,
+    alix.address,
+    '0x0000000000000000000000000000000000000000',
+  ])
 
-  const canMessageV3 = await caro.canGroupMessage([chux.address])
-  if (!canMessageV3) {
-    throw new Error('should be able to message v3 client')
-  }
+  assert(
+    canMessageV3['0x0000000000000000000000000000000000000000'] === false,
+    `should not be able to message 0x0000000000000000000000000000000000000000`
+  )
+
+  assert(
+    canMessageV3[caro.address.toLowerCase()] === true,
+    `should be able to message ${caro.address}`
+  )
+
+  assert(
+    canMessageV3[alix.address.toLowerCase()] === true,
+    `should be able to message ${alix.address}`
+  )
+
   return true
 })
 
