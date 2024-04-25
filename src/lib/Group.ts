@@ -2,10 +2,11 @@ import {
   ConversationVersion,
   ConversationContainer,
 } from './ConversationContainer'
-import { DecodedMessage } from './DecodedMessage'
+import { DecodedMessage, MessageDeliveryStatus } from './DecodedMessage'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
+import { MessagesOptions } from './types/MessagesOptions'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 
@@ -30,13 +31,14 @@ export class Group<
       peerAddresses: string[]
       adminAddress: string
       permissionLevel: 'everyone_admin' | 'creator_admin'
+      topic: string
     }
   ) {
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
     this.peerAddresses = params.peerAddresses
-    this.topic = params.id
+    this.topic = params.topic
     this.adminAddress = params.adminAddress
     this.permissionLevel = params.permissionLevel
   }
@@ -110,24 +112,20 @@ export class Group<
    */
   async messages(
     skipSync: boolean = false,
-    limit?: number | undefined,
-    before?: number | Date | undefined,
-    after?: number | Date | undefined,
-    direction?:
-      | 'SORT_DIRECTION_ASCENDING'
-      | 'SORT_DIRECTION_DESCENDING'
-      | undefined
+    opts?: MessagesOptions
   ): Promise<DecodedMessage<ContentTypes>[]> {
     if (!skipSync) {
       await this.sync()
     }
+
     return await XMTP.groupMessages(
       this.client,
       this.id,
-      limit,
-      before,
-      after,
-      direction
+      opts?.limit,
+      opts?.before,
+      opts?.after,
+      opts?.direction,
+      opts?.deliveryStatus ?? MessageDeliveryStatus.ALL
     )
   }
 
@@ -215,6 +213,10 @@ export class Group<
     return XMTP.isGroupActive(this.client.address, this.id)
   }
 
+  addedByAddress(): Promise<string> {
+    return XMTP.addedByAddress(this.client.address, this.id)
+  }
+
   async isAdmin(): Promise<boolean> {
     return XMTP.isGroupAdmin(this.client.address, this.id)
   }
@@ -232,5 +234,9 @@ export class Group<
       console.info('ERROR in processGroupMessage()', e)
       throw e
     }
+  }
+
+  async consentState(): Promise<'allowed' | 'denied' | 'unknown'> {
+    return await XMTP.groupConsentState(this.clientAddress, this.id)
   }
 }

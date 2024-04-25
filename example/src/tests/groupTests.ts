@@ -14,6 +14,8 @@ import {
   Group,
   ConversationContainer,
   ConversationVersion,
+  syncGroup,
+  MessageDeliveryStatus,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -203,6 +205,73 @@ test('production MLS V3 client creation throws error', async () => {
   throw new Error(
     'should throw error on MLS V3 client create when environment is not local'
   )
+})
+
+test('group message delivery status', async () => {
+  const [alixClient, boClient] = await createClients(2)
+  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+
+  await alixGroup.send('hello, world')
+
+  const alixMessages: DecodedMessage[] = await alixGroup.messages(true)
+
+  assert(
+    alixMessages.length === 2,
+    `the messages length should be 2 but was ${alixMessages.length}`
+  )
+
+  const alexMessagesFiltered: DecodedMessage[] = await alixGroup.messages(
+    true,
+    {
+      deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
+    }
+  )
+
+  assert(
+    alexMessagesFiltered.length === 1,
+    `the messages length should be 1 but was ${alexMessagesFiltered.length}`
+  )
+
+  const alixMessages2: DecodedMessage[] = await alixGroup.messages(false)
+
+  assert(
+    alixMessages2.length === 2,
+    `the messages length should be 2 but was ${alixMessages.length}`
+  )
+
+  assert(
+    alixMessages2[0].deliveryStatus === 'PUBLISHED',
+    `the message should have a delivery status of PUBLISHED but was ${alixMessages2[0].deliveryStatus}`
+  )
+
+  const boGroup = (await boClient.conversations.listGroups())[0]
+  const boMessages: DecodedMessage[] = await boGroup.messages()
+
+  assert(
+    boMessages.length === 1,
+    `the messages length should be 1 but was ${boMessages.length}`
+  )
+
+  assert(
+    boMessages[0].deliveryStatus === 'PUBLISHED',
+    `the message should have a delivery status of PUBLISHED but was ${boMessages[0].deliveryStatus}`
+  )
+
+  return true
+})
+
+test('who added me to a group', async () => {
+  const [alixClient, boClient] = await createClients(2)
+  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+
+  const boGroup = (await boClient.conversations.listGroups())[0]
+  const addedByAddress = await boGroup.addedByAddress()
+
+  assert(
+    addedByAddress.toLocaleLowerCase === alixClient.address.toLocaleLowerCase,
+    `addedByAddress ${addedByAddress} does not match ${alixClient.address}`
+  )
+  return true
 })
 
 test('can message in a group', async () => {
@@ -659,20 +728,34 @@ test('can stream all groups and conversations', async () => {
 })
 
 test('canMessage', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
-  const alix = await Client.createRandom({ env: 'local' })
+  const [bo, alix, caro] = await createClients(3)
 
   const canMessage = await bo.canMessage(alix.address)
   if (!canMessage) {
     throw new Error('should be able to message v2 client')
   }
 
-  const [caro, chux] = await createClients(2)
+  const canMessageV3 = await caro.canGroupMessage([
+    caro.address,
+    alix.address,
+    '0x0000000000000000000000000000000000000000',
+  ])
 
-  const canMessageV3 = await caro.canGroupMessage([chux.address])
-  if (!canMessageV3) {
-    throw new Error('should be able to message v3 client')
-  }
+  assert(
+    canMessageV3['0x0000000000000000000000000000000000000000'] === false,
+    `should not be able to message 0x0000000000000000000000000000000000000000`
+  )
+
+  assert(
+    canMessageV3[caro.address.toLowerCase()] === true,
+    `should be able to message ${caro.address}`
+  )
+
+  assert(
+    canMessageV3[alix.address.toLowerCase()] === true,
+    `should be able to message ${alix.address}`
+  )
+
   return true
 })
 
@@ -826,7 +909,9 @@ test('can paginate group messages', async () => {
   }
   await delayToPropogate()
   // bo can read messages from alix
-  const boMessages: DecodedMessage[] = await boGroups[0].messages(false, 1)
+  const boMessages: DecodedMessage[] = await boGroups[0].messages(false, {
+    limit: 1,
+  })
 
   if (boMessages.length !== 1) {
     throw Error(`Should limit just 1 message but was ${boMessages.length}`)
@@ -1127,6 +1212,12 @@ test('creating a group should allow group', async () => {
   if (!consent) {
     throw Error('Group should be allowed')
   }
+
+  const state = await group.consentState()
+  assert(
+    state === 'allowed',
+    `the message should have a consent state of allowed but was ${state}`
+  )
 
   return true
 })

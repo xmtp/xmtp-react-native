@@ -23,7 +23,7 @@ struct GroupWrapper {
 			"createdAt": UInt64(group.createdAt.timeIntervalSince1970 * 1000),
 			"peerAddresses": XMTP.Conversation.group(group).peerAddresses,
 			"version": "GROUP",
-			"topic": group.id.toHex,
+			"topic": group.topic,
 			"permissionLevel": permissionString,
 			"adminAddress": try group.adminAddress()
 		]

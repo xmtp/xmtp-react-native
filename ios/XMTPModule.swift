@@ -239,7 +239,7 @@ public class XMTPModule: Module {
 			return try await client.canMessage(peerAddress)
 		}
 		
-		AsyncFunction("canGroupMessage") { (clientAddress: String, peerAddresses: [String]) -> Bool in
+		AsyncFunction("canGroupMessage") { (clientAddress: String, peerAddresses: [String]) -> [String: Bool] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
@@ -418,7 +418,7 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("groupMessages") { (clientAddress: String, id: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
+		AsyncFunction("groupMessages") { (clientAddress: String, id: String, limit: Int?, before: Double?, after: Double?, direction: String?, deliveryStatus: String?) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
@@ -427,6 +427,8 @@ public class XMTPModule: Module {
 			let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!) / 1000) : nil
 
 			let sortDirection: Int = (direction != nil && direction == "SORT_DIRECTION_ASCENDING") ? 1 : 2
+			
+			let status: String = (deliveryStatus != nil) ? deliveryStatus!.lowercased() : "all"
 
 			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
@@ -435,7 +437,9 @@ public class XMTPModule: Module {
 				before: beforeDate,
 				after: afterDate,
 				limit: limit,
-				direction: PagingInfoSortDirection(rawValue: sortDirection))
+				direction: PagingInfoSortDirection(rawValue: sortDirection),
+				deliveryStatus: MessageDeliveryStatus(rawValue: status)
+			)
 			
 			return decryptedMessages.compactMap { msg in
 				do {
@@ -727,7 +731,15 @@ public class XMTPModule: Module {
 			
 			return try group.isActive()
 		}
-		
+
+		AsyncFunction("addedByAddress") { (clientAddress: String, id: String) -> String in
+			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+			
+			return try group.addedByAddress()
+		}
+
 		AsyncFunction("isGroupAdmin") { (clientAddress: String, id: String) -> Bool in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
@@ -914,7 +926,7 @@ public class XMTPModule: Module {
 			}
 			let consentList = try await client.contacts.refreshConsentList()
 
-			return try consentList.entries.compactMap { entry in
+			return try await consentList.entriesManager.map.compactMap { entry in
 				try ConsentWrapper.encode(entry.value)
 			}
 		}
@@ -925,12 +937,19 @@ public class XMTPModule: Module {
 			}
 			return ConsentWrapper.consentStateToString(state: await conversation.consentState())
 		}
+		
+		AsyncFunction("groupConsentState") { (clientAddress: String, groupId: String) -> String in
+			guard let group = try await findGroup(clientAddress: clientAddress, id: groupId) else {
+				throw Error.conversationNotFound("no group found for \(groupId)")
+			}
+			return ConsentWrapper.consentStateToString(state: await XMTP.Conversation.group(group).consentState())
+		}
 
 		AsyncFunction("consentList") { (clientAddress: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			let entries = await client.contacts.consentList.entries
+			let entries = await client.contacts.consentList.entriesManager.map
 
 			return try entries.compactMap { entry in
 				try ConsentWrapper.encode(entry.value)

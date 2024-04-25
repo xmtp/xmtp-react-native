@@ -99,12 +99,24 @@ function GroupListItem({
   const [messages, setMessages] = useState<
     DecodedMessage<SupportedContentTypes>[]
   >([])
+  const lastMessage = messages?.[0]
+  const [consentState, setConsentState] = useState<string | undefined>()
+
+  const denyGroup = async () => {
+    await client?.contacts.denyGroups([group.id])
+    const consent = await group.consentState()
+    setConsentState(consent)
+  }
 
   useEffect(() => {
     group
       ?.sync()
       .then(() => group.messages())
       .then(setMessages)
+      .then(() => group.consentState())
+      .then((result) => {
+        setConsentState(result)
+      })
       .catch((e) => {
         console.error('Error fetching group messages: ', e)
       })
@@ -128,16 +140,21 @@ function GroupListItem({
           <Text style={{ fontWeight: 'bold' }}>
             ({messages?.length} messages)
           </Text>
+          <Button
+            title="Deny"
+            onPress={denyGroup}
+            disabled={consentState === 'denied'}
+          />
         </View>
         <View style={{ padding: 4 }}>
-          <Text numberOfLines={1} ellipsizeMode="tail">
-            Fallback text
-          </Text>
-          {/* <Text>{lastMessage?.senderAddress}:</Text>
-          <Text>{moment(lastMessage?.sent).fromNow()}</Text>
           <Text style={{ fontWeight: 'bold', color: 'red' }}>
-            {getConsentState}
-          </Text> */}
+            {consentState}
+          </Text>
+          <Text numberOfLines={1} ellipsizeMode="tail">
+            {lastMessage?.fallback}
+          </Text>
+          <Text>{lastMessage?.senderAddress}:</Text>
+          <Text>{moment(lastMessage?.sent).fromNow()}</Text>
         </View>
       </View>
     </Pressable>

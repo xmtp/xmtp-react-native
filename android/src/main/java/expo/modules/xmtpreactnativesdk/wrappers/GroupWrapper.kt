@@ -23,7 +23,7 @@ class GroupWrapper {
                 "createdAt" to group.createdAt.time,
                 "peerAddresses" to Conversation.Group(group).peerAddresses,
                 "version" to "GROUP",
-                "topic" to group.id.toHex(),
+                "topic" to group.topic,
                 "permissionLevel" to permissionString,
                 "adminAddress" to group.adminAddress()
             )

@@ -66,6 +66,7 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import com.facebook.common.util.Hex
+import org.xmtp.android.library.messages.MessageDeliveryStatus
 import org.xmtp.android.library.messages.Topic
 import org.xmtp.android.library.push.Service
 
@@ -373,10 +374,12 @@ class XMTPModule : Module() {
             client.canMessage(peerAddress)
         }
 
-        AsyncFunction("canGroupMessage") { clientAddress: String, peerAddresses: List<String> ->
-            logV("canGroupMessage")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.canMessageV3(peerAddresses)
+        AsyncFunction("canGroupMessage") Coroutine { clientAddress: String, peerAddresses: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("canGroupMessage")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                client.canMessageV3(peerAddresses)
+            }
         }
 
         AsyncFunction("staticCanMessage") { peerAddress: String, environment: String, appVersion: String? ->
@@ -527,7 +530,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("groupMessages") Coroutine { clientAddress: String, id: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
+        AsyncFunction("groupMessages") Coroutine { clientAddress: String, id: String, limit: Int?, before: Long?, after: Long?, direction: String?, deliveryStatus: String? ->
             withContext(Dispatchers.IO) {
                 logV("groupMessages")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
@@ -540,6 +543,9 @@ class XMTPModule : Module() {
                     after = afterDate,
                     direction = MessageApiOuterClass.SortDirection.valueOf(
                         direction ?: "SORT_DIRECTION_DESCENDING"
+                    ),
+                    deliveryStatus = MessageDeliveryStatus.valueOf(
+                        deliveryStatus ?: "ALL"
                     )
                 )?.map { DecodedMessageWrapper.encode(it) }
             }
@@ -824,6 +830,15 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("addedByAddress") Coroutine { clientAddress: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("addedByAddress")
+                val group = findGroup(clientAddress, id) ?: throw XMTPException("No group found")
+
+                group.addedByAddress()
+            }
+        }
+
         AsyncFunction("isGroupAdmin") Coroutine { clientAddress: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupAdmin")
@@ -1035,6 +1050,14 @@ class XMTPModule : Module() {
                 val conversation = findConversation(clientAddress, conversationTopic)
                     ?: throw XMTPException("no conversation found for $conversationTopic")
                 consentStateToString(conversation.consentState())
+            }
+        }
+
+        AsyncFunction("groupConsentState") Coroutine { clientAddress: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                val group = findGroup(clientAddress, groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                consentStateToString(Conversation.Group(group).consentState())
             }
         }
 

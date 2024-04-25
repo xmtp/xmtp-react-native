@@ -16,7 +16,7 @@ import {
   ConversationContainer,
   ConversationVersion,
 } from './lib/ConversationContainer'
-import { DecodedMessage } from './lib/DecodedMessage'
+import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
 import { Group } from './lib/Group'
 import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
@@ -165,7 +165,8 @@ export async function groupMessages<
   direction?:
     | 'SORT_DIRECTION_ASCENDING'
     | 'SORT_DIRECTION_DESCENDING'
-    | undefined
+    | undefined,
+  deliveryStatus?: MessageDeliveryStatus | undefined
 ): Promise<DecodedMessage<ContentTypes>[]> {
   const messages = await XMTPModule.groupMessages(
     client.address,
@@ -173,7 +174,8 @@ export async function groupMessages<
     limit,
     before,
     after,
-    direction
+    direction,
+    deliveryStatus
   )
   return messages.map((json: string) => {
     return DecodedMessage.from(json, client)
@@ -301,7 +303,7 @@ export async function canMessage(
 export async function canGroupMessage(
   clientAddress: string,
   peerAddresses: string[]
-): Promise<boolean> {
+): Promise<{ [key: string]: boolean }> {
   return await XMTPModule.canGroupMessage(clientAddress, peerAddresses)
 }
 
@@ -617,6 +619,13 @@ export async function conversationConsentState(
   )
 }
 
+export async function groupConsentState(
+  clientAddress: string,
+  groupId: string
+): Promise<ConsentState> {
+  return await XMTPModule.groupConsentState(clientAddress, groupId)
+}
+
 export async function isAllowed(
   clientAddress: string,
   address: string
@@ -678,6 +687,13 @@ export async function isGroupActive(
   id: string
 ): Promise<boolean> {
   return XMTPModule.isGroupActive(clientAddress, id)
+}
+
+export async function addedByAddress(
+  clientAddress: string,
+  id: string
+): Promise<string> {
+  return XMTPModule.addedByAddress(clientAddress, id)
 }
 
 export async function isGroupAdmin(
@@ -755,5 +771,5 @@ export {
 } from './lib/ConversationContainer'
 export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
-export { ConsentListEntry, DecodedMessage }
+export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus }
 export { Group } from './lib/Group'
