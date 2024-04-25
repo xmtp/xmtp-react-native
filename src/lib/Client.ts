@@ -218,9 +218,11 @@ export class Client<
    * This method checks if the specified peers are using clients that support group messaging.
    *
    * @param {string[]} addresses - The addresses of the peers to check for messaging eligibility.
-   * @returns {Promise<boolean[]>} A Promise resolving to true for peers where group messaging is allowed, and false otherwise.
+   * @returns {Promise<{ [key: string]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the V3 network.
    */
-  async canGroupMessage(addresses: string[]): Promise<boolean> {
+  async canGroupMessage(
+    addresses: string[]
+  ): Promise<{ [key: string]: boolean }> {
     return await XMTPModule.canGroupMessage(this.address, addresses)
   }
 

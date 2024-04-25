@@ -239,7 +239,7 @@ public class XMTPModule: Module {
 			return try await client.canMessage(peerAddress)
 		}
 		
-		AsyncFunction("canGroupMessage") { (clientAddress: String, peerAddresses: [String]) -> Bool in
+		AsyncFunction("canGroupMessage") { (clientAddress: String, peerAddresses: [String]) -> [String: Bool] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
