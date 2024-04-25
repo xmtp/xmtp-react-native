@@ -288,7 +288,7 @@ export async function canMessage(
 export async function canGroupMessage(
   clientAddress: string,
   peerAddresses: string[]
-): Promise<boolean> {
+): Promise<{ [key: string]: boolean }> {
   return await XMTPModule.canGroupMessage(clientAddress, peerAddresses)
 }
 
