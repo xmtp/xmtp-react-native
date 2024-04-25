@@ -220,6 +220,21 @@ export async function removeGroupMembers(
   return XMTPModule.removeGroupMembers(clientAddress, id, addresses)
 }
 
+export function groupName(
+  address: string,
+  id: string
+): string | PromiseLike<string> {
+  return XMTPModule.groupName(address, id)
+}
+
+export function updateGroupName(
+  address: string,
+  id: string,
+  groupName: string
+): Promise<void> {
+  return XMTPModule.updateGroupName(address, id, groupName)
+}
+
 export async function sign(
   clientAddress: string,
   digest: Uint8Array,
