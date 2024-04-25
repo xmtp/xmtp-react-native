@@ -19,13 +19,11 @@ import { DecodedMessage } from '../index'
 
 declare const Buffer
 
-export type GetMessageContentTypeFromClient<C> = C extends Client<infer T>
-  ? T
-  : never
+export type GetMessageContentTypeFromClient<C> =
+  C extends Client<infer T> ? T : never
 
-export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
-  ? T
-  : never
+export type ExtractDecodedType<C> =
+  C extends XMTPModule.ContentCodec<infer T> ? T : never
 
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
@@ -212,11 +210,9 @@ export class Client<
    * This method checks if the specified peers are using clients that support group messaging.
    *
    * @param {string[]} addresses - The addresses of the peers to check for messaging eligibility.
-   * @returns {Promise<{ [key: string]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the V3 network.
+   * @returns {Promise<boolean[]>} A Promise resolving to true for peers where group messaging is allowed, and false otherwise.
    */
-  async canGroupMessage(
-    addresses: string[]
-  ): Promise<{ [key: string]: boolean }> {
+  async canGroupMessage(addresses: string[]): Promise<boolean> {
     return await XMTPModule.canGroupMessage(this.address, addresses)
   }
 
