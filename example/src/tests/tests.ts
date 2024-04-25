@@ -1,5 +1,5 @@
 import { FramesClient } from '@xmtp/frames-client'
-import { content } from '@xmtp/proto'
+import { content, keystore } from '@xmtp/proto'
 import { createHmac } from 'crypto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import Config from 'react-native-config'
@@ -213,8 +213,13 @@ test('can load a client from env "2k lens convos" private key', async () => {
   const signer = convertPrivateKeyAccountToSigner(
     privateKeyToAccount(privateKeyHex)
   )
+  const key = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
   const xmtpClient = await Client.create(signer, {
     env: 'local',
+    dbEncryptionKey: key,
   })
 
   assert(
@@ -230,12 +235,17 @@ test('can load 1995 conversations from dev network "2k lens convos" account', as
   }
 
   const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
+  const key = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
 
   const signer = convertPrivateKeyAccountToSigner(
     privateKeyToAccount(privateKeyHex)
   )
   const xmtpClient = await Client.create(signer, {
     env: 'dev',
+    dbEncryptionKey: key,
   })
 
   assert(
@@ -354,7 +364,7 @@ test('canMessage', async () => {
 })
 
 test('fetch a public key bundle and sign a digest', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
+  const [bob] = await createClients(1)
   const bytes = new Uint8Array([1, 2, 3])
   const signature = await bob.sign(bytes, { kind: 'identity' })
   if (signature.length === 0) {
@@ -368,10 +378,15 @@ test('fetch a public key bundle and sign a digest', async () => {
 })
 
 test('createFromKeyBundle throws error for non string value', async () => {
+  const key = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
   try {
     const bytes = [1, 2, 3]
     await Client.createFromKeyBundle(JSON.stringify(bytes), {
       env: 'local',
+      dbEncryptionKey: key,
     })
   } catch {
     return true
@@ -994,12 +1009,18 @@ test('canManagePreferences', async () => {
 test('is address on the XMTP network', async () => {
   const [alix] = await createClients(1)
   const notOnNetwork = '0x0000000000000000000000000000000000000000'
+  const key = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
 
   const isAlixAddressAvailable = await Client.canMessage(alix.address, {
     env: 'local',
+    dbEncryptionKey: key,
   })
   const isAddressAvailable = await Client.canMessage(notOnNetwork, {
     env: 'local',
+    dbEncryptionKey: key,
   })
 
   if (!isAlixAddressAvailable) {
@@ -1082,9 +1103,14 @@ test('calls preCreateIdentityCallback when supplied', async () => {
   const preCreateIdentityCallback = () => {
     isCallbackCalled = true
   }
+  const key = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
   await Client.createRandom({
     env: 'local',
     preCreateIdentityCallback,
+    dbEncryptionKey: key,
   })
 
   if (!isCallbackCalled) {
@@ -1099,9 +1125,14 @@ test('calls preEnableIdentityCallback when supplied', async () => {
   const preEnableIdentityCallback = () => {
     isCallbackCalled = true
   }
+  const key = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
   await Client.createRandom({
     env: 'local',
     preEnableIdentityCallback,
+    dbEncryptionKey: key,
   })
 
   if (!isCallbackCalled) {
@@ -1192,18 +1223,10 @@ test('correctly handles lowercase addresses', async () => {
 })
 
 test('handle fallback types appropriately', async () => {
-  const bob = await Client.createRandom({
-    env: 'local',
-    codecs: [
-      new NumberCodecEmptyFallback(),
-      new NumberCodecUndefinedFallback(),
-    ],
-  })
-  const alice = await Client.createRandom({
-    env: 'local',
-  })
+  const [bob, alice] = await await createClients(2)
   bob.register(new NumberCodecEmptyFallback())
   bob.register(new NumberCodecUndefinedFallback())
+
   const bobConvo = await bob.conversations.newConversation(alice.address)
   const aliceConvo = await alice.conversations.newConversation(bob.address)
 
