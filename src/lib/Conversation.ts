@@ -1,9 +1,23 @@
+import { invitation } from '@xmtp/proto'
+import { Buffer } from 'buffer'
+
 import { DecodedMessage } from './DecodedMessage'
 import * as XMTP from '../index'
 import { ConversationContext, PreparedLocalMessage } from '../index'
 
 export type SendOptions = {
   contentType?: XMTP.ContentTypeId
+}
+
+export interface ConversationParams {
+  createdAt: number
+  context?: ConversationContext
+  topic: string
+  peerAddress: string
+  version: string
+  conversationID?: string
+  keyMaterial?: string
+  consentProof?: string
 }
 
 export class Conversation<ContentTypes> {
@@ -18,19 +32,12 @@ export class Conversation<ContentTypes> {
    * Base64 encoded key material for the conversation.
    */
   keyMaterial?: string | undefined
+  /**
+   * Proof of consent for the conversation, used when a user is subscribing to broadcasts.
+   */
+  consentProof?: invitation.ConsentProofPayload | undefined
 
-  constructor(
-    client: XMTP.Client<ContentTypes>,
-    params: {
-      createdAt: number
-      context?: ConversationContext
-      topic: string
-      peerAddress: string
-      version: string
-      conversationID?: string | undefined
-      keyMaterial?: string | undefined
-    }
-  ) {
+  constructor(client: XMTP.Client<ContentTypes>, params: ConversationParams) {
     this.client = client
     this.createdAt = params.createdAt
     this.context = params.context
@@ -39,6 +46,13 @@ export class Conversation<ContentTypes> {
     this.version = params.version
     this.conversationID = params.conversationID
     this.keyMaterial = params.keyMaterial
+    try {
+      if (params?.consentProof) {
+        this.consentProof = invitation.ConsentProofPayload.decode(
+          new Uint8Array(Buffer.from(params.consentProof, 'base64'))
+        )
+      }
+    } catch {}
   }
 
   get clientAddress(): string {
@@ -154,7 +168,7 @@ export class Conversation<ContentTypes> {
       this.client.address,
       this.topic,
       content,
-      codec,
+      codec
     )
   }
 

@@ -17,6 +17,10 @@ struct ConversationWrapper {
 				"metadata": cv2.context.metadata,
 			]
 		}
+    var consentProof: String? = nil
+    if (conversation.consentProof != nil) {
+      consentProof = try conversation.consentProof?.serializedData().base64EncodedString()
+    }
 		return [
 			"clientAddress": client.address,
 			"topic": conversation.topic,
@@ -25,7 +29,8 @@ struct ConversationWrapper {
 			"peerAddress": conversation.peerAddress,
 			"version": conversation.version == .v1 ? "v1" : "v2",
 			"conversationID": conversation.conversationID ?? "",
-			"keyMaterial": conversation.keyMaterial?.base64EncodedString() ?? ""
+			"keyMaterial": conversation.keyMaterial?.base64EncodedString() ?? "",
+      "consentProof": consentProof ?? ""
 		]
 	}
 
