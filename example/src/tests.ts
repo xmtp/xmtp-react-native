@@ -2,11 +2,12 @@ import { sha256 } from '@noble/hashes/sha256'
 import { FramesClient } from '@xmtp/frames-client'
 import { content, invitation, signature as signatureProto } from '@xmtp/proto'
 import { createHmac } from 'crypto'
+import { ethers } from 'ethers'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import Config from 'react-native-config'
 import { TextEncoder, TextDecoder } from 'text-encoding'
-import { PrivateKeyAccount, toHex } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import { createWalletClient, custom, PrivateKeyAccount, toHex } from 'viem'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
@@ -1678,39 +1679,26 @@ test('can handle complex streaming setup with messages from self', async () => {
 })
 
 test('can send and receive consent proofs', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
+  const alixWallet = await ethers.Wallet.createRandom()
+  const boWallet = await ethers.Wallet.createRandom()
+  const bo = await Client.create(boWallet, { env: 'local' })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local' })
+  const alix = await Client.create(alixWallet, { env: 'local' })
   await delayToPropogate()
+
   const timestamp = Date.now()
   const consentMessage =
     'XMTP : Grant inbox consent to sender\n' +
     '\n' +
-    `Current Time: ${timestamp}\n` +
+    `Current Time: ${new Date(timestamp).toUTCString()}\n` +
     `From Address: ${bo.address}\n` +
     '\n' +
     'For more info: https://xmtp.org/signatures/'
-  const data = sha256(consentMessage)
-  const signature = await alix.sign(data, {
-    kind: 'identity',
-  })
-  const sig = signatureProto.Signature.decode(signature)
-  console.log('sig', sig)
-  if (!sig.ecdsaCompact) {
-    throw new Error('signature should have ecdsaCompact')
-  }
-  const r = toHex(sig.ecdsaCompact?.bytes.slice(0, 32))
-  const s = toHex(sig.ecdsaCompact?.bytes.slice(32, 64))
-  const v =
-    sig.ecdsaCompact?.recovery < 27
-      ? sig.ecdsaCompact?.recovery + 27
-      : sig.ecdsaCompact?.recovery
-  const test = r + s.substring(2) + v.toString(16)
-
+  const sig = await alixWallet.signMessage(consentMessage)
   const consentProof = invitation.ConsentProofPayload.fromPartial({
     payloadVersion:
       invitation.ConsentProofPayloadVersion.CONSENT_PROOF_PAYLOAD_VERSION_1,
-    signature: test,
+    signature: sig,
     timestamp,
   })
 
@@ -1719,9 +1707,16 @@ test('can send and receive consent proofs', async () => {
     undefined,
     consentProof
   )
-  assert(!!boConvo.consentProof, 'consentProof should exist')
-  const alixConvo = (await alix.conversations.list())[0]
-  assert(!!alixConvo.consentProof, 'consentProof should exist')
+  await delayToPropogate()
+  assert(!!boConvo?.consentProof, 'bo consentProof should exist')
+  const convos = await alix.conversations.list()
+  const alixConvo = convos.find((convo) => convo.topic === boConvo.topic)
+  await delayToPropogate()
+  assert(!!alixConvo?.consentProof, ' alix consentProof should not exist')
+  await delayToPropogate()
+  await alix.contacts.refreshConsentList()
+  const isAllowed = await alix.contacts.isAllowed(bo.address)
+  assert(isAllowed, 'bo should be allowed')
   return true
 })
 

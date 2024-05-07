@@ -445,7 +445,7 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.10.8):
+  - XMTP (0.10.9):
     - Connect-Swift (= 0.12.0)
     - GzipSwift
     - LibXMTP (= 0.4.4-beta5)
@@ -454,7 +454,7 @@ PODS:
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 0.10.8)
+    - XMTP (= 0.10.9)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -522,7 +522,6 @@ DEPENDENCIES:
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
-  - XMTP (from `/Users/alexrisch/ios/xmtp-ios`)
   - XMTPReactNative (from `../../ios`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -544,6 +543,7 @@ SPEC REPOS:
     - secp256k1.swift
     - SwiftProtobuf
     - web3.swift
+    - XMTP
 
 EXTERNAL SOURCES:
   boost:
@@ -668,8 +668,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-screens"
   RNSVG:
     :path: "../node_modules/react-native-svg"
-  XMTP:
-    :path: "/Users/alexrisch/ios/xmtp-ios"
   XMTPReactNative:
     :path: "../../ios"
   Yoga:
@@ -753,10 +751,10 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: 407a385e97fd206c4fbe880cc84123989167e0d1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 1bee03b6a541f811f8199b254ef3a8ce09b85bdb
-  XMTPReactNative: 655fdf39d8481ce474bbbfc7d63af0c55cee0e54
+  XMTP: 5efac5f69327cc6a4ad5b1f1fb9624b9e8355efe
+  XMTPReactNative: 5c4baec31d5ef83e5e5a35c33c31e70524db620e
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
-PODFILE CHECKSUM: b1a17a26fef9b207a68bf254156a4e8e034432c8
+PODFILE CHECKSUM: 95d6ace79946933ecf80684613842ee553dd76a2
 
 COCOAPODS: 1.15.2
