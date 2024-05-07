@@ -1,11 +1,13 @@
+import { sha256 } from '@noble/hashes/sha256'
 import { FramesClient } from '@xmtp/frames-client'
-import { content } from '@xmtp/proto'
+import { content, invitation, signature as signatureProto } from '@xmtp/proto'
 import { createHmac } from 'crypto'
+import { ethers } from 'ethers'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import Config from 'react-native-config'
 import { TextEncoder, TextDecoder } from 'text-encoding'
-import { PrivateKeyAccount } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import { createWalletClient, custom, PrivateKeyAccount, toHex } from 'viem'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
@@ -259,9 +261,9 @@ test('can load 1995 conversations from dev network "2k lens convos" account', as
     xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
     'Address: ' + xmtpClient.address
   )
-  let start = Date.now()
+  const start = Date.now()
   const conversations = await xmtpClient.conversations.list()
-  let end = Date.now()
+  const end = Date.now()
   console.log(
     `Loaded ${conversations.length} conversations in ${end - start}ms`
   )
@@ -1673,5 +1675,63 @@ test('can handle complex streaming setup with messages from self', async () => {
     'Unexpected all conv3 messages count11 ' + allConv3Messages.length
   )
 
+  return true
+})
+
+test('can send and receive consent proofs', async () => {
+  const alixWallet = await ethers.Wallet.createRandom()
+  const boWallet = await ethers.Wallet.createRandom()
+  const bo = await Client.create(boWallet, { env: 'local' })
+  await delayToPropogate()
+  const alix = await Client.create(alixWallet, { env: 'local' })
+  await delayToPropogate()
+
+  const timestamp = Date.now()
+  const consentMessage =
+    'XMTP : Grant inbox consent to sender\n' +
+    '\n' +
+    `Current Time: ${new Date(timestamp).toUTCString()}\n` +
+    `From Address: ${bo.address}\n` +
+    '\n' +
+    'For more info: https://xmtp.org/signatures/'
+  const sig = await alixWallet.signMessage(consentMessage)
+  const consentProof = invitation.ConsentProofPayload.fromPartial({
+    payloadVersion:
+      invitation.ConsentProofPayloadVersion.CONSENT_PROOF_PAYLOAD_VERSION_1,
+    signature: sig,
+    timestamp,
+  })
+
+  const boConvo = await bo.conversations.newConversation(
+    alix.address,
+    undefined,
+    consentProof
+  )
+  await delayToPropogate()
+  assert(!!boConvo?.consentProof, 'bo consentProof should exist')
+  const convos = await alix.conversations.list()
+  const alixConvo = convos.find((convo) => convo.topic === boConvo.topic)
+  await delayToPropogate()
+  assert(!!alixConvo?.consentProof, ' alix consentProof should not exist')
+  await delayToPropogate()
+  await alix.contacts.refreshConsentList()
+  const isAllowed = await alix.contacts.isAllowed(bo.address)
+  assert(isAllowed, 'bo should be allowed')
+  return true
+})
+
+test('can start conversations without consent proofs', async () => {
+  const bo = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'local' })
+  await delayToPropogate()
+
+  const boConvo = await bo.conversations.newConversation(alix.address)
+  await delayToPropogate()
+  assert(!boConvo.consentProof, 'consentProof should not exist')
+  const alixConvo = (await alix.conversations.list())[0]
+  await delayToPropogate()
+  assert(!alixConvo.consentProof, 'consentProof should not exist')
+  await delayToPropogate()
   return true
 })

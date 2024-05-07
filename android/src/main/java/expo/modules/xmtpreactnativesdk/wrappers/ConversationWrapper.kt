@@ -8,7 +8,7 @@ import org.xmtp.android.library.Conversation
 class ConversationWrapper {
 
     companion object {
-        fun encodeToObj(client: Client, conversation: Conversation): Map<String, Any> {
+        fun encodeToObj(client: Client, conversation: Conversation): Map<String, Any?> {
             val context = when (conversation.version) {
                 Conversation.Version.V2 -> mapOf<String, Any>(
                     "conversationID" to (conversation.conversationId ?: ""),
@@ -26,7 +26,8 @@ class ConversationWrapper {
                 "peerAddress" to conversation.peerAddress,
                 "version" to if (conversation.version == Conversation.Version.V1) "v1" else "v2",
                 "conversationID" to (conversation.conversationId ?: ""),
-                "keyMaterial" to (conversation.keyMaterial?.let { Base64.encodeToString(it, Base64.NO_WRAP) } ?: "")
+                "keyMaterial" to (conversation.keyMaterial?.let { Base64.encodeToString(it, Base64.NO_WRAP) } ?: ""),
+                "consentProof" to if (conversation.consentProof != null) Base64.encodeToString(conversation.consentProof?.toByteArray(), Base64.NO_WRAP) else null
             )
         }
 
