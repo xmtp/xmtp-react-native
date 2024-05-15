@@ -50,11 +50,10 @@ export class Client<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
     wallet: Signer | WalletClient | null,
-    options: ClientOptions & { codecs?: ContentCodecs }
+    opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
-    if (options.dbEncryptionKey.length !== 32) {
-      throw new Error('The encryption key must be exactly 32 bytes.')
-    }
+    const options = defaultOptions(opts)
+
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
     const signer = getSigner(wallet)
@@ -100,7 +99,7 @@ export class Client<
             this.removeSignSubscription()
             this.removeAuthSubscription()
             const address = await signer.getAddress()
-            resolve(new Client(address, options?.codecs || []))
+            resolve(new Client(address, opts?.codecs || []))
           }
         )
         await XMTPModule.auth(
@@ -140,11 +139,9 @@ export class Client<
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance with a random address.
    */
   static async createRandom<ContentTypes extends DefaultContentTypes>(
-    options: ClientOptions & { codecs?: ContentTypes }
+    opts?: Partial<ClientOptions> & { codecs?: ContentTypes }
   ): Promise<Client<ContentTypes>> {
-    if (options.dbEncryptionKey.length !== 32) {
-      throw new Error('The encryption key must be exactly 32 bytes.')
-    }
+    const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
     const address = await XMTPModule.createRandom(
@@ -159,7 +156,7 @@ export class Client<
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
 
-    return new Client(address, options?.codecs || [])
+    return new Client(address, opts?.codecs || [])
   }
 
   /**
@@ -176,11 +173,9 @@ export class Client<
     ContentCodecs extends DefaultContentTypes = [],
   >(
     keyBundle: string,
-    options: ClientOptions & { codecs?: ContentCodecs }
+    opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
   ): Promise<Client<DefaultContentTypes>> {
-    if (options.dbEncryptionKey.length !== 32) {
-      throw new Error('The encryption key must be exactly 32 bytes.')
-    }
+    const options = defaultOptions(opts)
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
@@ -189,7 +184,7 @@ export class Client<
       options.dbEncryptionKey,
       options.dbPath
     )
-    return new Client(address, options?.codecs || [])
+    return new Client(address, opts?.codecs || [])
   }
 
   /**
@@ -237,11 +232,9 @@ export class Client<
    */
   static async canMessage(
     peerAddress: string,
-    options: ClientOptions
+    opts?: Partial<ClientOptions>
   ): Promise<boolean> {
-    if (options.dbEncryptionKey.length !== 32) {
-      throw new Error('The encryption key must be exactly 32 bytes.')
-    }
+    const options = defaultOptions(opts)
     return await XMTPModule.staticCanMessage(
       peerAddress,
       options.env,
@@ -451,9 +444,9 @@ export type ClientOptions = {
    */
   enableAlphaMls?: boolean
   /**
-   * REQUIRED specify the encryption key for the database. The encryption key must be exactly 32 bytes.
+   * OPTIONAL specify the encryption key for the database. The encryption key must be exactly 32 bytes.
    */
-  dbEncryptionKey: Uint8Array
+  dbEncryptionKey?: Uint8Array
   /**
    * OPTIONAL specify the XMTP managed database path
    */
@@ -463,4 +456,20 @@ export type ClientOptions = {
 export type KeyType = {
   kind: 'identity' | 'prekey'
   prekeyIndex?: number
+}
+
+/**
+ * Provide a default client configuration. These settings can be used on their own, or as a starting point for custom configurations
+ *
+ * @param opts additional options to override the default settings
+ */
+export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
+  const _defaultOptions: ClientOptions = {
+    env: 'dev',
+    enableAlphaMls: false,
+    dbEncryptionKey: undefined,
+    dbPath: undefined,
+  }
+
+  return { ..._defaultOptions, ...opts } as ClientOptions
 }
