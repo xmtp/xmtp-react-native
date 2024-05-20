@@ -57,6 +57,7 @@ import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.android.library.toHex
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
+import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import uniffi.xmtpv3.GroupPermissions
 import java.io.File
@@ -712,11 +713,25 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createConversation") Coroutine { clientAddress: String, peerAddress: String, contextJson: String ->
+        AsyncFunction("createConversation") Coroutine { clientAddress: String, peerAddress: String, contextJson: String, consentProofPayload: List<Int> ->
             withContext(Dispatchers.IO) {
                 logV("createConversation: $contextJson")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
                 val context = JsonParser.parseString(contextJson).asJsonObject
+
+                var consentProof: ConsentProofPayload? = null
+                if (consentProofPayload.isNotEmpty()) {
+                    val consentProofDataBytes = consentProofPayload.foldIndexed(ByteArray(consentProofPayload.size)) { i, a, v ->
+                        a.apply {
+                            set(
+                                i,
+                                v.toByte()
+                            )
+                        }
+                    }
+                    consentProof = ConsentProofPayload.parseFrom(consentProofDataBytes)
+                }
+
                 val conversation = client.conversations.newConversation(
                     peerAddress,
                     context = InvitationV1ContextBuilder.buildFromConversation(
@@ -733,10 +748,14 @@ class XMTPModule : Module() {
 
                             else -> mapOf()
                         },
-                    )
+                    ),
+                    consentProof
                 )
                 if (conversation.keyMaterial == null) {
                     logV("Null key material before encode conversation")
+                }
+                if (conversation.consentProof == null) {
+                    logV("Null consent before encode conversation")
                 }
                 ConversationWrapper.encode(client, conversation)
             }

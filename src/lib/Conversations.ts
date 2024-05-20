@@ -1,7 +1,7 @@
-import type { keystore } from '@xmtp/proto'
+import type { invitation, keystore } from '@xmtp/proto'
 
 import { Client } from './Client'
-import { Conversation } from './Conversation'
+import { Conversation, ConversationParams } from './Conversation'
 import {
   ConversationVersion,
   ConversationContainer,
@@ -65,13 +65,15 @@ export default class Conversations<
    */
   async newConversation(
     peerAddress: string,
-    context?: ConversationContext
+    context?: ConversationContext,
+    consentProof?: invitation.ConsentProofPayload
   ): Promise<Conversation<ContentTypes>> {
     const checksumAddress = getAddress(peerAddress)
     return await XMTPModule.createConversation(
       this.client,
       checksumAddress,
-      context
+      context,
+      consentProof
     )
   }
 
@@ -200,7 +202,7 @@ export default class Conversations<
         conversation,
       }: {
         clientAddress: string
-        conversation: Conversation<ContentTypes>
+        conversation: ConversationParams
       }) => {
         if (clientAddress !== this.client.address) {
           return
@@ -256,7 +258,7 @@ export default class Conversations<
           return await callback(
             new Conversation(
               this.client,
-              conversationContainer as Conversation<ContentTypes>
+              conversationContainer as ConversationParams
             )
           )
         }

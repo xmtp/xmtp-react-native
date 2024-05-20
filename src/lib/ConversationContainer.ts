@@ -11,6 +11,6 @@ export interface ConversationContainer<
 > {
   client: XMTP.Client<ContentTypes>
   createdAt: number
-  version: ConversationVersion
   topic: string
+  version: ConversationVersion
 }
