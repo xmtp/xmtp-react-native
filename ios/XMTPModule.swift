@@ -604,7 +604,7 @@ public class XMTPModule: Module {
 			return prepared.messageID
 		}
 
-		AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, contextJson: String) -> String in
+    AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, contextJson: String, consentProofBytes: [UInt8]) -> String in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
@@ -612,10 +612,22 @@ public class XMTPModule: Module {
 			do {
 				let contextData = contextJson.data(using: .utf8)!
 				let contextObj = (try? JSONSerialization.jsonObject(with: contextData) as? [String: Any]) ?? [:]
-				let conversation = try await client.conversations.newConversation(with: peerAddress, context: .init(
-					conversationID: contextObj["conversationID"] as? String ?? "",
-					metadata: contextObj["metadata"] as? [String: String] ?? [:] as [String: String]
-				))
+                var consentProofData:ConsentProofPayload?
+                if consentProofBytes.count != 0 {
+                    do {
+                        consentProofData = try ConsentProofPayload(serializedData: Data(consentProofBytes))
+                    }  catch {
+                        print("Error: \(error)")
+                    }
+                }
+				let conversation = try await client.conversations.newConversation(
+                    with: peerAddress,
+                    context: .init(
+                        conversationID: contextObj["conversationID"] as? String ?? "",
+                        metadata: contextObj["metadata"] as? [String: String] ?? [:] as [String: String]
+                    ),
+                    consentProofPayload:consentProofData
+                )
 
 				return try ConversationWrapper.encode(conversation, client: client)
 			} catch {

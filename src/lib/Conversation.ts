@@ -1,17 +1,28 @@
+import { invitation } from '@xmtp/proto'
+import { Buffer } from 'buffer'
+
 import {
   ConversationVersion,
   ConversationContainer,
 } from './ConversationContainer'
+import { DecodedMessage } from './DecodedMessage'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
-import {
-  ConversationContext,
-  DecodedMessage,
-  PreparedLocalMessage,
-} from '../index'
+import { ConversationContext, PreparedLocalMessage } from '../index'
+
+export interface ConversationParams {
+  createdAt: number
+  context?: ConversationContext
+  topic: string
+  peerAddress?: string
+  version: string
+  conversationID?: string
+  keyMaterial?: string
+  consentProof?: string
+}
 
 export class Conversation<ContentTypes extends DefaultContentTypes>
   implements ConversationContainer<ContentTypes>
@@ -27,25 +38,26 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
    * Base64 encoded key material for the conversation.
    */
   keyMaterial?: string | undefined
+  /**
+   * Proof of consent for the conversation, used when a user is subscribing to broadcasts.
+   */
+  consentProof?: invitation.ConsentProofPayload | undefined
 
-  constructor(
-    client: XMTP.Client<ContentTypes>,
-    params: {
-      createdAt: number
-      context?: ConversationContext
-      topic: string
-      peerAddress: string
-      conversationID?: string | undefined
-      keyMaterial?: string | undefined
-    }
-  ) {
+  constructor(client: XMTP.Client<ContentTypes>, params: ConversationParams) {
     this.client = client
     this.createdAt = params.createdAt
     this.context = params.context
     this.topic = params.topic
-    this.peerAddress = params.peerAddress
+    this.peerAddress = params.peerAddress ?? ''
     this.conversationID = params.conversationID
     this.keyMaterial = params.keyMaterial
+    try {
+      if (params?.consentProof) {
+        this.consentProof = invitation.ConsentProofPayload.decode(
+          new Uint8Array(Buffer.from(params.consentProof, 'base64'))
+        )
+      }
+    } catch {}
   }
 
   get clientAddress(): string {

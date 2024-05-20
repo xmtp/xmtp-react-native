@@ -1,4 +1,4 @@
-import { content, keystore } from '@xmtp/proto'
+import { content, invitation, keystore } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import { Client } from '.'
@@ -430,15 +430,22 @@ export async function createConversation<
 >(
   client: Client<ContentTypes>,
   peerAddress: string,
-  context?: ConversationContext
+  context?: ConversationContext,
+  consentProofPayload?: invitation.ConsentProofPayload
 ): Promise<Conversation<ContentTypes>> {
+  const consentProofData = consentProofPayload
+    ? Array.from(
+        invitation.ConsentProofPayload.encode(consentProofPayload).finish()
+      )
+    : []
   return new Conversation(
     client,
     JSON.parse(
       await XMTPModule.createConversation(
         client.address,
         getAddress(peerAddress),
-        JSON.stringify(context || {})
+        JSON.stringify(context || {}),
+        consentProofData
       )
     )
   )
