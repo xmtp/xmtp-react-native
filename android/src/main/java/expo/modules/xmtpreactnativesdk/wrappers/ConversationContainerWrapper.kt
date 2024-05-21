@@ -8,7 +8,7 @@ import org.xmtp.android.library.Conversation
 class ConversationContainerWrapper {
 
     companion object {
-        fun encodeToObj(client: Client, conversation: Conversation): Map<String, Any> {
+        fun encodeToObj(client: Client, conversation: Conversation): Map<String, Any?> {
             when (conversation.version) {
                 Conversation.Version.GROUP -> {
                     val group = (conversation as Conversation.Group).group
