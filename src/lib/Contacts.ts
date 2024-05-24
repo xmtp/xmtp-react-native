@@ -1,5 +1,5 @@
 import { Client } from './Client'
-import { ConsentListEntry, ConsentState } from './ConsentListEntry'
+import { ConsentListEntry } from './ConsentListEntry'
 import * as XMTPModule from '../index'
 import { getAddress } from '../utils/address'
 

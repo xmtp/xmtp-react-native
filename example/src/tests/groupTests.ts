@@ -14,7 +14,6 @@ import {
   Group,
   ConversationContainer,
   ConversationVersion,
-  syncGroup,
   MessageDeliveryStatus,
 } from '../../../src/index'
 
@@ -214,26 +213,24 @@ test('group message delivery status', async () => {
 
   await alixGroup.send('hello, world')
 
-  const alixMessages: DecodedMessage[] = await alixGroup.messages(true)
+  const alixMessages: DecodedMessage[] = await alixGroup.messages()
 
   assert(
     alixMessages.length === 2,
     `the messages length should be 2 but was ${alixMessages.length}`
   )
 
-  const alexMessagesFiltered: DecodedMessage[] = await alixGroup.messages(
-    true,
-    {
-      deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
-    }
-  )
+  const alixMessagesFiltered: DecodedMessage[] = await alixGroup.messages({
+    deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
+  })
 
   assert(
-    alexMessagesFiltered.length === 1,
-    `the messages length should be 1 but was ${alexMessagesFiltered.length}`
+    alixMessagesFiltered.length === 1,
+    `the messages length should be 1 but was ${alixMessagesFiltered.length}`
   )
 
-  const alixMessages2: DecodedMessage[] = await alixGroup.messages(false)
+  await alixGroup.sync()
+  const alixMessages2: DecodedMessage[] = await alixGroup.messages()
 
   assert(
     alixMessages2.length === 2,
@@ -245,7 +242,9 @@ test('group message delivery status', async () => {
     `the message should have a delivery status of PUBLISHED but was ${alixMessages2[0].deliveryStatus}`
   )
 
+  await boClient.conversations.syncGroups()
   const boGroup = (await boClient.conversations.listGroups())[0]
+  await boGroup.sync()
   const boMessages: DecodedMessage[] = await boGroup.messages()
 
   assert(
@@ -263,8 +262,9 @@ test('group message delivery status', async () => {
 
 test('who added me to a group', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+  await alixClient.conversations.newGroup([boClient.address])
 
+  await boClient.conversations.syncGroups()
   const boGroup = (await boClient.conversations.listGroups())[0]
   const addedByAddress = await boGroup.addedByAddress()
 
@@ -292,6 +292,7 @@ test('can message in a group', async () => {
   ])
 
   // alix's num groups == 1
+  await alixClient.conversations.syncGroups()
   alixGroups = await alixClient.conversations.listGroups()
   if (alixGroups.length !== 1) {
     throw new Error('num groups should be 1')
@@ -301,6 +302,7 @@ test('can message in a group', async () => {
   assert(alixGroups[0].createdAt === alixGroup.createdAt, 'group create time')
 
   // alix can confirm memberAddresses
+  await alixGroup.sync()
   const memberAddresses = await alixGroup.memberAddresses()
   if (memberAddresses.length !== 3) {
     throw new Error('num group members should be 3')
@@ -339,6 +341,7 @@ test('can message in a group', async () => {
   await alixGroup.send('gm')
 
   // bo's num groups == 1
+  await boClient.conversations.syncGroups()
   const boGroups = await boClient.conversations.listGroups()
   if (boGroups.length !== 1) {
     throw new Error(
@@ -347,6 +350,7 @@ test('can message in a group', async () => {
   }
   await delayToPropogate()
   // bo can read messages from alix
+  await boGroups[0].sync()
   const boMessages: DecodedMessage[] = await boGroups[0].messages()
 
   if (boMessages.length !== 2) {
@@ -364,6 +368,7 @@ test('can message in a group', async () => {
   await boGroups[0].send('hey guys!')
 
   // caro's num groups == 1
+  await caroClient.conversations.syncGroups()
   const caroGroups = await caroClient.conversations.listGroups()
   if (caroGroups.length !== 1) {
     throw new Error(
@@ -418,12 +423,14 @@ test('can add members to a group', async () => {
   const alixGroup = await alixClient.conversations.newGroup([boClient.address])
 
   // alix's num groups == 1
+  await alixClient.conversations.syncGroups()
   alixGroups = await alixClient.conversations.listGroups()
   if (alixGroups.length !== 1) {
     throw new Error('num groups should be 1')
   }
 
   // alix can confirm memberAddresses
+  await alixGroup.sync()
   const memberAddresses = await alixGroup.memberAddresses()
   if (memberAddresses.length !== 2) {
     throw new Error('num group members should be 2')
@@ -445,6 +452,7 @@ test('can add members to a group', async () => {
   await alixGroup.send('gm')
 
   // bo's num groups == 1
+  await boClient.conversations.syncGroups()
   boGroups = await boClient.conversations.listGroups()
   if (boGroups.length !== 1) {
     throw new Error(
@@ -455,17 +463,20 @@ test('can add members to a group', async () => {
   await alixGroup.addMembers([caroClient.address])
 
   // caro's num groups == 1
+  await caroClient.conversations.syncGroups()
   caroGroups = await caroClient.conversations.listGroups()
   if (caroGroups.length !== 1) {
     throw new Error(
       'num groups for caro should be 1, but it is' + caroGroups.length
     )
   }
+  await caroGroups[0].sync()
   const caroMessages = await caroGroups[0].messages()
   if (caroMessages.length !== 0) {
     throw new Error('num messages for caro should be 0')
   }
 
+  await boGroups[0].sync()
   const boGroupMembers = await boGroups[0].memberAddresses()
   if (boGroupMembers.length !== 3) {
     throw new Error('num group members should be 3')
@@ -501,12 +512,14 @@ test('can remove members from a group', async () => {
   ])
 
   // alix's num groups == 1
+  await alixClient.conversations.syncGroups()
   alixGroups = await alixClient.conversations.listGroups()
   if (alixGroups.length !== 1) {
     throw new Error('num groups should be 1')
   }
 
   // alix can confirm memberAddresses
+  await alixGroup.sync()
   const memberAddresses = await alixGroup.memberAddresses()
   if (memberAddresses.length !== 3) {
     throw new Error('num group members should be 3')
@@ -528,6 +541,7 @@ test('can remove members from a group', async () => {
   await alixGroup.send('gm')
 
   // bo's num groups == 1
+  await boClient.conversations.syncGroups()
   boGroups = await boClient.conversations.listGroups()
   if (boGroups.length !== 1) {
     throw new Error(
@@ -536,6 +550,7 @@ test('can remove members from a group', async () => {
   }
 
   // caro's num groups == 1
+  await caroClient.conversations.syncGroups()
   caroGroups = await caroClient.conversations.listGroups()
   if (caroGroups.length !== 1) {
     throw new Error(
@@ -543,16 +558,19 @@ test('can remove members from a group', async () => {
     )
   }
 
+  await caroGroups[0].sync()
   if (!caroGroups[0].isActive()) {
     throw new Error('caros group should be active')
   }
 
   await alixGroup.removeMembers([caroClient.address])
+  await alixGroup.sync()
   const alixGroupMembers = await alixGroup.memberAddresses()
   if (alixGroupMembers.length !== 2) {
     throw new Error('num group members should be 2')
   }
 
+  await caroGroups[0].sync()
   if (await caroGroups[0].isActive()) {
     throw new Error('caros group should not be active')
   }
@@ -779,6 +797,7 @@ test('can stream group messages', async () => {
   )
 
   // bo's num groups == 1
+  await boClient.conversations.syncGroups()
   const boGroup = (await boClient.conversations.listGroups())[0]
 
   for (let i = 0; i < 5; i++) {
@@ -902,6 +921,7 @@ test('can paginate group messages', async () => {
   await alixGroup.send('hello, world')
   await alixGroup.send('gm')
 
+  await boClient.conversations.syncGroups()
   const boGroups = await boClient.conversations.listGroups()
   if (boGroups.length !== 1) {
     throw new Error(
@@ -910,7 +930,8 @@ test('can paginate group messages', async () => {
   }
   await delayToPropogate()
   // bo can read messages from alix
-  const boMessages: DecodedMessage[] = await boGroups[0].messages(false, {
+  await boGroups[0].sync()
+  const boMessages: DecodedMessage[] = await boGroups[0].messages({
     limit: 1,
   })
 
@@ -935,6 +956,9 @@ test('can stream all group messages', async () => {
 
   // Record message stream across all conversations
   const allMessages: DecodedMessage[] = []
+  // If we don't call syncGroups here, the streamAllGroupMessages will not
+  // stream the first message. Feels like a bug.
+  await alix.conversations.syncGroups()
   await alix.conversations.streamAllGroupMessages(async (message) => {
     allMessages.push(message)
   })
@@ -1142,6 +1166,7 @@ test('can stream all group Messages from multiple clients', async () => {
     )
   }
 
+  await alix.conversations.syncGroups()
   const alixConv = (await alix.conversations.listGroups())[0]
   await alixConv.send({ text: `Message` })
   await delayToPropogate()
@@ -1188,6 +1213,7 @@ test('can stream all group Messages from multiple clients - swapped', async () =
     )
   }
 
+  await alix.conversations.syncGroups()
   const alixConv = (await alix.conversations.listGroups())[0]
   await alixConv.send({ text: `Message` })
   await delayToPropogate()
@@ -1291,55 +1317,55 @@ test('can check if group is denied', async () => {
   return true
 })
 
-test('skipSync parameter behaves as expected', async () => {
+test('sync function behaves as expected', async () => {
   const [alix, bo, caro] = await createClients(3)
   const alixGroup = await alix.conversations.newGroup([bo.address])
 
   await alixGroup.send({ text: 'hello' })
 
-  // List groups with skipSync true will return empty until the first sync
-  let boGroups = await bo.conversations.listGroups(true)
+  // List groups will return empty until the first sync
+  let boGroups = await bo.conversations.listGroups()
   assert(boGroups.length === 0, 'num groups for bo is 0 until we sync')
 
   await bo.conversations.syncGroups()
 
-  boGroups = await bo.conversations.listGroups(true)
+  boGroups = await bo.conversations.listGroups()
   assert(boGroups.length === 1, 'num groups for bo is 1')
 
   // Num members will include the initial num of members even before sync
-  let numMembers = (await boGroups[0].memberAddresses(true)).length
+  let numMembers = (await boGroups[0].memberAddresses()).length
   assert(numMembers === 2, 'num members should be 2')
 
   // Num messages for a group will be 0 until we sync the group
-  let numMessages = (await boGroups[0].messages(true)).length
+  let numMessages = (await boGroups[0].messages()).length
   assert(numMessages === 0, 'num members should be 1')
 
   await bo.conversations.syncGroups()
 
   // Num messages is still 0 because we didnt sync the group itself
-  numMessages = (await boGroups[0].messages(true)).length
+  numMessages = (await boGroups[0].messages()).length
   assert(numMessages === 0, 'num messages should be 0')
 
   await boGroups[0].sync()
 
   // after syncing the group we now see the correct number of messages
-  numMessages = (await boGroups[0].messages(true)).length
+  numMessages = (await boGroups[0].messages()).length
   assert(numMessages === 1, 'num members should be 1')
 
   await alixGroup.addMembers([caro.address])
 
-  numMembers = (await boGroups[0].memberAddresses(true)).length
+  numMembers = (await boGroups[0].memberAddresses()).length
   assert(numMembers === 2, 'num members should be 2')
 
   await bo.conversations.syncGroups()
 
   // Even though we synced the groups, we need to sync the group itself to see the new member
-  numMembers = (await boGroups[0].memberAddresses(true)).length
+  numMembers = (await boGroups[0].memberAddresses()).length
   assert(numMembers === 2, 'num members should be 2')
 
   await boGroups[0].sync()
 
-  numMembers = (await boGroups[0].memberAddresses(true)).length
+  numMembers = (await boGroups[0].memberAddresses()).length
   assert(numMembers === 3, 'num members should be 3')
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1347,11 +1373,12 @@ test('skipSync parameter behaves as expected', async () => {
     bo.address,
     caro.address,
   ])
+  await bo.conversations.syncGroups()
   boGroups = await bo.conversations.listGroups()
   assert(boGroups.length === 2, 'num groups for bo is 2')
 
   // Even before syncing the group, syncGroups will return the initial number of members
-  numMembers = (await boGroups[1].memberAddresses(true)).length
+  numMembers = (await boGroups[1].memberAddresses()).length
   assert(numMembers === 3, 'num members should be 3')
 
   return true
@@ -1361,12 +1388,14 @@ test('can read and update group name', async () => {
   const [alix, bo, caro] = await createClients(3)
   const alixGroup = await alix.conversations.newGroup([bo.address])
 
+  await alixGroup.sync()
   let groupName = await alixGroup.groupName()
 
   assert(groupName === 'New Group', 'group name should be "New Group"')
 
   await alixGroup.updateGroupName('Test name update 1')
 
+  await alixGroup.sync()
   groupName = await alixGroup.groupName()
 
   assert(
@@ -1374,14 +1403,15 @@ test('can read and update group name', async () => {
     'group name should be "Test name update 1"'
   )
 
+  await bo.conversations.syncGroups()
   const boGroup = (await bo.conversations.listGroups())[0]
-  groupName = await boGroup.groupName(true)
+  groupName = await boGroup.groupName()
 
   assert(groupName === 'New Group', 'group name should be "New Group"')
 
   await boGroup.sync()
 
-  groupName = await boGroup.groupName(true)
+  groupName = await boGroup.groupName()
 
   assert(
     groupName === 'Test name update 1',
@@ -1389,9 +1419,11 @@ test('can read and update group name', async () => {
   )
 
   await alixGroup.addMembers([caro.address])
+  await caro.conversations.syncGroups()
   const caroGroup = (await caro.conversations.listGroups())[0]
 
-  groupName = await caroGroup.groupName(true)
+  await caroGroup.sync()
+  groupName = await caroGroup.groupName()
   assert(
     groupName === 'Test name update 1',
     'group name should be "Test name update 1"'

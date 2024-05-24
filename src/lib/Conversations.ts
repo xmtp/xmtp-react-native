@@ -79,17 +79,11 @@ export default class Conversations<
 
   /**
    * This method returns a list of all groups that the client is a member of.
+   * To get the latest list of groups from the network, call syncGroups() first.
    *
-   * @param {boolean} skipSync - Optional flag to skip syncing groups with the network before listing. Defaults to false.
-   * If skipSync set to true, the method will return the list of groups already known from the last network sync.
-   * Setting skipSync to true is an optional optimization to immediately list all conversations and groups without
-   * fetching from the network first. This is useful for clients who prefer to manage syncing logic themselves via the syncGroups() method.
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
-  async listGroups(skipSync: boolean = false): Promise<Group<ContentTypes>[]> {
-    if (!skipSync) {
-      await this.syncGroups()
-    }
+  async listGroups(): Promise<Group<ContentTypes>[]> {
     const result = await XMTPModule.listGroups(this.client)
 
     for (const group of result) {
@@ -101,19 +95,11 @@ export default class Conversations<
 
   /**
    * This method returns a list of all conversations and groups that the client is a member of.
+   * To include the latest groups from the network in the returned list, call syncGroups() first.
    *
-   * @param {boolean} skipSync - Optional flag to skip syncing groups with the network before listing. Defaults to false.
-   * If skipSync set to true, the method will return the list of groups already known from the last network sync.
-   * Setting skipSync to true is an optional optimization to immediately list all conversations and groups without
-   * fetching from the network first. This is useful for clients who prefer to manage syncing logic themselves via the syncGroups() method.
    * @returns {Promise<ConversationContainer[]>} A Promise that resolves to an array of ConversationContainer objects.
    */
-  async listAll(
-    skipSync: boolean = false
-  ): Promise<ConversationContainer<ContentTypes>[]> {
-    if (!skipSync) {
-      await this.syncGroups()
-    }
+  async listAll(): Promise<ConversationContainer<ContentTypes>[]> {
     const result = await XMTPModule.listAll(this.client)
 
     for (const conversationContainer of result) {

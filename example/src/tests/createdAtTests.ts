@@ -83,18 +83,18 @@ test('group createdAt matches listAll', async () => {
   const first = 1
   const second = 0
   assert(
-    alixGroups[first].topic === alixGroup.id,
+    alixGroups[1].topic === alixGroup.topic,
     'First group returned from listGroups shows ' +
-      (alixGroups[1] as Group).id +
+      alixGroups[1].topic +
       ' but should be ' +
-      alixGroup.id
+      alixGroup.topic
   )
   assert(
-    alixGroups[second].topic === boGroup.id,
+    alixGroups[0].topic === boGroup.topic,
     'Second group returned from listGroups shows ' +
-      (alixGroups[0] as Group).id +
+      alixGroups[0].topic +
       ' but should be ' +
-      boGroup.id
+      boGroup.topic
   )
   assert(
     alixGroups[first].createdAt === alixGroup.createdAt,
