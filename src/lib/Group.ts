@@ -49,17 +49,10 @@ export class Group<
 
   /**
    * This method returns an array of addresses associated with the group.
-   *
-   * @param {boolean} skipSync - Optional flag to skip syncing members with the network before returning. Defaults to false.
-   * If skipSync set to true, the method will return the array of member addresses already known from the last network sync.
-   * Setting skipSync to true is an optional optimization to immediately return all members without
-   * fetching from the network first. This is useful for clients who prefer to manage syncing logic themselves via the sync() method.
+   * To get the latest member addresses from the network, call sync() first.
    * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
    */
-  async memberAddresses(skipSync: boolean = false): Promise<string[]> {
-    if (!skipSync) {
-      await this.sync()
-    }
+  async memberAddresses(): Promise<string[]> {
     return XMTP.listMemberAddresses(this.client, this.id)
   }
 
@@ -99,11 +92,8 @@ export class Group<
 
   /**
    * This method returns an array of messages associated with the group.
+   * To get the latest messages from the network, call sync() first.
    *
-   * @param {boolean} skipSync - Optional flag to skip syncing messages with the network before returning. Defaults to false.
-   * If skipSync set to true, the method will return the array of messages already known from the last network sync.
-   * Setting skipSync to true is an optional optimization to immediately return all messages without
-   * fetching from the network first. This is useful for clients who prefer to manage syncing logic themselves via the sync() method.
    * @param {number | undefined} limit - Optional maximum number of messages to return.
    * @param {number | Date | undefined} before - Optional filter for specifying the maximum timestamp of messages to return.
    * @param {number | Date | undefined} after - Optional filter for specifying the minimum timestamp of messages to return.
@@ -111,13 +101,8 @@ export class Group<
    * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
    */
   async messages(
-    skipSync: boolean = false,
     opts?: MessagesOptions
   ): Promise<DecodedMessage<ContentTypes>[]> {
-    if (!skipSync) {
-      await this.sync()
-    }
-
     return await XMTP.groupMessages(
       this.client,
       this.id,
@@ -194,11 +179,9 @@ export class Group<
     return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
   }
 
-  async groupName(skipSync = false): Promise<string> {
-    if (!skipSync) {
-      await this.sync()
-    }
-
+  // Returns the group name.
+  // To get the latest group name from the network, call sync() first.
+  async groupName(): Promise<string> {
     return XMTP.groupName(this.client.address, this.id)
   }
 
@@ -206,17 +189,20 @@ export class Group<
     return XMTP.updateGroupName(this.client.address, this.id, groupName)
   }
 
-  async isActive(skipSync = false): Promise<boolean> {
-    if (!skipSync) {
-      await this.sync()
-    }
+  // Returns whether the group is active.
+  // To get the latest active status from the network, call sync() first.
+  async isActive(): Promise<boolean> {
     return XMTP.isGroupActive(this.client.address, this.id)
   }
 
-  addedByAddress(): Promise<string> {
+  // Returns the address that added you to the group.
+  // To get the latest added by address from the network, call sync() first.
+  async addedByAddress(): Promise<string> {
     return XMTP.addedByAddress(this.client.address, this.id)
   }
 
+  // Returns whether you are an admin of the group.
+  // To get the latest admin status from the network, call sync() first.
   async isAdmin(): Promise<boolean> {
     return XMTP.isGroupAdmin(this.client.address, this.id)
   }
