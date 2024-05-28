@@ -110,6 +110,27 @@ export const typeTests = async () => {
   await reactionConvo.send({
     text: 'text',
   })
+  const keyBundle = await reactionClient.exportKeyBundle()
+  const keyBundleReactionClient = await Client.createFromKeyBundle<
+    typeof supportedCodecs
+  >(keyBundle, {
+    codecs: supportedCodecs,
+  })
+  const reactionKeyBundleConvo = (
+    await keyBundleReactionClient.conversations.list()
+  )[0]
+  await reactionKeyBundleConvo.send({
+    // @ts-expect-error
+    sdfsdf: 'sdfsdf',
+  })
+  await reactionConvo.send({
+    reaction: {
+      action: 'added',
+      content: '💖',
+      reference: '123',
+      schema: 'unicode',
+    },
+  })
 
   const messages = await reactionConvo.messages()
   const content = messages[0].content()
