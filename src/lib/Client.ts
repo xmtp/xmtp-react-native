@@ -172,7 +172,7 @@ export class Client<
   >(
     keyBundle: string,
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
-  ): Promise<Client<DefaultContentTypes>> {
+  ): Promise<Client<ContentCodecs>> {
     const options = defaultOptions(opts)
     const address = await XMTPModule.createFromKeyBundle(
       keyBundle,
