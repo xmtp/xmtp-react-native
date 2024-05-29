@@ -29,6 +29,7 @@ export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
   address: string
+  inboxId: string
   conversations: Conversations<ContentTypes>
   contacts: Contacts
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
@@ -200,6 +201,20 @@ export class Client<
    */
   async deleteLocalDatabase() {
     return await XMTPModule.deleteLocalDatabase(this.address)
+  }
+
+  /**
+   * Drop the local database connection. This function is delicate and should be used with caution. App will error if database not properly reconnected. See: reconnectLocalDatabase()
+   */
+  dropLocalDatabaseConnection() {
+    return XMTPModule.dropLocalDatabaseConnection()
+  }
+
+  /**
+   * Reconnects the local database after being dropped.
+   */
+  async reconnectLocalDatabase() {
+    return await XMTPModule.reconnectLocalDatabase()
   }
 
   /**

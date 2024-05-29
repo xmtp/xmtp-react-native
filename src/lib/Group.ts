@@ -21,7 +21,7 @@ export class Group<
   version = ConversationVersion.GROUP
   topic: string
   adminAddress: string
-  permissionLevel: 'everyone_admin' | 'creator_admin'
+  permissionLevel: 'all_members' | 'admin_only'
 
   constructor(
     client: XMTP.Client<ContentTypes>,
@@ -30,7 +30,7 @@ export class Group<
       createdAt: number
       peerAddresses: string[]
       adminAddress: string
-      permissionLevel: 'everyone_admin' | 'creator_admin'
+      permissionLevel: 'all_members' | 'admin_only'
       topic: string
     }
   ) {
@@ -52,8 +52,8 @@ export class Group<
    * To get the latest member addresses from the network, call sync() first.
    * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
    */
-  async memberAddresses(): Promise<string[]> {
-    return XMTP.listMemberAddresses(this.client, this.id)
+  async memberInboxIds(): Promise<string[]> {
+    return XMTP.listMemberInboxIds(this.client, this.id)
   }
 
   /**

@@ -107,7 +107,7 @@ export async function createGroup<
 >(
   client: Client<ContentTypes>,
   peerAddresses: string[],
-  permissionLevel: 'everyone_admin' | 'creator_admin' = 'everyone_admin'
+  permissionLevel: 'all_members' | 'admin_only' = 'all_members'
 ): Promise<Group<ContentTypes>> {
   return new Group(
     client,
@@ -129,10 +129,10 @@ export async function listGroups<
   })
 }
 
-export async function listMemberAddresses<
+export async function listMemberInboxIds<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(client: Client<ContentTypes>, id: string): Promise<string[]> {
-  return XMTPModule.listMemberAddresses(client.address, id)
+  return XMTPModule.listMemberInboxIds(client.address, id)
 }
 
 export async function sendMessageToGroup(

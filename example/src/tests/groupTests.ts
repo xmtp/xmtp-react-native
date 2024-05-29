@@ -240,24 +240,21 @@ test('can message in a group', async () => {
   // alix group should match create time from list function
   assert(alixGroups[0].createdAt === alixGroup.createdAt, 'group create time')
 
-  // alix can confirm memberAddresses
+  // alix can confirm memberInboxIds
   await alixGroup.sync()
-  const memberAddresses = await alixGroup.memberAddresses()
-  if (memberAddresses.length !== 3) {
+  const memberInboxIds = await alixGroup.memberInboxIds()
+  if (memberInboxIds.length !== 3) {
     throw new Error('num group members should be 3')
   }
   const peerAddresses = await alixGroup.peerAddresses
   if (peerAddresses.length !== 2) {
     throw new Error('num peer group members should be 2')
   }
-  const lowercasedAddresses: string[] = memberAddresses.map((s) =>
-    s.toLowerCase()
-  )
   if (
     !(
-      lowercasedAddresses.includes(alixClient.address.toLowerCase()) &&
-      lowercasedAddresses.includes(boClient.address.toLowerCase()) &&
-      lowercasedAddresses.includes(caroClient.address.toLowerCase())
+      memberInboxIds.includes(alixClient.inboxId) &&
+      memberInboxIds.includes(boClient.inboxId) &&
+      memberInboxIds.includes(caroClient.inboxId)
     )
   ) {
     throw new Error('missing address')
@@ -368,19 +365,16 @@ test('can add members to a group', async () => {
     throw new Error('num groups should be 1')
   }
 
-  // alix can confirm memberAddresses
+  // alix can confirm memberInboxIds
   await alixGroup.sync()
-  const memberAddresses = await alixGroup.memberAddresses()
-  if (memberAddresses.length !== 2) {
+  const memberInboxIds = await alixGroup.memberInboxIds()
+  if (memberInboxIds.length !== 2) {
     throw new Error('num group members should be 2')
   }
-  const lowercasedAddresses: string[] = memberAddresses.map((s) =>
-    s.toLowerCase()
-  )
   if (
     !(
-      lowercasedAddresses.includes(alixClient.address.toLowerCase()) &&
-      lowercasedAddresses.includes(boClient.address.toLowerCase())
+      memberInboxIds.includes(alixClient.inboxId) &&
+      memberInboxIds.includes(boClient.inboxId)
     )
   ) {
     throw new Error('missing address')
@@ -416,7 +410,7 @@ test('can add members to a group', async () => {
   }
 
   await boGroups[0].sync()
-  const boGroupMembers = await boGroups[0].memberAddresses()
+  const boGroupMembers = await boGroups[0].memberInboxIds()
   if (boGroupMembers.length !== 3) {
     throw new Error('num group members should be 3')
   }
@@ -457,19 +451,16 @@ test('can remove members from a group', async () => {
     throw new Error('num groups should be 1')
   }
 
-  // alix can confirm memberAddresses
+  // alix can confirm memberInboxIds
   await alixGroup.sync()
-  const memberAddresses = await alixGroup.memberAddresses()
-  if (memberAddresses.length !== 3) {
+  const memberInboxIds = await alixGroup.memberInboxIds()
+  if (memberInboxIds.length !== 3) {
     throw new Error('num group members should be 3')
   }
-  const lowercasedAddresses: string[] = memberAddresses.map((s) =>
-    s.toLowerCase()
-  )
   if (
     !(
-      lowercasedAddresses.includes(alixClient.address.toLowerCase()) &&
-      lowercasedAddresses.includes(boClient.address.toLowerCase())
+      memberInboxIds.includes(alixClient.inboxId) &&
+      memberInboxIds.includes(boClient.inboxId)
     )
   ) {
     throw new Error('missing address')
@@ -504,7 +495,7 @@ test('can remove members from a group', async () => {
 
   await alixGroup.removeMembers([caroClient.address])
   await alixGroup.sync()
-  const alixGroupMembers = await alixGroup.memberAddresses()
+  const alixGroupMembers = await alixGroup.memberInboxIds()
   if (alixGroupMembers.length !== 2) {
     throw new Error('num group members should be 2')
   }
@@ -514,7 +505,7 @@ test('can remove members from a group', async () => {
     throw new Error('caros group should not be active')
   }
 
-  const caroGroupMembers = await caroGroups[0].memberAddresses()
+  const caroGroupMembers = await caroGroups[0].memberInboxIds()
   if (caroGroupMembers.length !== 2) {
     throw new Error('num group members should be 2')
   }
@@ -828,12 +819,12 @@ test('can make a group with admin permissions', async () => {
 
   const group = await adminClient.conversations.newGroup(
     [anotherClient.address],
-    'creator_admin'
+    'admin_only'
   )
 
-  if (group.permissionLevel !== 'creator_admin') {
+  if (group.permissionLevel !== 'admin_only') {
     throw Error(
-      `Group permission level should be creator_admin but was ${group.permissionLevel}`
+      `Group permission level should be admin_only but was ${group.permissionLevel}`
     )
   }
 
@@ -1272,7 +1263,7 @@ test('sync function behaves as expected', async () => {
   assert(boGroups.length === 1, 'num groups for bo is 1')
 
   // Num members will include the initial num of members even before sync
-  let numMembers = (await boGroups[0].memberAddresses()).length
+  let numMembers = (await boGroups[0].memberInboxIds()).length
   assert(numMembers === 2, 'num members should be 2')
 
   // Num messages for a group will be 0 until we sync the group
@@ -1293,18 +1284,18 @@ test('sync function behaves as expected', async () => {
 
   await alixGroup.addMembers([caro.address])
 
-  numMembers = (await boGroups[0].memberAddresses()).length
+  numMembers = (await boGroups[0].memberInboxIds()).length
   assert(numMembers === 2, 'num members should be 2')
 
   await bo.conversations.syncGroups()
 
   // Even though we synced the groups, we need to sync the group itself to see the new member
-  numMembers = (await boGroups[0].memberAddresses()).length
+  numMembers = (await boGroups[0].memberInboxIds()).length
   assert(numMembers === 2, 'num members should be 2')
 
   await boGroups[0].sync()
 
-  numMembers = (await boGroups[0].memberAddresses()).length
+  numMembers = (await boGroups[0].memberInboxIds()).length
   assert(numMembers === 3, 'num members should be 3')
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1317,7 +1308,7 @@ test('sync function behaves as expected', async () => {
   assert(boGroups.length === 2, 'num groups for bo is 2')
 
   // Even before syncing the group, syncGroups will return the initial number of members
-  numMembers = (await boGroups[1].memberAddresses()).length
+  numMembers = (await boGroups[1].memberInboxIds()).length
   assert(numMembers === 3, 'num members should be 3')
 
   return true

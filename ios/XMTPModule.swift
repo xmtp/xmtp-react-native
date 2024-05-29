@@ -642,7 +642,7 @@ public class XMTPModule: Module {
 			}
 			let permissionLevel: GroupPermissions = {
 				switch permission {
-				case "creator_admin":
+				case "admin_only":
 					return .groupCreatorIsAdmin
 				default:
 					return .everyoneIsAdmin
@@ -657,7 +657,7 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("listMemberAddresses") { (clientAddress: String, groupId: String) -> [String] in
+		AsyncFunction("listMemberInboxIds") { (clientAddress: String, groupId: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
@@ -665,7 +665,7 @@ public class XMTPModule: Module {
 			guard let group = try await findGroup(clientAddress: clientAddress, id: groupId) else {
 				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
-			return group.memberAddresses
+			return group.memberInboxIds
 		}
 		
 		AsyncFunction("syncGroups") { (clientAddress: String) in

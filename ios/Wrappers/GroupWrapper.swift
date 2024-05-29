@@ -13,9 +13,9 @@ struct GroupWrapper {
 	static func encodeToObj(_ group: XMTP.Group, client: XMTP.Client) throws -> [String: Any] {
 		let permissionString = switch try group.permissionLevel() {
 			case .everyoneIsAdmin:
-				"everyone_admin"
+				"all_members"
 			case .groupCreatorIsAdmin:
-				"creator_admin"
+				"admin_only"
 		}
 		return [
 			"clientAddress": client.address,

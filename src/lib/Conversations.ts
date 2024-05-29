@@ -151,7 +151,7 @@ export default class Conversations<
    */
   async newGroup(
     peerAddresses: string[],
-    permissionLevel: 'everyone_admin' | 'creator_admin' = 'everyone_admin'
+    permissionLevel: 'all_members' | 'admin_only' = 'all_members'
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroup(
       this.client,
