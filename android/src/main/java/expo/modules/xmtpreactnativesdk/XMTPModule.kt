@@ -984,9 +984,9 @@ class XMTPModule : Module() {
             subscriptions[getConversationsKey(clientAddress)]?.cancel()
         }
 
-        Function("unsubscribeFromGroups") { clientAddress: String ->
+        Function("unsubscribeFromGroups") { inboxId: String ->
             logV("unsubscribeFromGroups")
-            subscriptions[getGroupsKey(clientAddress)]?.cancel()
+            subscriptions[getGroupsKey(inboxId)]?.cancel()
         }
 
         Function("unsubscribeFromAllMessages") { clientAddress: String ->
@@ -994,9 +994,9 @@ class XMTPModule : Module() {
             subscriptions[getMessagesKey(clientAddress)]?.cancel()
         }
 
-        Function("unsubscribeFromAllGroupMessages") { clientAddress: String ->
+        Function("unsubscribeFromAllGroupMessages") { inboxId: String ->
             logV("unsubscribeFromAllGroupMessages")
-            subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
+            subscriptions[getGroupMessagesKey(inboxId)]?.cancel()
         }
 
         AsyncFunction("unsubscribeFromMessages") Coroutine { clientAddress: String, topic: String ->

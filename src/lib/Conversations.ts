@@ -357,7 +357,7 @@ export default class Conversations<
       this.subscriptions[EventTypes.Group].remove()
       delete this.subscriptions[EventTypes.Group]
     }
-    XMTPModule.unsubscribeFromGroups(this.client.address)
+    XMTPModule.unsubscribeFromGroups(this.client.inboxId)
   }
 
   /**
@@ -379,6 +379,6 @@ export default class Conversations<
       this.subscriptions[EventTypes.AllGroupMessage].remove()
       delete this.subscriptions[EventTypes.AllGroupMessage]
     }
-    XMTPModule.unsubscribeFromAllGroupMessages(this.client.address)
+    XMTPModule.unsubscribeFromAllGroupMessages(this.client.inboxId)
   }
 }

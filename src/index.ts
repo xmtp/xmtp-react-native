@@ -599,16 +599,16 @@ export function unsubscribeFromConversations(clientAddress: string) {
   return XMTPModule.unsubscribeFromConversations(clientAddress)
 }
 
-export function unsubscribeFromGroups(clientAddress: string) {
-  return XMTPModule.unsubscribeFromGroups(clientAddress)
+export function unsubscribeFromGroups(inboxId: string) {
+  return XMTPModule.unsubscribeFromGroups(inboxId)
 }
 
 export function unsubscribeFromAllMessages(clientAddress: string) {
   return XMTPModule.unsubscribeFromAllMessages(clientAddress)
 }
 
-export function unsubscribeFromAllGroupMessages(clientAddress: string) {
-  return XMTPModule.unsubscribeFromAllGroupMessages(clientAddress)
+export function unsubscribeFromAllGroupMessages(inboxId: string) {
+  return XMTPModule.unsubscribeFromAllGroupMessages(inboxId)
 }
 
 export async function unsubscribeFromMessages(
