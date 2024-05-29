@@ -1244,8 +1244,8 @@ class XMTPModule : Module() {
     private fun subscribeToGroups(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-        subscriptions[getGroupsKey(clientAddress)]?.cancel()
-        subscriptions[getGroupsKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
+        subscriptions[getGroupsKey(client.inboxId)]?.cancel()
+        subscriptions[getGroupsKey(client.inboxId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.conversations.streamGroups().collect { group ->
                     sendEvent(
@@ -1258,7 +1258,7 @@ class XMTPModule : Module() {
                 }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in group subscription: $e")
-                subscriptions[getGroupsKey(clientAddress)]?.cancel()
+                subscriptions[getGroupsKey(client.inboxId)]?.cancel()
             }
         }
     }
@@ -1314,8 +1314,8 @@ class XMTPModule : Module() {
     private fun subscribeToAllGroupMessages(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-        subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
-        subscriptions[getGroupMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
+        subscriptions[getGroupMessagesKey(client.inboxId)]?.cancel()
+        subscriptions[getGroupMessagesKey(client.inboxId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.conversations.streamAllGroupDecryptedMessages().collect { message ->
                     sendEvent(
@@ -1328,7 +1328,7 @@ class XMTPModule : Module() {
                 }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in all group messages subscription: $e")
-                subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
+                subscriptions[getGroupMessagesKey(client.inboxId)]?.cancel()
             }
         }
     }
@@ -1392,16 +1392,16 @@ class XMTPModule : Module() {
         return "messages:$clientAddress"
     }
 
-    private fun getGroupMessagesKey(clientAddress: String): String {
-        return "groupMessages:$clientAddress"
+    private fun getGroupMessagesKey(inboxId: String): String {
+        return "groupMessages:$inboxId"
     }
 
     private fun getConversationsKey(clientAddress: String): String {
         return "conversations:$clientAddress"
     }
 
-    private fun getGroupsKey(clientAddress: String): String {
-        return "groups:$clientAddress"
+    private fun getGroupsKey(inboxId: String): String {
+        return "groups:$inboxId"
     }
 
     private suspend fun unsubscribeFromMessages(
