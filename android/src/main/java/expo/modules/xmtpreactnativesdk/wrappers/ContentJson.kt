@@ -9,6 +9,7 @@ import org.xmtp.android.library.Client
 import org.xmtp.android.library.codecs.Attachment
 import org.xmtp.android.library.codecs.AttachmentCodec
 import org.xmtp.android.library.codecs.ContentTypeAttachment
+import org.xmtp.android.library.codecs.ContentTypeGroupUpdated
 import org.xmtp.android.library.codecs.ContentTypeId
 import org.xmtp.android.library.codecs.ContentTypeReaction
 import org.xmtp.android.library.codecs.ContentTypeReadReceipt
@@ -16,6 +17,8 @@ import org.xmtp.android.library.codecs.ContentTypeRemoteAttachment
 import org.xmtp.android.library.codecs.ContentTypeReply
 import org.xmtp.android.library.codecs.ContentTypeText
 import org.xmtp.android.library.codecs.EncodedContent
+import org.xmtp.android.library.codecs.GroupUpdated
+import org.xmtp.android.library.codecs.GroupUpdatedCodec
 import org.xmtp.android.library.codecs.Reaction
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.ReadReceipt
@@ -177,12 +180,12 @@ class ContentJson(
                     "membersAdded" to (content as GroupUpdated).addedInboxesList.map {
                         mapOf(
                             "inboxId" to it.inboxId,
-                            "initiatedByInboxId" to it.initiatedByInboxId
+                            "initiatedByInboxId" to content.initiatedByInboxId
                         )},
                     "membersRemoved" to content.removedInboxesList.map {
                         mapOf(
                             "inboxId" to it.inboxId,
-                            "initiatedByInboxId" to it.initiatedByInboxId
+                            "initiatedByInboxId" to content.initiatedByInboxId
                         )},
                 )
             )

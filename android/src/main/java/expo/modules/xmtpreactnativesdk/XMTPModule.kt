@@ -763,20 +763,20 @@ class XMTPModule : Module() {
                 logV("createGroup")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
                 val permissionLevel = when (permission) {
-                    "creator_admin" -> GroupPermissions.GROUP_CREATOR_IS_ADMIN
-                    else -> GroupPermissions.EVERYONE_IS_ADMIN
+                    "admin_only" -> GroupPermissions.ADMIN_ONLY
+                    else -> GroupPermissions.ALL_MEMBERS
                 }
                 val group = client.conversations.newGroup(peerAddresses, permissionLevel)
                 GroupWrapper.encode(client, group)
             }
         }
 
-        AsyncFunction("listMemberAddresses") Coroutine { clientAddress: String, groupId: String ->
+        AsyncFunction("listMemberInboxIds") Coroutine { clientAddress: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("listMembers")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
                 val group = findGroup(clientAddress, groupId)
-                group?.memberAddresses()
+                group?.members()?.map { it.inboxId }
             }
         }
 
@@ -882,7 +882,7 @@ class XMTPModule : Module() {
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
                 val group = findGroup(clientAddress, id)
 
-                group?.isAdmin()
+                group?.isAdmin(client.inboxId)
             }
         }
 
