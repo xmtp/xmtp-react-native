@@ -246,8 +246,8 @@ test('can message in a group', async () => {
   if (memberInboxIds.length !== 3) {
     throw new Error('num group members should be 3')
   }
-  const peerAddresses = await alixGroup.peerAddresses
-  if (peerAddresses.length !== 2) {
+  const peerInboxIds = await alixGroup.peerInboxIds
+  if (peerInboxIds.length !== 2) {
     throw new Error('num peer group members should be 2')
   }
   if (
@@ -260,13 +260,10 @@ test('can message in a group', async () => {
     throw new Error('missing address')
   }
 
-  const lowercasedPeerAddresses: string[] = peerAddresses.map((s) =>
-    s.toLowerCase()
-  )
   if (
     !(
-      lowercasedPeerAddresses.includes(boClient.address.toLowerCase()) &&
-      lowercasedPeerAddresses.includes(caroClient.address.toLowerCase())
+      peerInboxIds.includes(boClient.inboxId) &&
+      peerInboxIds.includes(caroClient.inboxId)
     )
   ) {
     throw new Error('should include self')
@@ -833,8 +830,10 @@ test('can make a group with admin permissions', async () => {
     throw Error(`adminClient should be the admin`)
   }
 
-  if (group.adminAddress.toLowerCase !== adminClient.address.toLowerCase) {
-    throw Error(`adminClient should be the admin but was ${group.adminAddress}`)
+  if (group.creatorInboxId !== adminClient.inboxId) {
+    throw Error(
+      `adminClient should be the admin but was ${group.creatorInboxId}`
+    )
   }
 
   return true
