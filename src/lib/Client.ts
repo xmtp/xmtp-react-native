@@ -108,7 +108,6 @@ export class Client<
           Boolean(enableSubscription),
           Boolean(options.enableAlphaMls),
           options.dbEncryptionKey,
-          options.dbPath
         )
       })().catch((error) => {
         console.error('ERROR in create: ', error)
@@ -149,7 +148,6 @@ export class Client<
       Boolean(enableSubscription),
       Boolean(options.enableAlphaMls),
       options.dbEncryptionKey,
-      options.dbPath
     )
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
@@ -180,7 +178,6 @@ export class Client<
       options.appVersion,
       Boolean(options.enableAlphaMls),
       options.dbEncryptionKey,
-      options.dbPath
     )
     return new Client(address, opts?.codecs || [])
   }
@@ -445,10 +442,6 @@ export type ClientOptions = {
    * OPTIONAL specify the encryption key for the database. The encryption key must be exactly 32 bytes.
    */
   dbEncryptionKey?: Uint8Array
-  /**
-   * OPTIONAL specify the XMTP managed database path
-   */
-  dbPath?: string
 }
 
 export type KeyType = {
@@ -466,7 +459,6 @@ export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
     env: 'dev',
     enableAlphaMls: false,
     dbEncryptionKey: undefined,
-    dbPath: undefined,
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions
