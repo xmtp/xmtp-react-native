@@ -35,7 +35,7 @@ export class Group<
       permissionLevel: 'all_members' | 'admin_only'
       topic: string
       name: string
-      isActive: boolean
+      isGroupActive: boolean
     }
   ) {
     this.client = client
@@ -46,7 +46,7 @@ export class Group<
     this.creatorInboxId = params.creatorInboxId
     this.permissionLevel = params.permissionLevel
     this.name = params.name
-    this.isGroupActive = params.isActive
+    this.isGroupActive = params.isGroupActive
   }
 
   get clientAddress(): string {
