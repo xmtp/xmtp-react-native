@@ -718,14 +718,15 @@ class XMTPModule : Module() {
 
                 var consentProof: ConsentProofPayload? = null
                 if (consentProofPayload.isNotEmpty()) {
-                    val consentProofDataBytes = consentProofPayload.foldIndexed(ByteArray(consentProofPayload.size)) { i, a, v ->
-                        a.apply {
-                            set(
-                                i,
-                                v.toByte()
-                            )
+                    val consentProofDataBytes =
+                        consentProofPayload.foldIndexed(ByteArray(consentProofPayload.size)) { i, a, v ->
+                            a.apply {
+                                set(
+                                    i,
+                                    v.toByte()
+                                )
+                            }
                         }
-                    }
                     consentProof = ConsentProofPayload.parseFrom(consentProofDataBytes)
                 }
 
@@ -816,6 +817,26 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("addGroupMembersByInboxId") Coroutine { clientAddress: String, id: String, peerInboxIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("addGroupMembersByInboxId")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.addMembersByInboxId(peerInboxIds)
+            }
+        }
+
+        AsyncFunction("removeGroupMembersByInboxId") Coroutine { clientAddress: String, id: String, peerInboxIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("removeGroupMembersByInboxId")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.removeMembersByInboxId(peerInboxIds)
+            }
+        }
+
         AsyncFunction("groupName") Coroutine { clientAddress: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("groupName")
@@ -846,12 +867,12 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("addedByAddress") Coroutine { clientAddress: String, id: String ->
+        AsyncFunction("addedByInboxId") Coroutine { clientAddress: String, id: String ->
             withContext(Dispatchers.IO) {
-                logV("addedByAddress")
+                logV("addedByInboxId")
                 val group = findGroup(clientAddress, id) ?: throw XMTPException("No group found")
 
-                group.addedByAddress()
+                group.addedByInboxId()
             }
         }
 
