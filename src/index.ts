@@ -40,8 +40,20 @@ export function address(): string {
   return XMTPModule.address()
 }
 
+export function inboxId(): string {
+  return XMTPModule.inboxId()
+}
+
 export async function deleteLocalDatabase(address: string) {
   return XMTPModule.deleteLocalDatabase(address)
+}
+
+export function dropLocalDatabaseConnection(address: string) {
+  return XMTPModule.dropLocalDatabaseConnection(address)
+}
+
+export async function reconnectLocalDatabase(address: string) {
+  return XMTPModule.reconnectLocalDatabase(address)
 }
 
 export async function auth(
@@ -212,6 +224,22 @@ export async function removeGroupMembers(
   addresses: string[]
 ): Promise<void> {
   return XMTPModule.removeGroupMembers(clientAddress, id, addresses)
+}
+
+export async function addGroupMembersByInboxId(
+  clientAddress: string,
+  id: string,
+  inboxIds: string[]
+): Promise<void> {
+  return XMTPModule.addGroupMembersByInboxId(clientAddress, id, inboxIds)
+}
+
+export async function removeGroupMembersByInboxId(
+  clientAddress: string,
+  id: string,
+  inboxIds: string[]
+): Promise<void> {
+  return XMTPModule.removeGroupMembersByInboxId(clientAddress, id, inboxIds)
 }
 
 export function groupName(
