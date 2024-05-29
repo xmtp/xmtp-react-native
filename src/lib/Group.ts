@@ -17,30 +17,36 @@ export class Group<
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
-  peerAddresses: string[]
+  peerInboxIds: string[]
   version = ConversationVersion.GROUP
   topic: string
-  adminAddress: string
+  creatorInboxId: string
   permissionLevel: 'all_members' | 'admin_only'
+  name: string
+  isGroupActive: boolean
 
   constructor(
     client: XMTP.Client<ContentTypes>,
     params: {
       id: string
       createdAt: number
-      peerAddresses: string[]
-      adminAddress: string
+      peerInboxIds: string[]
+      creatorInboxId: string
       permissionLevel: 'all_members' | 'admin_only'
       topic: string
+      name: string
+      isActive: boolean
     }
   ) {
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
-    this.peerAddresses = params.peerAddresses
+    this.peerInboxIds = params.peerInboxIds
     this.topic = params.topic
-    this.adminAddress = params.adminAddress
+    this.creatorInboxId = params.creatorInboxId
     this.permissionLevel = params.permissionLevel
+    this.name = params.name
+    this.isGroupActive = params.isActive
   }
 
   get clientAddress(): string {

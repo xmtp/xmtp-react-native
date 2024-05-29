@@ -16,8 +16,6 @@ class GroupWrapper {
                 GroupPermissions.ADMIN_ONLY -> "admin_only"
             }
             return mapOf(
-                "clientAddress" to client.address,
-                "clientInboxId" to client.inboxId,
                 "id" to group.id.toHex(),
                 "createdAt" to group.createdAt.time,
                 "peerInboxIds" to group.peerInboxIds(),
