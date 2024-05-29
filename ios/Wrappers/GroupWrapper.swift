@@ -12,20 +12,22 @@ import XMTP
 struct GroupWrapper {
 	static func encodeToObj(_ group: XMTP.Group, client: XMTP.Client) throws -> [String: Any] {
 		let permissionString = switch try group.permissionLevel() {
-			case .everyoneIsAdmin:
+			case .allMembers:
 				"all_members"
-			case .groupCreatorIsAdmin:
+			case .adminOnly:
 				"admin_only"
 		}
 		return [
 			"clientAddress": client.address,
 			"id": group.id.toHex,
 			"createdAt": UInt64(group.createdAt.timeIntervalSince1970 * 1000),
-			"peerAddresses": XMTP.Conversation.group(group).peerAddresses,
+			"peerInboxIds": try group.peerInboxIds,
 			"version": "GROUP",
 			"topic": group.topic,
 			"permissionLevel": permissionString,
-			"adminAddress": try group.adminAddress()
+			"creatorInboxId": try group.creatorInboxId(),
+			"name": try group.groupName(),
+			"isActive": try group.isActive()
 		]
 	}
 

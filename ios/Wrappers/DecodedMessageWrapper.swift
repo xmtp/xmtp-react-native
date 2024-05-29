@@ -168,13 +168,13 @@ struct ContentJson {
 				"membersAdded": groupUpdated.addedInboxes.map { member in
 					[
 						"inboxId": member.inboxID,
-						"initiatedByInboxId": member.initiatedByInboxID
+						"initiatedByInboxId": groupUpdated.initiatedByInboxID
 					]
 				},
 				"membersRemoved": groupUpdated.removedInboxes.map { member in
 					[
 						"inboxId": member.inboxID,
-						"initiatedByInboxId": member.initiatedByInboxID
+						"initiatedByInboxId": groupUpdated.initiatedByInboxID
 					]
 				},
 			]]
