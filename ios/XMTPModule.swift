@@ -1058,7 +1058,7 @@ public class XMTPModule: Module {
       guard let groupDataId = Data(hex: groupId) else {
         throw Error.invalidString
       }
-      return try await client.contacts.isGroupAllowed(groupId: groupDataId)
+      return await client.contacts.isGroupAllowed(groupId: groupDataId)
     }
     
     AsyncFunction("isGroupDenied") { (clientAddress: String, groupId: String) -> Bool in
@@ -1068,7 +1068,7 @@ public class XMTPModule: Module {
       guard let groupDataId = Data(hex: groupId) else {
         throw Error.invalidString
       }
-      return try await client.contacts.isGroupDenied(groupId: groupDataId)
+      return await client.contacts.isGroupDenied(groupId: groupDataId)
 		}
 	}
 
