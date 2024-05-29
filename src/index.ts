@@ -25,7 +25,7 @@ import { getAddress } from './utils/address'
 
 export * from './context'
 export * from './hooks'
-export { GroupChangeCodec } from './lib/NativeCodecs/GroupChangeCodec'
+export { GroupUpdatedCodec } from './lib/NativeCodecs/GroupUpdatedCodec'
 export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
 export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
