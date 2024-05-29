@@ -236,10 +236,11 @@ class XMTPModule : Module() {
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
             )
-            clients[address] = Client().create(account = reactSigner, options = options)
+            val client = Client().create(account = reactSigner, options = options)
+            clients[address] = client
             ContentJson.Companion
             signer = null
-            sendEvent("authed")
+            sendEvent("authed", mapOf("inboxId" to client.inboxId))
         }
 
         Function("receiveSignature") { requestID: String, signature: String ->
