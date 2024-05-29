@@ -72,7 +72,7 @@ export async function auth(
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
     enableAlphaMls,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
+    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined
   )
 }
 
@@ -94,7 +94,7 @@ export async function createRandom(
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
     enableAlphaMls,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
+    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined
   )
 }
 
@@ -110,7 +110,7 @@ export async function createFromKeyBundle(
     environment,
     appVersion,
     enableAlphaMls,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
+    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined
   )
 }
 
