@@ -179,6 +179,18 @@ export class Group<
     return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
   }
 
+  async addMembersByInboxId(inboxIds: string[]): Promise<void> {
+    return XMTP.addGroupMembersByInboxId(this.client.address, this.id, inboxIds)
+  }
+
+  async removeMembersByInboxId(inboxIds: string[]): Promise<void> {
+    return XMTP.removeGroupMembersByInboxId(
+      this.client.address,
+      this.id,
+      inboxIds
+    )
+  }
+
   // Returns the group name.
   // To get the latest group name from the network, call sync() first.
   async groupName(): Promise<string> {
@@ -197,8 +209,8 @@ export class Group<
 
   // Returns the address that added you to the group.
   // To get the latest added by address from the network, call sync() first.
-  async addedByAddress(): Promise<string> {
-    return XMTP.addedByAddress(this.client.address, this.id)
+  async addedByInboxId(): Promise<string> {
+    return XMTP.addedByInboxId(this.client.address, this.id)
   }
 
   // Returns whether you are an admin of the group.

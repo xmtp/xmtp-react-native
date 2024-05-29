@@ -205,11 +205,11 @@ test('who added me to a group', async () => {
 
   await boClient.conversations.syncGroups()
   const boGroup = (await boClient.conversations.listGroups())[0]
-  const addedByAddress = await boGroup.addedByAddress()
+  const addedByInboxId = await boGroup.addedByInboxId()
 
   assert(
-    addedByAddress.toLocaleLowerCase === alixClient.address.toLocaleLowerCase,
-    `addedByAddress ${addedByAddress} does not match ${alixClient.address}`
+    addedByInboxId === alixClient.inboxId,
+    `addedByInboxId ${addedByInboxId} does not match ${alixClient.inboxId}`
   )
   return true
 })

@@ -718,11 +718,11 @@ export async function isGroupActive(
   return XMTPModule.isGroupActive(clientAddress, id)
 }
 
-export async function addedByAddress(
+export async function addedByInboxId(
   clientAddress: string,
   id: string
 ): Promise<string> {
-  return XMTPModule.addedByAddress(clientAddress, id)
+  return XMTPModule.addedByInboxId(clientAddress, id)
 }
 
 export async function isGroupAdmin(

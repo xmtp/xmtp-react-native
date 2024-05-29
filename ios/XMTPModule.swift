@@ -744,12 +744,12 @@ public class XMTPModule: Module {
 			return try group.isActive()
 		}
 
-		AsyncFunction("addedByAddress") { (clientAddress: String, id: String) -> String in
+		AsyncFunction("addedByInboxId") { (clientAddress: String, id: String) -> String in
 			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			
-			return try group.addedByAddress()
+			return try group.addedByInboxId()
 		}
 
 		AsyncFunction("isGroupAdmin") { (clientAddress: String, id: String) -> Bool in
