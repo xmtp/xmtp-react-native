@@ -163,15 +163,15 @@ struct ContentJson {
 		case ContentTypeReadReceipt.id where content is XMTP.ReadReceipt:
 			return ["readReceipt": ""]
 		case ContentTypeGroupUpdated.id where content is XMTP.GroupUpdated:
-			let groupChange = content as! XMTP.GroupUpdated
-			return ["groupChange": [
-				"membersAdded": groupChange.addedInboxes.map { member in
+			let groupUpdated = content as! XMTP.GroupUpdated
+			return ["groupUpdated": [
+				"membersAdded": groupUpdated.addedInboxes.map { member in
 					[
 						"inboxId": member.inboxID,
 						"initiatedByInboxId": member.initiatedByInboxID
 					]
 				},
-				"membersRemoved": groupChange.removedInboxes.map { member in
+				"membersRemoved": groupUpdated.removedInboxes.map { member in
 					[
 						"inboxId": member.inboxID,
 						"initiatedByInboxId": member.initiatedByInboxID
