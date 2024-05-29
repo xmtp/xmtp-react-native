@@ -30,9 +30,6 @@ import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.codecs.getReactionAction
 import org.xmtp.android.library.codecs.getReactionSchema
 import org.xmtp.android.library.codecs.id
-import uniffi.xmtpv3.org.xmtp.android.library.codecs.ContentTypeGroupMembershipChange
-import uniffi.xmtpv3.org.xmtp.android.library.codecs.GroupMembershipChangeCodec
-import uniffi.xmtpv3.org.xmtp.android.library.codecs.GroupMembershipChanges
 import java.net.URL
 
 class ContentJson(
@@ -54,7 +51,7 @@ class ContentJson(
             Client.register(RemoteAttachmentCodec())
             Client.register(ReplyCodec())
             Client.register(ReadReceiptCodec())
-            Client.register(GroupMembershipChangeCodec())
+            Client.register(GroupUpdatedCodec())
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -175,17 +172,17 @@ class ContentJson(
                 "readReceipt" to ""
             )
 
-            ContentTypeGroupMembershipChange.id -> mapOf(
+            ContentTypeGroupUpdated.id -> mapOf(
                 "groupChange" to mapOf(
-                    "membersAdded" to (content as GroupMembershipChanges).membersAddedList.map {
+                    "membersAdded" to (content as GroupUpdated).addedInboxesList.map {
                         mapOf(
-                            "address" to it.accountAddress,
-                            "initiatedByAddress" to it.initiatedByAccountAddress
+                            "inboxId" to it.inboxId,
+                            "initiatedByInboxId" to it.initiatedByInboxId
                         )},
-                    "membersRemoved" to content.membersRemovedList.map {
+                    "membersRemoved" to content.removedInboxesList.map {
                         mapOf(
-                            "address" to it.accountAddress,
-                            "initiatedByAddress" to it.initiatedByAccountAddress
+                            "inboxId" to it.inboxId,
+                            "initiatedByInboxId" to it.initiatedByInboxId
                         )},
                 )
             )
