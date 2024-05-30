@@ -57,4 +57,20 @@ export default class Contacts {
   async isGroupDenied(groupId: string): Promise<boolean> {
     return await XMTPModule.isGroupDenied(this.client.address, groupId)
   }
+
+  async allowInboxes(inboxIds: string[]): Promise<void> {
+    return await XMTPModule.allowInboxes(this.client.address, inboxIds)
+  }
+
+  async denyInboxes(inboxIds: string[]): Promise<void> {
+    return await XMTPModule.denyInboxes(this.client.address, inboxIds)
+  }
+
+  async isInboxAllowed(inboxId: string): Promise<boolean> {
+    return await XMTPModule.isInboxAllowed(this.client.address, inboxId)
+  }
+
+  async isInboxDenied(inboxId: string): Promise<boolean> {
+    return await XMTPModule.isInboxDenied(this.client.address, inboxId)
+  }
 }

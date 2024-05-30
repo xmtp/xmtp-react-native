@@ -1099,6 +1099,34 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("isInboxAllowed") { clientAddress: String, inboxId: String ->
+            logV("isInboxIdAllowed")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.isInboxIdAllowed(inboxId)
+        }
+
+        AsyncFunction("isInboxDenied") { clientAddress: String, inboxId: String ->
+            logV("isInboxIdDenied")
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.contacts.isInboxIdDenied(inboxId)
+        }
+
+        AsyncFunction("denyInboxes") Coroutine { clientAddress: String, inboxIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("denyInboxIds")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                client.contacts.denyInboxIds(inboxIds)
+            }
+        }
+
+        AsyncFunction("allowInboxes") Coroutine { clientAddress: String, inboxIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("allowInboxIds")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                client.contacts.allowInboxId(inboxIds)
+            }
+        }
+
         AsyncFunction("refreshConsentList") Coroutine { clientAddress: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[clientAddress] ?: throw XMTPException("No client")

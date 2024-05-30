@@ -760,6 +760,35 @@ export async function isGroupDenied(
   return XMTPModule.isGroupDenied(clientAddress, groupId)
 }
 
+export async function allowInboxes(
+  clientAddress: string,
+  inboxIds: string[]
+): Promise<void> {
+  return XMTPModule.allowInboxes(clientAddress, inboxIds)
+}
+
+export async function denyInboxes(
+  clientAddress: string,
+  inboxIds: string[]
+): Promise<void> {
+  return XMTPModule.denyInboxes(clientAddress, inboxIds)
+}
+
+export async function isInboxAllowed(
+  clientAddress: string,
+  inboxId: string
+): Promise<boolean> {
+  return XMTPModule.isInboxAllowed(clientAddress, inboxId)
+}
+
+export async function isInboxDenied(
+  clientAddress: string,
+  inboxId: string
+): Promise<boolean> {
+  return XMTPModule.isInboxDenied(clientAddress, inboxId)
+}
+
+
 export async function processGroupMessage<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(

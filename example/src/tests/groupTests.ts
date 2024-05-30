@@ -1223,14 +1223,21 @@ test('creating a group should allow group', async () => {
 
   const group = await alix.conversations.newGroup([bo.address])
   const consent = await alix.contacts.isGroupAllowed(group.id)
+  const groupConsent = await group.isAllowed()
 
-  if (!consent) {
+  if (!consent || !groupConsent) {
     throw Error('Group should be allowed')
   }
 
   const state = await group.consentState()
   assert(
     state === 'allowed',
+    `the message should have a consent state of allowed but was ${state}`
+  )
+
+  const consentList = await alix.contacts.consentList()
+  assert(
+    consentList[0].value === 'allowed',
     `the message should have a consent state of allowed but was ${state}`
   )
 
@@ -1261,8 +1268,10 @@ test('can deny a group', async () => {
     throw Error('Group should be unknown')
   }
   await bo.contacts.denyGroups([alixGroup.id])
+  const boGroups = await bo.conversations.listGroups()
   const isDenied = await bo.contacts.isGroupDenied(alixGroup.id)
-  if (!isDenied) {
+  const isGroupDenied = await boGroups[0].isDenied()
+  if (!isDenied || !isGroupDenied) {
     throw Error('Group should be denied')
   }
   await bo.contacts.allowGroups([alixGroup.id])
