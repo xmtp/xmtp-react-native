@@ -19,11 +19,13 @@ import { DecodedMessage } from '../index'
 
 declare const Buffer
 
-export type GetMessageContentTypeFromClient<C> =
-  C extends Client<infer T> ? T : never
+export type GetMessageContentTypeFromClient<C> = C extends Client<infer T>
+  ? T
+  : never
 
-export type ExtractDecodedType<C> =
-  C extends XMTPModule.ContentCodec<infer T> ? T : never
+export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
+  ? T
+  : never
 
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
@@ -142,7 +144,7 @@ export class Client<
     const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
-    const json = await XMTPModule.createRandom(
+    const addressInboxId = await XMTPModule.createRandom(
       options.env,
       options.appVersion,
       Boolean(createSubscription),
@@ -150,14 +152,12 @@ export class Client<
       Boolean(options.enableAlphaMls),
       options.dbEncryptionKey
     )
-
-    const addressInboxId = JSON.parse(json)
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
 
     return new Client(
-      addressInboxId.address,
-      addressInboxId.inboxId,
+      addressInboxId['address'],
+      addressInboxId['inboxId'],
       opts?.codecs || []
     )
   }
@@ -179,18 +179,17 @@ export class Client<
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
     const options = defaultOptions(opts)
-    const json = await XMTPModule.createFromKeyBundle(
+    const addressInboxId = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
       options.appVersion,
       Boolean(options.enableAlphaMls),
       options.dbEncryptionKey
     )
-    const addressInboxId = JSON.parse(json)
 
     return new Client(
-      addressInboxId.address,
-      addressInboxId.inboxId,
+      addressInboxId['address'],
+      addressInboxId['inboxId'],
       opts?.codecs || []
     )
   }
