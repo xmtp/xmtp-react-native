@@ -1341,6 +1341,20 @@ test('can check if group is denied', async () => {
   return true
 })
 
+test('timestamp should not be the same after sync', async () => {
+  const [alix, bo] = await createClients(2)
+  const alixGroup = await alix.conversations.newGroup([bo.address])
+  await alixGroup.send('Hello')
+  await alixGroup.sync()
+  const messages1 = await alixGroup.messages()
+  const message1 = messages1[0]
+  await alixGroup.sync()
+  const messages2 = await alixGroup.messages()
+  const message2 = messages2[0]
+  assert(message1.id === message2.id, 'Message id should be the same')
+  assert(message1.sent === message2.sent, 'Message sent should be the same')
+})
+
 test('sync function behaves as expected', async () => {
   const [alix, bo, caro] = await createClients(3)
   const alixGroup = await alix.conversations.newGroup([bo.address])
