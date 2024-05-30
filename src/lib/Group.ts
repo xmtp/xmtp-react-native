@@ -203,6 +203,8 @@ export class Group<
     return XMTP.groupName(this.client.address, this.id)
   }
 
+  // Updates the group name.
+  // Will throw if the user does not have the required permissions.
   async updateGroupName(groupName: string): Promise<void> {
     return XMTP.updateGroupName(this.client.address, this.id, groupName)
   }
@@ -219,10 +221,52 @@ export class Group<
     return XMTP.addedByInboxId(this.client.address, this.id)
   }
 
-  // Returns whether you are an admin of the group.
+  // Returns whether a given inboxId is an admin of the group.
   // To get the latest admin status from the network, call sync() first.
-  async isAdmin(): Promise<boolean> {
-    return XMTP.isGroupAdmin(this.client.address, this.id)
+  async isAdmin(inboxId: string): Promise<boolean> {
+    return XMTP.isAdmin(this.client.address, this.id, inboxId)
+  }
+
+  // Returns whether a given inboxId is a super admin of the group.
+  // To get the latest super admin status from the network, call sync() first.
+  async isSuperAdmin(inboxId: string): Promise<boolean> {
+    return XMTP.isSuperAdmin(this.client.address, this.id, inboxId)
+  }
+
+  // Returns an array of inboxIds that are admins of the group.
+  // To get the latest admin list from the network, call sync() first.
+  async listAdmins(): Promise<string[]> {
+    return XMTP.listAdmins(this.client.address, this.id)
+  }
+
+  // Returns an array of inboxIds that are super admins of the group.
+  // To get the latest super admin list from the network, call sync() first.
+  async listSuperAdmins(): Promise<string[]> {
+    return XMTP.listSuperAdmins(this.client.address, this.id)
+  }
+
+  // Adds an inboxId to the group admins.
+  // Will throw if the user does not have the required permissions.
+  async addAdmin(inboxId: string): Promise<void> {
+    return XMTP.addAdmin(this.client.address, this.id, inboxId)
+  }
+
+  // Adds an inboxId to the group super admins.
+  // Will throw if the user does not have the required permissions.
+  async addSuperAdmin(inboxId: string): Promise<void> {
+    return XMTP.addSuperAdmin(this.client.address, this.id, inboxId)
+  }
+
+  // Removes an inboxId from the group admins.
+  // Will throw if the user does not have the required permissions.
+  async removeAdmin(inboxId: string): Promise<void> {
+    return XMTP.removeAdmin(this.client.address, this.id, inboxId)
+  }
+
+  // Removes an inboxId from the group super admins.
+  // Will throw if the user does not have the required permissions.
+  async removeSuperAdmin(inboxId: string): Promise<void> {
+    return XMTP.removeSuperAdmin(this.client.address, this.id, inboxId)
   }
 
   async processMessage(

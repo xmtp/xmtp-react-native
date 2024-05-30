@@ -19,13 +19,11 @@ import { DecodedMessage } from '../index'
 
 declare const Buffer
 
-export type GetMessageContentTypeFromClient<C> = C extends Client<infer T>
-  ? T
-  : never
+export type GetMessageContentTypeFromClient<C> =
+  C extends Client<infer T> ? T : never
 
-export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
-  ? T
-  : never
+export type ExtractDecodedType<C> =
+  C extends XMTPModule.ContentCodec<infer T> ? T : never
 
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
