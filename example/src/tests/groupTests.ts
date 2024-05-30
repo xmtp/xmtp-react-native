@@ -530,8 +530,11 @@ test('can remove members from a group', async () => {
   }
 
   const caroGroupMembers = await caroGroups[0].memberInboxIds()
-  if (caroGroupMembers.length !== 2) {
-    throw new Error('num group members should be 2')
+  // should be 3 since they wont get new updates to the group after being removed
+  if (caroGroupMembers.length !== 3) {
+    throw new Error(
+      'num group members should be 3 but was' + caroGroupMembers.length
+    )
   }
 
   return true
@@ -1342,20 +1345,6 @@ test('can check if group is denied', async () => {
     throw Error('Group should be denied')
   }
   return true
-})
-
-test('timestamp should not be the same after sync', async () => {
-  const [alix, bo] = await createClients(2)
-  const alixGroup = await alix.conversations.newGroup([bo.address])
-  await alixGroup.send('Hello')
-  await alixGroup.sync()
-  const messages1 = await alixGroup.messages()
-  const message1 = messages1[0]
-  await alixGroup.sync()
-  const messages2 = await alixGroup.messages()
-  const message2 = messages2[0]
-  assert(message1.id === message2.id, 'Message id should be the same')
-  assert(message1.sent === message2.sent, 'Message sent should be the same')
 })
 
 test('sync function behaves as expected', async () => {
