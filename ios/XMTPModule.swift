@@ -984,6 +984,34 @@ public class XMTPModule: Module {
 			}
 			try await client.contacts.allow(addresses: addresses)
 		}
+		
+		AsyncFunction("isInboxAllowed") { (clientAddress: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			return await client.contacts.isInboxIdAllowed(inboxId: inboxId)
+		}
+
+		AsyncFunction("isInboxDenied") { (clientAddress: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			return await client.contacts.isInboxIdDenied(inboxId: inboxId)
+		}
+
+		AsyncFunction("denyInboxes") { (clientAddress: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			try await client.contacts.denyInboxId(inboxIds: inboxIds)
+		}
+
+		AsyncFunction("allowInboxes") { (clientAddress: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			try await client.contacts.allowInboxId(inboxIds: inboxIds)
+		}
 
 		AsyncFunction("refreshConsentList") { (clientAddress: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
