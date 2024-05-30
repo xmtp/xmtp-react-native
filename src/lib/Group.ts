@@ -263,7 +263,8 @@ export class Group<
     return XMTP.removeAdmin(this.client.address, this.id, inboxId)
   }
 
-  // Remove Super Admin
+  // Removes an inboxId from the group super admins.
+  // Will throw if the user does not have the required permissions.
   async removeSuperAdmin(inboxId: string): Promise<void> {
     return XMTP.removeSuperAdmin(this.client.address, this.id, inboxId)
   }
