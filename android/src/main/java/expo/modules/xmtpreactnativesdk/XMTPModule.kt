@@ -1102,20 +1102,20 @@ class XMTPModule : Module() {
         AsyncFunction("isInboxAllowed") { clientAddress: String, inboxId: String ->
             logV("isInboxIdAllowed")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.isInboxIdAllowed(inboxId)
+            client.contacts.isInboxAllowed(inboxId)
         }
 
         AsyncFunction("isInboxDenied") { clientAddress: String, inboxId: String ->
             logV("isInboxIdDenied")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
-            client.contacts.isInboxIdDenied(inboxId)
+            client.contacts.isInboxDenied(inboxId)
         }
 
         AsyncFunction("denyInboxes") Coroutine { clientAddress: String, inboxIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("denyInboxIds")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
-                client.contacts.denyInboxIds(inboxIds)
+                client.contacts.denyInboxes(inboxIds)
             }
         }
 
@@ -1123,7 +1123,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("allowInboxIds")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
-                client.contacts.allowInboxId(inboxIds)
+                client.contacts.allowInboxes(inboxIds)
             }
         }
 
@@ -1170,14 +1170,14 @@ class XMTPModule : Module() {
             logV("allowGroups")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
-            client.contacts.allowGroup(groupDataIds)
+            client.contacts.allowGroups(groupDataIds)
         }
 
         AsyncFunction("denyGroups") Coroutine { clientAddress: String, groupIds: List<String> ->
             logV("denyGroups")
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
-            client.contacts.denyGroup(groupDataIds)
+            client.contacts.denyGroups(groupDataIds)
         }
 
         AsyncFunction("isGroupAllowed") { clientAddress: String, groupId: String ->
