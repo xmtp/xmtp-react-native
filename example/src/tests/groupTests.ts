@@ -1238,7 +1238,7 @@ test('creating a group should allow group', async () => {
   const consentList = await alix.contacts.consentList()
   assert(
     consentList[0].value === 'allowed',
-    `the message should have a consent state of allowed but was ${state}`
+    `the message should have a consent state of allowed but was ${consentList[0].value}`
   )
 
   return true
@@ -1279,6 +1279,32 @@ test('can deny a group', async () => {
   if (!isAllowed) {
     throw Error('Group should be allowed')
   }
+
+  return true
+})
+
+test('can allow and deny a inbox id', async () => {
+  const [alix, bo] = await createClients(2)
+  const startConsent = await bo.contacts.isInboxAllowed(alix.inboxId)
+  if (startConsent) {
+    throw Error('inbox id should be unknown')
+  }
+  await bo.contacts.denyInboxes([alix.inboxId])
+  const isDenied = await bo.contacts.isInboxDenied(alix.inboxId)
+  if (!isDenied) {
+    throw Error('inbox id should be denied')
+  }
+  await bo.contacts.allowInboxes([alix.inboxId])
+  const isAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  if (!isAllowed) {
+    throw Error('inbox id should be allowed')
+  }
+
+  const consentList = await bo.contacts.consentList()
+  assert(
+    consentList[0].entryType === 'inbox_id',
+    `the message should have a consent state of allowed but was ${consentList[0].entryType}`
+  )
 
   return true
 })
