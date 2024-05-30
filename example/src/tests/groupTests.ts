@@ -89,9 +89,7 @@ test('can drop a local database', async () => {
     await group.send('hi')
     return true
   }
-  throw new Error(
-    'should throw when local database not connected'
-  )
+  throw new Error('should throw when local database not connected')
 })
 
 test('can make a MLS V3 client from bundle', async () => {

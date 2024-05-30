@@ -243,4 +243,12 @@ export class Group<
   async consentState(): Promise<'allowed' | 'denied' | 'unknown'> {
     return await XMTP.groupConsentState(this.clientAddress, this.id)
   }
+
+  async isAllowed(): Promise<boolean> {
+    return await XMTP.isGroupAllowed(this.client.address, this.id)
+  }
+
+  async isDenied(): Promise<boolean> {
+    return await XMTP.isGroupDenied(this.client.address, this.id)
+  }
 }
