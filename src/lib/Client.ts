@@ -338,8 +338,8 @@ export class Client<
   /**
    * Drop the local database connection. This function is delicate and should be used with caution. App will error if database not properly reconnected. See: reconnectLocalDatabase()
    */
-  dropLocalDatabaseConnection() {
-    return XMTPModule.dropLocalDatabaseConnection(this.address)
+  async dropLocalDatabaseConnection() {
+    return await XMTPModule.dropLocalDatabaseConnection(this.address)
   }
 
   /**

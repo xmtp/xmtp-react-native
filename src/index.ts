@@ -48,7 +48,7 @@ export async function deleteLocalDatabase(address: string) {
   return XMTPModule.deleteLocalDatabase(address)
 }
 
-export function dropLocalDatabaseConnection(address: string) {
+export async function dropLocalDatabaseConnection(address: string) {
   return XMTPModule.dropLocalDatabaseConnection(address)
 }
 

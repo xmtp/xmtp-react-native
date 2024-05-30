@@ -67,6 +67,33 @@ test('can delete a local database', async () => {
   return true
 })
 
+test('can drop a local database', async () => {
+  const [client, anotherClient] = await createClients(2)
+
+  const group = await client.conversations.newGroup([anotherClient.address])
+  await client.conversations.syncGroups()
+  assert(
+    (await client.conversations.listGroups()).length === 1,
+    `should have a group size of 1 but was ${
+      (await client.conversations.listGroups()).length
+    }`
+  )
+
+  await client.dropLocalDatabaseConnection()
+
+  try {
+    await group.send('hi')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    await client.reconnectLocalDatabase()
+    await group.send('hi')
+    return true
+  }
+  throw new Error(
+    'should throw when local database not connected'
+  )
+})
+
 test('can make a MLS V3 client from bundle', async () => {
   const key = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -505,6 +532,40 @@ test('can remove members from a group', async () => {
   const caroGroupMembers = await caroGroups[0].memberInboxIds()
   if (caroGroupMembers.length !== 2) {
     throw new Error('num group members should be 2')
+  }
+
+  return true
+})
+
+test('can remove and add members from a group by inbox id', async () => {
+  // Create three MLS enabled Clients
+  const [alixClient, boClient, caroClient] = await createClients(3)
+
+  // alix creates a group
+  const alixGroup = await alixClient.conversations.newGroup([
+    boClient.address,
+    caroClient.address,
+  ])
+
+  // alix can confirm memberInboxIds
+  await alixGroup.sync()
+  const memberInboxIds = await alixGroup.memberInboxIds()
+  if (memberInboxIds.length !== 3) {
+    throw new Error('num group members should be 3')
+  }
+
+  await alixGroup.removeMembersByInboxId([caroClient.inboxId])
+  await alixGroup.sync()
+  const alixGroupMembers = await alixGroup.memberInboxIds()
+  if (alixGroupMembers.length !== 2) {
+    throw new Error('num group members should be 2')
+  }
+
+  await alixGroup.addMembersByInboxId([caroClient.inboxId])
+  await alixGroup.sync()
+  const alixGroupMembers2 = await alixGroup.memberInboxIds()
+  if (alixGroupMembers2.length !== 3) {
+    throw new Error('num group members should be 3')
   }
 
   return true
