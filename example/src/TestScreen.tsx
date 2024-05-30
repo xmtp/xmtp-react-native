@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
 
 import { createdAtTests } from './tests/createdAtTests'
+import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
 import { Test } from './tests/test-utils'
@@ -108,6 +109,7 @@ export enum TestCategory {
   group = 'group',
   createdAt = 'createdAt',
   restartStreans = 'restartStreams',
+  groupPermissions = 'groupPermissions',
 }
 
 export default function TestScreen(): JSX.Element {
@@ -121,6 +123,7 @@ export default function TestScreen(): JSX.Element {
     ...groupTests,
     ...createdAtTests,
     ...restartStreamTests,
+    ...groupPermissionsTests,
   ]
   let activeTests, title
   switch (params.testSelection) {
@@ -143,6 +146,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.restartStreans:
       activeTests = restartStreamTests
       title = 'Restart Streams Unit Tests'
+      break
+    case TestCategory.groupPermissions:
+      activeTests = groupPermissionsTests
+      title = 'Group Permissions Unit Tests'
       break
   }
 
