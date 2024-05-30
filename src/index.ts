@@ -725,11 +725,73 @@ export async function addedByInboxId(
   return XMTPModule.addedByInboxId(clientAddress, id)
 }
 
-export async function isGroupAdmin(
+export async function creatorInboxId(
   clientAddress: string,
   id: string
+): Promise<string> {
+  return XMTPModule.creatorInboxId(clientAddress, id)
+}
+
+export async function isAdmin(
+  clientAddress: string,
+  id: string,
+  inboxId: string
 ): Promise<boolean> {
-  return XMTPModule.isGroupAdmin(clientAddress, id)
+  return XMTPModule.isAdmin(clientAddress, id, inboxId)
+}
+
+export async function isSuperAdmin(
+  clientAddress: string,
+  id: string,
+  inboxId: string
+): Promise<boolean> {
+  return XMTPModule.isSuperAdmin(clientAddress, id, inboxId)
+}
+
+export async function listAdmins(
+  clientAddress: string,
+  id: string
+): Promise<string[]> {
+  return XMTPModule.listAdmins(clientAddress, id)
+}
+
+export async function listSuperAdmins(
+  clientAddress: string,
+  id: string
+): Promise<string[]> {
+  return XMTPModule.listSuperAdmins(clientAddress, id)
+}
+
+export async function addAdmin(
+  clientAddress: string,
+  id: string,
+  inboxId: string
+): Promise<void> {
+  return XMTPModule.addAdmin(clientAddress, id, inboxId)
+}
+
+export async function addSuperAdmin(
+  clientAddress: string,
+  id: string,
+  inboxId: string
+): Promise<void> {
+  return XMTPModule.addSuperAdmin(clientAddress, id, inboxId)
+}
+
+export async function removeAdmin(
+  clientAddress: string,
+  id: string,
+  inboxId: string
+): Promise<void> {
+  return XMTPModule.removeAdmin(clientAddress, id, inboxId)
+}
+
+export async function removeSuperAdmin(
+  clientAddress: string,
+  id: string,
+  inboxId: string
+): Promise<void> {
+  return XMTPModule.removeSuperAdmin(clientAddress, id, inboxId)
 }
 
 export async function allowGroups(
