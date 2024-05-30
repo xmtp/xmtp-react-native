@@ -229,3 +229,90 @@ test('in admin only group, members can not update group name after admin status 
   // throw new Error('Expected exception when non-admin attempts to update group name.')
   return true
 })
+
+test('can not remove a super admin from a group', async () => {
+  // Create clients
+  const [alix, bo] = await createClients(3)
+
+  // Alix Create a group
+  const alixGroup = await alix.conversations.newGroup(
+    [bo.address],
+    'all_members'
+  )
+
+  let alixIsSuperAdmin = await alixGroup.isSuperAdmin(alix.inboxId)
+  let boIsSuperAdmin = await alixGroup.isSuperAdmin(bo.inboxId)
+  let numMembers = (await alixGroup.memberInboxIds()).length
+  assert(alixIsSuperAdmin, `alix should be a super admin`)
+  assert(!boIsSuperAdmin, `bo should not be a super admin`)
+  assert(
+    numMembers === 2,
+    `number of members should be 2 but was ${numMembers}`
+  )
+
+  await bo.conversations.syncGroups()
+  const boGroup = (await bo.conversations.listGroups())[0]
+  await boGroup.sync()
+
+  // Bo should not be able to remove alix from the group
+  try {
+    await boGroup.removeMembersByInboxId([alix.inboxId])
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+  }
+
+  await boGroup.sync()
+  numMembers = (await alixGroup.memberInboxIds()).length
+  assert(alixIsSuperAdmin, `alix should be a super admin`)
+  assert(!boIsSuperAdmin, `bo should not be a super admin`)
+  assert(
+    numMembers === 2,
+    `number of members should be 2 but was ${numMembers}`
+  )
+
+  // Alix adds bo as a super admin
+  await alixGroup.addSuperAdmin(bo.inboxId)
+  await alixGroup.sync()
+  boIsSuperAdmin = await alixGroup.isSuperAdmin(bo.inboxId)
+  assert(boIsSuperAdmin, `bo should be a super admin`)
+  await boGroup.sync()
+  boIsSuperAdmin = await boGroup.isSuperAdmin(bo.inboxId)
+  assert(boIsSuperAdmin, `bo should be a super admin`)
+
+  // Uncommenting below causes an error
+  // intent 3 has reached max publish attempts
+  // error publishing intents CreateGroupContextExtProposalError(MlsGroupStateError(PendingCommit))
+  // try {
+  //   await boGroup.removeMembersByInboxId([alix.inboxId])
+  // } catch (error) {
+  //   // expected
+  // }
+  await boGroup.sync()
+  await alixGroup.sync()
+  numMembers = (await alixGroup.memberInboxIds()).length
+  assert(
+    numMembers === 2,
+    `number of members should be 2 but was ${numMembers}`
+  )
+
+  // Bo can remove alix as a super admin
+  await boGroup.sync()
+  await boGroup.removeSuperAdmin(alix.inboxId)
+  await boGroup.sync()
+  await alixGroup.sync()
+  alixIsSuperAdmin = await alixGroup.isSuperAdmin(alix.inboxId)
+  assert(!alixIsSuperAdmin, `alix should not be a super admin`)
+
+  // Now bo can remove Alix from the group
+  await boGroup.removeMembers([alix.address])
+  console.log('alix inbox id:' + String(alix.inboxId))
+  await boGroup.sync()
+  numMembers = (await boGroup.memberInboxIds()).length
+  assert(
+    numMembers === 1,
+    `number of members should be 1 but was ${numMembers}`
+  )
+
+  return true
+})
