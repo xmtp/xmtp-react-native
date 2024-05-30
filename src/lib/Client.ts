@@ -19,16 +19,19 @@ import { DecodedMessage } from '../index'
 
 declare const Buffer
 
-export type GetMessageContentTypeFromClient<C> =
-  C extends Client<infer T> ? T : never
+export type GetMessageContentTypeFromClient<C> = C extends Client<infer T>
+  ? T
+  : never
 
-export type ExtractDecodedType<C> =
-  C extends XMTPModule.ContentCodec<infer T> ? T : never
+export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
+  ? T
+  : never
 
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
   address: string
+  inboxId: string
   conversations: Conversations<ContentTypes>
   contacts: Contacts
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
@@ -91,13 +94,13 @@ export class Client<
 
         this.authSubscription = XMTPModule.emitter.addListener(
           'authed',
-          async () => {
+          async (message: { inboxId: string }) => {
             this.removeSubscription(enableSubscription)
             this.removeSubscription(createSubscription)
             this.removeSignSubscription()
             this.removeAuthSubscription()
             const address = await signer.getAddress()
-            resolve(new Client(address, opts?.codecs || []))
+            resolve(new Client(address, message.inboxId, opts?.codecs || []))
           }
         )
         await XMTPModule.auth(
@@ -107,8 +110,7 @@ export class Client<
           Boolean(createSubscription),
           Boolean(enableSubscription),
           Boolean(options.enableAlphaMls),
-          options.dbEncryptionKey,
-          options.dbPath
+          options.dbEncryptionKey
         )
       })().catch((error) => {
         console.error('ERROR in create: ', error)
@@ -142,19 +144,22 @@ export class Client<
     const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
-    const address = await XMTPModule.createRandom(
+    const addressInboxId = await XMTPModule.createRandom(
       options.env,
       options.appVersion,
       Boolean(createSubscription),
       Boolean(enableSubscription),
       Boolean(options.enableAlphaMls),
-      options.dbEncryptionKey,
-      options.dbPath
+      options.dbEncryptionKey
     )
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
 
-    return new Client(address, opts?.codecs || [])
+    return new Client(
+      addressInboxId['address'],
+      addressInboxId['inboxId'],
+      opts?.codecs || []
+    )
   }
 
   /**
@@ -174,49 +179,19 @@ export class Client<
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
     const options = defaultOptions(opts)
-    const address = await XMTPModule.createFromKeyBundle(
+    const addressInboxId = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
       options.appVersion,
       Boolean(options.enableAlphaMls),
-      options.dbEncryptionKey,
-      options.dbPath
+      options.dbEncryptionKey
     )
-    return new Client(address, opts?.codecs || [])
-  }
 
-  /**
-   * Determines whether the current user can send messages to a specified peer over 1:1 conversations.
-   *
-   * This method checks if the specified peer has signed up for XMTP
-   * and ensures that the message is not addressed to the sender (no self-messaging).
-   *
-   * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
-   * @returns {Promise<boolean>} A Promise resolving to true if messaging is allowed, and false otherwise.
-   */
-  async canMessage(peerAddress: string): Promise<boolean> {
-    return await XMTPModule.canMessage(this.address, peerAddress)
-  }
-
-  /**
-   * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
-   */
-  async deleteLocalDatabase() {
-    return await XMTPModule.deleteLocalDatabase(this.address)
-  }
-
-  /**
-   * Determines whether the current user can send messages to the specified peers over groups.
-   *
-   * This method checks if the specified peers are using clients that support group messaging.
-   *
-   * @param {string[]} addresses - The addresses of the peers to check for messaging eligibility.
-   * @returns {Promise<{ [key: string]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the V3 network.
-   */
-  async canGroupMessage(
-    addresses: string[]
-  ): Promise<{ [key: string]: boolean }> {
-    return await XMTPModule.canGroupMessage(this.address, addresses)
+    return new Client(
+      addressInboxId['address'],
+      addressInboxId['inboxId'],
+      opts?.codecs || []
+    )
   }
 
   /**
@@ -294,9 +269,11 @@ export class Client<
 
   constructor(
     address: string,
+    inboxId: string,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {
     this.address = address
+    this.inboxId = inboxId
     this.conversations = new Conversations(this)
     this.contacts = new Contacts(this)
     this.codecRegistry = {}
@@ -336,6 +313,54 @@ export class Client<
    */
   async exportKeyBundle(): Promise<string> {
     return XMTPModule.exportKeyBundle(this.address)
+  }
+
+  /**
+   * Determines whether the current user can send messages to a specified peer over 1:1 conversations.
+   *
+   * This method checks if the specified peer has signed up for XMTP
+   * and ensures that the message is not addressed to the sender (no self-messaging).
+   *
+   * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
+   * @returns {Promise<boolean>} A Promise resolving to true if messaging is allowed, and false otherwise.
+   */
+  async canMessage(peerAddress: string): Promise<boolean> {
+    return await XMTPModule.canMessage(this.address, peerAddress)
+  }
+
+  /**
+   * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
+   */
+  async deleteLocalDatabase() {
+    return await XMTPModule.deleteLocalDatabase(this.address)
+  }
+
+  /**
+   * Drop the local database connection. This function is delicate and should be used with caution. App will error if database not properly reconnected. See: reconnectLocalDatabase()
+   */
+  async dropLocalDatabaseConnection() {
+    return await XMTPModule.dropLocalDatabaseConnection(this.address)
+  }
+
+  /**
+   * Reconnects the local database after being dropped.
+   */
+  async reconnectLocalDatabase() {
+    return await XMTPModule.reconnectLocalDatabase(this.address)
+  }
+
+  /**
+   * Determines whether the current user can send messages to the specified peers over groups.
+   *
+   * This method checks if the specified peers are using clients that support group messaging.
+   *
+   * @param {string[]} addresses - The addresses of the peers to check for messaging eligibility.
+   * @returns {Promise<{ [key: string]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the V3 network.
+   */
+  async canGroupMessage(
+    addresses: string[]
+  ): Promise<{ [key: string]: boolean }> {
+    return await XMTPModule.canGroupMessage(this.address, addresses)
   }
 
   // TODO: support persisting conversations for quick lookup
@@ -445,10 +470,6 @@ export type ClientOptions = {
    * OPTIONAL specify the encryption key for the database. The encryption key must be exactly 32 bytes.
    */
   dbEncryptionKey?: Uint8Array
-  /**
-   * OPTIONAL specify the XMTP managed database path
-   */
-  dbPath?: string
 }
 
 export type KeyType = {
@@ -466,7 +487,6 @@ export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
     env: 'dev',
     enableAlphaMls: false,
     dbEncryptionKey: undefined,
-    dbPath: undefined,
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions

@@ -9,6 +9,7 @@ import org.xmtp.android.library.Client
 import org.xmtp.android.library.codecs.Attachment
 import org.xmtp.android.library.codecs.AttachmentCodec
 import org.xmtp.android.library.codecs.ContentTypeAttachment
+import org.xmtp.android.library.codecs.ContentTypeGroupUpdated
 import org.xmtp.android.library.codecs.ContentTypeId
 import org.xmtp.android.library.codecs.ContentTypeReaction
 import org.xmtp.android.library.codecs.ContentTypeReadReceipt
@@ -16,6 +17,8 @@ import org.xmtp.android.library.codecs.ContentTypeRemoteAttachment
 import org.xmtp.android.library.codecs.ContentTypeReply
 import org.xmtp.android.library.codecs.ContentTypeText
 import org.xmtp.android.library.codecs.EncodedContent
+import org.xmtp.android.library.codecs.GroupUpdated
+import org.xmtp.android.library.codecs.GroupUpdatedCodec
 import org.xmtp.android.library.codecs.Reaction
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.ReadReceipt
@@ -30,9 +33,6 @@ import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.codecs.getReactionAction
 import org.xmtp.android.library.codecs.getReactionSchema
 import org.xmtp.android.library.codecs.id
-import uniffi.xmtpv3.org.xmtp.android.library.codecs.ContentTypeGroupMembershipChange
-import uniffi.xmtpv3.org.xmtp.android.library.codecs.GroupMembershipChangeCodec
-import uniffi.xmtpv3.org.xmtp.android.library.codecs.GroupMembershipChanges
 import java.net.URL
 
 class ContentJson(
@@ -54,7 +54,7 @@ class ContentJson(
             Client.register(RemoteAttachmentCodec())
             Client.register(ReplyCodec())
             Client.register(ReadReceiptCodec())
-            Client.register(GroupMembershipChangeCodec())
+            Client.register(GroupUpdatedCodec())
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -175,17 +175,17 @@ class ContentJson(
                 "readReceipt" to ""
             )
 
-            ContentTypeGroupMembershipChange.id -> mapOf(
-                "groupChange" to mapOf(
-                    "membersAdded" to (content as GroupMembershipChanges).membersAddedList.map {
+            ContentTypeGroupUpdated.id -> mapOf(
+                "groupUpdated" to mapOf(
+                    "membersAdded" to (content as GroupUpdated).addedInboxesList.map {
                         mapOf(
-                            "address" to it.accountAddress,
-                            "initiatedByAddress" to it.initiatedByAccountAddress
+                            "inboxId" to it.inboxId,
+                            "initiatedByInboxId" to content.initiatedByInboxId
                         )},
-                    "membersRemoved" to content.membersRemovedList.map {
+                    "membersRemoved" to content.removedInboxesList.map {
                         mapOf(
-                            "address" to it.accountAddress,
-                            "initiatedByAddress" to it.initiatedByAccountAddress
+                            "inboxId" to it.inboxId,
+                            "initiatedByInboxId" to content.initiatedByInboxId
                         )},
                 )
             )

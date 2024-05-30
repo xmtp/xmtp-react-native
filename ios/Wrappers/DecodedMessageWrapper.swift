@@ -45,7 +45,7 @@ struct ContentJson {
 		ReplyCodec(),
 		RemoteAttachmentCodec(),
 		ReadReceiptCodec(),
-		GroupMembershipChangedCodec(),
+		GroupUpdatedCodec(),
 	]
 
 	static func initCodecs(client: Client) {
@@ -162,19 +162,19 @@ struct ContentJson {
 			]]
 		case ContentTypeReadReceipt.id where content is XMTP.ReadReceipt:
 			return ["readReceipt": ""]
-		case ContentTypeGroupMembershipChanged.id where content is XMTP.GroupMembershipChanges:
-			let groupChange = content as! XMTP.GroupMembershipChanges
-			return ["groupChange": [
-				"membersAdded": groupChange.membersAdded.map { member in
+		case ContentTypeGroupUpdated.id where content is XMTP.GroupUpdated:
+			let groupUpdated = content as! XMTP.GroupUpdated
+			return ["groupUpdated": [
+				"membersAdded": groupUpdated.addedInboxes.map { member in
 					[
-						"address": member.accountAddress,
-						"initiatedByAddress": member.initiatedByAccountAddress
+						"inboxId": member.inboxID,
+						"initiatedByInboxId": groupUpdated.initiatedByInboxID
 					]
 				},
-				"membersRemoved": groupChange.membersRemoved.map { member in
+				"membersRemoved": groupUpdated.removedInboxes.map { member in
 					[
-						"address": member.accountAddress,
-						"initiatedByAddress": member.initiatedByAccountAddress
+						"inboxId": member.inboxID,
+						"initiatedByInboxId": groupUpdated.initiatedByInboxID
 					]
 				},
 			]]

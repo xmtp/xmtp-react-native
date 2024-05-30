@@ -25,7 +25,7 @@ import { getAddress } from './utils/address'
 
 export * from './context'
 export * from './hooks'
-export { GroupChangeCodec } from './lib/NativeCodecs/GroupChangeCodec'
+export { GroupUpdatedCodec } from './lib/NativeCodecs/GroupUpdatedCodec'
 export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
 export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
@@ -40,8 +40,20 @@ export function address(): string {
   return XMTPModule.address()
 }
 
+export function inboxId(): string {
+  return XMTPModule.inboxId()
+}
+
 export async function deleteLocalDatabase(address: string) {
   return XMTPModule.deleteLocalDatabase(address)
+}
+
+export async function dropLocalDatabaseConnection(address: string) {
+  return XMTPModule.dropLocalDatabaseConnection(address)
+}
+
+export async function reconnectLocalDatabase(address: string) {
+  return XMTPModule.reconnectLocalDatabase(address)
 }
 
 export async function auth(
@@ -51,8 +63,7 @@ export async function auth(
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
   enableAlphaMls?: boolean | undefined,
-  dbEncryptionKey?: Uint8Array | undefined,
-  dbPath?: string | undefined
+  dbEncryptionKey?: Uint8Array | undefined
 ) {
   return await XMTPModule.auth(
     address,
@@ -61,8 +72,7 @@ export async function auth(
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
     enableAlphaMls,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
-    dbPath
+    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined
   )
 }
 
@@ -76,8 +86,7 @@ export async function createRandom(
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
   enableAlphaMls?: boolean | undefined,
-  dbEncryptionKey?: Uint8Array | undefined,
-  dbPath?: string | undefined
+  dbEncryptionKey?: Uint8Array | undefined
 ): Promise<string> {
   return await XMTPModule.createRandom(
     environment,
@@ -85,8 +94,7 @@ export async function createRandom(
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
     enableAlphaMls,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
-    dbPath
+    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined
   )
 }
 
@@ -95,16 +103,14 @@ export async function createFromKeyBundle(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
   enableAlphaMls?: boolean | undefined,
-  dbEncryptionKey?: Uint8Array | undefined,
-  dbPath?: string | undefined
+  dbEncryptionKey?: Uint8Array | undefined
 ): Promise<string> {
   return await XMTPModule.createFromKeyBundle(
     keyBundle,
     environment,
     appVersion,
     enableAlphaMls,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
-    dbPath
+    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined
   )
 }
 
@@ -113,7 +119,7 @@ export async function createGroup<
 >(
   client: Client<ContentTypes>,
   peerAddresses: string[],
-  permissionLevel: 'everyone_admin' | 'creator_admin' = 'everyone_admin'
+  permissionLevel: 'all_members' | 'admin_only' = 'all_members'
 ): Promise<Group<ContentTypes>> {
   return new Group(
     client,
@@ -135,10 +141,10 @@ export async function listGroups<
   })
 }
 
-export async function listMemberAddresses<
+export async function listMemberInboxIds<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(client: Client<ContentTypes>, id: string): Promise<string[]> {
-  return XMTPModule.listMemberAddresses(client.address, id)
+  return XMTPModule.listMemberInboxIds(client.address, id)
 }
 
 export async function sendMessageToGroup(
@@ -218,6 +224,22 @@ export async function removeGroupMembers(
   addresses: string[]
 ): Promise<void> {
   return XMTPModule.removeGroupMembers(clientAddress, id, addresses)
+}
+
+export async function addGroupMembersByInboxId(
+  clientAddress: string,
+  id: string,
+  inboxIds: string[]
+): Promise<void> {
+  return XMTPModule.addGroupMembersByInboxId(clientAddress, id, inboxIds)
+}
+
+export async function removeGroupMembersByInboxId(
+  clientAddress: string,
+  id: string,
+  inboxIds: string[]
+): Promise<void> {
+  return XMTPModule.removeGroupMembersByInboxId(clientAddress, id, inboxIds)
 }
 
 export function groupName(
@@ -577,16 +599,16 @@ export function unsubscribeFromConversations(clientAddress: string) {
   return XMTPModule.unsubscribeFromConversations(clientAddress)
 }
 
-export function unsubscribeFromGroups(clientAddress: string) {
-  return XMTPModule.unsubscribeFromGroups(clientAddress)
+export function unsubscribeFromGroups(inboxId: string) {
+  return XMTPModule.unsubscribeFromGroups(inboxId)
 }
 
 export function unsubscribeFromAllMessages(clientAddress: string) {
   return XMTPModule.unsubscribeFromAllMessages(clientAddress)
 }
 
-export function unsubscribeFromAllGroupMessages(clientAddress: string) {
-  return XMTPModule.unsubscribeFromAllGroupMessages(clientAddress)
+export function unsubscribeFromAllGroupMessages(inboxId: string) {
+  return XMTPModule.unsubscribeFromAllGroupMessages(inboxId)
 }
 
 export async function unsubscribeFromMessages(
@@ -696,11 +718,11 @@ export async function isGroupActive(
   return XMTPModule.isGroupActive(clientAddress, id)
 }
 
-export async function addedByAddress(
+export async function addedByInboxId(
   clientAddress: string,
   id: string
 ): Promise<string> {
-  return XMTPModule.addedByAddress(clientAddress, id)
+  return XMTPModule.addedByInboxId(clientAddress, id)
 }
 
 export async function isGroupAdmin(

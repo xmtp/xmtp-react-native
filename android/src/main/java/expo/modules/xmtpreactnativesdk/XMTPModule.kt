@@ -113,8 +113,8 @@ fun Conversation.cacheKey(clientAddress: String): String {
     return "${clientAddress}:${topic}"
 }
 
-fun Group.cacheKey(clientAddress: String): String {
-    return "${clientAddress}:${id}"
+fun Group.cacheKey(inboxId: String): String {
+    return "${inboxId}:${id}"
 }
 
 class XMTPModule : Module() {
@@ -182,15 +182,33 @@ class XMTPModule : Module() {
             client?.address ?: "No Client."
         }
 
+        Function("inboxId") { clientAddress: String ->
+            logV("inboxId")
+            val client = clients[clientAddress]
+            client?.inboxId ?: "No Client."
+        }
+
         AsyncFunction("deleteLocalDatabase") { clientAddress: String ->
             val client = clients[clientAddress] ?: throw XMTPException("No client")
             client.deleteLocalDatabase()
         }
 
+        Function("dropLocalDatabaseConnection") { clientAddress: String ->
+            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            client.dropLocalDatabaseConnection()
+        }
+
+        AsyncFunction("reconnectLocalDatabase") Coroutine { clientAddress: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                client.reconnectLocalDatabase()
+            }
+        }
+
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbPath: String? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>? ->
             logV("auth")
             requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
@@ -217,12 +235,12 @@ class XMTPModule : Module() {
                 enableAlphaMls = enableAlphaMls == true,
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
-                dbPath = dbPath
             )
-            clients[address] = Client().create(account = reactSigner, options = options)
+            val client = Client().create(account = reactSigner, options = options)
+            clients[address] = client
             ContentJson.Companion
             signer = null
-            sendEvent("authed")
+            sendEvent("authed", mapOf("inboxId" to client.inboxId))
         }
 
         Function("receiveSignature") { requestID: String, signature: String ->
@@ -231,7 +249,7 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbPath: String? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>? ->
             logV("createRandom")
             requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val privateKey = PrivateKeyBuilder()
@@ -257,15 +275,17 @@ class XMTPModule : Module() {
                 enableAlphaMls = enableAlphaMls == true,
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
-                dbPath = dbPath
             )
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
             clients[randomClient.address] = randomClient
-            randomClient.address
+            mapOf (
+                "address" to randomClient.address,
+                "inboxId" to randomClient.inboxId
+            )
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbPath: String? ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>? ->
             logV("createFromKeyBundle")
             requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
 
@@ -280,7 +300,6 @@ class XMTPModule : Module() {
                     enableAlphaMls = enableAlphaMls == true,
                     appContext = context,
                     dbEncryptionKey = encryptionKeyBytes,
-                    dbPath = dbPath
                 )
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
@@ -292,7 +311,10 @@ class XMTPModule : Module() {
                 val client = Client().buildFromBundle(bundle = bundle, options = options)
                 ContentJson.Companion
                 clients[client.address] = client
-                client.address
+                mapOf (
+                    "address" to client.address,
+                    "inboxId" to client.inboxId
+                )
             } catch (e: Exception) {
                 throw XMTPException("Failed to create client: $e")
             }
@@ -721,14 +743,15 @@ class XMTPModule : Module() {
 
                 var consentProof: ConsentProofPayload? = null
                 if (consentProofPayload.isNotEmpty()) {
-                    val consentProofDataBytes = consentProofPayload.foldIndexed(ByteArray(consentProofPayload.size)) { i, a, v ->
-                        a.apply {
-                            set(
-                                i,
-                                v.toByte()
-                            )
+                    val consentProofDataBytes =
+                        consentProofPayload.foldIndexed(ByteArray(consentProofPayload.size)) { i, a, v ->
+                            a.apply {
+                                set(
+                                    i,
+                                    v.toByte()
+                                )
+                            }
                         }
-                    }
                     consentProof = ConsentProofPayload.parseFrom(consentProofDataBytes)
                 }
 
@@ -765,20 +788,20 @@ class XMTPModule : Module() {
                 logV("createGroup")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
                 val permissionLevel = when (permission) {
-                    "creator_admin" -> GroupPermissions.GROUP_CREATOR_IS_ADMIN
-                    else -> GroupPermissions.EVERYONE_IS_ADMIN
+                    "admin_only" -> GroupPermissions.ADMIN_ONLY
+                    else -> GroupPermissions.ALL_MEMBERS
                 }
                 val group = client.conversations.newGroup(peerAddresses, permissionLevel)
                 GroupWrapper.encode(client, group)
             }
         }
 
-        AsyncFunction("listMemberAddresses") Coroutine { clientAddress: String, groupId: String ->
+        AsyncFunction("listMemberInboxIds") Coroutine { clientAddress: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("listMembers")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
                 val group = findGroup(clientAddress, groupId)
-                group?.memberAddresses()
+                group?.members()?.map { it.inboxId }
             }
         }
 
@@ -819,6 +842,26 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("addGroupMembersByInboxId") Coroutine { clientAddress: String, id: String, peerInboxIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("addGroupMembersByInboxId")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.addMembersByInboxId(peerInboxIds)
+            }
+        }
+
+        AsyncFunction("removeGroupMembersByInboxId") Coroutine { clientAddress: String, id: String, peerInboxIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("removeGroupMembersByInboxId")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, id)
+
+                group?.removeMembersByInboxId(peerInboxIds)
+            }
+        }
+
         AsyncFunction("groupName") Coroutine { clientAddress: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("groupName")
@@ -849,12 +892,12 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("addedByAddress") Coroutine { clientAddress: String, id: String ->
+        AsyncFunction("addedByInboxId") Coroutine { clientAddress: String, id: String ->
             withContext(Dispatchers.IO) {
-                logV("addedByAddress")
+                logV("addedByInboxId")
                 val group = findGroup(clientAddress, id) ?: throw XMTPException("No group found")
 
-                group.addedByAddress()
+                group.addedByInboxId()
             }
         }
 
@@ -864,7 +907,7 @@ class XMTPModule : Module() {
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
                 val group = findGroup(clientAddress, id)
 
-                group?.isAdmin()
+                group?.isAdmin(client.inboxId)
             }
         }
 
@@ -941,9 +984,9 @@ class XMTPModule : Module() {
             subscriptions[getConversationsKey(clientAddress)]?.cancel()
         }
 
-        Function("unsubscribeFromGroups") { clientAddress: String ->
+        Function("unsubscribeFromGroups") { inboxId: String ->
             logV("unsubscribeFromGroups")
-            subscriptions[getGroupsKey(clientAddress)]?.cancel()
+            subscriptions[getGroupsKey(inboxId)]?.cancel()
         }
 
         Function("unsubscribeFromAllMessages") { clientAddress: String ->
@@ -951,9 +994,9 @@ class XMTPModule : Module() {
             subscriptions[getMessagesKey(clientAddress)]?.cancel()
         }
 
-        Function("unsubscribeFromAllGroupMessages") { clientAddress: String ->
+        Function("unsubscribeFromAllGroupMessages") { inboxId: String ->
             logV("unsubscribeFromAllGroupMessages")
-            subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
+            subscriptions[getGroupMessagesKey(inboxId)]?.cancel()
         }
 
         AsyncFunction("unsubscribeFromMessages") Coroutine { clientAddress: String, topic: String ->
@@ -1153,7 +1196,7 @@ class XMTPModule : Module() {
     ): Group? {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-        val cacheKey = "${clientAddress}:${id}"
+        val cacheKey = "${client.inboxId}:${id}"
         val cacheGroup = groups[cacheKey]
         if (cacheGroup != null) {
             return cacheGroup
@@ -1161,7 +1204,7 @@ class XMTPModule : Module() {
             val group = client.conversations.listGroups()
                 .firstOrNull { it.id.toHex() == id }
             if (group != null) {
-                groups[group.cacheKey(clientAddress)] = group
+                groups[group.cacheKey(client.inboxId)] = group
                 return group
             }
         }
@@ -1201,8 +1244,8 @@ class XMTPModule : Module() {
     private fun subscribeToGroups(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-        subscriptions[getGroupsKey(clientAddress)]?.cancel()
-        subscriptions[getGroupsKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
+        subscriptions[getGroupsKey(client.inboxId)]?.cancel()
+        subscriptions[getGroupsKey(client.inboxId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.conversations.streamGroups().collect { group ->
                     sendEvent(
@@ -1215,7 +1258,7 @@ class XMTPModule : Module() {
                 }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in group subscription: $e")
-                subscriptions[getGroupsKey(clientAddress)]?.cancel()
+                subscriptions[getGroupsKey(client.inboxId)]?.cancel()
             }
         }
     }
@@ -1271,8 +1314,8 @@ class XMTPModule : Module() {
     private fun subscribeToAllGroupMessages(clientAddress: String) {
         val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-        subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
-        subscriptions[getGroupMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
+        subscriptions[getGroupMessagesKey(client.inboxId)]?.cancel()
+        subscriptions[getGroupMessagesKey(client.inboxId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.conversations.streamAllGroupDecryptedMessages().collect { message ->
                     sendEvent(
@@ -1285,7 +1328,7 @@ class XMTPModule : Module() {
                 }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in all group messages subscription: $e")
-                subscriptions[getGroupMessagesKey(clientAddress)]?.cancel()
+                subscriptions[getGroupMessagesKey(client.inboxId)]?.cancel()
             }
         }
     }
@@ -1318,13 +1361,14 @@ class XMTPModule : Module() {
     }
 
     private suspend fun subscribeToGroupMessages(clientAddress: String, id: String) {
+        val client = clients[clientAddress] ?: throw XMTPException("No client")
         val group =
             findGroup(
                 clientAddress = clientAddress,
                 id = id
             ) ?: return
-        subscriptions[group.cacheKey(clientAddress)]?.cancel()
-        subscriptions[group.cacheKey(clientAddress)] =
+        subscriptions[group.cacheKey(client.inboxId)]?.cancel()
+        subscriptions[group.cacheKey(client.inboxId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     group.streamDecryptedMessages().collect { message ->
@@ -1339,7 +1383,7 @@ class XMTPModule : Module() {
                     }
                 } catch (e: Exception) {
                     Log.e("XMTPModule", "Error in messages subscription: $e")
-                    subscriptions[group.cacheKey(clientAddress)]?.cancel()
+                    subscriptions[group.cacheKey(client.inboxId)]?.cancel()
                 }
             }
     }
@@ -1348,16 +1392,16 @@ class XMTPModule : Module() {
         return "messages:$clientAddress"
     }
 
-    private fun getGroupMessagesKey(clientAddress: String): String {
-        return "groupMessages:$clientAddress"
+    private fun getGroupMessagesKey(inboxId: String): String {
+        return "groupMessages:$inboxId"
     }
 
     private fun getConversationsKey(clientAddress: String): String {
         return "conversations:$clientAddress"
     }
 
-    private fun getGroupsKey(clientAddress: String): String {
-        return "groups:$clientAddress"
+    private fun getGroupsKey(inboxId: String): String {
+        return "groups:$inboxId"
     }
 
     private suspend fun unsubscribeFromMessages(
@@ -1376,12 +1420,14 @@ class XMTPModule : Module() {
         clientAddress: String,
         id: String,
     ) {
-        val conversation =
+        val client = clients[clientAddress] ?: throw XMTPException("No client")
+
+        val group =
             findGroup(
                 clientAddress = clientAddress,
                 id = id
             ) ?: return
-        subscriptions[conversation.cacheKey(clientAddress)]?.cancel()
+        subscriptions[group.cacheKey(client.inboxId)]?.cancel()
     }
 
     private fun logV(msg: String) {

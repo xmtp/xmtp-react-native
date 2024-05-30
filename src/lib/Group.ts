@@ -17,30 +17,36 @@ export class Group<
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
-  peerAddresses: string[]
+  peerInboxIds: string[]
   version = ConversationVersion.GROUP
   topic: string
-  adminAddress: string
-  permissionLevel: 'everyone_admin' | 'creator_admin'
+  creatorInboxId: string
+  permissionLevel: 'all_members' | 'admin_only'
+  name: string
+  isGroupActive: boolean
 
   constructor(
     client: XMTP.Client<ContentTypes>,
     params: {
       id: string
       createdAt: number
-      peerAddresses: string[]
-      adminAddress: string
-      permissionLevel: 'everyone_admin' | 'creator_admin'
+      peerInboxIds: string[]
+      creatorInboxId: string
+      permissionLevel: 'all_members' | 'admin_only'
       topic: string
+      name: string
+      isGroupActive: boolean
     }
   ) {
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
-    this.peerAddresses = params.peerAddresses
+    this.peerInboxIds = params.peerInboxIds
     this.topic = params.topic
-    this.adminAddress = params.adminAddress
+    this.creatorInboxId = params.creatorInboxId
     this.permissionLevel = params.permissionLevel
+    this.name = params.name
+    this.isGroupActive = params.isGroupActive
   }
 
   get clientAddress(): string {
@@ -52,8 +58,8 @@ export class Group<
    * To get the latest member addresses from the network, call sync() first.
    * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
    */
-  async memberAddresses(): Promise<string[]> {
-    return XMTP.listMemberAddresses(this.client, this.id)
+  async memberInboxIds(): Promise<string[]> {
+    return XMTP.listMemberInboxIds(this.client, this.id)
   }
 
   /**
@@ -179,6 +185,18 @@ export class Group<
     return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
   }
 
+  async addMembersByInboxId(inboxIds: string[]): Promise<void> {
+    return XMTP.addGroupMembersByInboxId(this.client.address, this.id, inboxIds)
+  }
+
+  async removeMembersByInboxId(inboxIds: string[]): Promise<void> {
+    return XMTP.removeGroupMembersByInboxId(
+      this.client.address,
+      this.id,
+      inboxIds
+    )
+  }
+
   // Returns the group name.
   // To get the latest group name from the network, call sync() first.
   async groupName(): Promise<string> {
@@ -197,8 +215,8 @@ export class Group<
 
   // Returns the address that added you to the group.
   // To get the latest added by address from the network, call sync() first.
-  async addedByAddress(): Promise<string> {
-    return XMTP.addedByAddress(this.client.address, this.id)
+  async addedByInboxId(): Promise<string> {
+    return XMTP.addedByInboxId(this.client.address, this.id)
   }
 
   // Returns whether you are an admin of the group.

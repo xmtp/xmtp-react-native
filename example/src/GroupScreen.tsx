@@ -31,7 +31,7 @@ import {
   StaticAttachmentContent,
   ReplyContent,
   useClient,
-  GroupChangeContent,
+  GroupUpdatedContent,
 } from 'xmtp-react-native-sdk'
 import { ConversationSendPayload } from 'xmtp-react-native-sdk/lib/types'
 
@@ -1074,16 +1074,16 @@ function formatAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
 }
 
-function GroupChangeContents({ content }: { content: GroupChangeContent }) {
+function GroupUpdatedContents({ content }: { content: GroupUpdatedContent }) {
   return (
     <>
       {content.membersAdded.length > 0 &&
         (content.membersAdded.length === 1 ? (
           <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
             {`${formatAddress(
-              content.membersAdded[0].address
+              content.membersAdded[0].inboxId
             )} has been added by ${formatAddress(
-              content.membersAdded[0].initiatedByAddress
+              content.membersAdded[0].initiatedByInboxId
             )}`}
           </Text>
         ) : (
@@ -1091,7 +1091,7 @@ function GroupChangeContents({ content }: { content: GroupChangeContent }) {
             {`${
               content.membersAdded.length
             } members have been added by ${formatAddress(
-              content.membersAdded[0].initiatedByAddress
+              content.membersAdded[0].initiatedByInboxId
             )}`}
           </Text>
         ))}
@@ -1099,9 +1099,9 @@ function GroupChangeContents({ content }: { content: GroupChangeContent }) {
         (content.membersRemoved.length === 1 ? (
           <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
             {`${formatAddress(
-              content.membersRemoved[0].address
+              content.membersRemoved[0].inboxId
             )} has been removed by ${formatAddress(
-              content.membersRemoved[0].initiatedByAddress
+              content.membersRemoved[0].initiatedByInboxId
             )}`}
           </Text>
         ) : (
@@ -1109,7 +1109,7 @@ function GroupChangeContents({ content }: { content: GroupChangeContent }) {
             {`${
               content.membersRemoved.length
             } members have been removed by ${formatAddress(
-              content.membersRemoved[0].initiatedByAddress
+              content.membersRemoved[0].initiatedByInboxId
             )}`}
           </Text>
         ))}
@@ -1172,7 +1172,7 @@ function MessageContents({
     )
   }
   if (contentTypeId === 'xmtp.org/group_membership_change:1.0') {
-    return <GroupChangeContents content={content} />
+    return <GroupUpdatedContents content={content} />
   }
 
   return (

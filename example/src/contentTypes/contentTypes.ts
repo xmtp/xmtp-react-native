@@ -1,5 +1,5 @@
 import {
-  GroupChangeCodec,
+  GroupUpdatedCodec,
   ReactionCodec,
   ReplyCodec,
   RemoteAttachmentCodec,
@@ -11,7 +11,7 @@ export const supportedCodecs = [
   new ReplyCodec(),
   new RemoteAttachmentCodec(),
   new StaticAttachmentCodec(),
-  new GroupChangeCodec(),
+  new GroupUpdatedCodec(),
 ]
 
 export type SupportedContentTypes = typeof supportedCodecs
