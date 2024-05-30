@@ -519,7 +519,9 @@ test('can remove members from a group', async () => {
   await alixGroup.sync()
   const alixGroupMembers = await alixGroup.memberInboxIds()
   if (alixGroupMembers.length !== 2) {
-    throw new Error('num group members should be 2')
+    throw new Error(
+      'num group members should be 2 but was' + alixGroupMembers.length
+    )
   }
 
   await caroGroups[0].sync()
