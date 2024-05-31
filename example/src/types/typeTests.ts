@@ -5,6 +5,7 @@ import {
   EncodedContent,
   JSContentCodec,
   ReactionCodec,
+  ReplyCodec,
   TextCodec,
   sendMessage,
 } from 'xmtp-react-native-sdk'
@@ -177,4 +178,60 @@ export const typeTests = async () => {
     // @ts-expect-error
     test: 'test',
   })
+  const supportedReplyCodecs = [...supportedCodecs, new ReplyCodec()]
+  const replyClient = await Client.createRandom<typeof supportedReplyCodecs>({
+    codecs: supportedReplyCodecs,
+  })
+
+  const replyConvo = (await replyClient.conversations.list())[0]
+  await replyConvo.send({
+    reaction: {
+      action: 'added',
+      content: '💖',
+      reference: '123',
+      schema: 'unicode',
+    },
+  })
+  await replyConvo.send({
+    reply: {
+      reference: '123',
+      content: {
+        reaction: {
+          action: 'added',
+          content: '💖',
+          reference: '123',
+          schema: 'unicode',
+        },
+      },
+    },
+  })
+  await replyConvo.send({
+    reply: {
+      reference: '123',
+      content: {
+        // @ts-expect-error
+        reaction: {
+          action: 'added',
+          content: '💖',
+          reference: '123',
+          // schema: 'unicode',
+        },
+      },
+    },
+  })
+  const replyMessages = await replyConvo.messages()
+  const replyContent = replyMessages[0].content()
+  if (typeof replyContent === 'string') {
+    //
+  } else {
+    const reply = replyContent
+    // Typecheck for reaction
+    if (typeof reply.content === 'string') {
+    } else {
+      // is a reply of some type
+      if (reply.content.text !== 'added') {
+        //
+      }
+    }
+  }
 }

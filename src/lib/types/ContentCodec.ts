@@ -11,8 +11,7 @@ export type ReadReceiptContent = object
 
 export type ReplyContent = {
   reference: string
-  content: any
-  contentType: string
+  content: NativeMessageContent
 }
 
 export type ReactionContent = {
