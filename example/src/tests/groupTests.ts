@@ -519,7 +519,9 @@ test('can remove members from a group', async () => {
   await alixGroup.sync()
   const alixGroupMembers = await alixGroup.memberInboxIds()
   if (alixGroupMembers.length !== 2) {
-    throw new Error('num group members should be 2')
+    throw new Error(
+      'num group members should be 2 but was' + alixGroupMembers.length
+    )
   }
 
   await caroGroups[0].sync()
@@ -528,8 +530,11 @@ test('can remove members from a group', async () => {
   }
 
   const caroGroupMembers = await caroGroups[0].memberInboxIds()
-  if (caroGroupMembers.length !== 2) {
-    throw new Error('num group members should be 2')
+  // should be 3 since they wont get new updates to the group after being removed
+  if (caroGroupMembers.length !== 3) {
+    throw new Error(
+      'num group members should be 3 but was' + caroGroupMembers.length
+    )
   }
 
   return true
@@ -1224,8 +1229,9 @@ test('creating a group should allow group', async () => {
 
   const group = await alix.conversations.newGroup([bo.address])
   const consent = await alix.contacts.isGroupAllowed(group.id)
+  const groupConsent = await group.isAllowed()
 
-  if (!consent) {
+  if (!consent || !groupConsent) {
     throw Error('Group should be allowed')
   }
 
@@ -1233,6 +1239,12 @@ test('creating a group should allow group', async () => {
   assert(
     state === 'allowed',
     `the message should have a consent state of allowed but was ${state}`
+  )
+
+  const consentList = await alix.contacts.consentList()
+  assert(
+    consentList[0].permissionType === 'allowed',
+    `the message should have a consent state of allowed but was ${consentList[0].permissionType}`
   )
 
   return true
@@ -1262,8 +1274,11 @@ test('can deny a group', async () => {
     throw Error('Group should be unknown')
   }
   await bo.contacts.denyGroups([alixGroup.id])
+  await bo.conversations.syncGroups()
+  const boGroups = await bo.conversations.listGroups()
   const isDenied = await bo.contacts.isGroupDenied(alixGroup.id)
-  if (!isDenied) {
+  const isGroupDenied = await boGroups[0].isDenied()
+  if (!isDenied || !isGroupDenied) {
     throw Error('Group should be denied')
   }
   await bo.contacts.allowGroups([alixGroup.id])
@@ -1271,6 +1286,32 @@ test('can deny a group', async () => {
   if (!isAllowed) {
     throw Error('Group should be allowed')
   }
+
+  return true
+})
+
+test('can allow and deny a inbox id', async () => {
+  const [alix, bo] = await createClients(2)
+  const startConsent = await bo.contacts.isInboxAllowed(alix.inboxId)
+  if (startConsent) {
+    throw Error('inbox id should be unknown')
+  }
+  await bo.contacts.denyInboxes([alix.inboxId])
+  const isDenied = await bo.contacts.isInboxDenied(alix.inboxId)
+  if (!isDenied) {
+    throw Error('inbox id should be denied')
+  }
+  await bo.contacts.allowInboxes([alix.inboxId])
+  const isAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  if (!isAllowed) {
+    throw Error('inbox id should be allowed')
+  }
+
+  const consentList = await bo.contacts.consentList()
+  assert(
+    consentList[0].entryType === 'inbox_id',
+    `the message should have a type of inbox_id but was ${consentList[0].entryType}`
+  )
 
   return true
 })

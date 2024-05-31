@@ -1064,6 +1064,34 @@ public class XMTPModule: Module {
 			}
 			try await client.contacts.allow(addresses: addresses)
 		}
+		
+		AsyncFunction("isInboxAllowed") { (clientAddress: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			return await client.contacts.isInboxAllowed(inboxId: inboxId)
+		}
+
+		AsyncFunction("isInboxDenied") { (clientAddress: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			return await client.contacts.isInboxDenied(inboxId: inboxId)
+		}
+
+		AsyncFunction("denyInboxes") { (clientAddress: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			try await client.contacts.denyInboxes(inboxIds: inboxIds)
+		}
+
+		AsyncFunction("allowInboxes") { (clientAddress: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+			try await client.contacts.allowInboxes(inboxIds: inboxIds)
+		}
 
 		AsyncFunction("refreshConsentList") { (clientAddress: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
@@ -1120,7 +1148,7 @@ public class XMTPModule: Module {
         throw Error.noClient
       }
       let groupDataIds = groupIds.compactMap { Data(hex: $0) }
-      try await client.contacts.allowGroup(groupIds: groupDataIds)
+      try await client.contacts.allowGroups(groupIds: groupDataIds)
     }
     
     AsyncFunction("denyGroups") { (clientAddress: String, groupIds: [String]) in
@@ -1128,7 +1156,7 @@ public class XMTPModule: Module {
         throw Error.noClient
       }
       let groupDataIds = groupIds.compactMap { Data(hex: $0) }
-      try await client.contacts.denyGroup(groupIds: groupDataIds)
+      try await client.contacts.denyGroups(groupIds: groupDataIds)
     }
 
     AsyncFunction("isGroupAllowed") { (clientAddress: String, groupId: String) -> Bool in
