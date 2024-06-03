@@ -806,12 +806,12 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listGroupMember") Coroutine { clientAddress: String, groupId: String ->
+        AsyncFunction("listGroupMembers") Coroutine { clientAddress: String, groupId: String ->
             withContext(Dispatchers.IO) {
-                logV("listGroupMember")
+                logV("listGroupMembers")
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
                 val group = findGroup(clientAddress, groupId)
-                group?.members().map { MemberWrapper.encode(it) }
+                group?.members()?.map { MemberWrapper.encode(it) }
             }
         }
 
