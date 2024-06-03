@@ -239,6 +239,26 @@ test('who added me to a group', async () => {
   return true
 })
 
+test('can get members of a group', async () => {
+  const [alixClient, boClient] = await createClients(2)
+  const group = await alixClient.conversations.newGroup([boClient.address])
+
+  const members = await group.members()
+
+  assert(members.length === 2, `Should be 2 members but was ${members.length}`)
+  assert(
+    members[0].addresses[0].toLocaleLowerCase ===
+      boClient.address.toLocaleLowerCase,
+    `Should be ${boClient.address} but was ${members[0].addresses[0]}`
+  )
+  assert(
+    members[0].permissionLevel === "admin",
+    `Should be admin but was ${members[0].permissionLevel}`
+  )
+
+  return true
+})
+
 test('can message in a group', async () => {
   // Create three MLS enabled Clients
   const [alixClient, boClient, caroClient] = await createClients(3)
