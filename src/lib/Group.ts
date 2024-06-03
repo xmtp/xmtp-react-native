@@ -3,6 +3,7 @@ import {
   ConversationContainer,
 } from './ConversationContainer'
 import { DecodedMessage, MessageDeliveryStatus } from './DecodedMessage'
+import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
@@ -294,5 +295,9 @@ export class Group<
 
   async isDenied(): Promise<boolean> {
     return await XMTP.isGroupDenied(this.client.address, this.id)
+  }
+
+  async members(): Promise<Member[]> {
+    return await XMTP.listGroupMembers(this.client.address, this.id)
   }
 }
