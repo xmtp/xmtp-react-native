@@ -67,6 +67,7 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import com.facebook.common.util.Hex
+import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import org.xmtp.android.library.messages.MessageDeliveryStatus
 import org.xmtp.android.library.messages.Topic
 import org.xmtp.android.library.push.Service
@@ -802,6 +803,15 @@ class XMTPModule : Module() {
                 val client = clients[clientAddress] ?: throw XMTPException("No client")
                 val group = findGroup(clientAddress, groupId)
                 group?.members()?.map { it.inboxId }
+            }
+        }
+
+        AsyncFunction("listGroupMember") Coroutine { clientAddress: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("listGroupMember")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val group = findGroup(clientAddress, groupId)
+                group?.members().map { MemberWrapper.encode(it) }
             }
         }
 
