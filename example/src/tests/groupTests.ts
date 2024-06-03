@@ -246,16 +246,30 @@ test('can get members of a group', async () => {
   const members = await group.members()
 
   assert(members.length === 2, `Should be 2 members but was ${members.length}`)
-  assert(
-    members[0].addresses[0].toLocaleLowerCase ===
-      boClient.address.toLocaleLowerCase,
-    `Should be ${boClient.address} but was ${members[0].addresses[0]}`
-  )
-  assert(
-    members[0].permissionLevel === "admin",
-    `Should be admin but was ${members[0].permissionLevel}`
-  )
 
+  // We can not be sure of the order that members will be returned in
+  for (const member of members) {
+    // Alix created the group so they are a super admin
+    if (
+      member.addresses[0].toLocaleLowerCase() ===
+      alixClient.address.toLocaleLowerCase()
+    ) {
+      assert(
+        member.permissionLevel === 'super_admin',
+        `Should be super_admin but was ${member.permissionLevel}`
+      )
+    }
+    // Bo did not create the group so he defaults to permission level "member"
+    if (
+      member.addresses[0].toLocaleLowerCase() ===
+      boClient.address.toLocaleLowerCase()
+    ) {
+      assert(
+        member.permissionLevel === 'member',
+        `Should be member but was ${member.permissionLevel}`
+      )
+    }
+  }
   return true
 })
 

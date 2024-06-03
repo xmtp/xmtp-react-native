@@ -862,7 +862,6 @@ export async function isInboxDenied(
   return XMTPModule.isInboxDenied(clientAddress, inboxId)
 }
 
-
 export async function processGroupMessage<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
