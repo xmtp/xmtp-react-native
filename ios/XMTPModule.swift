@@ -697,6 +697,20 @@ public class XMTPModule: Module {
 			return try group.members.map(\.inboxId)
 		}
 		
+		AsyncFunction("listGroupMembers") { (clientAddress: String, groupId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: clientAddress) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(clientAddress: clientAddress, id: groupId) else {
+				throw Error.conversationNotFound("no group found for \(groupId)")
+			}
+			return try group.members.compactMap { member in
+				return try MemberWrapper.encode(member)
+			}
+		}
+		
+		
 		AsyncFunction("syncGroups") { (clientAddress: String) in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient

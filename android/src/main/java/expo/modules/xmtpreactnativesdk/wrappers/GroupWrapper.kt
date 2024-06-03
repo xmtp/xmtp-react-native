@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.Group
+import org.xmtp.android.library.codecs.Attachment
 import org.xmtp.android.library.toHex
 import uniffi.xmtpv3.GroupPermissions
 

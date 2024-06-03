@@ -18,6 +18,7 @@ import {
 } from './lib/ConversationContainer'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
 import { Group } from './lib/Group'
+import { Member } from './lib/Member'
 import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
@@ -145,6 +146,17 @@ export async function listMemberInboxIds<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(client: Client<ContentTypes>, id: string): Promise<string[]> {
   return XMTPModule.listMemberInboxIds(client.address, id)
+}
+
+export async function listGroupMembers(
+  clientAddress: string,
+  id: string
+): Promise<Member[]> {
+  const members = await XMTPModule.listGroupMembers(clientAddress, id)
+
+  return members.map((json: string) => {
+    return Member.from(json)
+  })
 }
 
 export async function sendMessageToGroup(
@@ -893,3 +905,4 @@ export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
 export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus }
 export { Group } from './lib/Group'
+export { Member } from './lib/Member'
