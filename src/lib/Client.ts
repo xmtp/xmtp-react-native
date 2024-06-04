@@ -184,7 +184,7 @@ export class Client<
       options.env,
       options.appVersion,
       Boolean(options.enableAlphaMls),
-      options.dbEncryptionKey
+      options.dbEncryptionKey,
       options.dbDirectory
     )
 
