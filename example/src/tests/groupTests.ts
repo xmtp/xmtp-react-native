@@ -67,6 +67,60 @@ test('can delete a local database', async () => {
   return true
 })
 
+test('can make a MLS V3 client with encryption key and database directory', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const dbDir = 'xmtp_db'
+
+  const key = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const client = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+    dbEncryptionKey: key,
+    dbDirectory: dbDir,
+  })
+
+  const anotherClient = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+    dbEncryptionKey: key,
+  })
+
+  await client.conversations.newGroup([anotherClient.address])
+  assert(
+    (await client.conversations.listGroups()).length === 1,
+    `should have a group size of 1 but was ${
+      (await client.conversations.listGroups()).length
+    }`
+  )
+
+  const bundle = await client.exportKeyBundle()
+  const clientFromBundle = await Client.createFromKeyBundle(bundle, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableAlphaMls: true,
+    dbEncryptionKey: key,
+    dbDirectory: dbDir,
+  })
+
+  assert(
+    clientFromBundle.address === client.address,
+    `clients dont match ${client.address} and ${clientFromBundle.address}`
+  )
+
+  assert(
+    (await clientFromBundle.conversations.listGroups()).length === 1,
+    `should have a group size of 1 but was ${
+      (await clientFromBundle.conversations.listGroups()).length
+    }`
+  )
+  return true
+})
+
 test('can drop a local database', async () => {
   const [client, anotherClient] = await createClients(2)
 
