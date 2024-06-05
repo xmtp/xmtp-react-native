@@ -55,8 +55,8 @@ export class Group<
   }
 
   /**
-   * This method returns an array of addresses associated with the group.
-   * To get the latest member addresses from the network, call sync() first.
+   * This method returns an array of inboxIds associated with the group.
+   * To get the latest member inboxIds from the network, call sync() first.
    * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
    */
   async memberInboxIds(): Promise<string[]> {
