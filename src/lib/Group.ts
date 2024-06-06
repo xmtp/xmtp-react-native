@@ -55,8 +55,8 @@ export class Group<
   }
 
   /**
-   * This method returns an array of inboxIds associated with the group.
-   * To get the latest member inboxIds from the network, call sync() first.
+   * This method returns an array of inbox ids associated with the group.
+   * To get the latest member inbox ids from the network, call sync() first.
    * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
    */
   async memberInboxIds(): Promise<string[]> {
@@ -178,18 +178,38 @@ export class Group<
     }
   }
 
+  /**
+   *
+   * @param addresses addresses to add to the group
+   * @returns
+   */
   async addMembers(addresses: string[]): Promise<void> {
     return XMTP.addGroupMembers(this.client.address, this.id, addresses)
   }
 
+  /**
+   *
+   * @param addresses addresses to remove from the group
+   * @returns
+   */
   async removeMembers(addresses: string[]): Promise<void> {
     return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
   }
 
+  /**
+   *
+   * @param inboxIds inboxIds to add to the group
+   * @returns
+   */
   async addMembersByInboxId(inboxIds: string[]): Promise<void> {
     return XMTP.addGroupMembersByInboxId(this.client.address, this.id, inboxIds)
   }
 
+  /**
+   *
+   * @param inboxIds inboxIds to remove from the group
+   * @returns
+   */
   async removeMembersByInboxId(inboxIds: string[]): Promise<void> {
     return XMTP.removeGroupMembersByInboxId(
       this.client.address,
@@ -198,74 +218,119 @@ export class Group<
     )
   }
 
-  // Returns the group name.
-  // To get the latest group name from the network, call sync() first.
+  /**
+   * Returns the group name.
+   * To get the latest group name from the network, call sync() first.
+   * @returns {string} A Promise that resolves to the group name.
+   */
   async groupName(): Promise<string> {
     return XMTP.groupName(this.client.address, this.id)
   }
 
-  // Updates the group name.
-  // Will throw if the user does not have the required permissions.
+  /**
+   * Updates the group name.
+   * Will throw if the user does not have the required permissions.
+   * @param {string} groupName new group name
+   * @returns
+   */
+
   async updateGroupName(groupName: string): Promise<void> {
     return XMTP.updateGroupName(this.client.address, this.id, groupName)
   }
 
-  // Returns whether the group is active.
-  // To get the latest active status from the network, call sync() first.
+  /**
+   * Returns whether the group is active.
+   * To get the latest active status from the network, call sync() first
+   * @returns {Promise<boolean>} A Promise that resolves if the group is active or not
+   */
+
   async isActive(): Promise<boolean> {
     return XMTP.isGroupActive(this.client.address, this.id)
   }
 
-  // Returns the address that added you to the group.
-  // To get the latest added by address from the network, call sync() first.
+  /**
+   * Returns the inbox id that added you to the group.
+   * To get the latest added by inbox id from the network, call sync() first.
+   * @returns {Promise<string>} A Promise that resolves to the inbox id that added you to the group.
+   */
   async addedByInboxId(): Promise<string> {
     return XMTP.addedByInboxId(this.client.address, this.id)
   }
 
-  // Returns whether a given inboxId is an admin of the group.
-  // To get the latest admin status from the network, call sync() first.
+  /**
+   *
+   * @param inboxId
+   * @returns {Promise<boolean>} whether a given inboxId is an admin of the group.
+   * To get the latest admin status from the network, call sync() first.
+   */
   async isAdmin(inboxId: string): Promise<boolean> {
     return XMTP.isAdmin(this.client.address, this.id, inboxId)
   }
 
-  // Returns whether a given inboxId is a super admin of the group.
-  // To get the latest super admin status from the network, call sync() first.
+  /**
+   *
+   * @param inboxId
+   * @returns {Promise<boolean>} whether a given inboxId is a super admin of the group.
+   * To get the latest super admin status from the network, call sync() first.
+   */
   async isSuperAdmin(inboxId: string): Promise<boolean> {
     return XMTP.isSuperAdmin(this.client.address, this.id, inboxId)
   }
 
-  // Returns an array of inboxIds that are admins of the group.
-  // To get the latest admin list from the network, call sync() first.
+  /**
+   *
+   * @returns {Promise<string[]>} A Promise that resolves to an array of inboxIds that are admins of the group.
+   * To get the latest admin list from the network, call sync() first.
+   */
   async listAdmins(): Promise<string[]> {
     return XMTP.listAdmins(this.client.address, this.id)
   }
 
-  // Returns an array of inboxIds that are super admins of the group.
-  // To get the latest super admin list from the network, call sync() first.
+  /**
+   *
+   * @returns {Promise<string[]>} A Promise that resolves to an array of inboxIds that are super admins of the group.
+   * To get the latest super admin list from the network, call sync() first.
+   */
   async listSuperAdmins(): Promise<string[]> {
     return XMTP.listSuperAdmins(this.client.address, this.id)
   }
 
-  // Adds an inboxId to the group admins.
-  // Will throw if the user does not have the required permissions.
+  /**
+   *
+   * @param {string} inboxId
+   * @returns {Promise<void>} A Promise that resolves when the inboxId is added to the group admins.
+   * Will throw if the user does not have the required permissions.
+   */
   async addAdmin(inboxId: string): Promise<void> {
     return XMTP.addAdmin(this.client.address, this.id, inboxId)
   }
 
-  // Adds an inboxId to the group super admins.
-  // Will throw if the user does not have the required permissions.
+  /**
+   *
+   * @param {string} inboxId
+   * @returns {Promise<void>} A Promise that resolves when the inboxId is added to the group super admins.
+   * Will throw if the user does not have the required permissions.
+   */
   async addSuperAdmin(inboxId: string): Promise<void> {
     return XMTP.addSuperAdmin(this.client.address, this.id, inboxId)
   }
 
-  // Removes an inboxId from the group admins.
-  // Will throw if the user does not have the required permissions.
+  /**
+   *
+   * @param {string} inboxId
+   * @returns {Promise<void>} A Promise that resolves when the inboxId is removed from the group admins.
+   * Will throw if the user does not have the required permissions.
+   */
   async removeAdmin(inboxId: string): Promise<void> {
     return XMTP.removeAdmin(this.client.address, this.id, inboxId)
   }
 
-  // Removes an inboxId from the group super admins.
-  // Will throw if the user does not have the required permissions.
+  /**
+   *
+   * @param {string} inboxId
+   * @returns {Promise<void>} A Promise that resolves when the inboxId is removed from the group super admins.
+   * Will throw if the user does not have the required permissions.
+   */
   async removeSuperAdmin(inboxId: string): Promise<void> {
     return XMTP.removeSuperAdmin(this.client.address, this.id, inboxId)
   }
@@ -289,14 +354,25 @@ export class Group<
     return await XMTP.groupConsentState(this.clientAddress, this.id)
   }
 
+  /**
+   * @returns {Promise<boolean>} a boolean indicating whether the group is allowed by the user.
+   */
   async isAllowed(): Promise<boolean> {
     return await XMTP.isGroupAllowed(this.client.address, this.id)
   }
 
+  /**
+   * @returns {Promise<boolean>}  a boolean indicating whether the group is denied by the user.
+   */
   async isDenied(): Promise<boolean> {
     return await XMTP.isGroupDenied(this.client.address, this.id)
   }
 
+  /**
+   *
+   * @returns {Promise<Member[]>} A Promise that resolves to an array of Member objects.
+   * To get the latest member list from the network, call sync() first.
+   */
   async members(): Promise<Member[]> {
     return await XMTP.listGroupMembers(this.client.address, this.id)
   }
