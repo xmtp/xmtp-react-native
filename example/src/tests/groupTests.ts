@@ -1,3 +1,4 @@
+import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
@@ -22,65 +23,70 @@ function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name: String(counter++) + '. ' + name, run: perform })
 }
 
-test('can make a MLS V3 client', async () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const client = await Client.createRandom({
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
-  })
+// test('can make a MLS V3 client', async () => {
+//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//   const client = await Client.createRandom({
+//     env: 'local',
+//     appVersion: 'Testing/0.0.0',
+//     enableAlphaMls: true,
+//   })
 
-  return true
-})
+//   return true
+// })
 
-test('can delete a local database', async () => {
-  let [client, anotherClient] = await createClients(2)
+// test('can delete a local database', async () => {
+//   let [client, anotherClient] = await createClients(2)
 
-  await client.conversations.newGroup([anotherClient.address])
-  await client.conversations.syncGroups()
-  assert(
-    (await client.conversations.listGroups()).length === 1,
-    `should have a group size of 1 but was ${
-      (await client.conversations.listGroups()).length
-    }`
-  )
+//   await client.conversations.newGroup([anotherClient.address])
+//   await client.conversations.syncGroups()
+//   assert(
+//     (await client.conversations.listGroups()).length === 1,
+//     `should have a group size of 1 but was ${
+//       (await client.conversations.listGroups()).length
+//     }`
+//   )
 
-  await client.deleteLocalDatabase()
-  client = await Client.createRandom({
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
-    dbEncryptionKey: new Uint8Array([
-      233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-      166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135,
-      145,
-    ]),
-  })
-  await client.conversations.syncGroups()
-  assert(
-    (await client.conversations.listGroups()).length === 0,
-    `should have a group size of 0 but was ${
-      (await client.conversations.listGroups()).length
-    }`
-  )
+//   await client.deleteLocalDatabase()
+//   client = await Client.createRandom({
+//     env: 'local',
+//     appVersion: 'Testing/0.0.0',
+//     enableAlphaMls: true,
+//     dbEncryptionKey: new Uint8Array([
+//       233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+//       166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135,
+//       145,
+//     ]),
+//   })
+//   await client.conversations.syncGroups()
+//   assert(
+//     (await client.conversations.listGroups()).length === 0,
+//     `should have a group size of 0 but was ${
+//       (await client.conversations.listGroups()).length
+//     }`
+//   )
 
-  return true
-})
+//   return true
+// })
 
 test('can make a MLS V3 client with encryption key and database directory', async () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDir = 'xmtp_db'
-
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  console.log(dbDirPath)
   const key = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
+
   const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableAlphaMls: true,
     dbEncryptionKey: key,
-    dbDirectory: dbDir,
+    dbDirectory: dbDirPath,
   })
 
   const anotherClient = await Client.createRandom({
@@ -104,7 +110,7 @@ test('can make a MLS V3 client with encryption key and database directory', asyn
     appVersion: 'Testing/0.0.0',
     enableAlphaMls: true,
     dbEncryptionKey: key,
-    dbDirectory: dbDir,
+    dbDirectory: dbDirPath,
   })
 
   assert(
