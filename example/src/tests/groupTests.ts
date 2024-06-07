@@ -1,3 +1,4 @@
+import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
@@ -69,18 +70,22 @@ test('can delete a local database', async () => {
 
 test('can make a MLS V3 client with encryption key and database directory', async () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDir = 'xmtp_db'
-
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
   const key = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
+
   const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableAlphaMls: true,
     dbEncryptionKey: key,
-    dbDirectory: dbDir,
+    dbDirectory: dbDirPath,
   })
 
   const anotherClient = await Client.createRandom({
@@ -104,7 +109,7 @@ test('can make a MLS V3 client with encryption key and database directory', asyn
     appVersion: 'Testing/0.0.0',
     enableAlphaMls: true,
     dbEncryptionKey: key,
-    dbDirectory: dbDir,
+    dbDirectory: dbDirPath,
   })
 
   assert(
