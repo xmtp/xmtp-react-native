@@ -718,6 +718,16 @@ test('can stream groups', async () => {
     throw Error('Expected group length 3 but it is: ' + groups.length)
   }
 
+  // bo creates a group with caro and then adds alix so a stream callback is fired
+  const boCaroGroup = await boClient.conversations.newGroup([
+    caroClient.address,
+  ])
+  await boCaroGroup.addMembers([alixClient.address])
+  await delayToPropogate()
+  if ((groups.length as number) !== 4) {
+    throw Error('Unexpected num groups (should be 4): ' + groups.length)
+  }
+
   cancelStreamGroups()
   await delayToPropogate()
 
@@ -727,8 +737,8 @@ test('can stream groups', async () => {
     alixClient.address,
   ])
   await delayToPropogate()
-  if ((groups.length as number) !== 3) {
-    throw Error('Unexpected num groups (should be 3): ' + groups.length)
+  if ((groups.length as number) !== 4) {
+    throw Error('Unexpected num groups (should be 4): ' + groups.length)
   }
 
   return true
