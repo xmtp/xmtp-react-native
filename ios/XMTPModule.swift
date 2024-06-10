@@ -142,7 +142,7 @@ public class XMTPModule: Module {
 			let client = try await XMTP.Client.create(account: signer, options: options)
 			await clientsManager.updateClient(key: address, client: client)
 			self.signer = nil
-			sendEvent("authed", ["inboxId": client.inboxID])
+			sendEvent("authed", try ClientWrapper.encodeToObj(client))
 		}
 
 		Function("receiveSignature") { (requestID: String, signature: String) in
@@ -168,10 +168,7 @@ public class XMTPModule: Module {
 			let client = try await Client.create(account: privateKey, options: options)
 
 			await clientsManager.updateClient(key: client.address, client: client)
-			return [
-				"address": client.address,
-				"inboxId": client.inboxID
-			]
+			return try ClientWrapper.encodeToObj(client)
 		}
 
 		// Create a client using its serialized key bundle.
@@ -188,10 +185,7 @@ public class XMTPModule: Module {
 				let options = createClientConfig(env: environment, appVersion: appVersion, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbDirectory: dbDirectory)
 				let client = try await Client.from(bundle: bundle, options: options)
 				await clientsManager.updateClient(key: client.address, client: client)
-				return [
-					"address": client.address,
-					"inboxId": client.inboxID
-				]
+				return try ClientWrapper.encodeToObj(client)
 			} catch {
 				print("ERRO! Failed to create client: \(error)")
 				throw error
