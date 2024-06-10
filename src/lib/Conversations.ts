@@ -41,7 +41,7 @@ export default class Conversations<
   }
 
   async getHmacKeys(): Promise<keystore.GetConversationHmacKeysResponse> {
-    return await XMTPModule.getHmacKeys(this.client.address)
+    return await XMTPModule.getHmacKeys(this.client.inboxId)
   }
 
   async importTopicData(
@@ -117,14 +117,14 @@ export default class Conversations<
   async streamGroups(
     callback: (group: Group<ContentTypes>) => Promise<void>
   ): Promise<() => void> {
-    XMTPModule.subscribeToGroups(this.client.address)
+    XMTPModule.subscribeToGroups(this.client.inboxId)
     const groupsSubscription = XMTPModule.emitter.addListener(
       EventTypes.Group,
       async ({
-        clientAddress,
+        inboxId,
         group,
       }: {
-        clientAddress: string
+        inboxId: string
         group: Group<ContentTypes>
       }) => {
         if (this.known[group.id]) {
@@ -137,7 +137,7 @@ export default class Conversations<
     this.subscriptions[EventTypes.Group] = groupsSubscription
     return () => {
       groupsSubscription.remove()
-      XMTPModule.unsubscribeFromGroups(this.client.address)
+      XMTPModule.unsubscribeFromGroups(this.client.inboxId)
     }
   }
 
@@ -165,7 +165,7 @@ export default class Conversations<
    * and save them to the local state.
    */
   async syncGroups() {
-    await XMTPModule.syncGroups(this.client.address)
+    await XMTPModule.syncGroups(this.client.inboxId)
   }
 
   /**
@@ -180,17 +180,17 @@ export default class Conversations<
   async stream(
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>
   ) {
-    XMTPModule.subscribeToConversations(this.client.address)
+    XMTPModule.subscribeToConversations(this.client.inboxId)
     const subscription = XMTPModule.emitter.addListener(
       EventTypes.Conversation,
       async ({
-        clientAddress,
+        inboxId,
         conversation,
       }: {
-        clientAddress: string
+        inboxId: string
         conversation: ConversationParams
       }) => {
-        if (clientAddress !== this.client.address) {
+        if (inboxId !== this.client.inboxId) {
           return
         }
         if (this.known[conversation.topic]) {
@@ -218,17 +218,17 @@ export default class Conversations<
       conversation: ConversationContainer<ContentTypes>
     ) => Promise<void>
   ) {
-    XMTPModule.subscribeToAll(this.client.address)
+    XMTPModule.subscribeToAll(this.client.inboxId)
     const subscription = XMTPModule.emitter.addListener(
       EventTypes.ConversationContainer,
       async ({
-        clientAddress,
+        inboxId,
         conversationContainer,
       }: {
-        clientAddress: string
+        inboxId: string
         conversationContainer: ConversationContainer<ContentTypes>
       }) => {
-        if (clientAddress !== this.client.address) {
+        if (inboxId !== this.client.inboxId) {
           return
         }
         if (this.known[conversationContainer.topic]) {
@@ -268,17 +268,17 @@ export default class Conversations<
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>,
     includeGroups: boolean = false
   ): Promise<void> {
-    XMTPModule.subscribeToAllMessages(this.client.address, includeGroups)
+    XMTPModule.subscribeToAllMessages(this.client.inboxId, includeGroups)
     const subscription = XMTPModule.emitter.addListener(
       EventTypes.Message,
       async ({
-        clientAddress,
+        inboxId,
         message,
       }: {
-        clientAddress: string
+        inboxId: string
         message: DecodedMessage
       }) => {
-        if (clientAddress !== this.client.address) {
+        if (inboxId !== this.client.inboxId) {
           return
         }
         if (this.known[message.id]) {
@@ -302,17 +302,17 @@ export default class Conversations<
   async streamAllGroupMessages(
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<void> {
-    XMTPModule.subscribeToAllGroupMessages(this.client.address)
+    XMTPModule.subscribeToAllGroupMessages(this.client.inboxId)
     const subscription = XMTPModule.emitter.addListener(
       EventTypes.AllGroupMessage,
       async ({
-        clientAddress,
+        inboxId,
         message,
       }: {
-        clientAddress: string
+        inboxId: string
         message: DecodedMessage
       }) => {
-        if (clientAddress !== this.client.address) {
+        if (inboxId !== this.client.inboxId) {
           return
         }
         if (this.known[message.id]) {
@@ -346,7 +346,7 @@ export default class Conversations<
       this.subscriptions[EventTypes.Conversation].remove()
       delete this.subscriptions[EventTypes.Conversation]
     }
-    XMTPModule.unsubscribeFromConversations(this.client.address)
+    XMTPModule.unsubscribeFromConversations(this.client.inboxId)
   }
 
   /**
@@ -368,7 +368,7 @@ export default class Conversations<
       this.subscriptions[EventTypes.Message].remove()
       delete this.subscriptions[EventTypes.Message]
     }
-    XMTPModule.unsubscribeFromAllMessages(this.client.address)
+    XMTPModule.unsubscribeFromAllMessages(this.client.inboxId)
   }
 
   /**

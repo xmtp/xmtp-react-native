@@ -50,10 +50,6 @@ export class Group<
     this.isGroupActive = params.isGroupActive
   }
 
-  get clientAddress(): string {
-    return this.client.address
-  }
-
   /**
    * This method returns an array of inbox ids associated with the group.
    * To get the latest member inbox ids from the network, call sync() first.
@@ -87,7 +83,7 @@ export class Group<
       }
 
       return await XMTP.sendMessageToGroup(
-        this.client.address,
+        this.client.inboxId,
         this.id,
         content
       )
@@ -126,7 +122,7 @@ export class Group<
    * associated with the group and saves them to the local state.
    */
   async sync() {
-    await XMTP.syncGroup(this.client.address, this.id)
+    await XMTP.syncGroup(this.client.inboxId, this.id)
   }
 
   /**
@@ -142,21 +138,21 @@ export class Group<
   async streamGroupMessages(
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<() => void> {
-    await XMTP.subscribeToGroupMessages(this.client.address, this.id)
+    await XMTP.subscribeToGroupMessages(this.client.inboxId, this.id)
     const hasSeen = {}
     const messageSubscription = XMTP.emitter.addListener(
       EventTypes.GroupMessage,
       async ({
-        clientAddress,
+        inboxId,
         message,
         groupId,
       }: {
-        clientAddress: string
+        inboxId: string
         message: DecodedMessage<ContentTypes>
         groupId: string
       }) => {
         // Long term these checks should be able to be done on the native layer as well, but additional checks in JS for safety
-        if (clientAddress !== this.client.address) {
+        if (inboxId !== this.client.inboxId) {
           return
         }
         if (groupId !== this.id) {
@@ -174,7 +170,7 @@ export class Group<
     )
     return async () => {
       messageSubscription.remove()
-      await XMTP.unsubscribeFromGroupMessages(this.client.address, this.id)
+      await XMTP.unsubscribeFromGroupMessages(this.client.inboxId, this.id)
     }
   }
 
@@ -184,7 +180,7 @@ export class Group<
    * @returns
    */
   async addMembers(addresses: string[]): Promise<void> {
-    return XMTP.addGroupMembers(this.client.address, this.id, addresses)
+    return XMTP.addGroupMembers(this.client.inboxId, this.id, addresses)
   }
 
   /**
@@ -193,7 +189,7 @@ export class Group<
    * @returns
    */
   async removeMembers(addresses: string[]): Promise<void> {
-    return XMTP.removeGroupMembers(this.client.address, this.id, addresses)
+    return XMTP.removeGroupMembers(this.client.inboxId, this.id, addresses)
   }
 
   /**
@@ -202,7 +198,7 @@ export class Group<
    * @returns
    */
   async addMembersByInboxId(inboxIds: string[]): Promise<void> {
-    return XMTP.addGroupMembersByInboxId(this.client.address, this.id, inboxIds)
+    return XMTP.addGroupMembersByInboxId(this.client.inboxId, this.id, inboxIds)
   }
 
   /**
@@ -212,7 +208,7 @@ export class Group<
    */
   async removeMembersByInboxId(inboxIds: string[]): Promise<void> {
     return XMTP.removeGroupMembersByInboxId(
-      this.client.address,
+      this.client.inboxId,
       this.id,
       inboxIds
     )
@@ -224,7 +220,7 @@ export class Group<
    * @returns {string} A Promise that resolves to the group name.
    */
   async groupName(): Promise<string> {
-    return XMTP.groupName(this.client.address, this.id)
+    return XMTP.groupName(this.client.inboxId, this.id)
   }
 
   /**
@@ -235,7 +231,7 @@ export class Group<
    */
 
   async updateGroupName(groupName: string): Promise<void> {
-    return XMTP.updateGroupName(this.client.address, this.id, groupName)
+    return XMTP.updateGroupName(this.client.inboxId, this.id, groupName)
   }
 
   /**
@@ -245,7 +241,7 @@ export class Group<
    */
 
   async isActive(): Promise<boolean> {
-    return XMTP.isGroupActive(this.client.address, this.id)
+    return XMTP.isGroupActive(this.client.inboxId, this.id)
   }
 
   /**
@@ -254,7 +250,7 @@ export class Group<
    * @returns {Promise<string>} A Promise that resolves to the inbox id that added you to the group.
    */
   async addedByInboxId(): Promise<string> {
-    return XMTP.addedByInboxId(this.client.address, this.id)
+    return XMTP.addedByInboxId(this.client.inboxId, this.id)
   }
 
   /**
@@ -264,7 +260,7 @@ export class Group<
    * To get the latest admin status from the network, call sync() first.
    */
   async isAdmin(inboxId: string): Promise<boolean> {
-    return XMTP.isAdmin(this.client.address, this.id, inboxId)
+    return XMTP.isAdmin(this.id, inboxId)
   }
 
   /**
@@ -274,7 +270,7 @@ export class Group<
    * To get the latest super admin status from the network, call sync() first.
    */
   async isSuperAdmin(inboxId: string): Promise<boolean> {
-    return XMTP.isSuperAdmin(this.client.address, this.id, inboxId)
+    return XMTP.isSuperAdmin(this.id, inboxId)
   }
 
   /**
@@ -283,7 +279,7 @@ export class Group<
    * To get the latest admin list from the network, call sync() first.
    */
   async listAdmins(): Promise<string[]> {
-    return XMTP.listAdmins(this.client.address, this.id)
+    return XMTP.listAdmins(this.client.inboxId, this.id)
   }
 
   /**
@@ -292,7 +288,7 @@ export class Group<
    * To get the latest super admin list from the network, call sync() first.
    */
   async listSuperAdmins(): Promise<string[]> {
-    return XMTP.listSuperAdmins(this.client.address, this.id)
+    return XMTP.listSuperAdmins(this.client.inboxId, this.id)
   }
 
   /**
@@ -302,7 +298,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async addAdmin(inboxId: string): Promise<void> {
-    return XMTP.addAdmin(this.client.address, this.id, inboxId)
+    return XMTP.addAdmin(this.id, inboxId)
   }
 
   /**
@@ -312,7 +308,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async addSuperAdmin(inboxId: string): Promise<void> {
-    return XMTP.addSuperAdmin(this.client.address, this.id, inboxId)
+    return XMTP.addSuperAdmin(this.id, inboxId)
   }
 
   /**
@@ -322,7 +318,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async removeAdmin(inboxId: string): Promise<void> {
-    return XMTP.removeAdmin(this.client.address, this.id, inboxId)
+    return XMTP.removeAdmin(this.id, inboxId)
   }
 
   /**
@@ -332,7 +328,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async removeSuperAdmin(inboxId: string): Promise<void> {
-    return XMTP.removeSuperAdmin(this.client.address, this.id, inboxId)
+    return XMTP.removeSuperAdmin(this.id, inboxId)
   }
 
   async processMessage(
@@ -351,21 +347,21 @@ export class Group<
   }
 
   async consentState(): Promise<'allowed' | 'denied' | 'unknown'> {
-    return await XMTP.groupConsentState(this.clientAddress, this.id)
+    return await XMTP.groupConsentState(this.client.inboxId, this.id)
   }
 
   /**
    * @returns {Promise<boolean>} a boolean indicating whether the group is allowed by the user.
    */
   async isAllowed(): Promise<boolean> {
-    return await XMTP.isGroupAllowed(this.client.address, this.id)
+    return await XMTP.isGroupAllowed(this.client.inboxId, this.id)
   }
 
   /**
    * @returns {Promise<boolean>}  a boolean indicating whether the group is denied by the user.
    */
   async isDenied(): Promise<boolean> {
-    return await XMTP.isGroupDenied(this.client.address, this.id)
+    return await XMTP.isGroupDenied(this.client.inboxId, this.id)
   }
 
   /**
@@ -374,6 +370,6 @@ export class Group<
    * To get the latest member list from the network, call sync() first.
    */
   async members(): Promise<Member[]> {
-    return await XMTP.listGroupMembers(this.client.address, this.id)
+    return await XMTP.listGroupMembers(this.client.inboxId, this.id)
   }
 }
