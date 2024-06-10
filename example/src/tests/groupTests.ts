@@ -667,6 +667,46 @@ test('can remove and add members from a group by inbox id', async () => {
   return true
 })
 
+test('stream groups and all messages', async () => {
+  const [alixClient, boClient] = await createClients(2)
+  console.log('Created clients')
+
+  const aliceGroups = await alixClient.conversations.listGroups()
+  console.log('Listed groups')
+  assert(aliceGroups.length === 0, 'alice should have no groups')
+
+  let groupCallbacks = 0
+  let messageCallbacks = 0
+
+  await alixClient.conversations.streamGroups(async () => {
+    groupCallbacks++
+  })
+
+  await alixClient.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  console.log('setup streams')
+
+  await delayToPropogate()
+
+  const group = await boClient.conversations.newGroup([alixClient.address])
+  await group.send('hello')
+
+  console.log('created group')
+  assert(group instanceof Group, 'group should be a Group')
+
+  await delayToPropogate()
+
+  assert(groupCallbacks === 1, 'group stream should have received 1 group')
+  assert(
+    messageCallbacks === 1,
+    'message stream should have received 1 message'
+  )
+
+  return true
+})
+
 test('can stream groups', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
