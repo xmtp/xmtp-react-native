@@ -30,6 +30,7 @@ export class Client<
 > {
   address: string
   inboxId: string
+  installationId: string
   conversations: Conversations<ContentTypes>
   contacts: Contacts
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
@@ -92,13 +93,23 @@ export class Client<
 
         this.authSubscription = XMTPModule.emitter.addListener(
           'authed',
-          async (message: { inboxId: string }) => {
+          async (message: {
+            inboxId: string
+            address: string
+            installationId: string
+          }) => {
             this.removeSubscription(enableSubscription)
             this.removeSubscription(createSubscription)
             this.removeSignSubscription()
             this.removeAuthSubscription()
-            const address = await signer.getAddress()
-            resolve(new Client(address, message.inboxId, opts?.codecs || []))
+            resolve(
+              new Client(
+                message.address,
+                message.inboxId,
+                message.installationId,
+                opts?.codecs || []
+              )
+            )
           }
         )
         await XMTPModule.auth(
@@ -143,7 +154,7 @@ export class Client<
     const options = defaultOptions(opts)
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
-    const addressInboxId = await XMTPModule.createRandom(
+    const client = await XMTPModule.createRandom(
       options.env,
       options.appVersion,
       Boolean(createSubscription),
@@ -156,8 +167,9 @@ export class Client<
     this.removeSubscription(createSubscription)
 
     return new Client(
-      addressInboxId['address'],
-      addressInboxId['inboxId'],
+      client['address'],
+      client['inboxId'],
+      client['installationId'],
       opts?.codecs || []
     )
   }
@@ -179,7 +191,7 @@ export class Client<
     opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
     const options = defaultOptions(opts)
-    const addressInboxId = await XMTPModule.createFromKeyBundle(
+    const client = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
       options.appVersion,
@@ -189,8 +201,9 @@ export class Client<
     )
 
     return new Client(
-      addressInboxId['address'],
-      addressInboxId['inboxId'],
+      client['address'],
+      client['inboxId'],
+      client['installationId'],
       opts?.codecs || []
     )
   }
@@ -271,10 +284,12 @@ export class Client<
   constructor(
     address: string,
     inboxId: string,
+    installationId: string,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {
     this.address = address
     this.inboxId = inboxId
+    this.installationId = installationId
     this.conversations = new Conversations(this)
     this.contacts = new Contacts(this)
     this.codecRegistry = {}

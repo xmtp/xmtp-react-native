@@ -67,6 +67,7 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import com.facebook.common.util.Hex
+import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import org.xmtp.android.library.messages.MessageDeliveryStatus
 import org.xmtp.android.library.messages.Topic
@@ -242,7 +243,7 @@ class XMTPModule : Module() {
             clients[address] = client
             ContentJson.Companion
             signer = null
-            sendEvent("authed", mapOf("inboxId" to client.inboxId))
+            sendEvent("authed", ClientWrapper.encodeToObj(client))
         }
 
         Function("receiveSignature") { requestID: String, signature: String ->
@@ -282,10 +283,7 @@ class XMTPModule : Module() {
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
             clients[randomClient.address] = randomClient
-            mapOf (
-                "address" to randomClient.address,
-                "inboxId" to randomClient.inboxId
-            )
+            ClientWrapper.encodeToObj(randomClient)
         }
 
         AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
@@ -315,10 +313,7 @@ class XMTPModule : Module() {
                 val client = Client().buildFromBundle(bundle = bundle, options = options)
                 ContentJson.Companion
                 clients[client.address] = client
-                mapOf (
-                    "address" to client.address,
-                    "inboxId" to client.inboxId
-                )
+                ClientWrapper.encodeToObj(client)
             } catch (e: Exception) {
                 throw XMTPException("Failed to create client: $e")
             }
