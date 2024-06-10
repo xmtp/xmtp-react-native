@@ -8,7 +8,7 @@
 import Foundation
 import XMTP
 
-// Wrapper around XMTP.Group to allow passing these objects back into react native.
+// Wrapper around XMTP.Member to allow passing these objects back into react native.
 struct MemberWrapper {
 	static func encodeToObj(_ member: XMTP.Member) throws -> [String: Any] {
 		let permissionString = switch member.permissionLevel {

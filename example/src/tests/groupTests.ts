@@ -191,6 +191,16 @@ test('can make a MLS V3 client from bundle', async () => {
     `clients dont match ${client2.address} and ${client.address}`
   )
 
+  assert(
+    client.inboxId === client2.inboxId,
+    `clients dont match ${client2.inboxId} and ${client.inboxId}`
+  )
+
+  assert(
+    client.installationId === client2.installationId,
+    `clients dont match ${client2.installationId} and ${client.installationId}`
+  )
+
   const randomClient = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
