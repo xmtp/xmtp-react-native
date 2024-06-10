@@ -10,7 +10,7 @@ import XMTP
 
 // Wrapper around XMTP.Client to allow passing these objects back into react native.
 struct ClientWrapper {
-	static func encodeToObj(_ client: XMTP.Client) throws -> [String: Any] {
+	static func encodeToObj(_ client: XMTP.Client) throws -> [String: String] {
 		return [
 			"inboxId": client.inboxID,
 			"address": client.address,
