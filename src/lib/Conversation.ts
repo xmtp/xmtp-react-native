@@ -60,13 +60,9 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
     } catch {}
   }
 
-  get clientAddress(): string {
-    return this.client.address
-  }
-
   async exportTopicData(): Promise<string> {
     return await XMTP.exportConversationTopicData(
-      this.client.address,
+      this.client.inboxId,
       this.topic
     )
   }
@@ -123,7 +119,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
     }
 
     return await XMTP.sendWithContentType(
-      this.client.address,
+      this.client.inboxId,
       this.topic,
       content,
       codec
@@ -152,7 +148,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
         content = { text: content }
       }
 
-      return await XMTP.sendMessage(this.client.address, this.topic, content)
+      return await XMTP.sendMessage(this.client.inboxId, this.topic, content)
     } catch (e) {
       console.info('ERROR in send()', e)
       throw e
@@ -173,7 +169,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
     }
 
     return await XMTP.prepareMessageWithContentType(
-      this.client.address,
+      this.client.inboxId,
       this.topic,
       content,
       codec
@@ -208,7 +204,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       if (typeof content === 'string') {
         content = { text: content }
       }
-      return await XMTP.prepareMessage(this.client.address, this.topic, content)
+      return await XMTP.prepareMessage(this.client.inboxId, this.topic, content)
     } catch (e) {
       console.info('ERROR in prepareMessage()', e)
       throw e
@@ -227,7 +223,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
    */
   async sendPreparedMessage(prepared: PreparedLocalMessage): Promise<string> {
     try {
-      return await XMTP.sendPreparedMessage(this.client.address, prepared)
+      return await XMTP.sendPreparedMessage(this.client.inboxId, prepared)
     } catch (e) {
       console.info('ERROR in sendPreparedMessage()', e)
       throw e
@@ -249,7 +245,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
   ): Promise<DecodedMessage<ContentTypes>> {
     try {
       return await XMTP.decodeMessage(
-        this.client.address,
+        this.client.inboxId,
         this.topic,
         encryptedMessage
       )
@@ -269,7 +265,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
    * @returns {Promise<"allowed" | "denied" | "unknown">} A Promise that resolves to the consent state, which can be "allowed," "denied," or "unknown."
    */
   async consentState(): Promise<'allowed' | 'denied' | 'unknown'> {
-    return await XMTP.conversationConsentState(this.clientAddress, this.topic)
+    return await XMTP.conversationConsentState(this.client.inboxId, this.topic)
   }
   /**
    * Sets up a real-time message stream for the current conversation.
@@ -284,21 +280,21 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
   async streamMessages(
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<() => void> {
-    await XMTP.subscribeToMessages(this.client.address, this.topic)
+    await XMTP.subscribeToMessages(this.client.inboxId, this.topic)
     const hasSeen = {}
     const messageSubscription = XMTP.emitter.addListener(
       EventTypes.ConversationMessage,
       async ({
-        clientAddress,
+        inboxId,
         message,
         topic,
       }: {
-        clientAddress: string
+        inboxId: string
         message: DecodedMessage<ContentTypes>
         topic: string
       }) => {
         // Long term these checks should be able to be done on the native layer as well, but additional checks in JS for safety
-        if (clientAddress !== this.client.address) {
+        if (inboxId !== this.client.inboxId) {
           return
         }
         if (topic !== this.topic) {
@@ -317,7 +313,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
 
     return async () => {
       messageSubscription.remove()
-      await XMTP.unsubscribeFromMessages(this.client.address, this.topic)
+      await XMTP.unsubscribeFromMessages(this.client.inboxId, this.topic)
     }
   }
 }

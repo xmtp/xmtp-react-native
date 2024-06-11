@@ -25,11 +25,13 @@ export type GetMessageContentTypeFromClient<C> =
 export type ExtractDecodedType<C> =
   C extends XMTPModule.ContentCodec<infer T> ? T : never
 
+export type InboxId = string & { readonly brand: unique symbol }
+
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
   address: string
-  inboxId: string
+  inboxId: InboxId
   installationId: string
   conversations: Conversations<ContentTypes>
   contacts: Contacts
@@ -105,7 +107,7 @@ export class Client<
             resolve(
               new Client(
                 message.address,
-                message.inboxId,
+                message.inboxId as InboxId,
                 message.installationId,
                 opts?.codecs || []
               )
@@ -283,7 +285,7 @@ export class Client<
 
   constructor(
     address: string,
-    inboxId: string,
+    inboxId: InboxId,
     installationId: string,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {
@@ -308,7 +310,7 @@ export class Client<
 
   async sign(digest: Uint8Array, keyType: KeyType): Promise<Uint8Array> {
     return XMTPModule.sign(
-      this.address,
+      this.inboxId,
       digest,
       keyType.kind,
       keyType.prekeyIndex
@@ -316,7 +318,7 @@ export class Client<
   }
 
   async exportPublicKeyBundle(): Promise<Uint8Array> {
-    return XMTPModule.exportPublicKeyBundle(this.address)
+    return XMTPModule.exportPublicKeyBundle(this.inboxId)
   }
 
   /**
@@ -328,7 +330,7 @@ export class Client<
    * @returns {Promise<string>} A Promise that resolves to the unencrypted key bundle for the current XMTP address.
    */
   async exportKeyBundle(): Promise<string> {
-    return XMTPModule.exportKeyBundle(this.address)
+    return XMTPModule.exportKeyBundle(this.inboxId)
   }
 
   /**
@@ -341,28 +343,28 @@ export class Client<
    * @returns {Promise<boolean>} A Promise resolving to true if messaging is allowed, and false otherwise.
    */
   async canMessage(peerAddress: string): Promise<boolean> {
-    return await XMTPModule.canMessage(this.address, peerAddress)
+    return await XMTPModule.canMessage(this.inboxId, peerAddress)
   }
 
   /**
    * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
    */
   async deleteLocalDatabase() {
-    return await XMTPModule.deleteLocalDatabase(this.address)
+    return await XMTPModule.deleteLocalDatabase(this.inboxId)
   }
 
   /**
    * Drop the local database connection. This function is delicate and should be used with caution. App will error if database not properly reconnected. See: reconnectLocalDatabase()
    */
   async dropLocalDatabaseConnection() {
-    return await XMTPModule.dropLocalDatabaseConnection(this.address)
+    return await XMTPModule.dropLocalDatabaseConnection(this.inboxId)
   }
 
   /**
    * Reconnects the local database after being dropped.
    */
   async reconnectLocalDatabase() {
-    return await XMTPModule.reconnectLocalDatabase(this.address)
+    return await XMTPModule.reconnectLocalDatabase(this.inboxId)
   }
 
   /**
@@ -376,7 +378,7 @@ export class Client<
   async canGroupMessage(
     addresses: string[]
   ): Promise<{ [key: string]: boolean }> {
-    return await XMTPModule.canGroupMessage(this.address, addresses)
+    return await XMTPModule.canGroupMessage(this.inboxId, addresses)
   }
 
   // TODO: support persisting conversations for quick lookup
@@ -419,7 +421,7 @@ export class Client<
     if (!file.fileUri?.startsWith('file://')) {
       throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.encryptAttachment(this.address, file)
+    return await XMTPModule.encryptAttachment(this.inboxId, file)
   }
 
   /**
@@ -436,7 +438,7 @@ export class Client<
     if (!encryptedFile.encryptedLocalFileUri?.startsWith('file://')) {
       throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.decryptAttachment(this.address, encryptedFile)
+    return await XMTPModule.decryptAttachment(this.inboxId, encryptedFile)
   }
 
   /**
@@ -448,7 +450,7 @@ export class Client<
    */
   async sendPreparedMessage(prepared: PreparedLocalMessage): Promise<string> {
     try {
-      return await XMTPModule.sendPreparedMessage(this.address, prepared)
+      return await XMTPModule.sendPreparedMessage(this.inboxId, prepared)
     } catch (e) {
       console.info('ERROR in sendPreparedMessage()', e)
       throw e

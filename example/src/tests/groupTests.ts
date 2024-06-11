@@ -174,8 +174,8 @@ test('can make a MLS V3 client from bundle', async () => {
   const group1 = await client.conversations.newGroup([anotherClient.address])
 
   assert(
-    group1.clientAddress === client.address,
-    `clients dont match ${client.address} and ${group1.clientAddress}`
+    group1.client.address === client.address,
+    `clients dont match ${client.address} and ${group1.client.address}`
   )
 
   const bundle = await client.exportKeyBundle()
@@ -211,8 +211,8 @@ test('can make a MLS V3 client from bundle', async () => {
   const group = await client2.conversations.newGroup([randomClient.address])
 
   assert(
-    group.clientAddress === client2.address,
-    `clients dont match ${client2.address} and ${group.clientAddress}`
+    group.client.address === client2.address,
+    `clients dont match ${client2.address} and ${group.client.address}`
   )
 
   return true

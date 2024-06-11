@@ -3,12 +3,12 @@ import XMTP
 import LibXMTP
 
 extension Conversation {
-	static func cacheKeyForTopic(clientAddress: String, topic: String) -> String {
-		return "\(clientAddress):\(topic)"
+	static func cacheKeyForTopic(inboxId: String, topic: String) -> String {
+		return "\(inboxId):\(topic)"
 	}
 
-	func cacheKey(_ clientAddress: String) -> String {
-		return Conversation.cacheKeyForTopic(clientAddress: clientAddress, topic: topic)
+	func cacheKey(_ inboxId: String) -> String {
+		return Conversation.cacheKeyForTopic(inboxId: inboxId, topic: topic)
 	}
 }
 
@@ -83,38 +83,38 @@ public class XMTPModule: Module {
             "groupMessage"
         )
 
-		AsyncFunction("address") { (clientAddress: String) -> String in
-			if let client = await clientsManager.getClient(key: clientAddress) {
+		AsyncFunction("address") { (inboxId: String) -> String in
+			if let client = await clientsManager.getClient(key: inboxId) {
 				return client.address
 			} else {
 				return "No Client."
 			}
 		}
 		
-		AsyncFunction("inboxId") { (clientAddress: String) -> String in
-			if let client = await clientsManager.getClient(key: clientAddress) {
+		AsyncFunction("inboxId") { (inboxId: String) -> String in
+			if let client = await clientsManager.getClient(key: inboxId) {
 				return client.inboxID
 			} else {
 				return "No Client."
 			}
 		}
 
-		AsyncFunction("deleteLocalDatabase") { (clientAddress: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("deleteLocalDatabase") { (inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			try client.deleteLocalDatabase()
 		}
 		
-		AsyncFunction("dropLocalDatabaseConnection") { (clientAddress: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("dropLocalDatabaseConnection") { (inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			try client.dropLocalDatabaseConnection()
 		}
 		
-		AsyncFunction("reconnectLocalDatabase") { (clientAddress: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("reconnectLocalDatabase") { (inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			try await client.reconnectLocalDatabase()
@@ -140,7 +140,7 @@ public class XMTPModule: Module {
 			
 			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbDirectory: dbDirectory)
 			let client = try await XMTP.Client.create(account: signer, options: options)
-			await clientsManager.updateClient(key: address, client: client)
+			await clientsManager.updateClient(key: client.inboxID, client: client)
 			self.signer = nil
 			sendEvent("authed", try ClientWrapper.encodeToObj(client))
 		}
@@ -167,7 +167,7 @@ public class XMTPModule: Module {
 			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbDirectory: dbDirectory)
 			let client = try await Client.create(account: privateKey, options: options)
 
-			await clientsManager.updateClient(key: client.address, client: client)
+			await clientsManager.updateClient(key: client.inboxID, client: client)
 			return try ClientWrapper.encodeToObj(client)
 		}
 
@@ -184,7 +184,7 @@ public class XMTPModule: Module {
 				let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
 				let options = createClientConfig(env: environment, appVersion: appVersion, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbDirectory: dbDirectory)
 				let client = try await Client.from(bundle: bundle, options: options)
-				await clientsManager.updateClient(key: client.address, client: client)
+				await clientsManager.updateClient(key: client.inboxID, client: client)
 				return try ClientWrapper.encodeToObj(client)
 			} catch {
 				print("ERRO! Failed to create client: \(error)")
@@ -192,8 +192,8 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("sign") { (clientAddress: String, digest: [UInt8], keyType: String, preKeyIndex: Int) -> [UInt8] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("sign") { (inboxId: String, digest: [UInt8], keyType: String, preKeyIndex: Int) -> [UInt8] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let privateKeyBundle = client.keys
@@ -205,8 +205,8 @@ public class XMTPModule: Module {
 			return uint
 		}
 		
-		AsyncFunction("exportPublicKeyBundle") { (clientAddress: String) -> [UInt8] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("exportPublicKeyBundle") { (inboxId: String) -> [UInt8] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let bundle = try client.publicKeyBundle.serializedData()
@@ -214,8 +214,8 @@ public class XMTPModule: Module {
 		}
 
 		// Export the client's serialized key bundle.
-		AsyncFunction("exportKeyBundle") { (clientAddress: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("exportKeyBundle") { (inboxId: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let bundle = try client.privateKeyBundle.serializedData().base64EncodedString()
@@ -223,15 +223,15 @@ public class XMTPModule: Module {
 		}
 
 		// Export the conversation's serialized topic data.
-		AsyncFunction("exportConversationTopicData") { (clientAddress: String, topic: String) -> String in
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+		AsyncFunction("exportConversationTopicData") { (inboxId: String, topic: String) -> String in
+			guard let conversation = try await findConversation(inboxId: inboxId, topic: topic) else {
 				throw Error.conversationNotFound(topic)
 			}
 			return try conversation.toTopicData().serializedData().base64EncodedString()
 		}
 		
-		AsyncFunction("getHmacKeys") { (clientAddress: String) -> [UInt8] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("getHmacKeys") { (inboxId: String) -> [UInt8] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let hmacKeys = await client.conversations.getHmacKeys()
@@ -240,30 +240,30 @@ public class XMTPModule: Module {
 		}
 
 		// Import a conversation from its serialized topic data.
-		AsyncFunction("importConversationTopicData") { (clientAddress: String, topicData: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("importConversationTopicData") { (inboxId: String, topicData: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let data = try Xmtp_KeystoreApi_V1_TopicMap.TopicData(
 				serializedData: Data(base64Encoded: Data(topicData.utf8))!
 			)
 			let conversation = await client.conversations.importTopicData(data: data)
-			await conversationsManager.set(conversation.cacheKey(clientAddress), conversation)
+			await conversationsManager.set(conversation.cacheKey(inboxId), conversation)
 			return try ConversationWrapper.encode(conversation, client: client)
 		}
 
 		//
 		// Client API
-		AsyncFunction("canMessage") { (clientAddress: String, peerAddress: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("canMessage") { (inboxId: String, peerAddress: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
 			return try await client.canMessage(peerAddress)
 		}
 		
-		AsyncFunction("canGroupMessage") { (clientAddress: String, peerAddresses: [String]) -> [String: Bool] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("canGroupMessage") { (inboxId: String, peerAddresses: [String]) -> [String: Bool] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
@@ -279,8 +279,8 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("encryptAttachment") { (clientAddress: String, fileJson: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("encryptAttachment") { (inboxId: String, fileJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let file = try DecryptedLocalAttachment.fromJson(fileJson)
@@ -306,8 +306,8 @@ public class XMTPModule: Module {
 			).toJson()
 		}
 
-		AsyncFunction("decryptAttachment") { (clientAddress: String, encryptedFileJson: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("decryptAttachment") { (inboxId: String, encryptedFileJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let encryptedFile = try EncryptedLocalAttachment.fromJson(encryptedFileJson)
@@ -331,8 +331,8 @@ public class XMTPModule: Module {
 			).toJson()
 		}
 
-		AsyncFunction("sendEncodedContent") { (clientAddress: String, topic: String, encodedContentData: [UInt8]) -> String in
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+		AsyncFunction("sendEncodedContent") { (inboxId: String, topic: String, encodedContentData: [UInt8]) -> String in
+			guard let conversation = try await findConversation(inboxId: inboxId, topic: topic) else {
 				throw Error.conversationNotFound("no conversation found for \(topic)")
 			}
 
@@ -341,8 +341,8 @@ public class XMTPModule: Module {
 			return try await conversation.send(encodedContent: encodedContent)
 		}
 
-		AsyncFunction("listConversations") { (clientAddress: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("listConversations") { (inboxId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
@@ -351,7 +351,7 @@ public class XMTPModule: Module {
 			return try await withThrowingTaskGroup(of: String.self) { group in
 				for conversation in conversations {
 					group.addTask {
-						await self.conversationsManager.set(conversation.cacheKey(clientAddress), conversation)
+						await self.conversationsManager.set(conversation.cacheKey(inboxId), conversation)
 						return try ConversationWrapper.encode(conversation, client: client)
 					}
 				}
@@ -365,15 +365,15 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("listGroups") { (clientAddress: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("listGroups") { (inboxId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let groupList = try await client.conversations.groups()
 			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
 				for group in groupList {
 					taskGroup.addTask {
-						await self.groupsManager.set(group.cacheKey(clientAddress), group)
+						await self.groupsManager.set(group.cacheKey(inboxId), group)
 						return try GroupWrapper.encode(group, client: client)
 					}
 				}
@@ -387,8 +387,8 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("listAll") { (clientAddress: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("listAll") { (inboxId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let conversationContainerList = try await client.conversations.list(includeGroups: true)
@@ -396,7 +396,7 @@ public class XMTPModule: Module {
 			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
 				for conversation in conversationContainerList {
 					taskGroup.addTask {
-						await self.conversationsManager.set(conversation.cacheKey(clientAddress), conversation)
+						await self.conversationsManager.set(conversation.cacheKey(inboxId), conversation)
 						return try ConversationContainerWrapper.encode(conversation, client: client)
 					}
 				}
@@ -410,15 +410,15 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("loadMessages") { (clientAddress: String, topic: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
+		AsyncFunction("loadMessages") { (inboxId: String, topic: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
 			let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil
 			let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!) / 1000) : nil
 
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+			guard let conversation = try await findConversation(inboxId: inboxId, topic: topic) else {
 				throw Error.conversationNotFound("no conversation found for \(topic)")
 			}
 
@@ -441,8 +441,8 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("groupMessages") { (clientAddress: String, id: String, limit: Int?, before: Double?, after: Double?, direction: String?, deliveryStatus: String?) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("groupMessages") { (inboxId: String, id: String, limit: Int?, before: Double?, after: Double?, direction: String?, deliveryStatus: String?) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			
@@ -453,7 +453,7 @@ public class XMTPModule: Module {
 			
 			let status: String = (deliveryStatus != nil) ? deliveryStatus!.lowercased() : "all"
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			let decryptedMessages = try await group.decryptedMessages(
@@ -474,8 +474,8 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("loadBatchMessages") { (clientAddress: String, topics: [String]) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("loadBatchMessages") { (inboxId: String, topics: [String]) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
@@ -532,8 +532,8 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("sendMessage") { (clientAddress: String, conversationTopic: String, contentJson: String) -> String in
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
+		AsyncFunction("sendMessage") { (inboxId: String, conversationTopic: String, contentJson: String) -> String in
+			guard let conversation = try await findConversation(inboxId: inboxId, topic: conversationTopic) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
 
@@ -544,8 +544,8 @@ public class XMTPModule: Module {
 			)
 		}
 		
-		AsyncFunction("sendMessageToGroup") { (clientAddress: String, id: String, contentJson: String) -> String in
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+		AsyncFunction("sendMessageToGroup") { (inboxId: String, id: String, contentJson: String) -> String in
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 
@@ -557,11 +557,11 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("prepareMessage") { (
-			clientAddress: String,
+			inboxId: String,
 			conversationTopic: String,
 			contentJson: String
 		) -> String in
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
+			guard let conversation = try await findConversation(inboxId: inboxId, topic: conversationTopic) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
 			let sending = try ContentJson.fromJson(contentJson)
@@ -581,11 +581,11 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("prepareEncodedMessage") { (
-			clientAddress: String,
+			inboxId: String,
 			conversationTopic: String,
 			encodedContentData: [UInt8]
 		) -> String in
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
+			guard let conversation = try await findConversation(inboxId: inboxId, topic: conversationTopic) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
             let encodedContent = try EncodedContent(serializedData: Data(encodedContentData))
@@ -604,8 +604,8 @@ public class XMTPModule: Module {
 			).toJson()
 		}
 
-		AsyncFunction("sendPreparedMessage") { (clientAddress: String, preparedLocalMessageJson: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("sendPreparedMessage") { (inboxId: String, preparedLocalMessageJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			guard let local = try? PreparedLocalMessage.fromJson(preparedLocalMessageJson) else {
@@ -627,8 +627,8 @@ public class XMTPModule: Module {
 			return prepared.messageID
 		}
 
-    AsyncFunction("createConversation") { (clientAddress: String, peerAddress: String, contextJson: String, consentProofBytes: [UInt8]) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+    AsyncFunction("createConversation") { (inboxId: String, peerAddress: String, contextJson: String, consentProofBytes: [UInt8]) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
@@ -659,8 +659,8 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("createGroup") { (clientAddress: String, peerAddresses: [String], permission: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("createGroup") { (inboxId: String, peerAddresses: [String], permission: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let permissionLevel: GroupPermissions = {
@@ -680,23 +680,23 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("listMemberInboxIds") { (clientAddress: String, groupId: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("listMemberInboxIds") { (inboxId: String, groupId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: groupId) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
 				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
 			return try group.members.map(\.inboxId)
 		}
 		
-		AsyncFunction("listGroupMembers") { (clientAddress: String, groupId: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("listGroupMembers") { (inboxId: String, groupId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: groupId) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
 				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
 			return try group.members.compactMap { member in
@@ -705,64 +705,64 @@ public class XMTPModule: Module {
 		}
 		
 		
-		AsyncFunction("syncGroups") { (clientAddress: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("syncGroups") { (inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			try await client.conversations.sync()
 		}
 
-		AsyncFunction("syncGroup") { (clientAddress: String, id: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("syncGroup") { (inboxId: String, id: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.sync()
 		}
 
-		AsyncFunction("addGroupMembers") { (clientAddress: String, id: String, peerAddresses: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("addGroupMembers") { (inboxId: String, id: String, peerAddresses: [String]) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.addMembers(addresses: peerAddresses)
 		}
 
-		AsyncFunction("removeGroupMembers") { (clientAddress: String, id: String, peerAddresses: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("removeGroupMembers") { (inboxId: String, id: String, peerAddresses: [String]) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 
 			try await group.removeMembers(addresses: peerAddresses)
 		}
 		
-		AsyncFunction("addGroupMembersByInboxId") { (clientAddress: String, id: String, inboxIds: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("addGroupMembersByInboxId") { (inboxId: String, id: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.addMembersByInboxId(inboxIds: inboxIds)
 		}
 
-		AsyncFunction("removeGroupMembersByInboxId") { (clientAddress: String, id: String, inboxIds: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("removeGroupMembersByInboxId") { (inboxId: String, id: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 
@@ -770,146 +770,146 @@ public class XMTPModule: Module {
 		}
 
 
-		AsyncFunction("groupName") { (clientAddress: String, id: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("groupName") { (inboxId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 
 			return try group.groupName()
 		}
 
-		AsyncFunction("updateGroupName") { (clientAddress: String, id: String, groupName: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("updateGroupName") { (inboxId: String, id: String, groupName: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 
 			try await group.updateGroupName(groupName: groupName)
 		}
 		
-		AsyncFunction("isGroupActive") { (clientAddress: String, id: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("isGroupActive") { (inboxId: String, id: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			
 			return try group.isActive()
 		}
 
-		AsyncFunction("addedByInboxId") { (clientAddress: String, id: String) -> String in
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+		AsyncFunction("addedByInboxId") { (inboxId: String, id: String) -> String in
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			
 			return try group.addedByInboxId()
 		}
 
-		AsyncFunction("creatorInboxId") { (clientAddress: String, id: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("creatorInboxId") { (inboxId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			
 			return try group.creatorInboxId()
 		}
 
-		AsyncFunction("isAdmin") { (clientAddress: String, id: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("isAdmin") { (id: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			return try group.isAdmin(inboxId: inboxId)
 		}
 
-		AsyncFunction("isSuperAdmin") { (clientAddress: String, id: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("isSuperAdmin") { (id: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			return try group.isSuperAdmin(inboxId: inboxId)
 		}
 
-		AsyncFunction("listAdmins") { (clientAddress: String, id: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("listAdmins") { (inboxId: String, id: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			return try group.listAdmins()
 		}
 
-		AsyncFunction("listSuperAdmins") { (clientAddress: String, id: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("listSuperAdmins") { (inboxId: String, id: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			return try group.listSuperAdmins()
 		}
 
-		AsyncFunction("addAdmin") { (clientAddress: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("addAdmin") { (id: String, inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.addAdmin(inboxId: inboxId)
 		}
 
-		AsyncFunction("addSuperAdmin") { (clientAddress: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("addSuperAdmin") { (id: String, inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.addSuperAdmin(inboxId: inboxId)
 		}
 
-		AsyncFunction("removeAdmin") { (clientAddress: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("removeAdmin") { (id: String, inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.removeAdmin(inboxId: inboxId)
 		}
 
-		AsyncFunction("removeSuperAdmin") { (clientAddress: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("removeSuperAdmin") { (id: String, inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.removeSuperAdmin(inboxId: inboxId)
 		}
 		
-		AsyncFunction("processGroupMessage") { (clientAddress: String, id: String, encryptedMessage: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("processGroupMessage") { (inboxId: String, id: String, encryptedMessage: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}			
 			
-			guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			
@@ -920,8 +920,8 @@ public class XMTPModule: Module {
 			return try DecodedMessageWrapper.encode(decodedMessage, client: client)
 		}
 
-		AsyncFunction("processWelcomeMessage") { (clientAddress: String, encryptedMessage: String) -> String in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("processWelcomeMessage") { (inboxId: String, encryptedMessage: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
@@ -934,40 +934,40 @@ public class XMTPModule: Module {
 			return try GroupWrapper.encode(group, client: client)
 		}
 
-		AsyncFunction("subscribeToConversations") { (clientAddress: String) in
-			try await subscribeToConversations(clientAddress: clientAddress)
+		AsyncFunction("subscribeToConversations") { (inboxId: String) in
+			try await subscribeToConversations(inboxId: inboxId)
 		}
 
-		AsyncFunction("subscribeToAllMessages") { (clientAddress: String, includeGroups: Bool) in
-			try await subscribeToAllMessages(clientAddress: clientAddress, includeGroups: includeGroups)
+		AsyncFunction("subscribeToAllMessages") { (inboxId: String, includeGroups: Bool) in
+			try await subscribeToAllMessages(inboxId: inboxId, includeGroups: includeGroups)
 		}
 		
-		AsyncFunction("subscribeToAllGroupMessages") { (clientAddress: String) in
-			try await subscribeToAllGroupMessages(clientAddress: clientAddress)
+		AsyncFunction("subscribeToAllGroupMessages") { (inboxId: String) in
+			try await subscribeToAllGroupMessages(inboxId: inboxId)
 		}
 
-		AsyncFunction("subscribeToMessages") { (clientAddress: String, topic: String) in
-			try await subscribeToMessages(clientAddress: clientAddress, topic: topic)
+		AsyncFunction("subscribeToMessages") { (inboxId: String, topic: String) in
+			try await subscribeToMessages(inboxId: inboxId, topic: topic)
 		}
 		
-		AsyncFunction("subscribeToGroups") { (clientAddress: String) in
-			try await subscribeToGroups(clientAddress: clientAddress)
+		AsyncFunction("subscribeToGroups") { (inboxId: String) in
+			try await subscribeToGroups(inboxId: inboxId)
 		}
 		
-		AsyncFunction("subscribeToAll") { (clientAddress: String) in
-			try await subscribeToAll(clientAddress: clientAddress)
+		AsyncFunction("subscribeToAll") { (inboxId: String) in
+			try await subscribeToAll(inboxId: inboxId)
 		}
 
-		AsyncFunction("subscribeToGroupMessages") { (clientAddress: String, id: String) in
-			try await subscribeToGroupMessages(clientAddress: clientAddress, id: id)
+		AsyncFunction("subscribeToGroupMessages") { (inboxId: String, id: String) in
+			try await subscribeToGroupMessages(inboxId: inboxId, id: id)
 		}
 
-		AsyncFunction("unsubscribeFromConversations") { (clientAddress: String) in
-			await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
+		AsyncFunction("unsubscribeFromConversations") { (inboxId: String) in
+			await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?.cancel()
 		}
 
-		AsyncFunction("unsubscribeFromAllMessages") { (clientAddress: String) in
-			await subscriptionsManager.get(getMessagesKey(clientAddress: clientAddress))?.cancel()
+		AsyncFunction("unsubscribeFromAllMessages") { (inboxId: String) in
+			await subscriptionsManager.get(getMessagesKey(inboxId: inboxId))?.cancel()
 		}
 		
 		AsyncFunction("unsubscribeFromAllGroupMessages") { (inboxId: String) in
@@ -975,12 +975,12 @@ public class XMTPModule: Module {
 		}
 
 
-		AsyncFunction("unsubscribeFromMessages") { (clientAddress: String, topic: String) in
-			try await unsubscribeFromMessages(clientAddress: clientAddress, topic: topic)
+		AsyncFunction("unsubscribeFromMessages") { (inboxId: String, topic: String) in
+			try await unsubscribeFromMessages(inboxId: inboxId, topic: topic)
 		}
 		
-		AsyncFunction("unsubscribeFromGroupMessages") { (clientAddress: String, id: String) in
-			try await unsubscribeFromGroupMessages(clientAddress: clientAddress, id: id)
+		AsyncFunction("unsubscribeFromGroupMessages") { (inboxId: String, id: String) in
+			try await unsubscribeFromGroupMessages(inboxId: inboxId, id: id)
 		}
 		
 		AsyncFunction("unsubscribeFromGroups") { (inboxId: String) in
@@ -996,9 +996,9 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("subscribePushTopics") { (clientAddress: String, topics: [String]) in
+		AsyncFunction("subscribePushTopics") { (inboxId: String, topics: [String]) in
 			do {
-				guard let client = await clientsManager.getClient(key: clientAddress) else {
+				guard let client = await clientsManager.getClient(key: inboxId) else {
 					throw Error.noClient
 				}
 				let hmacKeysResult = await client.conversations.getHmacKeys()
@@ -1024,7 +1024,7 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("decodeMessage") { (clientAddress: String, topic: String, encryptedMessage: String) -> String in
+		AsyncFunction("decodeMessage") { (inboxId: String, topic: String, encryptedMessage: String) -> String in
 			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
 				throw Error.noMessage
 			}
@@ -1034,75 +1034,75 @@ public class XMTPModule: Module {
 				envelope.contentTopic = topic
 			}
 
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+			guard let conversation = try await findConversation(inboxId: inboxId, topic: topic) else {
 				throw Error.conversationNotFound("no conversation found for \(topic)")
 			}
 			let decodedMessage = try conversation.decrypt(envelope)
 			return try DecodedMessageWrapper.encode(decodedMessage, client: client)
 		}
 
-		AsyncFunction("isAllowed") { (clientAddress: String, address: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("isAllowed") { (inboxId: String, address: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			return await client.contacts.isAllowed(address)
 		}
 
-		AsyncFunction("isDenied") { (clientAddress: String, address: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("isDenied") { (inboxId: String, address: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			return await client.contacts.isDenied(address)
 		}
 
-		AsyncFunction("denyContacts") { (clientAddress: String, addresses: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("denyContacts") { (inboxId: String, addresses: [String]) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			try await client.contacts.deny(addresses: addresses)
 		}
 
-		AsyncFunction("allowContacts") { (clientAddress: String, addresses: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("allowContacts") { (inboxId: String, addresses: [String]) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			try await client.contacts.allow(addresses: addresses)
 		}
 		
-		AsyncFunction("isInboxAllowed") { (clientAddress: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("isInboxAllowed") { (clientInboxId: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
 			return await client.contacts.isInboxAllowed(inboxId: inboxId)
 		}
 
-		AsyncFunction("isInboxDenied") { (clientAddress: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("isInboxDenied") { (clientInboxId: String,inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
 			return await client.contacts.isInboxDenied(inboxId: inboxId)
 		}
 
-		AsyncFunction("denyInboxes") { (clientAddress: String, inboxIds: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("denyInboxes") { (inboxId: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			try await client.contacts.denyInboxes(inboxIds: inboxIds)
 		}
 
-		AsyncFunction("allowInboxes") { (clientAddress: String, inboxIds: [String]) in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("allowInboxes") { (inboxId: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			try await client.contacts.allowInboxes(inboxIds: inboxIds)
 		}
 
-		AsyncFunction("refreshConsentList") { (clientAddress: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("refreshConsentList") { (inboxId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let consentList = try await client.contacts.refreshConsentList()
@@ -1112,22 +1112,22 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("conversationConsentState") { (clientAddress: String, conversationTopic: String) -> String in
-			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
+		AsyncFunction("conversationConsentState") { (inboxId: String, conversationTopic: String) -> String in
+			guard let conversation = try await findConversation(inboxId: inboxId, topic: conversationTopic) else {
 				throw Error.conversationNotFound(conversationTopic)
 			}
 			return try ConsentWrapper.consentStateToString(state: await conversation.consentState())
 		}
 		
-		AsyncFunction("groupConsentState") { (clientAddress: String, groupId: String) -> String in
-			guard let group = try await findGroup(clientAddress: clientAddress, id: groupId) else {
+		AsyncFunction("groupConsentState") { (inboxId: String, groupId: String) -> String in
+			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
 				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
 			return try ConsentWrapper.consentStateToString(state: await XMTP.Conversation.group(group).consentState())
 		}
 
-		AsyncFunction("consentList") { (clientAddress: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: clientAddress) else {
+		AsyncFunction("consentList") { (inboxId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let entries = await client.contacts.consentList.entriesManager.map
@@ -1151,24 +1151,24 @@ public class XMTPModule: Module {
 			}
 		}
     
-    AsyncFunction("allowGroups") { (clientAddress: String, groupIds: [String]) in
-      guard let client = await clientsManager.getClient(key: clientAddress) else {
+    AsyncFunction("allowGroups") { (inboxId: String, groupIds: [String]) in
+      guard let client = await clientsManager.getClient(key: inboxId) else {
         throw Error.noClient
       }
       let groupDataIds = groupIds.compactMap { Data(hex: $0) }
       try await client.contacts.allowGroups(groupIds: groupDataIds)
     }
     
-    AsyncFunction("denyGroups") { (clientAddress: String, groupIds: [String]) in
-      guard let client = await clientsManager.getClient(key: clientAddress) else {
+    AsyncFunction("denyGroups") { (inboxId: String, groupIds: [String]) in
+      guard let client = await clientsManager.getClient(key: inboxId) else {
         throw Error.noClient
       }
       let groupDataIds = groupIds.compactMap { Data(hex: $0) }
       try await client.contacts.denyGroups(groupIds: groupDataIds)
     }
 
-    AsyncFunction("isGroupAllowed") { (clientAddress: String, groupId: String) -> Bool in
-      guard let client = await clientsManager.getClient(key: clientAddress) else {
+    AsyncFunction("isGroupAllowed") { (inboxId: String, groupId: String) -> Bool in
+      guard let client = await clientsManager.getClient(key: inboxId) else {
         throw Error.noClient
       }
       guard let groupDataId = Data(hex: groupId) else {
@@ -1177,8 +1177,8 @@ public class XMTPModule: Module {
       return await client.contacts.isGroupAllowed(groupId: groupDataId)
     }
     
-    AsyncFunction("isGroupDenied") { (clientAddress: String, groupId: String) -> Bool in
-      guard let client = await clientsManager.getClient(key: clientAddress) else {
+    AsyncFunction("isGroupDenied") { (inboxId: String, groupId: String) -> Bool in
+      guard let client = await clientsManager.getClient(key: inboxId) else {
         throw Error.invalidString
       }
       guard let groupDataId = Data(hex: groupId) else {
@@ -1216,12 +1216,12 @@ public class XMTPModule: Module {
 		}
 	}
 
-	func findConversation(clientAddress: String, topic: String) async throws -> Conversation? {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
+	func findConversation(inboxId: String, topic: String) async throws -> Conversation? {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
 			throw Error.noClient
 		}
 
-		let cacheKey = Conversation.cacheKeyForTopic(clientAddress: clientAddress, topic: topic)
+		let cacheKey = Conversation.cacheKeyForTopic(inboxId: inboxId, topic: topic)
 		if let conversation = await conversationsManager.get(cacheKey) {
 			return conversation
 		} else if let conversation = try await client.conversations.list().first(where: { $0.topic == topic }) {
@@ -1232,8 +1232,8 @@ public class XMTPModule: Module {
 		return nil
 	}
 	
-	func findGroup(clientAddress: String, id: String) async throws -> XMTP.Group? {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
+	func findGroup(inboxId: String, id: String) async throws -> XMTP.Group? {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
 			throw Error.noClient
 		}
 
@@ -1249,39 +1249,39 @@ public class XMTPModule: Module {
 	}
 
 
-	func subscribeToConversations(clientAddress: String) async throws {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
+	func subscribeToConversations(inboxId: String) async throws {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
 			return
 		}
 
-		await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
-		await subscriptionsManager.set(getConversationsKey(clientAddress: clientAddress), Task {
+		await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?.cancel()
+		await subscriptionsManager.set(getConversationsKey(inboxId: inboxId), Task {
 			do {
 				for try await conversation in await client.conversations.stream() {
 					try sendEvent("conversation", [
-						"clientAddress": clientAddress,
+						"inboxId": inboxId,
 						"conversation": ConversationWrapper.encodeToObj(conversation, client: client),
 					])
 				}
 			} catch {
 				print("Error in conversations subscription: \(error)")
-				await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
+				await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?.cancel()
 			}
 		})
 	}
 
-	func subscribeToAllMessages(clientAddress: String, includeGroups: Bool = false) async throws {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
+	func subscribeToAllMessages(inboxId: String, includeGroups: Bool = false) async throws {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
 			return
 		}
 
-		await subscriptionsManager.get(getMessagesKey(clientAddress: clientAddress))?.cancel()
-		await subscriptionsManager.set(getMessagesKey(clientAddress: clientAddress), Task {
+		await subscriptionsManager.get(getMessagesKey(inboxId: inboxId))?.cancel()
+		await subscriptionsManager.set(getMessagesKey(inboxId: inboxId), Task {
 			do {
 				for try await message in await client.conversations.streamAllDecryptedMessages(includeGroups: includeGroups) {
 					do {
 						try sendEvent("message", [
-							"clientAddress": clientAddress,
+							"inboxId": inboxId,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
 						])
 					} catch {
@@ -1290,13 +1290,13 @@ public class XMTPModule: Module {
 				}
 			} catch {
 				print("Error in all messages subscription: \(error)")
-				await subscriptionsManager.get(getMessagesKey(clientAddress: clientAddress))?.cancel()
+				await subscriptionsManager.get(getMessagesKey(inboxId: inboxId))?.cancel()
 			}
 		})
 	}
 	
-	func subscribeToAllGroupMessages(clientAddress: String) async throws {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
+	func subscribeToAllGroupMessages(inboxId: String) async throws {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
 			return
 		}
 
@@ -1306,7 +1306,7 @@ public class XMTPModule: Module {
 				for try await message in await client.conversations.streamAllGroupDecryptedMessages() {
 					do {
             try sendEvent("allGroupMessage", [
-							"clientAddress": clientAddress,
+							"inboxId": inboxId,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
 						])
 					} catch {
@@ -1315,27 +1315,27 @@ public class XMTPModule: Module {
 				}
 			} catch {
 				print("Error in all messages subscription: \(error)")
-				await subscriptionsManager.get(getMessagesKey(clientAddress: clientAddress))?.cancel()
+				await subscriptionsManager.get(getMessagesKey(inboxId: inboxId))?.cancel()
 			}
 		})
 	}
 
-	func subscribeToMessages(clientAddress: String, topic: String) async throws {
-		guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+	func subscribeToMessages(inboxId: String, topic: String) async throws {
+		guard let conversation = try await findConversation(inboxId: inboxId, topic: topic) else {
 			return
 		}
 
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
 			throw Error.noClient
 		}
 
-		await subscriptionsManager.get(conversation.cacheKey(clientAddress))?.cancel()
-		await subscriptionsManager.set(conversation.cacheKey(clientAddress), Task {
+		await subscriptionsManager.get(conversation.cacheKey(inboxId))?.cancel()
+		await subscriptionsManager.set(conversation.cacheKey(inboxId), Task {
 			do {
 				for try await message in conversation.streamDecryptedMessages() {
 					do {
 						try sendEvent("conversationMessage", [
-							"clientAddress": clientAddress,
+							"inboxId": inboxId,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
               "topic": topic
 						])
@@ -1345,13 +1345,13 @@ public class XMTPModule: Module {
 				}
 			} catch {
 				print("Error in messages subscription: \(error)")
-				await subscriptionsManager.get(conversation.cacheKey(clientAddress))?.cancel()
+				await subscriptionsManager.get(conversation.cacheKey(inboxId))?.cancel()
 			}
 		})
 	}
 	
-	func subscribeToGroups(clientAddress: String) async throws {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
+	func subscribeToGroups(inboxId: String) async throws {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
 			return
 		}
 		await subscriptionsManager.get(getGroupsKey(inboxId: client.inboxID))?.cancel()
@@ -1359,7 +1359,7 @@ public class XMTPModule: Module {
 			do {
 				for try await group in try await client.conversations.streamGroups() {
 					try sendEvent("group", [
-						"clientAddress": clientAddress,
+						"inboxId": inboxId,
 						"group": GroupWrapper.encodeToObj(group, client: client),
 					])
 				}
@@ -1370,33 +1370,33 @@ public class XMTPModule: Module {
 		})
 	}
 	
-	func subscribeToAll(clientAddress: String) async throws {
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
+	func subscribeToAll(inboxId: String) async throws {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
 			return
 		}
 
-		await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
-		await subscriptionsManager.set(getConversationsKey(clientAddress: clientAddress), Task {
+		await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?.cancel()
+		await subscriptionsManager.set(getConversationsKey(inboxId: inboxId), Task {
 			do {
 				for try await conversation in await client.conversations.streamAll() {
 					try sendEvent("conversationContainer", [
-						"clientAddress": clientAddress,
+						"inboxId": inboxId,
 						"conversationContainer": ConversationContainerWrapper.encodeToObj(conversation, client: client),
 					])
 				}
 			} catch {
 				print("Error in all conversations subscription: \(error)")
-				await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
+				await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?.cancel()
 			}
 		})
 	}
 	
-	func subscribeToGroupMessages(clientAddress: String, id: String) async throws {
-		guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+	func subscribeToGroupMessages(inboxId: String, id: String) async throws {
+		guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 			return
 		}
 
-		guard let client = await clientsManager.getClient(key: clientAddress) else {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
 			throw Error.noClient
 		}
 
@@ -1406,7 +1406,7 @@ public class XMTPModule: Module {
 				for try await message in group.streamDecryptedMessages() {
 					do {
 						try sendEvent("groupMessage", [
-							"clientAddress": clientAddress,
+							"inboxId": inboxId,
 							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
               "groupId": id,
 						])
@@ -1416,38 +1416,38 @@ public class XMTPModule: Module {
 				}
 			} catch {
 				print("Error in group messages subscription: \(error)")
-				await subscriptionsManager.get(group.cacheKey(clientAddress))?.cancel()
+				await subscriptionsManager.get(group.cacheKey(inboxId))?.cancel()
 			}
 		})
 	}
 	
 
-	func unsubscribeFromMessages(clientAddress: String, topic: String) async throws {
-		guard let conversation = try await findConversation(clientAddress: clientAddress, topic: topic) else {
+	func unsubscribeFromMessages(inboxId: String, topic: String) async throws {
+		guard let conversation = try await findConversation(inboxId: inboxId, topic: topic) else {
 			return
 		}
 
-		await subscriptionsManager.get(conversation.cacheKey(clientAddress))?.cancel()
+		await subscriptionsManager.get(conversation.cacheKey(inboxId))?.cancel()
 	}
 	
-	func unsubscribeFromGroupMessages(clientAddress: String, id: String) async throws {
-		guard let group = try await findGroup(clientAddress: clientAddress, id: id) else {
+	func unsubscribeFromGroupMessages(inboxId: String, id: String) async throws {
+		guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 			return
 		}
 
-		await subscriptionsManager.get(group.cacheKey(clientAddress))?.cancel()
+		await subscriptionsManager.get(group.cacheKey(inboxId))?.cancel()
 	}
 
-	func getMessagesKey(clientAddress: String) -> String {
-		return "messages:\(clientAddress)"
+	func getMessagesKey(inboxId: String) -> String {
+		return "messages:\(inboxId)"
 	}
 	
 	func getGroupMessagesKey(inboxId: String) -> String {
 		return "groupMessages:\(inboxId)"
 	}
 
-	func getConversationsKey(clientAddress: String) -> String {
-		return "conversations:\(clientAddress)"
+	func getConversationsKey(inboxId: String) -> String {
+		return "conversations:\(inboxId)"
 	}
 	
 	func getGroupsKey(inboxId: String) -> String {
