@@ -191,6 +191,9 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("deleteLocalDatabase") { inboxId: String ->
+            logV("LOPI")
+            logV(inboxId)
+            logV(clients.toString())
             val client = clients[inboxId] ?: throw XMTPException("No client")
             client.deleteLocalDatabase()
         }
@@ -1187,15 +1190,15 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isInboxAllowed") { inboxId: String ->
+        AsyncFunction("isInboxAllowed") { clientInboxId: String, inboxId: String ->
             logV("isInboxIdAllowed")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
+            val client = clients[clientInboxId] ?: throw XMTPException("No client")
             client.contacts.isInboxAllowed(inboxId)
         }
 
-        AsyncFunction("isInboxDenied") { inboxId: String ->
+        AsyncFunction("isInboxDenied") { clientInboxId: String, inboxId: String ->
             logV("isInboxIdDenied")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
+            val client = clients[clientInboxId] ?: throw XMTPException("No client")
             client.contacts.isInboxDenied(inboxId)
         }
 

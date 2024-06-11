@@ -645,12 +645,18 @@ export async function groupConsentState(
   return await XMTPModule.groupConsentState(inboxId, groupId)
 }
 
-export async function isAllowed(inboxId: string): Promise<boolean> {
-  return await XMTPModule.isAllowed(inboxId)
+export async function isAllowed(
+  inboxId: string,
+  address: string
+): Promise<boolean> {
+  return await XMTPModule.isAllowed(inboxId, address)
 }
 
-export async function isDenied(inboxId: string): Promise<boolean> {
-  return await XMTPModule.isDenied(inboxId)
+export async function isDenied(
+  inboxId: string,
+  address: string
+): Promise<boolean> {
+  return await XMTPModule.isDenied(inboxId, address)
 }
 
 export async function denyContacts(
@@ -805,12 +811,18 @@ export async function denyInboxes(
   return XMTPModule.denyInboxes(inboxId, inboxIds)
 }
 
-export async function isInboxAllowed(inboxId: string): Promise<boolean> {
-  return XMTPModule.isInboxAllowed(inboxId)
+export async function isInboxAllowed(
+  clientInboxId: string,
+  inboxId: string
+): Promise<boolean> {
+  return XMTPModule.isInboxAllowed(clientInboxId, inboxId)
 }
 
-export async function isInboxDenied(inboxId: string): Promise<boolean> {
-  return XMTPModule.isInboxDenied(inboxId)
+export async function isInboxDenied(
+  clientInboxId: string,
+  inboxId: string
+): Promise<boolean> {
+  return XMTPModule.isInboxDenied(clientInboxId, inboxId)
 }
 
 export async function processGroupMessage<

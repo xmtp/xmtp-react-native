@@ -140,7 +140,7 @@ public class XMTPModule: Module {
 			
 			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbDirectory: dbDirectory)
 			let client = try await XMTP.Client.create(account: signer, options: options)
-			await clientsManager.updateClient(key: address, client: client)
+			await clientsManager.updateClient(key: client.inboxID, client: client)
 			self.signer = nil
 			sendEvent("authed", try ClientWrapper.encodeToObj(client))
 		}
@@ -167,7 +167,7 @@ public class XMTPModule: Module {
 			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbDirectory: dbDirectory)
 			let client = try await Client.create(account: privateKey, options: options)
 
-			await clientsManager.updateClient(key: client.address, client: client)
+			await clientsManager.updateClient(key: client.inboxID, client: client)
 			return try ClientWrapper.encodeToObj(client)
 		}
 
@@ -184,7 +184,7 @@ public class XMTPModule: Module {
 				let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
 				let options = createClientConfig(env: environment, appVersion: appVersion, mlsAlpha: enableAlphaMls == true, encryptionKey: encryptionKeyData, dbDirectory: dbDirectory)
 				let client = try await Client.from(bundle: bundle, options: options)
-				await clientsManager.updateClient(key: client.address, client: client)
+				await clientsManager.updateClient(key: client.inboxID, client: client)
 				return try ClientWrapper.encodeToObj(client)
 			} catch {
 				print("ERRO! Failed to create client: \(error)")
@@ -1073,15 +1073,15 @@ public class XMTPModule: Module {
 			try await client.contacts.allow(addresses: addresses)
 		}
 		
-		AsyncFunction("isInboxAllowed") { (inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: inboxId) else {
+		AsyncFunction("isInboxAllowed") { (clientInboxId: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
 			return await client.contacts.isInboxAllowed(inboxId: inboxId)
 		}
 
-		AsyncFunction("isInboxDenied") { (inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: inboxId) else {
+		AsyncFunction("isInboxDenied") { (clientInboxId: String,inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
 			return await client.contacts.isInboxDenied(inboxId: inboxId)

@@ -602,8 +602,8 @@ test('can stream messages', async () => {
   })
   await delayToPropogate()
 
-  if (bobConvo.clientAddress !== bob.address) {
-    throw Error('Unexpected client address ' + bobConvo.clientAddress)
+  if (bobConvo.client.address !== bob.address) {
+    throw Error('Unexpected client address ' + bobConvo.client.address)
   }
   if (!bobConvo.topic) {
     throw Error('Missing topic ' + bobConvo.topic)
