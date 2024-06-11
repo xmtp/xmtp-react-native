@@ -63,7 +63,7 @@ export default class Contacts {
   }
 
   async denyInboxes(inboxIds: string[]): Promise<void> {
-    return await XMTPModule.denyInboxes(this.client.address, inboxIds)
+    return await XMTPModule.denyInboxes(this.client.inboxId, inboxIds)
   }
 
   async isInboxAllowed(inboxId: string): Promise<boolean> {
