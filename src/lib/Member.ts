@@ -1,10 +1,12 @@
+import { InboxId } from './Client'
+
 export class Member {
-  inboxId: string
+  inboxId: InboxId
   addresses: string[]
   permissionLevel: 'member' | 'admin' | 'super_admin'
 
   constructor(
-    inboxId: string,
+    inboxId: InboxId,
     addresses: string[],
     permissionLevel: 'member' | 'admin' | 'super_admin'
   ) {

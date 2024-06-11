@@ -25,11 +25,13 @@ export type GetMessageContentTypeFromClient<C> =
 export type ExtractDecodedType<C> =
   C extends XMTPModule.ContentCodec<infer T> ? T : never
 
+export type InboxId = string & { readonly brand: unique symbol }
+
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
   address: string
-  inboxId: string
+  inboxId: InboxId
   installationId: string
   conversations: Conversations<ContentTypes>
   contacts: Contacts
@@ -105,7 +107,7 @@ export class Client<
             resolve(
               new Client(
                 message.address,
-                message.inboxId,
+                message.inboxId as InboxId,
                 message.installationId,
                 opts?.codecs || []
               )
@@ -283,7 +285,7 @@ export class Client<
 
   constructor(
     address: string,
-    inboxId: string,
+    inboxId: InboxId,
     installationId: string,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {

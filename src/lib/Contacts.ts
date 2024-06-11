@@ -1,4 +1,4 @@
-import { Client } from './Client'
+import { Client, InboxId } from './Client'
 import { ConsentListEntry } from './ConsentListEntry'
 import * as XMTPModule from '../index'
 import { getAddress } from '../utils/address'
@@ -58,19 +58,19 @@ export default class Contacts {
     return await XMTPModule.isGroupDenied(this.client.inboxId, groupId)
   }
 
-  async allowInboxes(inboxIds: string[]): Promise<void> {
+  async allowInboxes(inboxIds: InboxId[]): Promise<void> {
     return await XMTPModule.allowInboxes(this.client.inboxId, inboxIds)
   }
 
-  async denyInboxes(inboxIds: string[]): Promise<void> {
+  async denyInboxes(inboxIds: InboxId[]): Promise<void> {
     return await XMTPModule.denyInboxes(this.client.inboxId, inboxIds)
   }
 
-  async isInboxAllowed(inboxId: string): Promise<boolean> {
+  async isInboxAllowed(inboxId: InboxId): Promise<boolean> {
     return await XMTPModule.isInboxAllowed(this.client.inboxId, inboxId)
   }
 
-  async isInboxDenied(inboxId: string): Promise<boolean> {
+  async isInboxDenied(inboxId: InboxId): Promise<boolean> {
     return await XMTPModule.isInboxDenied(this.client.inboxId, inboxId)
   }
 }

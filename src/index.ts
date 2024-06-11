@@ -23,6 +23,7 @@ import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { getAddress } from './utils/address'
+import { InboxId } from './lib/Client'
 
 export * from './context'
 export * from './hooks'
@@ -150,7 +151,7 @@ export async function listGroups<
 
 export async function listMemberInboxIds<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(client: Client<ContentTypes>, id: string): Promise<string[]> {
+>(client: Client<ContentTypes>, id: string): Promise<InboxId[]> {
   return XMTPModule.listMemberInboxIds(client.inboxId, id)
 }
 
@@ -711,15 +712,15 @@ export async function isGroupActive(
 export async function addedByInboxId(
   inboxId: string,
   id: string
-): Promise<string> {
-  return XMTPModule.addedByInboxId(inboxId, id)
+): Promise<InboxId> {
+  return XMTPModule.addedByInboxId(inboxId, id) as InboxId
 }
 
 export async function creatorInboxId(
   inboxId: string,
   id: string
-): Promise<string> {
-  return XMTPModule.creatorInboxId(inboxId, id)
+): Promise<InboxId> {
+  return XMTPModule.creatorInboxId(inboxId, id) as InboxId
 }
 
 export async function isAdmin(id: string, inboxId: string): Promise<boolean> {
@@ -736,14 +737,14 @@ export async function isSuperAdmin(
 export async function listAdmins(
   inboxId: string,
   id: string
-): Promise<string[]> {
+): Promise<InboxId[]> {
   return XMTPModule.listAdmins(inboxId, id)
 }
 
 export async function listSuperAdmins(
   inboxId: string,
   id: string
-): Promise<string[]> {
+): Promise<InboxId[]> {
   return XMTPModule.listSuperAdmins(inboxId, id)
 }
 
