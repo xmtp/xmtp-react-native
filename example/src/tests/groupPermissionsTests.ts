@@ -94,11 +94,11 @@ test('in admin only group, members can not update group name unless they are an 
     )
   }
 
-  // Verify group name is New Group
+  // Verify group name is empty string
   const groupName = await alixGroup.groupName()
   assert(
-    groupName === 'New Group',
-    `group name should be New Group but was ${groupName}`
+    groupName === '',
+    `group name should be empty string but was ${groupName}`
   )
 
   // Verify that bo can not update the group name
@@ -129,11 +129,11 @@ test('in admin only group, members can update group name once they are an admin'
     )
   }
 
-  // Verify group name is New Group
+  // Verify group name is empty string
   let groupName = await alixGroup.groupName()
   assert(
-    groupName === 'New Group',
-    `group name should be New Group but was ${groupName}`
+    groupName === '',
+    `group name should be empty string but was ${groupName}`
   )
 
   // Verify that bo can not update the group name
@@ -180,11 +180,11 @@ test('in admin only group, members can not update group name after admin status 
     )
   }
 
-  // Verify group name is New Group
+  // Verify group name is empty string
   let groupName = await alixGroup.groupName()
   assert(
-    groupName === 'New Group',
-    `group name should be New Group but was ${groupName}`
+    groupName === '',
+    `group name should be empty string but was ${groupName}`
   )
 
   // Alix adds bo as an admin
@@ -280,14 +280,13 @@ test('can not remove a super admin from a group', async () => {
   boIsSuperAdmin = await boGroup.isSuperAdmin(bo.inboxId)
   assert(boIsSuperAdmin, `bo should be a super admin`)
 
-  // Uncommenting below causes an error
-  // intent 3 has reached max publish attempts
-  // error publishing intents CreateGroupContextExtProposalError(MlsGroupStateError(PendingCommit))
-  // try {
-  //   await boGroup.removeMembersByInboxId([alix.inboxId])
-  // } catch (error) {
-  //   // expected
-  // }
+  // Verify bo can not remove alix bc alix is a super admin
+  try {
+    await boGroup.removeMembersByInboxId([alix.inboxId])
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+  }
   await boGroup.sync()
   await alixGroup.sync()
   numMembers = (await alixGroup.memberInboxIds()).length
@@ -322,14 +321,21 @@ test('can commit after invalid permissions commit', async () => {
   const [alix, bo, caro] = await createClients(3)
 
   // Bo creates a group with Alix and Caro
-  const boGroup = await bo.conversations.newGroup([alix.address, caro.address], 'all_members')
+  const boGroup = await bo.conversations.newGroup(
+    [alix.address, caro.address],
+    'all_members'
+  )
   await alix.conversations.syncGroups()
   const alixGroup = (await alix.conversations.listGroups())[0]
 
   // Verify that Alix cannot add an admin
-  assert((await boGroup.groupName()) === "New Group", `boGroup.groupName should be "New Group" but was ${boGroup.groupName}`)
-    try {
-      await alixGroup.addAdmin(alix.inboxId)
+  assert(
+    (await boGroup.groupName()) === '',
+    `boGroup.groupName should be empty string but was ${boGroup.groupName}`
+  )
+  try {
+    await alixGroup.addAdmin(alix.inboxId)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
   }
@@ -340,11 +346,17 @@ test('can commit after invalid permissions commit', async () => {
   // Verify that Alix can update the group name
   await boGroup.sync()
   await alixGroup.sync()
-  await alixGroup.updateGroupName("Alix group name")
+  await alixGroup.updateGroupName('Alix group name')
   await alixGroup.sync()
   await boGroup.sync()
-  assert((await boGroup.groupName()) === "Alix group name", `boGroup.groupName should be "Alix group name" but was ${boGroup.groupName}`)
-  assert((await alixGroup.groupName()) === "Alix group name", `alixGroup.groupName should be "Alix group name" but was ${alixGroup.groupName}`)
+  assert(
+    (await boGroup.groupName()) === 'Alix group name',
+    `boGroup.groupName should be "Alix group name" but was ${boGroup.groupName}`
+  )
+  assert(
+    (await alixGroup.groupName()) === 'Alix group name',
+    `alixGroup.groupName should be "Alix group name" but was ${alixGroup.groupName}`
+  )
 
   return true
 })
