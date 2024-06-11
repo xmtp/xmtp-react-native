@@ -316,3 +316,35 @@ test('can not remove a super admin from a group', async () => {
 
   return true
 })
+
+test('can commit after invalid permissions commit', async () => {
+  // Create clients
+  const [alix, bo, caro] = await createClients(3)
+
+  // Bo creates a group with Alix and Caro
+  const boGroup = await bo.conversations.newGroup([alix.address, caro.address], 'all_members')
+  await alix.conversations.syncGroups()
+  const alixGroup = (await alix.conversations.listGroups())[0]
+
+  // Verify that Alix cannot add an admin
+  assert((await boGroup.groupName()) === "New Group", `boGroup.groupName should be "New Group" but was ${boGroup.groupName}`)
+    try {
+      await alixGroup.addAdmin(alix.inboxId)
+  } catch (error) {
+    // expected
+  }
+
+  await alixGroup.sync()
+  await boGroup.sync()
+
+  // Verify that Alix can update the group name
+  await boGroup.sync()
+  await alixGroup.sync()
+  await alixGroup.updateGroupName("Alix group name")
+  await alixGroup.sync()
+  await boGroup.sync()
+  assert((await boGroup.groupName()) === "Alix group name", `boGroup.groupName should be "Alix group name" but was ${boGroup.groupName}`)
+  assert((await alixGroup.groupName()) === "Alix group name", `alixGroup.groupName should be "Alix group name" but was ${alixGroup.groupName}`)
+
+  return true
+})
