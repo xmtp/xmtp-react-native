@@ -1524,7 +1524,7 @@ test('can read and update group name', async () => {
   await alixGroup.sync()
   let groupName = await alixGroup.groupName()
 
-  assert(groupName === 'New Group', 'group name should be "New Group"')
+  assert(groupName === '', 'group name should be empty string')
 
   await alixGroup.updateGroupName('Test name update 1')
 
@@ -1540,7 +1540,7 @@ test('can read and update group name', async () => {
   const boGroup = (await bo.conversations.listGroups())[0]
   groupName = await boGroup.groupName()
 
-  assert(groupName === 'New Group', 'group name should be "New Group"')
+  assert(groupName === '', 'group name should be empty string')
 
   await boGroup.sync()
 
