@@ -6,6 +6,7 @@ import { createdAtTests } from './tests/createdAtTests'
 import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
+import { appTests } from './tests/appTests'
 import { Test } from './tests/test-utils'
 import { tests } from './tests/tests'
 
@@ -110,6 +111,7 @@ export enum TestCategory {
   createdAt = 'createdAt',
   restartStreans = 'restartStreams',
   groupPermissions = 'groupPermissions',
+  appTests = 'appTests',
 }
 
 export default function TestScreen(): JSX.Element {
@@ -124,6 +126,7 @@ export default function TestScreen(): JSX.Element {
     ...createdAtTests,
     ...restartStreamTests,
     ...groupPermissionsTests,
+    ...appTests,
   ]
   let activeTests, title
   switch (params.testSelection) {
@@ -150,6 +153,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.groupPermissions:
       activeTests = groupPermissionsTests
       title = 'Group Permissions Unit Tests'
+      break
+    case TestCategory.appTests:
+      activeTests = appTests
+      title = 'Stream Tests Example'
       break
   }
 
