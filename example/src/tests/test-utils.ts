@@ -10,7 +10,7 @@ export function isIos() {
   return Platform.OS === 'ios'
 }
 
-export async function delayToPropogate(milliseconds = 100): Promise<void> {
+export async function delayToPropogate(milliseconds = 1000): Promise<void> {
   // delay avoid clobbering
   return new Promise((r) => setTimeout(r, milliseconds))
 }
