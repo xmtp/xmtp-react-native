@@ -659,7 +659,7 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("createGroup") { (inboxId: String, peerAddresses: [String], permission: String) -> String in
+		AsyncFunction("createGroup") { (inboxId: String, peerAddresses: [String], permission: String, groupName: String, groupImageUrlSquare: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -672,7 +672,7 @@ public class XMTPModule: Module {
 				}
 			}()
 			do {
-				let group = try await client.conversations.newGroup(with: peerAddresses, permissions: permissionLevel)
+				let group = try await client.conversations.newGroup(with: peerAddresses, permissions: permissionLevel, name: groupName, imageUrlSquare: groupImageUrlSquare)
 				return try GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -769,7 +769,6 @@ public class XMTPModule: Module {
 			try await group.removeMembersByInboxId(inboxIds: inboxIds)
 		}
 
-
 		AsyncFunction("groupName") { (inboxId: String, id: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
@@ -792,6 +791,30 @@ public class XMTPModule: Module {
 			}
 
 			try await group.updateGroupName(groupName: groupName)
+		}
+		
+		AsyncFunction("groupImageUrlSquare") { (inboxId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			return try group.groupImageUrlSquare()
+		}
+
+		AsyncFunction("updateGroupImageUrlSquare") { (inboxId: String, id: String, groupImageUrl: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			try await group.updateGroupImageUrlSquare(imageUrlSquare: groupImageUrl)
 		}
 		
 		AsyncFunction("isGroupActive") { (inboxId: String, id: String) -> Bool in
