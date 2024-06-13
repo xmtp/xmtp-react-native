@@ -785,7 +785,7 @@ class XMTPModule : Module() {
                 ConversationWrapper.encode(client, conversation)
             }
         }
-        AsyncFunction("createGroup") Coroutine { inboxId: String, peerAddresses: List<String>, permission: String ->
+        AsyncFunction("createGroup") Coroutine { inboxId: String, peerAddresses: List<String>, permission: String, groupName: String, groupImageUrlSquare: String ->
             withContext(Dispatchers.IO) {
                 logV("createGroup")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
@@ -793,7 +793,12 @@ class XMTPModule : Module() {
                     "admin_only" -> GroupPermissions.ADMIN_ONLY
                     else -> GroupPermissions.ALL_MEMBERS
                 }
-                val group = client.conversations.newGroup(peerAddresses, permissionLevel)
+                val group = client.conversations.newGroup(
+                    peerAddresses,
+                    permissionLevel,
+                    groupName,
+                    groupImageUrlSquare
+                )
                 GroupWrapper.encode(client, group)
             }
         }
@@ -890,6 +895,26 @@ class XMTPModule : Module() {
                 val group = findGroup(inboxId, id)
 
                 group?.updateGroupName(groupName)
+            }
+        }
+
+        AsyncFunction("groupImageUrlSquare") Coroutine { inboxId: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("groupImageUrlSquare")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = findGroup(inboxId, id)
+
+                group?.imageUrlSquare
+            }
+        }
+
+        AsyncFunction("updateGroupImageUrlSquare") Coroutine { inboxId: String, id: String, groupImageUrl: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupImageUrlSquare")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = findGroup(inboxId, id)
+
+                group?.updateGroupImageUrlSquare(groupImageUrl)
             }
         }
 
