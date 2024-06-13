@@ -13,6 +13,7 @@ import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
 import { getAddress } from '../utils/address'
+import { CreateGroupOptions } from './types/CreateGroupOptions'
 
 export default class Conversations<
   ContentTypes extends ContentCodec<any>[] = [],
@@ -151,12 +152,14 @@ export default class Conversations<
    */
   async newGroup(
     peerAddresses: string[],
-    permissionLevel: 'all_members' | 'admin_only' = 'all_members'
+    opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroup(
       this.client,
       peerAddresses,
-      permissionLevel
+      opts?.permissionLevel,
+      opts?.name,
+      opts?.imageUrlSquare
     )
   }
 

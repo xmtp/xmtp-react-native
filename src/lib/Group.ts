@@ -26,6 +26,7 @@ export class Group<
   permissionLevel: 'all_members' | 'admin_only'
   name: string
   isGroupActive: boolean
+  imageUrlSquare: string
 
   constructor(
     client: XMTP.Client<ContentTypes>,
@@ -38,6 +39,7 @@ export class Group<
       topic: string
       name: string
       isGroupActive: boolean
+      imageUrlSquare: string
     }
   ) {
     this.client = client
@@ -49,6 +51,7 @@ export class Group<
     this.permissionLevel = params.permissionLevel
     this.name = params.name
     this.isGroupActive = params.isGroupActive
+    this.imageUrlSquare = params.imageUrlSquare
   }
 
   /**
@@ -233,6 +236,30 @@ export class Group<
 
   async updateGroupName(groupName: string): Promise<void> {
     return XMTP.updateGroupName(this.client.inboxId, this.id, groupName)
+  }
+
+  /**
+   * Returns the group image url square.
+   * To get the latest group image url square from the network, call sync() first.
+   * @returns {string} A Promise that resolves to the group name.
+   */
+  async groupImageUrlSquare(): Promise<string> {
+    return XMTP.groupImageUrlSquare(this.client.inboxId, this.id)
+  }
+
+  /**
+   * Updates the group image url square.
+   * Will throw if the user does not have the required permissions.
+   * @param {string} imageUrlSquare new group profile image url
+   * @returns
+   */
+
+  async updateGroupImageUrlSquare(imageUrlSquare: string): Promise<void> {
+    return XMTP.updateGroupImageUrlSquare(
+      this.client.inboxId,
+      this.id,
+      imageUrlSquare
+    )
   }
 
   /**

@@ -26,7 +26,8 @@ class GroupWrapper {
                 "permissionLevel" to permissionString,
                 "creatorInboxId" to group.creatorInboxId(),
                 "name" to group.name,
-                "isActive" to group.isActive()
+                "isActive" to group.isActive(),
+                "imageUrlSquare" to group.imageUrlSquare
             )
         }
 
