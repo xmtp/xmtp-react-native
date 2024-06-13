@@ -152,14 +152,14 @@ export default class Conversations<
    */
   async newGroup(
     peerAddresses: string[],
-    opts: CreateGroupOptions
+    opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroup(
       this.client,
       peerAddresses,
-      opts.permissionLevel,
-      opts.name,
-      opts.imageUrlSquare
+      opts?.permissionLevel,
+      opts?.name,
+      opts?.imageUrlSquare
     )
   }
 

@@ -1004,12 +1004,67 @@ test('can stream all messages', async () => {
   return true
 })
 
+test('can make a group with metadata', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.address], {
+    name: 'Start Name',
+    imageUrlSquare: 'starturl.com',
+  })
+
+  const groupName1 = await alixGroup.groupName()
+  const groupImageUrl1 = await alixGroup.groupImageUrlSquare()
+  assert(
+    groupName1 === 'Start Name',
+    `the group should start with a name of Start Name not ${groupName1}`
+  )
+
+  assert(
+    groupImageUrl1 === 'starturl.com',
+    `the group should start with a name of starturl.com not ${groupImageUrl1}`
+  )
+
+  await alixGroup.updateGroupName('New Name')
+  await alixGroup.updateGroupImageUrlSquare('newurl.com')
+  await alixGroup.sync()
+  await bo.conversations.syncGroups()
+  const boGroups = await bo.conversations.listGroups()
+  const boGroup = boGroups[0]
+  await boGroup.sync()
+
+  const groupName2 = await alixGroup.groupName()
+  const groupImageUrl2 = await alixGroup.groupImageUrlSquare()
+  assert(
+    groupName2 === 'New Name',
+    `the group should start with a name of New Name not ${groupName2}`
+  )
+
+  assert(
+    groupImageUrl2 === 'newurl.com',
+    `the group should start with a name of newurl.com not ${groupImageUrl2}`
+  )
+
+  const groupName3 = await boGroup.groupName()
+  const groupImageUrl3 = await boGroup.groupImageUrlSquare()
+  assert(
+    groupName3 === 'New Name',
+    `the group should start with a name of New Name not ${groupName3}`
+  )
+
+  assert(
+    groupImageUrl3 === 'newurl.com',
+    `the group should start with a name of newurl.com not ${groupImageUrl3}`
+  )
+
+  return true
+})
+
 test('can make a group with admin permissions', async () => {
   const [adminClient, anotherClient] = await createClients(2)
 
   const group = await adminClient.conversations.newGroup(
     [anotherClient.address],
-    'admin_only'
+    { permissionLevel: 'admin_only' }
   )
 
   if (group.permissionLevel !== 'admin_only') {
