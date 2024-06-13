@@ -677,6 +677,32 @@ test('can remove and add members from a group by inbox id', async () => {
   return true
 })
 
+test('can stream both groups and messages at same time', async () => {
+  const [alix, bo] = await createClients(2)
+
+  let groupCallbacks = 0
+  let messageCallbacks = 0
+  await bo.conversations.streamGroups(async () => {
+    groupCallbacks++
+  })
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  const group = await alix.conversations.newGroup([bo.address])
+  await group.send('hello')
+
+  await delayToPropogate()
+  // await new Promise((resolve) => setTimeout(resolve, 10000))
+  assert(
+    messageCallbacks === 1,
+    'message stream should have received 1 message'
+  )
+  assert(groupCallbacks === 1, 'group stream should have received 1 group')
+  return true
+})
+
 test('can stream groups', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
