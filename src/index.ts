@@ -127,7 +127,9 @@ export async function createGroup<
 >(
   client: Client<ContentTypes>,
   peerAddresses: string[],
-  permissionLevel: 'all_members' | 'admin_only' = 'all_members'
+  permissionLevel: 'all_members' | 'admin_only' = 'all_members',
+  name: string = '',
+  imageUrlSquare: string = ''
 ): Promise<Group<ContentTypes>> {
   return new Group(
     client,
@@ -135,7 +137,9 @@ export async function createGroup<
       await XMTPModule.createGroup(
         client.inboxId,
         peerAddresses,
-        permissionLevel
+        permissionLevel,
+        name,
+        imageUrlSquare
       )
     )
   )
@@ -252,6 +256,21 @@ export async function removeGroupMembersByInboxId(
   inboxIds: string[]
 ): Promise<void> {
   return XMTPModule.removeGroupMembersByInboxId(inboxId, id, inboxIds)
+}
+
+export function groupImageUrlSquare(
+  inboxId: string,
+  id: string
+): string | PromiseLike<string> {
+  return XMTPModule.groupImageUrlSquare(inboxId, id)
+}
+
+export function updateGroupImageUrlSquare(
+  inboxId: string,
+  id: string,
+  imageUrlSquare: string
+): Promise<void> {
+  return XMTPModule.updateGroupImageUrlSquare(inboxId, id, imageUrlSquare)
 }
 
 export function groupName(
