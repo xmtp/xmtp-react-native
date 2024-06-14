@@ -345,7 +345,7 @@ test('can commit after invalid permissions commit', async () => {
   // Verify that Alix can update the group name
   await boGroup.sync()
   await alixGroup.sync()
-  await alixGroup.updateGroupName('Alix group name')
+  await boGroup.updateGroupName('Alix group name')
   await alixGroup.sync()
   await boGroup.sync()
   assert(
