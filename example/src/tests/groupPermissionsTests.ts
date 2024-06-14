@@ -322,7 +322,7 @@ test('can commit after invalid permissions commit', async () => {
   // Bo creates a group with Alix and Caro
   const boGroup = await bo.conversations.newGroup(
     [alix.address, caro.address],
-    { permissionLevel: 'admin_only' }
+    { permissionLevel: 'all_members' }
   )
   await alix.conversations.syncGroups()
   const alixGroup = (await alix.conversations.listGroups())[0]
@@ -345,7 +345,7 @@ test('can commit after invalid permissions commit', async () => {
   // Verify that Alix can update the group name
   await boGroup.sync()
   await alixGroup.sync()
-  await boGroup.updateGroupName('Alix group name')
+  await alixGroup.updateGroupName('Alix group name')
   await alixGroup.sync()
   await boGroup.sync()
   assert(
