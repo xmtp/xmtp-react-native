@@ -847,21 +847,21 @@ public class XMTPModule: Module {
 			return try group.creatorInboxId()
 		}
 
-		AsyncFunction("isAdmin") { (id: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: inboxId) else {
+		AsyncFunction("isAdmin") { (clientInboxId: String, id: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+			guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			return try group.isAdmin(inboxId: inboxId)
 		}
 
-		AsyncFunction("isSuperAdmin") { (id: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: inboxId) else {
+		AsyncFunction("isSuperAdmin") { (clientInboxId: String, id: String, inboxId: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+			guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			return try group.isSuperAdmin(inboxId: inboxId)
@@ -887,41 +887,41 @@ public class XMTPModule: Module {
 			return try group.listSuperAdmins()
 		}
 
-		AsyncFunction("addAdmin") { (id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId) else {
+		AsyncFunction("addAdmin") { (clientInboxId: String, id: String, inboxId: String) in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+			guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.addAdmin(inboxId: inboxId)
 		}
 
-		AsyncFunction("addSuperAdmin") { (id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId) else {
+		AsyncFunction("addSuperAdmin") { (clientInboxId: String, id: String, inboxId: String) in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+			guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.addSuperAdmin(inboxId: inboxId)
 		}
 
-		AsyncFunction("removeAdmin") { (id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId) else {
+		AsyncFunction("removeAdmin") { (clientInboxId: String, id: String, inboxId: String) in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+			guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.removeAdmin(inboxId: inboxId)
 		}
 
-		AsyncFunction("removeSuperAdmin") { (id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId) else {
+		AsyncFunction("removeSuperAdmin") { (clientInboxId: String, id: String, inboxId: String) in
+			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+			guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			try await group.removeSuperAdmin(inboxId: inboxId)
