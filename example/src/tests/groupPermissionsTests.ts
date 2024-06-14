@@ -85,7 +85,7 @@ test('in admin only group, members can not update group name unless they are an 
   // Alix Create a group
   const alixGroup = await alix.conversations.newGroup(
     [bo.address, caro.address],
-    'admin_only'
+    { permissionLevel: 'admin_only' }
   )
 
   if (alixGroup.permissionLevel !== 'admin_only') {
@@ -120,7 +120,7 @@ test('in admin only group, members can update group name once they are an admin'
   // Alix Create a group
   const alixGroup = await alix.conversations.newGroup(
     [bo.address, caro.address],
-    'admin_only'
+    { permissionLevel: 'admin_only' }
   )
 
   if (alixGroup.permissionLevel !== 'admin_only') {
@@ -171,7 +171,7 @@ test('in admin only group, members can not update group name after admin status 
   // Alix Create a group
   const alixGroup = await alix.conversations.newGroup(
     [bo.address, caro.address],
-    'admin_only'
+    { permissionLevel: 'admin_only' }
   )
 
   if (alixGroup.permissionLevel !== 'admin_only') {
@@ -235,10 +235,9 @@ test('can not remove a super admin from a group', async () => {
   const [alix, bo] = await createClients(3)
 
   // Alix Create a group
-  const alixGroup = await alix.conversations.newGroup(
-    [bo.address],
-    'all_members'
-  )
+  const alixGroup = await alix.conversations.newGroup([bo.address], {
+    permissionLevel: 'all_members',
+  })
 
   let alixIsSuperAdmin = await alixGroup.isSuperAdmin(alix.inboxId)
   let boIsSuperAdmin = await alixGroup.isSuperAdmin(bo.inboxId)
@@ -323,7 +322,7 @@ test('can commit after invalid permissions commit', async () => {
   // Bo creates a group with Alix and Caro
   const boGroup = await bo.conversations.newGroup(
     [alix.address, caro.address],
-    'all_members'
+    { permissionLevel: 'admin_only' }
   )
   await alix.conversations.syncGroups()
   const alixGroup = (await alix.conversations.listGroups())[0]

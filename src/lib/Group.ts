@@ -288,7 +288,7 @@ export class Group<
    * To get the latest admin status from the network, call sync() first.
    */
   async isAdmin(inboxId: InboxId): Promise<boolean> {
-    return XMTP.isAdmin(this.id, inboxId)
+    return XMTP.isAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -298,7 +298,7 @@ export class Group<
    * To get the latest super admin status from the network, call sync() first.
    */
   async isSuperAdmin(inboxId: InboxId): Promise<boolean> {
-    return XMTP.isSuperAdmin(this.id, inboxId)
+    return XMTP.isSuperAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -326,7 +326,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async addAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.addAdmin(this.id, inboxId)
+    return XMTP.addAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -336,7 +336,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async addSuperAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.addSuperAdmin(this.id, inboxId)
+    return XMTP.addSuperAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -346,7 +346,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async removeAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.removeAdmin(this.id, inboxId)
+    return XMTP.removeAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -356,7 +356,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async removeSuperAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.removeSuperAdmin(this.id, inboxId)
+    return XMTP.removeSuperAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   async processMessage(
