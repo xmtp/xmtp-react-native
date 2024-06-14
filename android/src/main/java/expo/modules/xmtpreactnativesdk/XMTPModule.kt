@@ -947,21 +947,21 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("isAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.isAdmin(inboxId)
             }
         }
 
-        AsyncFunction("isSuperAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("isSuperAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("isSuperAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.isSuperAdmin(inboxId)
             }
@@ -987,41 +987,40 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("addAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("addAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("addAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
                 group?.addAdmin(inboxId)
             }
         }
 
-        AsyncFunction("addSuperAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("addSuperAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("addSuperAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.addSuperAdmin(inboxId)
             }
         }
 
-        AsyncFunction("removeAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("removeAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("removeAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.removeAdmin(inboxId)
             }
         }
 
-        AsyncFunction("removeSuperAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("removeSuperAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("removeSuperAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.removeSuperAdmin(inboxId)
             }
