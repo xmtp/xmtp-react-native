@@ -348,12 +348,12 @@ test('canMessage', async () => {
 
   const caro = await Client.createRandom({
     env: 'local',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: keyBytes,
   })
   const chux = await Client.createRandom({
     env: 'local',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 

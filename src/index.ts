@@ -64,7 +64,7 @@ export async function auth(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
-  enableAlphaMls?: boolean | undefined,
+  enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined
 ) {
@@ -74,7 +74,7 @@ export async function auth(
     appVersion,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableAlphaMls,
+    enableV3,
     dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
     dbDirectory
   )
@@ -89,7 +89,7 @@ export async function createRandom(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
-  enableAlphaMls?: boolean | undefined,
+  enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined
 ): Promise<string> {
@@ -98,7 +98,7 @@ export async function createRandom(
     appVersion,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableAlphaMls,
+    enableV3,
     dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
     dbDirectory
   )
@@ -108,7 +108,7 @@ export async function createFromKeyBundle(
   keyBundle: string,
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
-  enableAlphaMls?: boolean | undefined,
+  enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined
 ): Promise<string> {
@@ -116,7 +116,7 @@ export async function createFromKeyBundle(
     keyBundle,
     environment,
     appVersion,
-    enableAlphaMls,
+    enableV3,
     dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
     dbDirectory
   )
