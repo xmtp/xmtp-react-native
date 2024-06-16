@@ -176,17 +176,25 @@ class ContentJson(
             )
 
             ContentTypeGroupUpdated.id -> mapOf(
+                "initiatedByInboxId" to (content as GroupUpdated).initiatedByInboxId,
                 "groupUpdated" to mapOf(
-                    "membersAdded" to (content as GroupUpdated).addedInboxesList.map {
+                    "membersAdded" to content.addedInboxesList.map {
                         mapOf(
-                            "inboxId" to it.inboxId,
-                            "initiatedByInboxId" to content.initiatedByInboxId
-                        )},
+                            "inboxId" to it.inboxId
+                        )
+                    },
                     "membersRemoved" to content.removedInboxesList.map {
                         mapOf(
-                            "inboxId" to it.inboxId,
-                            "initiatedByInboxId" to content.initiatedByInboxId
-                        )},
+                            "inboxId" to it.inboxId
+                        )
+                    },
+                    "metadataFieldsChanged" to content.metadataFieldChangesList.map {
+                        mapOf(
+                            "oldValue" to it.oldValue,
+                            "newValue" to it.newValue,
+                            "fieldName" to it.fieldName,
+                        )
+                    },
                 )
             )
 

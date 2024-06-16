@@ -165,18 +165,24 @@ struct ContentJson {
 		case ContentTypeGroupUpdated.id where content is XMTP.GroupUpdated:
 			let groupUpdated = content as! XMTP.GroupUpdated
 			return ["groupUpdated": [
+				"initiatedByInboxId": groupUpdated.initiatedByInboxID,
 				"membersAdded": groupUpdated.addedInboxes.map { member in
 					[
 						"inboxId": member.inboxID,
-						"initiatedByInboxId": groupUpdated.initiatedByInboxID
 					]
 				},
 				"membersRemoved": groupUpdated.removedInboxes.map { member in
 					[
 						"inboxId": member.inboxID,
-						"initiatedByInboxId": groupUpdated.initiatedByInboxID
 					]
 				},
+				"metadataFieldsChanged": groupUpdated.metadataFieldChanges.map { metadata in
+					[
+						"oldValue": metadata.oldValue,
+						"newValue": metadata.newValue,
+						"fieldName": metadata.fieldName,
+					]
+				}
 			]]
 		default:
 			if let encodedContent, let encodedContentJSON = try? encodedContent.jsonString() {
