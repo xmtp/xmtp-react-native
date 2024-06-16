@@ -481,7 +481,7 @@ export type ClientOptions = {
   preCreateIdentityCallback?: () => Promise<void> | void
   preEnableIdentityCallback?: () => Promise<void> | void
   /**
-   * Specify whether to enable Alpha version of MLS (Group Chat)
+   * Specify whether to enable V3 version of MLS (Group Chat)
    */
   enableV3?: boolean
   /**
