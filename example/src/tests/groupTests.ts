@@ -15,6 +15,8 @@ import {
   ConversationContainer,
   ConversationVersion,
   MessageDeliveryStatus,
+  GroupUpdatedContent,
+  GroupUpdatedCodec,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -1006,6 +1008,7 @@ test('can stream all messages', async () => {
 
 test('can make a group with metadata', async () => {
   const [alix, bo] = await createClients(2)
+  bo.register(new GroupUpdatedCodec())
 
   const alixGroup = await alix.conversations.newGroup([bo.address], {
     name: 'Start Name',
@@ -1056,6 +1059,17 @@ test('can make a group with metadata', async () => {
     `the group should start with a name of newurl.com not ${groupImageUrl3}`
   )
 
+  const boMessages = await boGroup.messages()
+  assert(
+    boMessages[0].contentTypeId === 'xmtp.org/group_updated:1.0',
+    'Unexpected message content ' + JSON.stringify(boMessages[0].contentTypeId)
+  )
+
+  const message = boMessages[0].content() as GroupUpdatedContent
+  assert(
+    message.metadataFieldsChanged[0].fieldName === 'group_image_url_square',
+    `the metadata field changed should be group_image_url_square but was ${message.metadataFieldsChanged[0].fieldName}`
+  )
   return true
 })
 
