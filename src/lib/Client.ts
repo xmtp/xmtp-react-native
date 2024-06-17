@@ -120,7 +120,7 @@ export class Client<
           options.appVersion,
           Boolean(createSubscription),
           Boolean(enableSubscription),
-          Boolean(options.enableAlphaMls),
+          Boolean(options.enableV3),
           options.dbEncryptionKey,
           options.dbDirectory
         )
@@ -161,7 +161,7 @@ export class Client<
       options.appVersion,
       Boolean(createSubscription),
       Boolean(enableSubscription),
-      Boolean(options.enableAlphaMls),
+      Boolean(options.enableV3),
       options.dbEncryptionKey,
       options.dbDirectory
     )
@@ -197,7 +197,7 @@ export class Client<
       keyBundle,
       options.env,
       options.appVersion,
-      Boolean(options.enableAlphaMls),
+      Boolean(options.enableV3),
       options.dbEncryptionKey,
       options.dbDirectory
     )
@@ -481,9 +481,9 @@ export type ClientOptions = {
   preCreateIdentityCallback?: () => Promise<void> | void
   preEnableIdentityCallback?: () => Promise<void> | void
   /**
-   * Specify whether to enable Alpha version of MLS (Group Chat)
+   * Specify whether to enable V3 version of MLS (Group Chat)
    */
-  enableAlphaMls?: boolean
+  enableV3?: boolean
   /**
    * OPTIONAL specify the encryption key for the database. The encryption key must be exactly 32 bytes.
    */
@@ -507,7 +507,7 @@ export type KeyType = {
 export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
   const _defaultOptions: ClientOptions = {
     env: 'dev',
-    enableAlphaMls: false,
+    enableV3: false,
     dbEncryptionKey: undefined,
     dbDirectory: undefined,
   }

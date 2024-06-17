@@ -208,7 +208,7 @@ export default function LaunchScreen(
                   console.log(
                     'Using network ' +
                       selectedNetwork +
-                      ' and enableAlphaMLS ' +
+                      ' and enableV3 ' +
                       enableGroups
                   )
 
@@ -224,7 +224,7 @@ export default function LaunchScreen(
                       appVersion,
                       preCreateIdentityCallback,
                       preEnableIdentityCallback,
-                      enableAlphaMls: enableGroups === 'true',
+                      enableV3: enableGroups === 'true',
                       dbEncryptionKey,
                     })
                   )
@@ -243,7 +243,7 @@ export default function LaunchScreen(
               console.log(
                 'Using network ' +
                   selectedNetwork +
-                  ' and enableAlphaMLS ' +
+                  ' and enableV3 ' +
                   enableGroups
               )
               const dbEncryptionKey = await getDbEncryptionKey(
@@ -258,7 +258,7 @@ export default function LaunchScreen(
                   codecs: supportedCodecs,
                   preCreateIdentityCallback,
                   preEnableIdentityCallback,
-                  enableAlphaMls: enableGroups === 'true',
+                  enableV3: enableGroups === 'true',
                   dbEncryptionKey,
                 })
               )
@@ -277,7 +277,7 @@ export default function LaunchScreen(
                   console.log(
                     'Using network ' +
                       selectedNetwork +
-                      ' and enableAlphaMLS ' +
+                      ' and enableV3 ' +
                       enableGroups
                   )
                   const dbEncryptionKey =
@@ -288,7 +288,7 @@ export default function LaunchScreen(
                       env: selectedNetwork,
                       appVersion,
                       codecs: supportedCodecs,
-                      enableAlphaMls: enableGroups === 'true',
+                      enableV3: enableGroups === 'true',
                       dbEncryptionKey,
                     })
                   )
