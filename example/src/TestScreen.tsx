@@ -110,7 +110,6 @@ export enum TestCategory {
   createdAt = 'createdAt',
   restartStreans = 'restartStreams',
   groupPermissions = 'groupPermissions',
-  appTests = 'appTests',
 }
 
 export default function TestScreen(): JSX.Element {
