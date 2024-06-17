@@ -213,7 +213,7 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3 : Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
@@ -226,7 +226,7 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (enableV3  == true) context else null
+            val context = if (enableV3 == true) context else null
             val encryptionKeyBytes =
                 dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                     a.apply { set(i, v.toByte()) }
@@ -236,7 +236,7 @@ class XMTPModule : Module() {
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
                 preEnableIdentityCallback = preEnableIdentityCallback,
-                enableV3  = enableV3  == true,
+                enableV3 = enableV3 == true,
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
                 dbDirectory = dbDirectory
@@ -254,7 +254,7 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3 : Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
 
@@ -266,7 +266,7 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (enableV3  == true) context else null
+            val context = if (enableV3 == true) context else null
             val encryptionKeyBytes =
                 dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                     a.apply { set(i, v.toByte()) }
@@ -276,29 +276,31 @@ class XMTPModule : Module() {
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
                 preEnableIdentityCallback = preEnableIdentityCallback,
-                enableV3  = enableV3  == true,
+                enableV3 = enableV3 == true,
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
                 dbDirectory = dbDirectory
             )
             val randomClient = Client().create(account = privateKey, options = options)
+            Log.d("LOPI", randomClient.address)
+
             ContentJson.Companion
             clients[randomClient.inboxId] = randomClient
             ClientWrapper.encodeToObj(randomClient)
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableV3 : Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
             logV("createFromKeyBundle")
 
             try {
-                val context = if (enableV3  == true) context else null
+                val context = if (enableV3 == true) context else null
                 val encryptionKeyBytes =
                     dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                         a.apply { set(i, v.toByte()) }
                     }
                 val options = ClientOptions(
                     api = apiEnvironments(environment, appVersion),
-                    enableV3 = enableV3  == true,
+                    enableV3 = enableV3 == true,
                     appContext = context,
                     dbEncryptionKey = encryptionKeyBytes,
                     dbDirectory = dbDirectory
