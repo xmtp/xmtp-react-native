@@ -21,9 +21,7 @@ export function assert(condition: boolean, msg: string) {
   }
 }
 
-export async function createClients(
-  numClients: number
-): Promise<Client<any>[]> {
+export async function createClients(numClients: number): Promise<Client[]> {
   const clients = []
   for (let i = 0; i < numClients; i++) {
     const keyBytes = new Uint8Array([

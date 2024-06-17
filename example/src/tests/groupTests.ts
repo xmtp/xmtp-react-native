@@ -1657,6 +1657,81 @@ test('can read and update group name', async () => {
   return true
 })
 
+test('can list groups does not fork', async () => {
+  const [alix, bo] = await createClients(2)
+  console.log('created clients')
+  let groupCallbacks = 0
+  //#region Stream groups
+  await bo.conversations.streamGroups(async () => {
+    console.log('group received')
+    groupCallbacks++
+  })
+  //#region Stream All Messages
+  await bo.conversations.streamAllMessages(async () => {
+    console.log('message received')
+  }, true)
+  //#endregion
+  // #region create group
+  const alixGroup = await alix.conversations.newGroup([bo.address])
+  await alixGroup.updateGroupName('hello')
+  await alixGroup.send('hello1')
+  console.log('sent group message')
+  // #endregion
+  // #region sync groups
+  await bo.conversations.syncGroups()
+  // #endregion
+  const boGroups = await bo.conversations.listGroups()
+  assert(boGroups.length === 1, 'bo should have 1 group')
+  const boGroup = boGroups[0]
+  await boGroup.sync()
+
+  const boMessages1 = await boGroup.messages()
+  assert(
+    boMessages1.length === 2,
+    `should have 2 messages on first load received ${boMessages1.length}`
+  )
+  await boGroup.send('hello2')
+  await boGroup.send('hello3')
+  await alixGroup.sync()
+  const alixMessages = await alixGroup.messages()
+  for (const message of alixMessages) {
+    console.log(
+      'message',
+      message.contentTypeId,
+      message.contentTypeId === 'xmtp.org/text:1.0'
+        ? message.content()
+        : 'Group Updated'
+    )
+  }
+  // alix sees 3 messages
+  assert(
+    alixMessages.length === 5,
+    `should have 5 messages on first load received ${alixMessages.length}`
+  )
+  await alixGroup.send('hello4')
+  await boGroup.sync()
+  const boMessages2 = await boGroup.messages()
+  for (const message of boMessages2) {
+    console.log(
+      'message',
+      message.contentTypeId,
+      message.contentTypeId === 'xmtp.org/text:1.0'
+        ? message.content()
+        : 'Group Updated'
+    )
+  }
+  // bo sees 4 messages
+  assert(
+    boMessages2.length === 5,
+    `should have 5 messages on second load received ${boMessages2.length}`
+  )
+
+  assert(groupCallbacks === 1, 'group stream should have received 1 group')
+
+  return true
+})
+
+
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
 //   const bo = await Client.createRandom({ env: 'local', enableV3: true })
