@@ -220,7 +220,7 @@ test('can make a MLS V3 client from bundle', async () => {
   return true
 })
 
-test('production MLS V3 client creation throws error', async () => {
+test('production MLS V3 client creation does not error', async () => {
   const key = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
@@ -235,11 +235,9 @@ test('production MLS V3 client creation throws error', async () => {
     })
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    return true
+    return false
   }
-  throw new Error(
-    'should throw error on MLS V3 client create when environment is not local'
-  )
+  return true
 })
 
 test('group message delivery status', async () => {
