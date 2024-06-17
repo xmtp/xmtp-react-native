@@ -235,7 +235,7 @@ test('production MLS V3 client creation does not error', async () => {
     })
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    return false
+    throw error
   }
   return true
 })

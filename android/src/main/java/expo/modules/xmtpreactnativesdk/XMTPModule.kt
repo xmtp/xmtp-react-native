@@ -191,7 +191,6 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("deleteLocalDatabase") { inboxId: String ->
-            logV("LOPI")
             logV(inboxId)
             logV(clients.toString())
             val client = clients[inboxId] ?: throw XMTPException("No client")
@@ -282,7 +281,6 @@ class XMTPModule : Module() {
                 dbDirectory = dbDirectory
             )
             val randomClient = Client().create(account = privateKey, options = options)
-            Log.d("LOPI", randomClient.address)
 
             ContentJson.Companion
             clients[randomClient.inboxId] = randomClient
