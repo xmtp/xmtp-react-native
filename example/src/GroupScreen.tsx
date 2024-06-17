@@ -1082,16 +1082,14 @@ function GroupUpdatedContents({ content }: { content: GroupUpdatedContent }) {
           <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
             {`${formatAddress(
               content.membersAdded[0].inboxId
-            )} has been added by ${formatAddress(
-              content.membersAdded[0].initiatedByInboxId
-            )}`}
+            )} has been added by ${formatAddress(content.initiatedByInboxId)}`}
           </Text>
         ) : (
           <Text style={{ opacity: 0.5, fontStyle: 'italic' }}>
             {`${
               content.membersAdded.length
             } members have been added by ${formatAddress(
-              content.membersAdded[0].initiatedByInboxId
+              content.initiatedByInboxId
             )}`}
           </Text>
         ))}
@@ -1101,7 +1099,7 @@ function GroupUpdatedContents({ content }: { content: GroupUpdatedContent }) {
             {`${formatAddress(
               content.membersRemoved[0].inboxId
             )} has been removed by ${formatAddress(
-              content.membersRemoved[0].initiatedByInboxId
+              content.initiatedByInboxId
             )}`}
           </Text>
         ) : (
@@ -1109,7 +1107,7 @@ function GroupUpdatedContents({ content }: { content: GroupUpdatedContent }) {
             {`${
               content.membersRemoved.length
             } members have been removed by ${formatAddress(
-              content.membersRemoved[0].initiatedByInboxId
+              content.initiatedByInboxId
             )}`}
           </Text>
         ))}

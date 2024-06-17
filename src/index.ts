@@ -64,7 +64,7 @@ export async function auth(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
-  enableAlphaMls?: boolean | undefined,
+  enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined
 ) {
@@ -74,7 +74,7 @@ export async function auth(
     appVersion,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableAlphaMls,
+    enableV3,
     dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
     dbDirectory
   )
@@ -89,7 +89,7 @@ export async function createRandom(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
-  enableAlphaMls?: boolean | undefined,
+  enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined
 ): Promise<string> {
@@ -98,7 +98,7 @@ export async function createRandom(
     appVersion,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableAlphaMls,
+    enableV3,
     dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
     dbDirectory
   )
@@ -108,7 +108,7 @@ export async function createFromKeyBundle(
   keyBundle: string,
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
-  enableAlphaMls?: boolean | undefined,
+  enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined
 ): Promise<string> {
@@ -116,7 +116,7 @@ export async function createFromKeyBundle(
     keyBundle,
     environment,
     appVersion,
-    enableAlphaMls,
+    enableV3,
     dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
     dbDirectory
   )
@@ -127,7 +127,9 @@ export async function createGroup<
 >(
   client: Client<ContentTypes>,
   peerAddresses: string[],
-  permissionLevel: 'all_members' | 'admin_only' = 'all_members'
+  permissionLevel: 'all_members' | 'admin_only' = 'all_members',
+  name: string = '',
+  imageUrlSquare: string = ''
 ): Promise<Group<ContentTypes>> {
   return new Group(
     client,
@@ -135,7 +137,9 @@ export async function createGroup<
       await XMTPModule.createGroup(
         client.inboxId,
         peerAddresses,
-        permissionLevel
+        permissionLevel,
+        name,
+        imageUrlSquare
       )
     )
   )
@@ -252,6 +256,21 @@ export async function removeGroupMembersByInboxId(
   inboxIds: string[]
 ): Promise<void> {
   return XMTPModule.removeGroupMembersByInboxId(inboxId, id, inboxIds)
+}
+
+export function groupImageUrlSquare(
+  inboxId: string,
+  id: string
+): string | PromiseLike<string> {
+  return XMTPModule.groupImageUrlSquare(inboxId, id)
+}
+
+export function updateGroupImageUrlSquare(
+  inboxId: string,
+  id: string,
+  imageUrlSquare: string
+): Promise<void> {
+  return XMTPModule.updateGroupImageUrlSquare(inboxId, id, imageUrlSquare)
 }
 
 export function groupName(
@@ -723,15 +742,20 @@ export async function creatorInboxId(
   return XMTPModule.creatorInboxId(inboxId, id) as InboxId
 }
 
-export async function isAdmin(id: string, inboxId: string): Promise<boolean> {
-  return XMTPModule.isAdmin(id, inboxId)
-}
-
-export async function isSuperAdmin(
+export async function isAdmin(
+  clientInboxId: string,
   id: string,
   inboxId: string
 ): Promise<boolean> {
-  return XMTPModule.isSuperAdmin(id, inboxId)
+  return XMTPModule.isAdmin(clientInboxId, id, inboxId)
+}
+
+export async function isSuperAdmin(
+  clientInboxId: string,
+  id: string,
+  inboxId: string
+): Promise<boolean> {
+  return XMTPModule.isSuperAdmin(clientInboxId, id, inboxId)
 }
 
 export async function listAdmins(
@@ -748,26 +772,36 @@ export async function listSuperAdmins(
   return XMTPModule.listSuperAdmins(inboxId, id)
 }
 
-export async function addAdmin(id: string, inboxId: string): Promise<void> {
-  return XMTPModule.addAdmin(id, inboxId)
+export async function addAdmin(
+  clientInboxId: string,
+  id: string,
+  inboxId: string
+): Promise<void> {
+  return XMTPModule.addAdmin(clientInboxId, id, inboxId)
 }
 
 export async function addSuperAdmin(
+  clientInboxId: string,
   id: string,
   inboxId: string
 ): Promise<void> {
-  return XMTPModule.addSuperAdmin(id, inboxId)
+  return XMTPModule.addSuperAdmin(clientInboxId, id, inboxId)
 }
 
-export async function removeAdmin(id: string, inboxId: string): Promise<void> {
-  return XMTPModule.removeAdmin(id, inboxId)
+export async function removeAdmin(
+  clientInboxId: string,
+  id: string,
+  inboxId: string
+): Promise<void> {
+  return XMTPModule.removeAdmin(clientInboxId, id, inboxId)
 }
 
 export async function removeSuperAdmin(
+  clientInboxId: string,
   id: string,
   inboxId: string
 ): Promise<void> {
-  return XMTPModule.removeSuperAdmin(id, inboxId)
+  return XMTPModule.removeSuperAdmin(clientInboxId, id, inboxId)
 }
 
 export async function allowGroups(

@@ -26,6 +26,7 @@ export class Group<
   permissionLevel: 'all_members' | 'admin_only'
   name: string
   isGroupActive: boolean
+  imageUrlSquare: string
 
   constructor(
     client: XMTP.Client<ContentTypes>,
@@ -38,6 +39,7 @@ export class Group<
       topic: string
       name: string
       isGroupActive: boolean
+      imageUrlSquare: string
     }
   ) {
     this.client = client
@@ -49,6 +51,7 @@ export class Group<
     this.permissionLevel = params.permissionLevel
     this.name = params.name
     this.isGroupActive = params.isGroupActive
+    this.imageUrlSquare = params.imageUrlSquare
   }
 
   /**
@@ -236,6 +239,30 @@ export class Group<
   }
 
   /**
+   * Returns the group image url square.
+   * To get the latest group image url square from the network, call sync() first.
+   * @returns {string} A Promise that resolves to the group name.
+   */
+  async groupImageUrlSquare(): Promise<string> {
+    return XMTP.groupImageUrlSquare(this.client.inboxId, this.id)
+  }
+
+  /**
+   * Updates the group image url square.
+   * Will throw if the user does not have the required permissions.
+   * @param {string} imageUrlSquare new group profile image url
+   * @returns
+   */
+
+  async updateGroupImageUrlSquare(imageUrlSquare: string): Promise<void> {
+    return XMTP.updateGroupImageUrlSquare(
+      this.client.inboxId,
+      this.id,
+      imageUrlSquare
+    )
+  }
+
+  /**
    * Returns whether the group is active.
    * To get the latest active status from the network, call sync() first
    * @returns {Promise<boolean>} A Promise that resolves if the group is active or not
@@ -261,7 +288,7 @@ export class Group<
    * To get the latest admin status from the network, call sync() first.
    */
   async isAdmin(inboxId: InboxId): Promise<boolean> {
-    return XMTP.isAdmin(this.id, inboxId)
+    return XMTP.isAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -271,7 +298,7 @@ export class Group<
    * To get the latest super admin status from the network, call sync() first.
    */
   async isSuperAdmin(inboxId: InboxId): Promise<boolean> {
-    return XMTP.isSuperAdmin(this.id, inboxId)
+    return XMTP.isSuperAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -299,7 +326,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async addAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.addAdmin(this.id, inboxId)
+    return XMTP.addAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -309,7 +336,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async addSuperAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.addSuperAdmin(this.id, inboxId)
+    return XMTP.addSuperAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -319,7 +346,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async removeAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.removeAdmin(this.id, inboxId)
+    return XMTP.removeAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   /**
@@ -329,7 +356,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async removeSuperAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.removeSuperAdmin(this.id, inboxId)
+    return XMTP.removeSuperAdmin(this.client.inboxId, this.id, inboxId)
   }
 
   async processMessage(

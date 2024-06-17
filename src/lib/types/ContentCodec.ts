@@ -52,14 +52,21 @@ export type RemoteAttachmentContent = RemoteAttachmentMetadata & {
   url: string
 }
 
-export type GroupUpdatedEntry = {
+export type GroupUpdatedMemberEntry = {
   inboxId: string
-  initiatedByInboxId: string
+}
+
+export type GroupUpdatedMetadatEntry = {
+  oldValue: string
+  newValue: string
+  fieldName: string
 }
 
 export type GroupUpdatedContent = {
-  membersAdded: GroupUpdatedEntry[]
-  membersRemoved: GroupUpdatedEntry[]
+  initiatedByInboxId: string
+  membersAdded: GroupUpdatedMemberEntry[]
+  membersRemoved: GroupUpdatedMemberEntry[]
+  metadataFieldsChanged: GroupUpdatedMetadatEntry[]
 }
 
 // This contains a message that has been prepared for sending.

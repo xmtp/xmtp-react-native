@@ -32,7 +32,7 @@ export async function createClients(numClients: number): Promise<Client[]> {
     clients.push(
       await Client.createRandom({
         env: 'local',
-        enableAlphaMls: true,
+        enableV3: true,
         dbEncryptionKey: keyBytes,
       })
     )

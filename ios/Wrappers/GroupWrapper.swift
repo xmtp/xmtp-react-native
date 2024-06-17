@@ -27,7 +27,8 @@ struct GroupWrapper {
 			"permissionLevel": permissionString,
 			"creatorInboxId": try group.creatorInboxId(),
 			"name": try group.groupName(),
-			"isActive": try group.isActive()
+			"isActive": try group.isActive(),
+			"imageUrlSquare": try group.groupImageUrlSquare(),
 		]
 	}
 

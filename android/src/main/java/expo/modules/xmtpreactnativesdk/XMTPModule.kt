@@ -191,7 +191,6 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("deleteLocalDatabase") { inboxId: String ->
-            logV("LOPI")
             logV(inboxId)
             logV(clients.toString())
             val client = clients[inboxId] ?: throw XMTPException("No client")
@@ -213,9 +212,8 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
             logV("auth")
-            requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
 
@@ -227,7 +225,7 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (enableAlphaMls == true) context else null
+            val context = if (enableV3 == true) context else null
             val encryptionKeyBytes =
                 dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                     a.apply { set(i, v.toByte()) }
@@ -237,7 +235,7 @@ class XMTPModule : Module() {
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
                 preEnableIdentityCallback = preEnableIdentityCallback,
-                enableAlphaMls = enableAlphaMls == true,
+                enableV3 = enableV3 == true,
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
                 dbDirectory = dbDirectory
@@ -255,9 +253,8 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
             logV("createRandom")
-            requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
             val privateKey = PrivateKeyBuilder()
 
             if (hasCreateIdentityCallback == true)
@@ -268,7 +265,7 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (enableAlphaMls == true) context else null
+            val context = if (enableV3 == true) context else null
             val encryptionKeyBytes =
                 dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                     a.apply { set(i, v.toByte()) }
@@ -278,30 +275,30 @@ class XMTPModule : Module() {
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
                 preEnableIdentityCallback = preEnableIdentityCallback,
-                enableAlphaMls = enableAlphaMls == true,
+                enableV3 = enableV3 == true,
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
                 dbDirectory = dbDirectory
             )
             val randomClient = Client().create(account = privateKey, options = options)
+
             ContentJson.Companion
             clients[randomClient.inboxId] = randomClient
             ClientWrapper.encodeToObj(randomClient)
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableAlphaMls: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
             logV("createFromKeyBundle")
-            requireNotProductionEnvForAlphaMLS(enableAlphaMls, environment)
 
             try {
-                val context = if (enableAlphaMls == true) context else null
+                val context = if (enableV3 == true) context else null
                 val encryptionKeyBytes =
                     dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                         a.apply { set(i, v.toByte()) }
                     }
                 val options = ClientOptions(
                     api = apiEnvironments(environment, appVersion),
-                    enableAlphaMls = enableAlphaMls == true,
+                    enableV3 = enableV3 == true,
                     appContext = context,
                     dbEncryptionKey = encryptionKeyBytes,
                     dbDirectory = dbDirectory
@@ -785,7 +782,7 @@ class XMTPModule : Module() {
                 ConversationWrapper.encode(client, conversation)
             }
         }
-        AsyncFunction("createGroup") Coroutine { inboxId: String, peerAddresses: List<String>, permission: String ->
+        AsyncFunction("createGroup") Coroutine { inboxId: String, peerAddresses: List<String>, permission: String, groupName: String, groupImageUrlSquare: String ->
             withContext(Dispatchers.IO) {
                 logV("createGroup")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
@@ -793,7 +790,12 @@ class XMTPModule : Module() {
                     "admin_only" -> GroupPermissions.ADMIN_ONLY
                     else -> GroupPermissions.ALL_MEMBERS
                 }
-                val group = client.conversations.newGroup(peerAddresses, permissionLevel)
+                val group = client.conversations.newGroup(
+                    peerAddresses,
+                    permissionLevel,
+                    groupName,
+                    groupImageUrlSquare
+                )
                 GroupWrapper.encode(client, group)
             }
         }
@@ -893,6 +895,26 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("groupImageUrlSquare") Coroutine { inboxId: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("groupImageUrlSquare")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = findGroup(inboxId, id)
+
+                group?.imageUrlSquare
+            }
+        }
+
+        AsyncFunction("updateGroupImageUrlSquare") Coroutine { inboxId: String, id: String, groupImageUrl: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupImageUrlSquare")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = findGroup(inboxId, id)
+
+                group?.updateGroupImageUrlSquare(groupImageUrl)
+            }
+        }
+
         AsyncFunction("isGroupActive") Coroutine { inboxId: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupActive")
@@ -922,21 +944,21 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("isAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.isAdmin(inboxId)
             }
         }
 
-        AsyncFunction("isSuperAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("isSuperAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("isSuperAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.isSuperAdmin(inboxId)
             }
@@ -962,41 +984,40 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("addAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("addAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("addAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
                 group?.addAdmin(inboxId)
             }
         }
 
-        AsyncFunction("addSuperAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("addSuperAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("addSuperAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.addSuperAdmin(inboxId)
             }
         }
 
-        AsyncFunction("removeAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("removeAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("removeAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.removeAdmin(inboxId)
             }
         }
 
-        AsyncFunction("removeSuperAdmin") Coroutine { id: String, inboxId: String ->
+        AsyncFunction("removeSuperAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("removeSuperAdmin")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
 
                 group?.removeSuperAdmin(inboxId)
             }
@@ -1565,12 +1586,6 @@ class XMTPModule : Module() {
         sendEvent("preCreateIdentityCallback")
         preCreateIdentityCallbackDeferred?.await()
         preCreateIdentityCallbackDeferred = null
-    }
-
-    private fun requireNotProductionEnvForAlphaMLS(enableAlphaMls: Boolean?, environment: String) {
-        if (enableAlphaMls == true && (environment == "production")) {
-            throw XMTPException("Environment must be \"local\" or \"dev\" to enable alpha MLS")
-        }
     }
 }
 

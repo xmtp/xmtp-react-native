@@ -15,6 +15,8 @@ import {
   ConversationContainer,
   ConversationVersion,
   MessageDeliveryStatus,
+  GroupUpdatedContent,
+  GroupUpdatedCodec,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -28,7 +30,7 @@ test('can make a MLS V3 client', async () => {
   const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
+    enableV3: true,
   })
 
   return true
@@ -50,7 +52,7 @@ test('can delete a local database', async () => {
   client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: new Uint8Array([
       233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
       166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135,
@@ -83,7 +85,7 @@ test('can make a MLS V3 client with encryption key and database directory', asyn
   const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: key,
     dbDirectory: dbDirPath,
   })
@@ -91,7 +93,7 @@ test('can make a MLS V3 client with encryption key and database directory', asyn
   const anotherClient = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: key,
   })
 
@@ -107,7 +109,7 @@ test('can make a MLS V3 client with encryption key and database directory', asyn
   const clientFromBundle = await Client.createFromKeyBundle(bundle, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: key,
     dbDirectory: dbDirPath,
   })
@@ -160,14 +162,14 @@ test('can make a MLS V3 client from bundle', async () => {
   const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: key,
   })
 
   const anotherClient = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: key,
   })
 
@@ -182,7 +184,7 @@ test('can make a MLS V3 client from bundle', async () => {
   const client2 = await Client.createFromKeyBundle(bundle, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: key,
   })
 
@@ -204,7 +206,7 @@ test('can make a MLS V3 client from bundle', async () => {
   const randomClient = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableAlphaMls: true,
+    enableV3: true,
     dbEncryptionKey: key,
   })
 
@@ -218,7 +220,7 @@ test('can make a MLS V3 client from bundle', async () => {
   return true
 })
 
-test('production MLS V3 client creation throws error', async () => {
+test('production MLS V3 client creation does not error', async () => {
   const key = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
@@ -228,16 +230,14 @@ test('production MLS V3 client creation throws error', async () => {
     await Client.createRandom({
       env: 'production',
       appVersion: 'Testing/0.0.0',
-      enableAlphaMls: true,
+      enableV3: true,
       dbEncryptionKey: key,
     })
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    return true
+    throw error
   }
-  throw new Error(
-    'should throw error on MLS V3 client create when environment is not local'
-  )
+  return true
 })
 
 test('group message delivery status', async () => {
@@ -677,6 +677,32 @@ test('can remove and add members from a group by inbox id', async () => {
   return true
 })
 
+test('can stream both groups and messages at same time', async () => {
+  const [alix, bo] = await createClients(2)
+
+  let groupCallbacks = 0
+  let messageCallbacks = 0
+  await bo.conversations.streamGroups(async () => {
+    groupCallbacks++
+  })
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  const group = await alix.conversations.newGroup([bo.address])
+  await group.send('hello')
+
+  await delayToPropogate()
+  // await new Promise((resolve) => setTimeout(resolve, 10000))
+  assert(
+    messageCallbacks === 1,
+    'message stream should have received 1 message'
+  )
+  assert(groupCallbacks === 1, 'group stream should have received 1 group')
+  return true
+})
+
 test('can stream groups', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
@@ -978,12 +1004,79 @@ test('can stream all messages', async () => {
   return true
 })
 
+test('can make a group with metadata', async () => {
+  const [alix, bo] = await createClients(2)
+  bo.register(new GroupUpdatedCodec())
+
+  const alixGroup = await alix.conversations.newGroup([bo.address], {
+    name: 'Start Name',
+    imageUrlSquare: 'starturl.com',
+  })
+
+  const groupName1 = await alixGroup.groupName()
+  const groupImageUrl1 = await alixGroup.groupImageUrlSquare()
+  assert(
+    groupName1 === 'Start Name',
+    `the group should start with a name of Start Name not ${groupName1}`
+  )
+
+  assert(
+    groupImageUrl1 === 'starturl.com',
+    `the group should start with a name of starturl.com not ${groupImageUrl1}`
+  )
+
+  await alixGroup.updateGroupName('New Name')
+  await alixGroup.updateGroupImageUrlSquare('newurl.com')
+  await alixGroup.sync()
+  await bo.conversations.syncGroups()
+  const boGroups = await bo.conversations.listGroups()
+  const boGroup = boGroups[0]
+  await boGroup.sync()
+
+  const groupName2 = await alixGroup.groupName()
+  const groupImageUrl2 = await alixGroup.groupImageUrlSquare()
+  assert(
+    groupName2 === 'New Name',
+    `the group should start with a name of New Name not ${groupName2}`
+  )
+
+  assert(
+    groupImageUrl2 === 'newurl.com',
+    `the group should start with a name of newurl.com not ${groupImageUrl2}`
+  )
+
+  const groupName3 = await boGroup.groupName()
+  const groupImageUrl3 = await boGroup.groupImageUrlSquare()
+  assert(
+    groupName3 === 'New Name',
+    `the group should start with a name of New Name not ${groupName3}`
+  )
+
+  assert(
+    groupImageUrl3 === 'newurl.com',
+    `the group should start with a name of newurl.com not ${groupImageUrl3}`
+  )
+
+  const boMessages = await boGroup.messages()
+  assert(
+    boMessages[0].contentTypeId === 'xmtp.org/group_updated:1.0',
+    'Unexpected message content ' + JSON.stringify(boMessages[0].contentTypeId)
+  )
+
+  const message = boMessages[0].content() as GroupUpdatedContent
+  assert(
+    message.metadataFieldsChanged[0].fieldName === 'group_image_url_square',
+    `the metadata field changed should be group_image_url_square but was ${message.metadataFieldsChanged[0].fieldName}`
+  )
+  return true
+})
+
 test('can make a group with admin permissions', async () => {
   const [adminClient, anotherClient] = await createClients(2)
 
   const group = await adminClient.conversations.newGroup(
     [anotherClient.address],
-    'admin_only'
+    { permissionLevel: 'admin_only' }
   )
 
   if (group.permissionLevel !== 'admin_only') {
@@ -1566,11 +1659,11 @@ test('can read and update group name', async () => {
 
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
-//   const bo = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+//   const bo = await Client.createRandom({ env: 'local', enableV3: true })
 //   await delayToPropogate()
-//   const alix = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+//   const alix = await Client.createRandom({ env: 'local', enableV3: true })
 //   await delayToPropogate()
-//   const caro = await Client.createRandom({ env: 'local', enableAlphaMls: true })
+//   const caro = await Client.createRandom({ env: 'local', enableV3: true })
 //   await delayToPropogate()
 
 //   // Setup stream alls
