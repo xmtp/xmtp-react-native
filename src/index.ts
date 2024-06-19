@@ -4,6 +4,7 @@ import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 import { Client } from '.'
 import { ConversationContext } from './XMTP.types'
 import XMTPModule from './XMTPModule'
+import { InboxId } from './lib/Client'
 import { ConsentListEntry, ConsentState } from './lib/ConsentListEntry'
 import {
   ContentCodec,
@@ -23,7 +24,6 @@ import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { getAddress } from './utils/address'
-import { InboxId } from './lib/Client'
 
 export * from './context'
 export * from './hooks'
@@ -903,3 +903,4 @@ export { XMTPPush } from './lib/XMTPPush'
 export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus }
 export { Group } from './lib/Group'
 export { Member } from './lib/Member'
+export { InboxId } from './lib/Client'
