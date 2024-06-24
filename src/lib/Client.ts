@@ -122,7 +122,8 @@ export class Client<
           Boolean(enableSubscription),
           Boolean(options.enableV3),
           options.dbEncryptionKey,
-          options.dbDirectory
+          options.dbDirectory,
+          options.historySyncUrl
         )
       })().catch((error) => {
         console.error('ERROR in create: ', error)
@@ -163,7 +164,8 @@ export class Client<
       Boolean(enableSubscription),
       Boolean(options.enableV3),
       options.dbEncryptionKey,
-      options.dbDirectory
+      options.dbDirectory,
+      options.historySyncUrl
     )
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
@@ -199,7 +201,8 @@ export class Client<
       options.appVersion,
       Boolean(options.enableV3),
       options.dbEncryptionKey,
-      options.dbDirectory
+      options.dbDirectory,
+      options.historySyncUrl
     )
 
     return new Client(
@@ -492,6 +495,10 @@ export type ClientOptions = {
    * OPTIONAL specify the XMTP managed database directory
    */
   dbDirectory?: string
+  /**
+   * OPTIONAL specify a url to sync message history from
+   */
+  historySyncUrl?: string
 }
 
 export type KeyType = {
@@ -510,6 +517,7 @@ export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
     enableV3: false,
     dbEncryptionKey: undefined,
     dbDirectory: undefined,
+    historySyncUrl: undefined,
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions
