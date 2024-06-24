@@ -6,21 +6,24 @@ import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
 import androidx.core.net.toUri
+import com.facebook.common.util.Hex
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -49,10 +52,12 @@ import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.messages.EnvelopeBuilder
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
+import org.xmtp.android.library.messages.MessageDeliveryStatus
 import org.xmtp.android.library.messages.Pagination
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.messages.getPublicKeyBundle
+import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.android.library.toHex
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
@@ -66,12 +71,6 @@ import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import com.facebook.common.util.Hex
-import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
-import org.xmtp.android.library.messages.MessageDeliveryStatus
-import org.xmtp.android.library.messages.Topic
-import org.xmtp.android.library.push.Service
 
 class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
@@ -188,6 +187,14 @@ class XMTPModule : Module() {
             logV("inboxId")
             val client = clients[inboxId]
             client?.inboxId ?: "No Client."
+        }
+
+        AsyncFunction("findInboxIdFromAddress") Coroutine { inboxId: String, address: String ->
+            withContext(Dispatchers.IO) {
+                logV("findInboxIdFromAddress")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.inboxIdFromAddress(address)
+            }
         }
 
         AsyncFunction("deleteLocalDatabase") { inboxId: String ->
@@ -570,6 +577,22 @@ class XMTPModule : Module() {
                         deliveryStatus ?: "ALL"
                     )
                 )?.map { DecodedMessageWrapper.encode(it) }
+            }
+        }
+
+        AsyncFunction("findV3Message") Coroutine { inboxId: String, messageId: String ->
+            withContext(Dispatchers.IO) {
+                logV("findV3Message")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.findMessage(Hex.hexStringToByteArray(messageId))
+            }
+        }
+
+        AsyncFunction("findGroup") Coroutine { inboxId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("findGroup")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.findGroup(Hex.hexStringToByteArray(groupId))
             }
         }
 
