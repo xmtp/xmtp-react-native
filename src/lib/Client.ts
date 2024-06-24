@@ -350,6 +350,16 @@ export class Client<
   }
 
   /**
+   * Find the inboxId associated with this address
+   *
+   * @param {string} peerAddress - The address of the peer to check for inboxId.
+   * @returns {Promise<InboxId>} A Promise resolving to the InboxId.
+   */
+  async findInboxIdFromAddress(peerAddress: string): Promise<InboxId> {
+    return await XMTPModule.findInboxIdFromAddress(this.inboxId, peerAddress)
+  }
+
+  /**
    * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
    */
   async deleteLocalDatabase() {
@@ -368,6 +378,13 @@ export class Client<
    */
   async reconnectLocalDatabase() {
     return await XMTPModule.reconnectLocalDatabase(this.inboxId)
+  }
+
+  /**
+   * Make a request for a message history sync.
+   */
+  async requestMessageHistorySync() {
+    return await XMTPModule.requestMessageHistorySync(this.inboxId)
   }
 
   /**

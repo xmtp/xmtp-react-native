@@ -49,7 +49,7 @@ export function inboxId(): string {
 export async function findInboxIdFromAddress(
   inboxId: string,
   address: string
-): Promise<string> {
+): Promise<InboxId> {
   return XMTPModule.findInboxIdFromAddress(inboxId, address)
 }
 
