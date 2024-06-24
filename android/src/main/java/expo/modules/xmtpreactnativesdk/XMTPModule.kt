@@ -597,7 +597,10 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findV3Message")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.findMessage(Hex.hexStringToByteArray(messageId))
+                val message = client.findMessage(Hex.hexStringToByteArray(messageId))
+                message?.let {
+                    DecodedMessageWrapper.encode(it.decrypt())
+                }
             }
         }
 
@@ -605,7 +608,10 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findGroup")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.findGroup(Hex.hexStringToByteArray(groupId))
+                val group = client.findGroup(Hex.hexStringToByteArray(groupId))
+                group?.let {
+                    GroupWrapper.encode(client, it)
+                }
             }
         }
 
