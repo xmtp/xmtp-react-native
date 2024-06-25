@@ -6,21 +6,25 @@ import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
 import androidx.core.net.toUri
+import com.facebook.common.util.Hex
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -49,10 +53,12 @@ import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.messages.EnvelopeBuilder
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
+import org.xmtp.android.library.messages.MessageDeliveryStatus
 import org.xmtp.android.library.messages.Pagination
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.messages.getPublicKeyBundle
+import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.android.library.toHex
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
@@ -66,12 +72,6 @@ import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import com.facebook.common.util.Hex
-import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
-import org.xmtp.android.library.messages.MessageDeliveryStatus
-import org.xmtp.android.library.messages.Topic
-import org.xmtp.android.library.push.Service
 
 class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
@@ -190,6 +190,14 @@ class XMTPModule : Module() {
             client?.inboxId ?: "No Client."
         }
 
+        AsyncFunction("findInboxIdFromAddress") Coroutine { inboxId: String, address: String ->
+            withContext(Dispatchers.IO) {
+                logV("findInboxIdFromAddress")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.inboxIdFromAddress(address)
+            }
+        }
+
         AsyncFunction("deleteLocalDatabase") { inboxId: String ->
             logV(inboxId)
             logV(clients.toString())
@@ -209,13 +217,21 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("requestMessageHistorySync") Coroutine { inboxId: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.requestMessageHistorySync()
+            }
+        }
+
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
+        AsyncFunction("auth") { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
+            val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 
             if (hasCreateIdentityCallback == true)
                 preCreateIdentityCallbackDeferred = CompletableDeferred()
@@ -225,20 +241,21 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (enableV3 == true) context else null
+            val context = if (authOptions.enableV3) context else null
             val encryptionKeyBytes =
                 dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                     a.apply { set(i, v.toByte()) }
                 }
 
             val options = ClientOptions(
-                api = apiEnvironments(environment, appVersion),
+                api = apiEnvironments(authOptions.environment, authOptions.appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
                 preEnableIdentityCallback = preEnableIdentityCallback,
-                enableV3 = enableV3 == true,
+                enableV3 = authOptions.enableV3,
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
-                dbDirectory = dbDirectory
+                dbDirectory = authOptions.dbDirectory,
+                historySyncUrl = authOptions.historySyncUrl
             )
             val client = Client().create(account = reactSigner, options = options)
             clients[client.inboxId] = client
@@ -253,7 +270,7 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
+        AsyncFunction("createRandom") { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
 
@@ -265,20 +282,24 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (enableV3 == true) context else null
+
+            val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+            val context = if (authOptions.enableV3) context else null
             val encryptionKeyBytes =
                 dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                     a.apply { set(i, v.toByte()) }
                 }
 
             val options = ClientOptions(
-                api = apiEnvironments(environment, appVersion),
+                api = apiEnvironments(authOptions.environment, authOptions.appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
                 preEnableIdentityCallback = preEnableIdentityCallback,
-                enableV3 = enableV3 == true,
+                enableV3 = authOptions.enableV3,
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
-                dbDirectory = dbDirectory
+                dbDirectory = authOptions.dbDirectory,
+                historySyncUrl = authOptions.historySyncUrl
+
             )
             val randomClient = Client().create(account = privateKey, options = options)
 
@@ -287,21 +308,22 @@ class XMTPModule : Module() {
             ClientWrapper.encodeToObj(randomClient)
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String? ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, dbEncryptionKey: List<Int>?, authParams: String ->
             logV("createFromKeyBundle")
-
+            val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
             try {
-                val context = if (enableV3 == true) context else null
+                val context = if (authOptions.enableV3) context else null
                 val encryptionKeyBytes =
                     dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                         a.apply { set(i, v.toByte()) }
                     }
                 val options = ClientOptions(
-                    api = apiEnvironments(environment, appVersion),
-                    enableV3 = enableV3 == true,
+                    api = apiEnvironments(authOptions.environment, authOptions.appVersion),
+                    enableV3 = authOptions.enableV3,
                     appContext = context,
                     dbEncryptionKey = encryptionKeyBytes,
-                    dbDirectory = dbDirectory
+                    dbDirectory = authOptions.dbDirectory,
+                    historySyncUrl = authOptions.historySyncUrl
                 )
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
@@ -570,6 +592,28 @@ class XMTPModule : Module() {
                         deliveryStatus ?: "ALL"
                     )
                 )?.map { DecodedMessageWrapper.encode(it) }
+            }
+        }
+
+        AsyncFunction("findV3Message") Coroutine { inboxId: String, messageId: String ->
+            withContext(Dispatchers.IO) {
+                logV("findV3Message")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val message = client.findMessage(Hex.hexStringToByteArray(messageId))
+                message?.let {
+                    DecodedMessageWrapper.encode(it.decrypt())
+                }
+            }
+        }
+
+        AsyncFunction("findGroup") Coroutine { inboxId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("findGroup")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = client.findGroup(Hex.hexStringToByteArray(groupId))
+                group?.let {
+                    GroupWrapper.encode(client, it)
+                }
             }
         }
 

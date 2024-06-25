@@ -95,6 +95,28 @@ export default class Conversations<
   }
 
   /**
+   * This method returns a group by the group id if that group exists in the local database.
+   * To get the latest list of groups from the network, call syncGroups() first.
+   *
+   * @returns {Promise<Group>} A Promise that resolves to a Group or undefined if not found.
+   */
+  async findGroup(groupId: string): Promise<Group<ContentTypes> | undefined> {
+    return await XMTPModule.findGroup(this.client, groupId)
+  }
+
+  /**
+   * This method returns a message by the message id if that message exists in the local database.
+   * To get the latest list of messages from the network, call syncGroups() first.
+   *
+   * @returns {Promise<DecodedMessage>} A Promise that resolves to a DecodedMessage or undefined if not found.
+   */
+  async findV3Message(
+    messageId: string
+  ): Promise<DecodedMessage<ContentTypes> | undefined> {
+    return await XMTPModule.findV3Message(this.client, messageId)
+  }
+
+  /**
    * This method returns a list of all conversations and groups that the client is a member of.
    * To include the latest groups from the network in the returned list, call syncGroups() first.
    *

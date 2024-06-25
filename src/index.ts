@@ -46,6 +46,13 @@ export function inboxId(): string {
   return XMTPModule.inboxId()
 }
 
+export async function findInboxIdFromAddress(
+  inboxId: string,
+  address: string
+): Promise<InboxId | undefined> {
+  return XMTPModule.findInboxIdFromAddress(inboxId, address)
+}
+
 export async function deleteLocalDatabase(inboxId: string) {
   return XMTPModule.deleteLocalDatabase(inboxId)
 }
@@ -58,25 +65,38 @@ export async function reconnectLocalDatabase(inboxId: string) {
   return XMTPModule.reconnectLocalDatabase(inboxId)
 }
 
+export async function requestMessageHistorySync(inboxId: string) {
+  return XMTPModule.requestMessageHistorySync(inboxId)
+}
+
 export async function auth(
-  inboxId: string,
+  address: string,
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
-  dbDirectory?: string | undefined
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined
 ) {
-  return await XMTPModule.auth(
-    inboxId,
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
     environment,
     appVersion,
+    enableV3,
+    dbDirectory,
+    historySyncUrl,
+  }
+  return await XMTPModule.auth(
+    address,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableV3,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
-    dbDirectory
+    encryptionKey,
+    JSON.stringify(authParams)
   )
 }
 
@@ -91,16 +111,25 @@ export async function createRandom(
   hasEnableIdentityCallback?: boolean | undefined,
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
-  dbDirectory?: string | undefined
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined
 ): Promise<string> {
-  return await XMTPModule.createRandom(
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
     environment,
     appVersion,
+    enableV3,
+    dbDirectory,
+    historySyncUrl,
+  }
+  return await XMTPModule.createRandom(
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableV3,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
-    dbDirectory
+    encryptionKey,
+    JSON.stringify(authParams)
   )
 }
 
@@ -110,15 +139,24 @@ export async function createFromKeyBundle(
   appVersion?: string | undefined,
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
-  dbDirectory?: string | undefined
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined
 ): Promise<string> {
-  return await XMTPModule.createFromKeyBundle(
-    keyBundle,
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
     environment,
     appVersion,
     enableV3,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
-    dbDirectory
+    dbDirectory,
+    historySyncUrl,
+  }
+  return await XMTPModule.createFromKeyBundle(
+    keyBundle,
+    encryptionKey,
+    JSON.stringify(authParams)
   )
 }
 
@@ -205,6 +243,26 @@ export async function groupMessages<
   return messages.map((json: string) => {
     return DecodedMessage.from(json, client)
   })
+}
+
+export async function findGroup<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  groupId: string
+): Promise<Group<ContentTypes> | undefined> {
+  const group = await XMTPModule.findGroup(client.inboxId, groupId)
+  return new Group(client, JSON.parse(group))
+}
+
+export async function findV3Message<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  messageId: string
+): Promise<DecodedMessage<ContentTypes> | undefined> {
+  const message = await XMTPModule.findV3Message(client.inboxId, messageId)
+  return DecodedMessage.from(message, client)
 }
 
 export async function syncGroups(inboxId: string) {
@@ -889,6 +947,14 @@ export async function processWelcomeMessage<
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
+
+interface AuthParams {
+  environment: string
+  appVersion?: string
+  enableV3?: boolean
+  dbDirectory?: string
+  historySyncUrl?: string
+}
 
 export * from './XMTP.types'
 export { Client } from './lib/Client'

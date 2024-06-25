@@ -122,7 +122,8 @@ export class Client<
           Boolean(enableSubscription),
           Boolean(options.enableV3),
           options.dbEncryptionKey,
-          options.dbDirectory
+          options.dbDirectory,
+          options.historySyncUrl
         )
       })().catch((error) => {
         console.error('ERROR in create: ', error)
@@ -163,7 +164,8 @@ export class Client<
       Boolean(enableSubscription),
       Boolean(options.enableV3),
       options.dbEncryptionKey,
-      options.dbDirectory
+      options.dbDirectory,
+      options.historySyncUrl
     )
     this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
@@ -199,7 +201,8 @@ export class Client<
       options.appVersion,
       Boolean(options.enableV3),
       options.dbEncryptionKey,
-      options.dbDirectory
+      options.dbDirectory,
+      options.historySyncUrl
     )
 
     return new Client(
@@ -347,6 +350,18 @@ export class Client<
   }
 
   /**
+   * Find the inboxId associated with this address
+   *
+   * @param {string} peerAddress - The address of the peer to check for inboxId.
+   * @returns {Promise<InboxId>} A Promise resolving to the InboxId.
+   */
+  async findInboxIdFromAddress(
+    peerAddress: string
+  ): Promise<InboxId | undefined> {
+    return await XMTPModule.findInboxIdFromAddress(this.inboxId, peerAddress)
+  }
+
+  /**
    * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
    */
   async deleteLocalDatabase() {
@@ -365,6 +380,13 @@ export class Client<
    */
   async reconnectLocalDatabase() {
     return await XMTPModule.reconnectLocalDatabase(this.inboxId)
+  }
+
+  /**
+   * Make a request for a message history sync.
+   */
+  async requestMessageHistorySync() {
+    return await XMTPModule.requestMessageHistorySync(this.inboxId)
   }
 
   /**
@@ -492,6 +514,10 @@ export type ClientOptions = {
    * OPTIONAL specify the XMTP managed database directory
    */
   dbDirectory?: string
+  /**
+   * OPTIONAL specify a url to sync message history from
+   */
+  historySyncUrl?: string
 }
 
 export type KeyType = {
@@ -510,6 +536,7 @@ export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
     enableV3: false,
     dbEncryptionKey: undefined,
     dbDirectory: undefined,
+    historySyncUrl: undefined,
   }
 
   return { ..._defaultOptions, ...opts } as ClientOptions

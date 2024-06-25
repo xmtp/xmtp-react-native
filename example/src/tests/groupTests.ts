@@ -153,6 +153,14 @@ test('can drop a local database', async () => {
   throw new Error('should throw when local database not connected')
 })
 
+test('can get a inboxId from an address', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const boInboxId = await alix.findInboxIdFromAddress(bo.address)
+  assert(boInboxId === bo.inboxId, `${boInboxId} should match ${bo.inboxId}`)
+  return true
+})
+
 test('can make a MLS V3 client from bundle', async () => {
   const key = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -290,6 +298,37 @@ test('group message delivery status', async () => {
     `the message should have a delivery status of PUBLISHED but was ${boMessages[0].deliveryStatus}`
   )
 
+  return true
+})
+
+test('can find a group by id', async () => {
+  const [alixClient, boClient] = await createClients(2)
+  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+
+  await boClient.conversations.syncGroups()
+  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+
+  assert(
+    boGroup?.id === alixGroup.id,
+    `bo ${boGroup?.id} does not match alix ${alixGroup.id}`
+  )
+  return true
+})
+
+test('can find a message by id', async () => {
+  const [alixClient, boClient] = await createClients(2)
+  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+  const alixMessageId = await alixGroup.send("Hello")
+
+  await boClient.conversations.syncGroups()
+  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+  await boGroup?.sync()
+  const boMessage = await boClient.conversations.findV3Message(alixMessageId)
+
+  assert(
+    boMessage?.id === alixMessageId,
+    `bo message ${boMessage?.id} does not match ${alixMessageId}`
+  )
   return true
 })
 
