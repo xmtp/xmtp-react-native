@@ -99,11 +99,11 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("findInboxIdFromAddress") { (inboxId: String, address: String) -> String in
+		AsyncFunction("findInboxIdFromAddress") { (inboxId: String, address: String) -> String? in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			client.inboxIdFromAddress(address: address)
+			return try await client.inboxIdFromAddress(address: address)
 		}
 
 		AsyncFunction("deleteLocalDatabase") { (inboxId: String) in
@@ -137,25 +137,27 @@ public class XMTPModule: Module {
 		//
 		// Auth functions
 		//
-		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, enableV3: Bool?, dbEncryptionKey: [UInt8]?, dbDirectory: String?, historySyncUrl: String?) in
+		AsyncFunction("auth") {
+			{ (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, enableV3: Bool?, dbEncryptionKey: [UInt8]?, dbDirectory: String?, historySyncUrl: String?) in
 			
-			let signer = ReactNativeSigner(module: self, address: address)
-			self.signer = signer
-			if(hasCreateIdentityCallback ?? false) {
-				preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+				let signer = ReactNativeSigner(module: self, address: address)
+				self.signer = signer
+				if(hasCreateIdentityCallback ?? false) {
+					self.preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+				}
+				if(hasEnableIdentityCallback ?? false) {
+					self.preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+				}
+				let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
+				let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+				let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+				
+				let options = self.createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: enableV3 == true, dbEncryptionKey: encryptionKeyData, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
+				let client = try await XMTP.Client.create(account: signer, options: options)
+				await self.clientsManager.updateClient(key: client.inboxID, client: client)
+				self.signer = nil
+				self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
 			}
-			if(hasEnableIdentityCallback ?? false) {
-				preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
-			}
-			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
-			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
-			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
-			
-			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: enableV3 == true, dbEncryptionKey: encryptionKeyData, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
-			let client = try await XMTP.Client.create(account: signer, options: options)
-			await clientsManager.updateClient(key: client.inboxID, client: client)
-			self.signer = nil
-			sendEvent("authed", try ClientWrapper.encodeToObj(client))
 		}
 
 		Function("receiveSignature") { (requestID: String, signature: String) in

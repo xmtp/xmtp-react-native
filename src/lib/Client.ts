@@ -355,7 +355,9 @@ export class Client<
    * @param {string} peerAddress - The address of the peer to check for inboxId.
    * @returns {Promise<InboxId>} A Promise resolving to the InboxId.
    */
-  async findInboxIdFromAddress(peerAddress: string): Promise<InboxId> {
+  async findInboxIdFromAddress(
+    peerAddress: string
+  ): Promise<InboxId | undefined> {
     return await XMTPModule.findInboxIdFromAddress(this.inboxId, peerAddress)
   }
 
