@@ -151,7 +151,7 @@ public class XMTPModule: Module {
 			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			
-			let options = self.createClientConfig(env: authOptions.environment, appVersion: authOptions?.appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: authOptions.enableV3, dbEncryptionKey: encryptionKeyData, dbDirectory: authOptions?.dbDirectory, historySyncUrl: authOptions?.historySyncUrl)
+			let options = self.createClientConfig(env: authOptions.environment, appVersion: authOptions.appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: authOptions.enableV3, dbEncryptionKey: encryptionKeyData, dbDirectory: authOptions.dbDirectory, historySyncUrl: authOptions.historySyncUrl)
 			let client = try await XMTP.Client.create(account: signer, options: options)
 			await self.clientsManager.updateClient(key: client.inboxID, client: client)
 			self.signer = nil

@@ -8,7 +8,7 @@
 import Foundation
 import XMTP
 
-class AuthParamsWrapper {
+struct AuthParamsWrapper {
 	let environment: String
 	let appVersion: String?
 	let enableV3: Bool
@@ -23,13 +23,13 @@ class AuthParamsWrapper {
 		self.historySyncUrl = historySyncUrl
 	}
 
-	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper? {
+	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper {
 		guard let data = authParams.data(using: .utf8),
 			  let jsonOptions = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
-			return nil
+			return AuthParamsWrapper(environment: "dev", appVersion: nil, enableV3: false, dbDirectory: nil, historySyncUrl: nil)
 		}
 
-		let environment = jsonOptions["environment"] as? String ?? ""
+		let environment = jsonOptions["environment"] as? String ?? "dev"
 		let appVersion = jsonOptions["appVersion"] as? String
 		let enableV3 = jsonOptions["enableV3"] as? Bool ?? false
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
