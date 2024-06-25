@@ -137,27 +137,25 @@ public class XMTPModule: Module {
 		//
 		// Auth functions
 		//
-		AsyncFunction("auth") {
-			{ (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, enableV3: Bool?, dbEncryptionKey: [UInt8]?, dbDirectory: String?, historySyncUrl: String?) in
-			
-				let signer = ReactNativeSigner(module: self, address: address)
-				self.signer = signer
-				if(hasCreateIdentityCallback ?? false) {
-					self.preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
-				}
-				if(hasEnableIdentityCallback ?? false) {
-					self.preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
-				}
-				let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
-				let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
-				let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
-				
-				let options = self.createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: enableV3 == true, dbEncryptionKey: encryptionKeyData, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
-				let client = try await XMTP.Client.create(account: signer, options: options)
-				await self.clientsManager.updateClient(key: client.inboxID, client: client)
-				self.signer = nil
-				self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
+		AsyncFunction("auth") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
+			let signer = ReactNativeSigner(module: self, address: address)
+			self.signer = signer
+			if(hasCreateIdentityCallback ?? false) {
+				self.preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
 			}
+			if(hasEnableIdentityCallback ?? false) {
+				self.preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
+			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+			
+			let options = self.createClientConfig(env: authOptions.environment, appVersion: authOptions?.appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: authOptions.enableV3, dbEncryptionKey: encryptionKeyData, dbDirectory: authOptions?.dbDirectory, historySyncUrl: authOptions?.historySyncUrl)
+			let client = try await XMTP.Client.create(account: signer, options: options)
+			await self.clientsManager.updateClient(key: client.inboxID, client: client)
+			self.signer = nil
+			self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
 		}
 
 		Function("receiveSignature") { (requestID: String, signature: String) in
@@ -165,7 +163,7 @@ public class XMTPModule: Module {
 		}
 
 		// Generate a random wallet and set the client to that
-		AsyncFunction("createRandom") { (environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, enableV3: Bool?, dbEncryptionKey: [UInt8]?, dbDirectory: String?, historySyncUrl: String?) -> [String: String] in
+		AsyncFunction("createRandom") { (hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
 
 			let privateKey = try PrivateKey.generate()
 			if(hasCreateIdentityCallback ?? false) {
@@ -177,8 +175,9 @@ public class XMTPModule: Module {
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
 			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 
-			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: enableV3 == true, dbEncryptionKey: encryptionKeyData, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
+			let options = createClientConfig(env: authOptions.environment, appVersion: authOptions.appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: authOptions.enableV3, dbEncryptionKey: encryptionKeyData, dbDirectory: authOptions.dbDirectory, historySyncUrl: authOptions.historySyncUrl)
 			let client = try await Client.create(account: privateKey, options: options)
 
 			await clientsManager.updateClient(key: client.inboxID, client: client)
@@ -186,7 +185,7 @@ public class XMTPModule: Module {
 		}
 
 		// Create a client using its serialized key bundle.
-		AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?, enableV3: Bool?, dbEncryptionKey: [UInt8]?, dbDirectory: String?, historySyncUrl: String?) -> [String: String] in
+		AsyncFunction("createFromKeyBundle") { (keyBundle: String, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
 
 			do {
 				guard let keyBundleData = Data(base64Encoded: keyBundle),
@@ -195,7 +194,9 @@ public class XMTPModule: Module {
 					throw Error.invalidKeyBundle
 				}
 				let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
-				let options = createClientConfig(env: environment, appVersion: appVersion, enableV3: enableV3 == true, dbEncryptionKey: encryptionKeyData, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
+				let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+
+				let options = createClientConfig(env: authOptions.environment, appVersion: authOptions.appVersion, enableV3: authOptions.enableV3, dbEncryptionKey: encryptionKeyData, dbDirectory: authOptions.dbDirectory, historySyncUrl: authOptions.historySyncUrl)
 				let client = try await Client.from(bundle: bundle, options: options)
 				await clientsManager.updateClient(key: client.inboxID, client: client)
 				return try ClientWrapper.encodeToObj(client)

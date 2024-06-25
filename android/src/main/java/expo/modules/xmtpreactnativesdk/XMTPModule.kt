@@ -13,6 +13,7 @@ import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
@@ -227,10 +228,11 @@ class XMTPModule : Module() {
         // Auth functions
         //
         AsyncFunction("auth") {
-            { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String?, historySyncUrl: String? ->
+            { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
                 logV("auth")
                 val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
                 signer = reactSigner
+                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 
                 if (hasCreateIdentityCallback == true)
                     preCreateIdentityCallbackDeferred = CompletableDeferred()
@@ -240,21 +242,21 @@ class XMTPModule : Module() {
                     preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
                 val preEnableIdentityCallback: PreEventCallback? =
                     preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-                val context = if (enableV3 == true) context else null
+                val context = if (authOptions.enableV3) context else null
                 val encryptionKeyBytes =
                     dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                         a.apply { set(i, v.toByte()) }
                     }
 
                 val options = ClientOptions(
-                    api = apiEnvironments(environment, appVersion),
+                    api = apiEnvironments(authOptions.environment, authOptions.appVersion),
                     preCreateIdentityCallback = preCreateIdentityCallback,
                     preEnableIdentityCallback = preEnableIdentityCallback,
-                    enableV3 = enableV3 == true,
+                    enableV3 = authOptions.enableV3,
                     appContext = context,
                     dbEncryptionKey = encryptionKeyBytes,
-                    dbDirectory = dbDirectory,
-                    historySyncUrl = historySyncUrl
+                    dbDirectory = authOptions.dbDirectory,
+                    historySyncUrl = authOptions.historySyncUrl
                 )
                 val client = Client().create(account = reactSigner, options = options)
                 clients[client.inboxId] = client
@@ -270,7 +272,7 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String?, historySyncUrl: String? ->
+        AsyncFunction("createRandom") { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
 
@@ -282,21 +284,23 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (enableV3 == true) context else null
+
+            val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+            val context = if (authOptions.enableV3) context else null
             val encryptionKeyBytes =
                 dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                     a.apply { set(i, v.toByte()) }
                 }
 
             val options = ClientOptions(
-                api = apiEnvironments(environment, appVersion),
+                api = apiEnvironments(authOptions.environment, authOptions.appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
                 preEnableIdentityCallback = preEnableIdentityCallback,
-                enableV3 = enableV3 == true,
+                enableV3 = authOptions.enableV3,
                 appContext = context,
                 dbEncryptionKey = encryptionKeyBytes,
-                dbDirectory = dbDirectory,
-                historySyncUrl = historySyncUrl
+                dbDirectory = authOptions.dbDirectory,
+                historySyncUrl = authOptions.historySyncUrl
 
             )
             val randomClient = Client().create(account = privateKey, options = options)
@@ -306,22 +310,22 @@ class XMTPModule : Module() {
             ClientWrapper.encodeToObj(randomClient)
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, enableV3: Boolean?, dbEncryptionKey: List<Int>?, dbDirectory: String?, historySyncUrl: String? ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, dbEncryptionKey: List<Int>?, authParams: String ->
             logV("createFromKeyBundle")
-
+            val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
             try {
-                val context = if (enableV3 == true) context else null
+                val context = if (authOptions.enableV3) context else null
                 val encryptionKeyBytes =
                     dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                         a.apply { set(i, v.toByte()) }
                     }
                 val options = ClientOptions(
-                    api = apiEnvironments(environment, appVersion),
-                    enableV3 = enableV3 == true,
+                    api = apiEnvironments(authOptions.environment, authOptions.appVersion),
+                    enableV3 = authOptions.enableV3,
                     appContext = context,
                     dbEncryptionKey = encryptionKeyBytes,
-                    dbDirectory = dbDirectory,
-                    historySyncUrl = historySyncUrl
+                    dbDirectory = authOptions.dbDirectory,
+                    historySyncUrl = authOptions.historySyncUrl
                 )
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(

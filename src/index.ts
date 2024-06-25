@@ -70,7 +70,7 @@ export async function requestMessageHistorySync(inboxId: string) {
 }
 
 export async function auth(
-  inboxId: string,
+  address: string,
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
@@ -80,16 +80,23 @@ export async function auth(
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined
 ) {
-  return await XMTPModule.auth(
-    inboxId,
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
     environment,
     appVersion,
+    enableV3,
+    dbDirectory,
+    historySyncUrl,
+  }
+  return await XMTPModule.auth(
+    address,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableV3,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
-    dbDirectory,
-    historySyncUrl
+    encryptionKey,
+    JSON.stringify(authParams)
   )
 }
 
@@ -107,15 +114,22 @@ export async function createRandom(
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined
 ): Promise<string> {
-  return await XMTPModule.createRandom(
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
     environment,
     appVersion,
+    enableV3,
+    dbDirectory,
+    historySyncUrl,
+  }
+  return await XMTPModule.createRandom(
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
-    enableV3,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
-    dbDirectory,
-    historySyncUrl
+    encryptionKey,
+    JSON.stringify(authParams)
   )
 }
 
@@ -128,14 +142,21 @@ export async function createFromKeyBundle(
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined
 ): Promise<string> {
-  return await XMTPModule.createFromKeyBundle(
-    keyBundle,
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
     environment,
     appVersion,
     enableV3,
-    dbEncryptionKey ? Array.from(dbEncryptionKey) : undefined,
     dbDirectory,
-    historySyncUrl
+    historySyncUrl,
+  }
+  return await XMTPModule.createFromKeyBundle(
+    keyBundle,
+    encryptionKey,
+    JSON.stringify(authParams)
   )
 }
 
@@ -926,6 +947,14 @@ export async function processWelcomeMessage<
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
+
+interface AuthParams {
+  environment: string
+  appVersion?: string
+  enableV3?: boolean
+  dbDirectory?: string
+  historySyncUrl?: string
+}
 
 export * from './XMTP.types'
 export { Client } from './lib/Client'
