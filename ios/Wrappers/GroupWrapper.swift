@@ -16,6 +16,8 @@ struct GroupWrapper {
 				"all_members"
 			case .adminOnly:
 				"admin_only"
+			case .customPolicy:
+				"custom_policy"
 		}
 		return [
 			"clientAddress": client.address,

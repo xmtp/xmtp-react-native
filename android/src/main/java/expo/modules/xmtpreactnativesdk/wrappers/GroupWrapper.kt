@@ -15,6 +15,7 @@ class GroupWrapper {
             val permissionString = when (group.permissionLevel()) {
                 GroupPermissions.ALL_MEMBERS -> "all_members"
                 GroupPermissions.ADMIN_ONLY -> "admin_only"
+                GroupPermissions.CUSTOM_POLICY -> "custom_policy"
             }
             return mapOf(
                 "clientAddress" to client.address,
