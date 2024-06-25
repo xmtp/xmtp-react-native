@@ -23,7 +23,7 @@ export class Group<
   version = ConversationVersion.GROUP
   topic: string
   creatorInboxId: InboxId
-  permissionLevel: 'all_members' | 'admin_only'
+  permissionLevel: 'all_members' | 'admin_only' | 'custom_policy'
   name: string
   isGroupActive: boolean
   imageUrlSquare: string
@@ -35,7 +35,7 @@ export class Group<
       createdAt: number
       peerInboxIds: InboxId[]
       creatorInboxId: InboxId
-      permissionLevel: 'all_members' | 'admin_only'
+      permissionLevel: 'all_members' | 'admin_only' | 'custom_policy'
       topic: string
       name: string
       isGroupActive: boolean

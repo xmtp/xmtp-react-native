@@ -359,3 +359,35 @@ test('can commit after invalid permissions commit', async () => {
 
   return true
 })
+
+test('group with All Members policy has remove function that is admin only', async () => {
+  // Create clients
+  const [alix, bo, caro] = await createClients(3)
+
+  // Bo creates a group with Alix and Caro with all_members policy
+  const boGroup = await bo.conversations.newGroup(
+    [alix.address, caro.address],
+    { permissionLevel: 'all_members' }
+  )
+  await alix.conversations.syncGroups()
+  const alixGroup = (await alix.conversations.listGroups())[0]
+
+  // Verify that Alix cannot remove a member
+  try {
+    await alixGroup.removeMembers([caro.address])
+    assert(false, 'Alix should not be able to remove a member')
+  } catch (error) {
+    // expected
+  }
+
+  // Verify that Bo (admin) can remove a member
+  await boGroup.removeMembers([caro.address])
+  await boGroup.sync()
+  const members = await boGroup.memberInboxIds()
+  assert(
+    !members.includes(caro.inboxId),
+    `Caro should have been removed from the group but is still a member`
+  )
+
+  return true
+})
