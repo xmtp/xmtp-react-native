@@ -411,11 +411,12 @@ class XMTPModule : Module() {
 
         //
         // Client API
-        AsyncFunction("canMessage") { inboxId: String, peerAddress: String ->
-            logV("canMessage")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-
-            client.canMessage(peerAddress)
+        AsyncFunction("canMessage") Coroutine { clientAddress: String, peerAddress: String ->
+            withContext(Dispatchers.IO) {
+                logV("canMessage")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.canMessage(peerAddress)
+            }
         }
 
         AsyncFunction("canGroupMessage") Coroutine { inboxId: String, peerAddresses: List<String> ->
@@ -426,13 +427,15 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("staticCanMessage") { peerAddress: String, environment: String, appVersion: String? ->
-            try {
-                logV("staticCanMessage")
-                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
-                Client.canMessage(peerAddress = peerAddress, options = options)
-            } catch (e: Exception) {
-                throw XMTPException("Failed to create client: ${e.message}")
+        AsyncFunction("staticCanMessage") Coroutine { peerAddress: String, environment: String, appVersion: String? ->
+            withContext(Dispatchers.IO) {
+                try {
+                    logV("staticCanMessage")
+                    val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+                    Client.canMessage(peerAddress = peerAddress, options = options)
+                } catch (e: Exception) {
+                    throw XMTPException("Failed to create client: ${e.message}")
+                }
             }
         }
 

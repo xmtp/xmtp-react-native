@@ -1176,7 +1176,7 @@ public class XMTPModule: Module {
 			guard let conversation = try await findConversation(inboxId: inboxId, topic: conversationTopic) else {
 				throw Error.conversationNotFound(conversationTopic)
 			}
-			return try ConsentWrapper.consentStateToString(state: await conversation.consentState())
+			return try ConsentWrapper.consentStateToString(state: try await conversation.consentState())
 		}
 		
 		AsyncFunction("groupConsentState") { (inboxId: String, groupId: String) -> String in
@@ -1317,7 +1317,7 @@ public class XMTPModule: Module {
 		await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?.cancel()
 		await subscriptionsManager.set(getConversationsKey(inboxId: inboxId), Task {
 			do {
-				for try await conversation in await client.conversations.stream() {
+				for try await conversation in try await client.conversations.stream() {
 					try sendEvent("conversation", [
 						"inboxId": inboxId,
 						"conversation": ConversationWrapper.encodeToObj(conversation, client: client),
