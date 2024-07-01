@@ -299,20 +299,24 @@ class XMTPModule : Module() {
 
         //
         // Client API
-        AsyncFunction("canMessage") { clientAddress: String, peerAddress: String ->
-            logV("canMessage")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+        AsyncFunction("canMessage") Coroutine { clientAddress: String, peerAddress: String ->
+            withContext(Dispatchers.IO) {
+                logV("canMessage")
+                val client = clients[clientAddress] ?: throw XMTPException("No client")
 
-            client.canMessage(peerAddress)
+                client.canMessage(peerAddress)
+            }
         }
 
-        AsyncFunction("staticCanMessage") { peerAddress: String, environment: String, appVersion: String? ->
-            try {
-                logV("staticCanMessage")
-                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
-                Client.canMessage(peerAddress = peerAddress, options = options)
-            } catch (e: Exception) {
-                throw XMTPException("Failed to create client: ${e.message}")
+        AsyncFunction("staticCanMessage") Coroutine { peerAddress: String, environment: String, appVersion: String? ->
+            withContext(Dispatchers.IO) {
+                try {
+                    logV("staticCanMessage")
+                    val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+                    Client.canMessage(peerAddress = peerAddress, options = options)
+                } catch (e: Exception) {
+                    throw XMTPException("Failed to create client: ${e.message}")
+                }
             }
         }
 
@@ -583,14 +587,15 @@ class XMTPModule : Module() {
 
                 var consentProof: ConsentProofPayload? = null
                 if (consentProofPayload.isNotEmpty()) {
-                    val consentProofDataBytes = consentProofPayload.foldIndexed(ByteArray(consentProofPayload.size)) { i, a, v ->
-                        a.apply {
-                            set(
-                                i,
-                                v.toByte()
-                            )
+                    val consentProofDataBytes =
+                        consentProofPayload.foldIndexed(ByteArray(consentProofPayload.size)) { i, a, v ->
+                            a.apply {
+                                set(
+                                    i,
+                                    v.toByte()
+                                )
+                            }
                         }
-                    }
                     consentProof = ConsentProofPayload.parseFrom(consentProofDataBytes)
                 }
 
