@@ -601,7 +601,7 @@ public class XMTPModule: Module {
 			guard let conversation = try await findConversation(clientAddress: clientAddress, topic: conversationTopic) else {
 				throw Error.conversationNotFound(conversationTopic)
 			}
-			return ConsentWrapper.consentStateToString(state: await conversation.consentState())
+			return ConsentWrapper.consentStateToString(state: try await conversation.consentState())
 		}
 
 		AsyncFunction("consentList") { (clientAddress: String) -> [String] in
@@ -682,7 +682,7 @@ public class XMTPModule: Module {
 		await subscriptionsManager.get(getConversationsKey(clientAddress: clientAddress))?.cancel()
 		await subscriptionsManager.set(getConversationsKey(clientAddress: clientAddress), Task {
 			do {
-				for try await conversation in await client.conversations.stream() {
+				for try await conversation in try await client.conversations.stream() {
 					try sendEvent("conversation", [
 						"clientAddress": clientAddress,
 						"conversation": ConversationWrapper.encodeToObj(conversation, client: client),

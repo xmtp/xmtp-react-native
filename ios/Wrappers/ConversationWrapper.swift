@@ -26,7 +26,7 @@ struct ConversationWrapper {
 			"topic": conversation.topic,
 			"createdAt": UInt64(conversation.createdAt.timeIntervalSince1970 * 1000),
 			"context": context,
-			"peerAddress": conversation.peerAddress,
+			"peerAddress": try conversation.peerAddress,
 			"version": conversation.version == .v1 ? "v1" : "v2",
 			"conversationID": conversation.conversationID ?? "",
 			"keyMaterial": conversation.keyMaterial?.base64EncodedString() ?? "",
