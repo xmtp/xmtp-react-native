@@ -25,6 +25,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.PermissionPolicySetWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -1162,6 +1163,21 @@ class XMTPModule : Module() {
                 val group = findGroup(clientInboxId, id)
 
                 group?.updateGroupDescriptionPermission(getPermissionOption(newPermission))
+            }
+        }
+
+        AsyncFunction("permissionPolicySet") Coroutine { inboxId: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("groupImageUrlSquare")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = findGroup(inboxId, id)
+
+                val permissionPolicySet = group?.permissionPolicySet()
+                if (permissionPolicySet != null) {
+                    PermissionPolicySetWrapper.encodeToJsonString(permissionPolicySet)
+                } else {
+                    throw XMTPException("Permission policy set not found for group: $id")
+                }
             }
         }
 

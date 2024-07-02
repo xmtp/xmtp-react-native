@@ -221,7 +221,7 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						DevelopmentTeam = FY4NZR34Z3;
+						DevelopmentTeam = 65GVVS9K6W;
 						LastSwiftMigration = 1250;
 					};
 					A6A5DB842A00551E001DF8C2 = {
@@ -408,7 +408,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = xmtpreactnativesdkexample/xmtpreactnativesdkexample.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FY4NZR34Z3;
+				DEVELOPMENT_TEAM = 65GVVS9K6W;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -424,7 +424,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = expo.modules.xmtpreactnativesdk.example;
+				PRODUCT_BUNDLE_IDENTIFIER = cvoell.modules.xmtpreactnativesdk.example;
 				PRODUCT_NAME = xmtpreactnativesdkexample;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -441,7 +441,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = xmtpreactnativesdkexample/xmtpreactnativesdkexample.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FY4NZR34Z3;
+				DEVELOPMENT_TEAM = 65GVVS9K6W;
 				INFOPLIST_FILE = xmtpreactnativesdkexample/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -452,7 +452,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = expo.modules.xmtpreactnativesdk.example;
+				PRODUCT_BUNDLE_IDENTIFIER = cvoell.modules.xmtpreactnativesdk.example;
 				PRODUCT_NAME = xmtpreactnativesdkexample;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

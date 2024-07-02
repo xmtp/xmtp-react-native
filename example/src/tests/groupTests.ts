@@ -1137,9 +1137,9 @@ test('can make a group with admin permissions', async () => {
     { permissionLevel: 'admin_only' }
   )
 
-  if (group.permissionPolicySet.addMemberPolicy !== 'admin') {
+  if ((await group.permissionPolicySet()).addMemberPolicy !== 'admin') {
     throw Error(
-      `Group permission level should be admin but was ${group.permissionPolicySet.addMemberPolicy}`
+      `Group permission level should be admin but was ${(await group.permissionPolicySet()).addMemberPolicy}`
     )
   }
 
