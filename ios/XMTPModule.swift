@@ -696,11 +696,11 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("createGroup") { (inboxId: String, peerAddresses: [String], permission: String, groupName: String, groupImageUrlSquare: String) -> String in
+		AsyncFunction("createGroup") { (inboxId: String, peerAddresses: [String], permission: String, groupName: String, groupImageUrlSquare: String, groupDescription: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			let permissionLevel: GroupPermissions = {
+			let permissionLevel: GroupPermissionPreconfiguration = {
 				switch permission {
 				case "admin_only":
 					return .adminOnly
@@ -709,7 +709,7 @@ public class XMTPModule: Module {
 				}
 			}()
 			do {
-				let group = try await client.conversations.newGroup(with: peerAddresses, permissions: permissionLevel, name: groupName, imageUrlSquare: groupImageUrlSquare)
+				let group = try await client.conversations.newGroup(with: peerAddresses, permissions: permissionLevel, name: groupName, imageUrlSquare: groupImageUrlSquare, description: groupDescription)
 				return try GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -852,6 +852,30 @@ public class XMTPModule: Module {
 			}
 
 			try await group.updateGroupImageUrlSquare(imageUrlSquare: groupImageUrl)
+		}
+		
+		AsyncFunction("groupDescription") { (inboxId: String, id: String, description: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			return try group.groupDescription()
+		}
+
+		AsyncFunction("updateGroupDescription") { (inboxId: String, id: String, description: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			try await group.updateGroupDescription(groupDescription: description)
 		}
 		
 		AsyncFunction("isGroupActive") { (inboxId: String, id: String) -> Bool in
@@ -1317,7 +1341,7 @@ public class XMTPModule: Module {
 		await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?.cancel()
 		await subscriptionsManager.set(getConversationsKey(inboxId: inboxId), Task {
 			do {
-				for try await conversation in await client.conversations.stream() {
+				for try await conversation in try await client.conversations.stream() {
 					try sendEvent("conversation", [
 						"inboxId": inboxId,
 						"conversation": ConversationWrapper.encodeToObj(conversation, client: client),
