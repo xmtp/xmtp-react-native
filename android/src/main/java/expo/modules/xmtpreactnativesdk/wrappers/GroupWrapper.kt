@@ -9,7 +9,7 @@ class GroupWrapper {
 
     companion object {
         fun encodeToObj(client: Client, group: Group): Map<String, Any> {
-            val permissionPolicySet = PermissionPolicySetWrapper.encodeToObj(group.permissionPolicySet())
+            val permissionPolicySet = PermissionPolicySetWrapper.encodeToJsonString(group.permissionPolicySet())
             return mapOf(
                 "clientAddress" to client.address,
                 "id" to group.id.toHex(),
