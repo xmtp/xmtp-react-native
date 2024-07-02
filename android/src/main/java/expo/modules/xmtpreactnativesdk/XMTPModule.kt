@@ -65,7 +65,7 @@ import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
-import uniffi.xmtpv3.GroupPermissions
+import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -411,11 +411,14 @@ class XMTPModule : Module() {
 
         //
         // Client API
-        AsyncFunction("canMessage") { inboxId: String, peerAddress: String ->
-            logV("canMessage")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
+        AsyncFunction("canMessage") Coroutine { inboxId: String, peerAddress: String ->
+            withContext(Dispatchers.IO) {
+                logV("canMessage")
 
-            client.canMessage(peerAddress)
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+
+                client.canMessage(peerAddress)
+            }
         }
 
         AsyncFunction("canGroupMessage") Coroutine { inboxId: String, peerAddresses: List<String> ->
@@ -426,13 +429,15 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("staticCanMessage") { peerAddress: String, environment: String, appVersion: String? ->
-            try {
-                logV("staticCanMessage")
-                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
-                Client.canMessage(peerAddress = peerAddress, options = options)
-            } catch (e: Exception) {
-                throw XMTPException("Failed to create client: ${e.message}")
+        AsyncFunction("staticCanMessage") Coroutine { peerAddress: String, environment: String, appVersion: String? ->
+            withContext(Dispatchers.IO) {
+                try {
+                    logV("staticCanMessage")
+                    val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+                    Client.canMessage(peerAddress = peerAddress, options = options)
+                } catch (e: Exception) {
+                    throw XMTPException("Failed to create client: ${e.message}")
+                }
             }
         }
 
@@ -826,19 +831,20 @@ class XMTPModule : Module() {
                 ConversationWrapper.encode(client, conversation)
             }
         }
-        AsyncFunction("createGroup") Coroutine { inboxId: String, peerAddresses: List<String>, permission: String, groupName: String, groupImageUrlSquare: String ->
+        AsyncFunction("createGroup") Coroutine { inboxId: String, peerAddresses: List<String>, permission: String, groupName: String, groupImageUrlSquare: String, groupDescription: String ->
             withContext(Dispatchers.IO) {
                 logV("createGroup")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val permissionLevel = when (permission) {
-                    "admin_only" -> GroupPermissions.ADMIN_ONLY
-                    else -> GroupPermissions.ALL_MEMBERS
+                    "admin_only" -> GroupPermissionPreconfiguration.ADMIN_ONLY
+                    else -> GroupPermissionPreconfiguration.ALL_MEMBERS
                 }
                 val group = client.conversations.newGroup(
                     peerAddresses,
                     permissionLevel,
                     groupName,
-                    groupImageUrlSquare
+                    groupImageUrlSquare,
+                    groupDescription
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -956,6 +962,26 @@ class XMTPModule : Module() {
                 val group = findGroup(inboxId, id)
 
                 group?.updateGroupImageUrlSquare(groupImageUrl)
+            }
+        }
+
+        AsyncFunction("groupDescription") Coroutine { inboxId: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("groupDescription")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = findGroup(inboxId, id)
+
+                group?.description
+            }
+        }
+
+        AsyncFunction("updateGroupDescription") Coroutine { inboxId: String, id: String, groupDescription: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupDescription")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = findGroup(inboxId, id)
+
+                group?.updateGroupDescription(groupDescription)
             }
         }
 
