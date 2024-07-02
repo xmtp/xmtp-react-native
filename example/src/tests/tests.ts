@@ -1,7 +1,6 @@
 import { FramesClient } from '@xmtp/frames-client'
 import { content, invitation } from '@xmtp/proto'
 import { createHmac } from 'crypto'
-import { ethers } from 'ethers'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import Config from 'react-native-config'
 import { TextEncoder, TextDecoder } from 'text-encoding'
@@ -1792,13 +1791,31 @@ test('can handle complex streaming setup with messages from self', async () => {
   return true
 })
 
+class ViemSigner {
+  account: PrivateKeyAccount
+
+  constructor(account: PrivateKeyAccount) {
+    this.account = account
+  }
+
+  async getAddress() {
+    return this.account.address
+  }
+
+  async signMessage(message: string) {
+    return this.account.signMessage({ message })
+  }
+}
+
 test('can send and receive consent proofs', async () => {
-  const alixWallet = await ethers.Wallet.createRandom()
-  const boWallet = await ethers.Wallet.createRandom()
-  const bo = await Client.create(boWallet, { env: 'local' })
-  await delayToPropogate()
-  const alix = await Client.create(alixWallet, { env: 'local' })
-  await delayToPropogate()
+  const alixPrivateKey = generatePrivateKey()
+  const alixAccount = privateKeyToAccount(alixPrivateKey)
+  const boPrivateKey = generatePrivateKey()
+  const boAccount = privateKeyToAccount(boPrivateKey)
+  const alixSigner = new ViemSigner(alixAccount)
+  const boSigner = new ViemSigner(boAccount)
+  const alix = await Client.create(alixSigner, { env: 'local' })
+  const bo = await Client.create(boSigner, { env: 'local' })
 
   const timestamp = Date.now()
   const consentMessage =
@@ -1808,7 +1825,7 @@ test('can send and receive consent proofs', async () => {
     `From Address: ${bo.address}\n` +
     '\n' +
     'For more info: https://xmtp.org/signatures/'
-  const sig = await alixWallet.signMessage(consentMessage)
+  const sig = await alixSigner.signMessage(consentMessage)
   const consentProof = invitation.ConsentProofPayload.fromPartial({
     payloadVersion:
       invitation.ConsentProofPayloadVersion.CONSENT_PROOF_PAYLOAD_VERSION_1,
