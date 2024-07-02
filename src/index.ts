@@ -18,11 +18,12 @@ import {
   ConversationVersion,
 } from './lib/ConversationContainer'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
-import { Group } from './lib/Group'
+import { Group, PermissionUpdateOption } from './lib/Group'
 import { Member } from './lib/Member'
 import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
+import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
 
 export * from './context'
@@ -167,7 +168,8 @@ export async function createGroup<
   peerAddresses: string[],
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
-  imageUrlSquare: string = ''
+  imageUrlSquare: string = '',
+  description: string = ''
 ): Promise<Group<ContentTypes>> {
   return new Group(
     client,
@@ -177,7 +179,8 @@ export async function createGroup<
         peerAddresses,
         permissionLevel,
         name,
-        imageUrlSquare
+        imageUrlSquare,
+        description
       )
     )
   )
@@ -314,6 +317,21 @@ export async function removeGroupMembersByInboxId(
   inboxIds: string[]
 ): Promise<void> {
   return XMTPModule.removeGroupMembersByInboxId(inboxId, id, inboxIds)
+}
+
+export function groupDescription(
+  inboxId: string,
+  id: string
+): string | PromiseLike<string> {
+  return XMTPModule.groupDescription(inboxId, id)
+}
+
+export function updateGroupDescription(
+  inboxId: string,
+  id: string,
+  description: string
+): Promise<void> {
+  return XMTPModule.updateGroupDescription(inboxId, id, description)
 }
 
 export function groupImageUrlSquare(
@@ -860,6 +878,98 @@ export async function removeSuperAdmin(
   inboxId: string
 ): Promise<void> {
   return XMTPModule.removeSuperAdmin(clientInboxId, id, inboxId)
+}
+
+export async function updateAddMemberPermission(
+  clientInboxId: string,
+  id: string,
+  permissionOption: PermissionUpdateOption
+): Promise<void> {
+  return XMTPModule.updateAddMemberPermission(
+    clientInboxId,
+    id,
+    permissionOption
+  )
+}
+
+export async function updateRemoveMemberPermission(
+  clientInboxId: string,
+  id: string,
+  permissionOption: PermissionUpdateOption
+): Promise<void> {
+  return XMTPModule.updateRemoveMemberPermission(
+    clientInboxId,
+    id,
+    permissionOption
+  )
+}
+
+export async function updateAddAdminPermission(
+  clientInboxId: string,
+  id: string,
+  permissionOption: PermissionUpdateOption
+): Promise<void> {
+  return XMTPModule.updateAddAdminPermission(
+    clientInboxId,
+    id,
+    permissionOption
+  )
+}
+
+export async function updateRemoveAdminPermission(
+  clientInboxId: string,
+  id: string,
+  permissionOption: PermissionUpdateOption
+): Promise<void> {
+  return XMTPModule.updateRemoveAdminPermission(
+    clientInboxId,
+    id,
+    permissionOption
+  )
+}
+
+export async function updateGroupNamePermission(
+  clientInboxId: string,
+  id: string,
+  permissionOption: PermissionUpdateOption
+): Promise<void> {
+  return XMTPModule.updateGroupNamePermission(
+    clientInboxId,
+    id,
+    permissionOption
+  )
+}
+
+export async function updateGroupImageUrlSquarePermission(
+  clientInboxId: string,
+  id: string,
+  permissionOption: PermissionUpdateOption
+): Promise<void> {
+  return XMTPModule.updateGroupImageUrlSquarePermission(
+    clientInboxId,
+    id,
+    permissionOption
+  )
+}
+
+export async function updateGroupDescriptionPermission(
+  clientInboxId: string,
+  id: string,
+  permissionOption: PermissionUpdateOption
+): Promise<void> {
+  return XMTPModule.updateGroupDescriptionPermission(
+    clientInboxId,
+    id,
+    permissionOption
+  )
+}
+
+export async function permissionPolicySet(
+  clientInboxId: string,
+  id: string
+): Promise<PermissionPolicySet> {
+  const json = await XMTPModule.permissionPolicySet(clientInboxId, id)
+  return JSON.parse(json)
 }
 
 export async function allowGroups(

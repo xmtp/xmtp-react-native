@@ -59,7 +59,7 @@ public class XMTPModule: Module {
 	}
 
 	enum Error: Swift.Error {
-		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String), mlsNotEnabled(String), invalidString
+		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String), mlsNotEnabled(String), invalidString, invalidPermissionOption
 	}
 
 	public func definition() -> ModuleDefinition {
@@ -696,11 +696,11 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("createGroup") { (inboxId: String, peerAddresses: [String], permission: String, groupName: String, groupImageUrlSquare: String) -> String in
+		AsyncFunction("createGroup") { (inboxId: String, peerAddresses: [String], permission: String, groupName: String, groupImageUrlSquare: String, groupDescription: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			let permissionLevel: GroupPermissions = {
+			let permissionLevel: GroupPermissionPreconfiguration = {
 				switch permission {
 				case "admin_only":
 					return .adminOnly
@@ -709,7 +709,7 @@ public class XMTPModule: Module {
 				}
 			}()
 			do {
-				let group = try await client.conversations.newGroup(with: peerAddresses, permissions: permissionLevel, name: groupName, imageUrlSquare: groupImageUrlSquare)
+				let group = try await client.conversations.newGroup(with: peerAddresses, permissions: permissionLevel, name: groupName, imageUrlSquare: groupImageUrlSquare, description: groupDescription)
 				return try GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -854,6 +854,30 @@ public class XMTPModule: Module {
 			try await group.updateGroupImageUrlSquare(imageUrlSquare: groupImageUrl)
 		}
 		
+		AsyncFunction("groupDescription") { (inboxId: String, id: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			return try group.groupDescription()
+		}
+
+		AsyncFunction("updateGroupDescription") { (inboxId: String, id: String, description: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			try await group.updateGroupDescription(groupDescription: description)
+		}
+		
 		AsyncFunction("isGroupActive") { (inboxId: String, id: String) -> Bool in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
@@ -963,13 +987,100 @@ public class XMTPModule: Module {
 			}
 			try await group.removeSuperAdmin(inboxId: inboxId)
 		}
-		
-		AsyncFunction("processGroupMessage") { (inboxId: String, id: String, encryptedMessage: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId) else {
-				throw Error.noClient
-			}			
-			
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+        
+        AsyncFunction("updateAddMemberPermission") { (clientInboxId: String, id: String, newPermission: String) in
+            guard let client = await clientsManager.getClient(key: clientInboxId) else {
+                throw Error.noClient
+            }
+            guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
+                throw Error.conversationNotFound("no group found for \(id)")
+            }
+            try await group.updateAddMemberPermission(newPermissionOption: getPermissionOption(permission: newPermission))
+        }
+
+        AsyncFunction("updateRemoveMemberPermission") { (clientInboxId: String, id: String, newPermission: String) in
+            guard let client = await clientsManager.getClient(key: clientInboxId) else {
+                throw Error.noClient
+            }
+            guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
+                throw Error.conversationNotFound("no group found for \(id)")
+            }
+            try await group.updateRemoveMemberPermission(newPermissionOption: getPermissionOption(permission: newPermission))
+        }
+
+        AsyncFunction("updateAddAdminPermission") { (clientInboxId: String, id: String, newPermission: String) in
+            guard let client = await clientsManager.getClient(key: clientInboxId) else {
+                throw Error.noClient
+            }
+            guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
+                throw Error.conversationNotFound("no group found for \(id)")
+            }
+            try await group.updateAddAdminPermission(newPermissionOption: getPermissionOption(permission: newPermission))
+        }
+
+        AsyncFunction("updateRemoveAdminPermission") { (clientInboxId: String, id: String, newPermission: String) in
+            guard let client = await clientsManager.getClient(key: clientInboxId) else {
+                throw Error.noClient
+            }
+            guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
+                throw Error.conversationNotFound("no group found for \(id)")
+            }
+            try await group.updateRemoveAdminPermission(newPermissionOption: getPermissionOption(permission: newPermission))
+        }
+
+        AsyncFunction("updateGroupNamePermission") { (clientInboxId: String, id: String, newPermission: String) in
+            guard let client = await clientsManager.getClient(key: clientInboxId) else {
+                throw Error.noClient
+            }
+            guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
+                throw Error.conversationNotFound("no group found for \(id)")
+            }
+            try await group.updateGroupNamePermission(newPermissionOption: getPermissionOption(permission: newPermission))
+        }
+
+        AsyncFunction("updateGroupImageUrlSquarePermission") { (clientInboxId: String, id: String, newPermission: String) in
+            guard let client = await clientsManager.getClient(key: clientInboxId) else {
+                throw Error.noClient
+            }
+            guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
+                throw Error.conversationNotFound("no group found for \(id)")
+            }
+            try await group.updateGroupImageUrlSquarePermission(newPermissionOption: getPermissionOption(permission: newPermission))
+        }
+
+        AsyncFunction("updateGroupDescriptionPermission") { (clientInboxId: String, id: String, newPermission: String) in
+            guard let client = await clientsManager.getClient(key: clientInboxId) else {
+                throw Error.noClient
+            }
+            guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
+                throw Error.conversationNotFound("no group found for \(id)")
+            }
+            try await group.updateGroupDescriptionPermission(newPermissionOption: getPermissionOption(permission: newPermission))
+        }
+        
+        AsyncFunction("permissionPolicySet") { (inboxId: String, id: String) async throws -> String in
+            
+            guard let client = await clientsManager.getClient(key: inboxId) else {
+                throw Error.noClient
+            }
+            
+            guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+                throw Error.conversationNotFound("Permission policy set not found for group: \(id)")
+            }
+            
+            let permissionPolicySet = try group.permissionPolicySet()
+            
+            return try PermissionPolicySetWrapper.encodeToJsonString(permissionPolicySet)
+        }
+        
+        
+        
+        AsyncFunction("processGroupMessage") { (inboxId: String, id: String, encryptedMessage: String) -> String in
+            guard let client = await clientsManager.getClient(key: inboxId) else {
+                throw Error.noClient
+            }
+            
+            guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 				throw Error.conversationNotFound("no group found for \(id)")
 			}
 			
@@ -1215,7 +1326,7 @@ public class XMTPModule: Module {
       guard let client = await clientsManager.getClient(key: inboxId) else {
         throw Error.noClient
       }
-      let groupDataIds = groupIds.compactMap { Data(hex: $0) }
+		let groupDataIds = groupIds.compactMap { $0.hexToData }
       try await client.contacts.allowGroups(groupIds: groupDataIds)
     }
     
@@ -1223,7 +1334,7 @@ public class XMTPModule: Module {
       guard let client = await clientsManager.getClient(key: inboxId) else {
         throw Error.noClient
       }
-      let groupDataIds = groupIds.compactMap { Data(hex: $0) }
+		let groupDataIds = groupIds.compactMap { $0.hexToData }
       try await client.contacts.denyGroups(groupIds: groupDataIds)
     }
 
@@ -1251,6 +1362,21 @@ public class XMTPModule: Module {
 	//
 	// Helpers
 	//
+    
+    private func getPermissionOption(permission: String) async throws -> PermissionOption {
+        switch permission {
+        case "allow":
+            return .allow
+        case "deny":
+            return .deny
+        case "admin":
+            return .admin
+        case "super_admin":
+            return .superAdmin
+        default:
+            throw Error.invalidPermissionOption
+        }
+    }
 
 	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, enableV3: Bool = false, dbEncryptionKey: Data? = nil, dbDirectory: String? = nil, historySyncUrl: String? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
@@ -1317,7 +1443,7 @@ public class XMTPModule: Module {
 		await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?.cancel()
 		await subscriptionsManager.set(getConversationsKey(inboxId: inboxId), Task {
 			do {
-				for try await conversation in await client.conversations.stream() {
+				for try await conversation in try await client.conversations.stream() {
 					try sendEvent("conversation", [
 						"inboxId": inboxId,
 						"conversation": ConversationWrapper.encodeToObj(conversation, client: client),

@@ -21,12 +21,8 @@ test('new group has expected admin list and super admin list', async () => {
   const superAdminList = await alixGroup.listSuperAdmins()
 
   assert(
-    adminList.length === 1,
-    `adminList.length should be 1 but was ${adminList.length}`
-  )
-  assert(
-    adminList[0] === alix.inboxId,
-    `adminList[0] should be ${alix.address} but was ${adminList[0]}`
+    adminList.length === 0,
+    `adminList.length should be 0 but was ${adminList.length}`
   )
   assert(
     superAdminList.length === 1,
@@ -88,9 +84,9 @@ test('in admin only group, members can not update group name unless they are an 
     { permissionLevel: 'admin_only' }
   )
 
-  if (alixGroup.permissionLevel !== 'admin_only') {
+  if ((await alixGroup.permissionPolicySet()).addMemberPolicy !== 'admin') {
     throw Error(
-      `Group permission level should be admin_only but was ${alixGroup.permissionLevel}`
+      `Group add member policy should be admin but was ${(await alixGroup.permissionPolicySet()).addMemberPolicy}`
     )
   }
 
@@ -123,9 +119,11 @@ test('in admin only group, members can update group name once they are an admin'
     { permissionLevel: 'admin_only' }
   )
 
-  if (alixGroup.permissionLevel !== 'admin_only') {
+  if (
+    (await alixGroup.permissionPolicySet()).updateGroupNamePolicy !== 'admin'
+  ) {
     throw Error(
-      `Group permission level should be admin_only but was ${alixGroup.permissionLevel}`
+      `Group update name policy should be admin but was ${(await alixGroup.permissionPolicySet()).updateGroupNamePolicy}`
     )
   }
 
@@ -174,9 +172,11 @@ test('in admin only group, members can not update group name after admin status 
     { permissionLevel: 'admin_only' }
   )
 
-  if (alixGroup.permissionLevel !== 'admin_only') {
+  if (
+    (await alixGroup.permissionPolicySet()).updateGroupNamePolicy !== 'admin'
+  ) {
     throw Error(
-      `Group permission level should be admin_only but was ${alixGroup.permissionLevel}`
+      `Group update name policy should be admin but was ${(await alixGroup.permissionPolicySet()).updateGroupNamePolicy}`
     )
   }
 
@@ -376,6 +376,7 @@ test('group with All Members policy has remove function that is admin only', asy
   try {
     await alixGroup.removeMembers([caro.address])
     assert(false, 'Alix should not be able to remove a member')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
   }
@@ -387,6 +388,77 @@ test('group with All Members policy has remove function that is admin only', asy
   assert(
     !members.includes(caro.inboxId),
     `Caro should have been removed from the group but is still a member`
+  )
+
+  return true
+})
+
+test('can update group permissions', async () => {
+  // Create clients
+  const [alix, bo, caro] = await createClients(3)
+
+  // Bo creates a group with Alix and Caro
+  const boGroup = await bo.conversations.newGroup(
+    [alix.address, caro.address],
+    { permissionLevel: 'admin_only' }
+  )
+
+  // Verify that bo is a super admin
+  assert(
+    (await boGroup.isSuperAdmin(bo.inboxId)) === true,
+    `bo should be a super admin`
+  )
+
+  // Verify that group has the expected group description permission
+  assert(
+    (await boGroup.permissionPolicySet()).updateGroupDescriptionPolicy ===
+      'admin',
+    `boGroup.permissionPolicySet.updateGroupDescriptionPolicy should be admin but was ${(await boGroup.permissionPolicySet()).updateGroupDescriptionPolicy}`
+  )
+
+  // Verify that Bo can update the group description
+  await boGroup.updateGroupDescription('new description')
+  await boGroup.sync()
+  assert(
+    (await boGroup.groupDescription()) === 'new description',
+    `boGroup.groupDescription should be "new description" but was ${boGroup.groupDescription}`
+  )
+
+  // Verify that alix can not update the group description
+  await alix.conversations.syncGroups()
+  const alixGroup = (await alix.conversations.listGroups())[0]
+  try {
+    await alixGroup.updateGroupDescription('new description')
+    assert(false, 'Alix should not be able to update the group description')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+  }
+
+  // Verify that alix can not update permissions
+  try {
+    await alixGroup.updateGroupDescriptionPermission('allow')
+    assert(false, 'Alix should not be able to update the group name permission')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+  }
+
+  // Verify that bo can update permissions
+  await boGroup.updateGroupDescriptionPermission('allow')
+  await boGroup.sync()
+  assert(
+    (await boGroup.permissionPolicySet()).updateGroupDescriptionPolicy ===
+      'allow',
+    `boGroup.permissionPolicySet.updateGroupDescriptionPolicy should be allow but was ${(await boGroup.permissionPolicySet()).updateGroupDescriptionPolicy}`
+  )
+
+  // Verify that alix can now update the group description
+  await alixGroup.updateGroupDescription('new description 2')
+  await alixGroup.sync()
+  assert(
+    (await alixGroup.groupDescription()) === 'new description 2',
+    `alixGroup.groupDescription should be "new description 2" but was ${alixGroup.groupDescription}`
   )
 
   return true

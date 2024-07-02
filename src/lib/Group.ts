@@ -9,8 +9,11 @@ import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { MessagesOptions } from './types/MessagesOptions'
+import { PermissionPolicySet } from './types/PermissionPolicySet'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
+
+export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
 
 export class Group<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
@@ -23,7 +26,6 @@ export class Group<
   version = ConversationVersion.GROUP
   topic: string
   creatorInboxId: InboxId
-  permissionLevel: 'all_members' | 'admin_only' | 'custom_policy'
   name: string
   isGroupActive: boolean
   imageUrlSquare: string
@@ -35,7 +37,6 @@ export class Group<
       createdAt: number
       peerInboxIds: InboxId[]
       creatorInboxId: InboxId
-      permissionLevel: 'all_members' | 'admin_only' | 'custom_policy'
       topic: string
       name: string
       isGroupActive: boolean
@@ -48,7 +49,6 @@ export class Group<
     this.peerInboxIds = params.peerInboxIds
     this.topic = params.topic
     this.creatorInboxId = params.creatorInboxId
-    this.permissionLevel = params.permissionLevel
     this.name = params.name
     this.isGroupActive = params.isGroupActive
     this.imageUrlSquare = params.imageUrlSquare
@@ -263,6 +263,30 @@ export class Group<
   }
 
   /**
+   * Returns the group description.
+   * To get the latest group description from the network, call sync() first.
+   * @returns {string} A Promise that resolves to the group description.
+   */
+  async groupDescription(): Promise<string> {
+    return XMTP.groupDescription(this.client.inboxId, this.id)
+  }
+
+  /**
+   * Updates the group description.
+   * Will throw if the user does not have the required permissions.
+   * @param {string} description new group description
+   * @returns
+   */
+
+  async updateGroupDescription(description: string): Promise<void> {
+    return XMTP.updateGroupDescription(
+      this.client.inboxId,
+      this.id,
+      description
+    )
+  }
+
+  /**
    * Returns whether the group is active.
    * To get the latest active status from the network, call sync() first
    * @returns {Promise<boolean>} A Promise that resolves if the group is active or not
@@ -357,6 +381,126 @@ export class Group<
    */
   async removeSuperAdmin(inboxId: InboxId): Promise<void> {
     return XMTP.removeSuperAdmin(this.client.inboxId, this.id, inboxId)
+  }
+
+  /**
+   *
+   * @param {PermissionOption} permissionOption
+   * @returns {Promise<void>} A Promise that resolves when the addMember permission is updated for the group.
+   * Will throw if the user does not have the required permissions.
+   */
+  async updateAddMemberPermission(
+    permissionOption: PermissionUpdateOption
+  ): Promise<void> {
+    return XMTP.updateAddMemberPermission(
+      this.client.inboxId,
+      this.id,
+      permissionOption
+    )
+  }
+
+  /**
+   *
+   * @param {PermissionOption} permissionOption
+   * @returns {Promise<void>} A Promise that resolves when the removeMember permission is updated for the group.
+   * Will throw if the user does not have the required permissions.
+   */
+  async updateRemoveMemberPermission(
+    permissionOption: PermissionUpdateOption
+  ): Promise<void> {
+    return XMTP.updateRemoveMemberPermission(
+      this.client.inboxId,
+      this.id,
+      permissionOption
+    )
+  }
+
+  /**
+   *
+   * @param {PermissionOption} permissionOption
+   * @returns {Promise<void>} A Promise that resolves when the addAdmin permission is updated for the group.
+   * Will throw if the user does not have the required permissions.
+   */
+  async updateAddAdminPermission(
+    permissionOption: PermissionUpdateOption
+  ): Promise<void> {
+    return XMTP.updateAddAdminPermission(
+      this.client.inboxId,
+      this.id,
+      permissionOption
+    )
+  }
+
+  /**
+   *
+   * @param {PermissionOption} permissionOption
+   * @returns {Promise<void>} A Promise that resolves when the removeAdmin permission is updated for the group.
+   * Will throw if the user does not have the required permissions.
+   */
+  async updateRemoveAdminPermission(
+    permissionOption: PermissionUpdateOption
+  ): Promise<void> {
+    return XMTP.updateRemoveAdminPermission(
+      this.client.inboxId,
+      this.id,
+      permissionOption
+    )
+  }
+
+  /**
+   *
+   * @param {PermissionOption} permissionOption
+   * @returns {Promise<void>} A Promise that resolves when the groupName permission is updated for the group.
+   * Will throw if the user does not have the required permissions.
+   */
+  async updateGroupNamePermission(
+    permissionOption: PermissionUpdateOption
+  ): Promise<void> {
+    return XMTP.updateGroupNamePermission(
+      this.client.inboxId,
+      this.id,
+      permissionOption
+    )
+  }
+
+  /**
+   *
+   * @param {PermissionOption} permissionOption
+   * @returns {Promise<void>} A Promise that resolves when the groupImageUrlSquare permission is updated for the group.
+   * Will throw if the user does not have the required permissions.
+   */
+  async updateGroupImageUrlSquarePermission(
+    permissionOption: PermissionUpdateOption
+  ): Promise<void> {
+    return XMTP.updateGroupImageUrlSquarePermission(
+      this.client.inboxId,
+      this.id,
+      permissionOption
+    )
+  }
+
+  /**
+   *
+   * @param {PermissionOption} permissionOption
+   * @returns {Promise<void>} A Promise that resolves when the groupDescription permission is updated for the group.
+   * Will throw if the user does not have the required permissions.
+   */
+  async updateGroupDescriptionPermission(
+    permissionOption: PermissionUpdateOption
+  ): Promise<void> {
+    return XMTP.updateGroupDescriptionPermission(
+      this.client.inboxId,
+      this.id,
+      permissionOption
+    )
+  }
+
+  /**
+   *
+   * @returns {Promise<PermissionPolicySet>} A {PermissionPolicySet} object representing the group's permission policy set.
+   */
+  async permissionPolicySet(): Promise<PermissionPolicySet> {
+    return XMTP.permissionPolicySet(this.client.inboxId, this.id)
   }
 
   async processMessage(
