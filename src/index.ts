@@ -170,18 +170,19 @@ export async function createGroup<
   imageUrlSquare: string = '',
   description: string = ''
 ): Promise<Group<ContentTypes>> {
+  const groupString = await XMTPModule.createGroup(
+    client.inboxId,
+    peerAddresses,
+    permissionLevel,
+    name,
+    imageUrlSquare,
+    description
+  )
+  const groupObj = JSON.parse(groupString)
+  groupObj.permissionPolicySet = JSON.parse(groupObj.permissionPolicySet)
   return new Group(
     client,
-    JSON.parse(
-      await XMTPModule.createGroup(
-        client.inboxId,
-        peerAddresses,
-        permissionLevel,
-        name,
-        imageUrlSquare,
-        description
-      )
-    )
+    groupObj
   )
 }
 

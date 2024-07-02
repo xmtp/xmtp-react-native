@@ -36,7 +36,7 @@ export class Group<
       createdAt: number
       peerInboxIds: InboxId[]
       creatorInboxId: InboxId
-      permissionPolicySet: string
+      permissionPolicySet: PermissionPolicySet
       topic: string
       name: string
       isGroupActive: boolean
@@ -49,7 +49,7 @@ export class Group<
     this.peerInboxIds = params.peerInboxIds
     this.topic = params.topic
     this.creatorInboxId = params.creatorInboxId
-    this.permissionPolicySet = JSON.parse(params.permissionPolicySet)
+    this.permissionPolicySet = params.permissionPolicySet
     this.name = params.name
     this.isGroupActive = params.isGroupActive
     this.imageUrlSquare = params.imageUrlSquare
