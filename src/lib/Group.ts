@@ -263,6 +263,30 @@ export class Group<
   }
 
   /**
+   * Returns the group description.
+   * To get the latest group description from the network, call sync() first.
+   * @returns {string} A Promise that resolves to the group description.
+   */
+  async groupDescription(): Promise<string> {
+    return XMTP.groupDescription(this.client.inboxId, this.id)
+  }
+
+  /**
+   * Updates the group description.
+   * Will throw if the user does not have the required permissions.
+   * @param {string} description new group description
+   * @returns
+   */
+
+  async updateGroupDescription(description: string): Promise<void> {
+    return XMTP.updateGroupDescription(
+      this.client.inboxId,
+      this.id,
+      description
+    )
+  }
+
+  /**
    * Returns whether the group is active.
    * To get the latest active status from the network, call sync() first
    * @returns {Promise<boolean>} A Promise that resolves if the group is active or not

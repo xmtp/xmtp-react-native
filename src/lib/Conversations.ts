@@ -8,12 +8,12 @@ import {
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { Group } from './Group'
+import { CreateGroupOptions } from './types/CreateGroupOptions'
 import { EventTypes } from './types/EventTypes'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
 import { getAddress } from '../utils/address'
-import { CreateGroupOptions } from './types/CreateGroupOptions'
 
 export default class Conversations<
   ContentTypes extends ContentCodec<any>[] = [],
@@ -181,7 +181,8 @@ export default class Conversations<
       peerAddresses,
       opts?.permissionLevel,
       opts?.name,
-      opts?.imageUrlSquare
+      opts?.imageUrlSquare,
+      opts?.description
     )
   }
 

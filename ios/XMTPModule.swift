@@ -1239,7 +1239,7 @@ public class XMTPModule: Module {
       guard let client = await clientsManager.getClient(key: inboxId) else {
         throw Error.noClient
       }
-      let groupDataIds = groupIds.compactMap { Data(hex: $0) }
+		let groupDataIds = groupIds.compactMap { $0.hexToData }
       try await client.contacts.allowGroups(groupIds: groupDataIds)
     }
     
@@ -1247,7 +1247,7 @@ public class XMTPModule: Module {
       guard let client = await clientsManager.getClient(key: inboxId) else {
         throw Error.noClient
       }
-      let groupDataIds = groupIds.compactMap { Data(hex: $0) }
+		let groupDataIds = groupIds.compactMap { $0.hexToData }
       try await client.contacts.denyGroups(groupIds: groupDataIds)
     }
 
