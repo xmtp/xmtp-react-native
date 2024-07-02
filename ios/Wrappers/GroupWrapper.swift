@@ -19,7 +19,7 @@ struct GroupWrapper {
 			"peerInboxIds": try group.peerInboxIds,
 			"version": "GROUP",
 			"topic": group.topic,
-			"permissionLevel": permissionPolicySet,
+			"permissionPolicySet": permissionPolicySet,
 			"creatorInboxId": try group.creatorInboxId(),
 			"name": try group.groupName(),
 			"isActive": try group.isActive(),

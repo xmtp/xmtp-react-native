@@ -24,7 +24,7 @@ export class Group<
   version = ConversationVersion.GROUP
   topic: string
   creatorInboxId: InboxId
-  permissionLevel: 'all_members' | 'admin_only' | 'custom_policy'
+  permissionPolicySet: PermissionPolicySet
   name: string
   isGroupActive: boolean
   imageUrlSquare: string
@@ -36,7 +36,7 @@ export class Group<
       createdAt: number
       peerInboxIds: InboxId[]
       creatorInboxId: InboxId
-      permissionLevel: PermissionPolicySet
+      permissionPolicySet: PermissionPolicySet
       topic: string
       name: string
       isGroupActive: boolean
@@ -49,7 +49,7 @@ export class Group<
     this.peerInboxIds = params.peerInboxIds
     this.topic = params.topic
     this.creatorInboxId = params.creatorInboxId
-    this.permissionLevel = params.permissionLevel
+    this.permissionPolicySet = params.permissionPolicySet
     this.name = params.name
     this.isGroupActive = params.isGroupActive
     this.imageUrlSquare = params.imageUrlSquare
