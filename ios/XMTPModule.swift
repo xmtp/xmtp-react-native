@@ -854,7 +854,7 @@ public class XMTPModule: Module {
 			try await group.updateGroupImageUrlSquare(imageUrlSquare: groupImageUrl)
 		}
 		
-		AsyncFunction("groupDescription") { (inboxId: String, id: String) in
+		AsyncFunction("groupDescription") { (inboxId: String, id: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
