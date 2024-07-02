@@ -67,6 +67,7 @@ import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
+import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -1094,6 +1095,76 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("updateAddMemberPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateAddMemberPermission")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
+                
+                group?.updateAddMemberPermission(getPermissionOption(newPermission))
+            }
+        }
+
+        AsyncFunction("updateRemoveMemberPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateRemoveMemberPermission")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
+                
+                group?.updateRemoveMemberPermission(getPermissionOption(newPermission))
+            }
+        }
+
+        AsyncFunction("updateAddAdminPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateAddAdminPermission")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
+                
+                group?.updateAddAdminPermission(getPermissionOption(newPermission))
+            }
+        }
+
+        AsyncFunction("updateRemoveAdminPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateRemoveAdminPermission")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
+                
+                group?.updateRemoveAdminPermission(getPermissionOption(newPermission))
+            }
+        }
+
+        AsyncFunction("updateGroupNamePermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupNamePermission")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
+
+                group?.updateGroupNamePermission(getPermissionOption(newPermission))
+            }
+        }
+
+        AsyncFunction("updateGroupImageUrlSquarePermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupImageUrlSquarePermission")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
+
+                group?.updateGroupImageUrlSquarePermission(getPermissionOption(newPermission))
+            }
+        }
+
+        AsyncFunction("updateGroupDescriptionPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupDescriptionPermission")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
+
+                group?.updateGroupDescriptionPermission(getPermissionOption(newPermission))
+            }
+        }
+
         AsyncFunction("processGroupMessage") Coroutine { inboxId: String, id: String, encryptedMessage: String ->
             withContext(Dispatchers.IO) {
                 logV("processGroupMessage")
@@ -1379,6 +1450,16 @@ class XMTPModule : Module() {
     //
     // Helpers
     //
+
+    private suspend fun getPermissionOption(permissionString: String): PermissionOption {
+        return when (permissionString) {
+            "allow" -> PermissionOption.Allow
+            "deny" -> PermissionOption.Deny
+            "admin" -> PermissionOption.Admin
+            "super_admin" -> PermissionOption.SuperAdmin
+            else -> throw XMTPException("Invalid permission option: $permissionString")
+        }
+    }
 
     private suspend fun findConversation(
         inboxId: String,
