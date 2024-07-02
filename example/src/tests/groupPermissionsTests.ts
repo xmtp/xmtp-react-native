@@ -376,6 +376,7 @@ test('group with All Members policy has remove function that is admin only', asy
   try {
     await alixGroup.removeMembers([caro.address])
     assert(false, 'Alix should not be able to remove a member')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
   }

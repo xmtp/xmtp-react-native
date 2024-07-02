@@ -9,6 +9,7 @@ import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { MessagesOptions } from './types/MessagesOptions'
+import { PermissionPolicySet } from './types/PermissionPolicySet'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 
@@ -23,7 +24,7 @@ export class Group<
   version = ConversationVersion.GROUP
   topic: string
   creatorInboxId: InboxId
-  permissionLevel: 'all_members' | 'admin_only' | 'custom_policy'
+  permissionPolicySet: PermissionPolicySet
   name: string
   isGroupActive: boolean
   imageUrlSquare: string
@@ -35,7 +36,7 @@ export class Group<
       createdAt: number
       peerInboxIds: InboxId[]
       creatorInboxId: InboxId
-      permissionLevel: 'all_members' | 'admin_only' | 'custom_policy'
+      permissionPolicySet: PermissionPolicySet
       topic: string
       name: string
       isGroupActive: boolean
@@ -48,7 +49,7 @@ export class Group<
     this.peerInboxIds = params.peerInboxIds
     this.topic = params.topic
     this.creatorInboxId = params.creatorInboxId
-    this.permissionLevel = params.permissionLevel
+    this.permissionPolicySet = params.permissionPolicySet
     this.name = params.name
     this.isGroupActive = params.isGroupActive
     this.imageUrlSquare = params.imageUrlSquare
@@ -259,6 +260,30 @@ export class Group<
       this.client.inboxId,
       this.id,
       imageUrlSquare
+    )
+  }
+
+  /**
+   * Returns the group description.
+   * To get the latest group description from the network, call sync() first.
+   * @returns {string} A Promise that resolves to the group description.
+   */
+  async groupDescription(): Promise<string> {
+    return XMTP.groupDescription(this.client.inboxId, this.id)
+  }
+
+  /**
+   * Updates the group description.
+   * Will throw if the user does not have the required permissions.
+   * @param {string} description new group description
+   * @returns
+   */
+
+  async updateGroupDescription(description: string): Promise<void> {
+    return XMTP.updateGroupDescription(
+      this.client.inboxId,
+      this.id,
+      description
     )
   }
 
