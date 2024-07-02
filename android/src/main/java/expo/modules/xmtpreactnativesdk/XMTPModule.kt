@@ -411,7 +411,7 @@ class XMTPModule : Module() {
 
         //
         // Client API
-        AsyncFunction("canMessage") Coroutine { clientAddress: String, peerAddress: String ->
+        AsyncFunction("canMessage") Coroutine { inboxId: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
                 logV("canMessage")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
