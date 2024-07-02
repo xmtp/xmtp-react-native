@@ -61,6 +61,7 @@ import org.xmtp.android.library.messages.getPublicKeyBundle
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
 import org.xmtp.android.library.toHex
+import org.xmtp.android.library.hexToByteArray
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
@@ -1351,27 +1352,27 @@ class XMTPModule : Module() {
         AsyncFunction("allowGroups") Coroutine { inboxId: String, groupIds: List<String> ->
             logV("allowGroups")
             val client = clients[inboxId] ?: throw XMTPException("No client")
-            val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
+            val groupDataIds = groupIds.map { Hex.hexStringToByteArray(it) }
             client.contacts.allowGroups(groupDataIds)
         }
 
         AsyncFunction("denyGroups") Coroutine { inboxId: String, groupIds: List<String> ->
             logV("denyGroups")
             val client = clients[inboxId] ?: throw XMTPException("No client")
-            val groupDataIds = groupIds.mapNotNull { Hex.hexStringToByteArray(it) }
+            val groupDataIds = groupIds.map { Hex.hexStringToByteArray(it) }
             client.contacts.denyGroups(groupDataIds)
         }
 
         AsyncFunction("isGroupAllowed") { inboxId: String, groupId: String ->
             logV("isGroupAllowed")
             val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupAllowed(Hex.hexStringToByteArray(groupId))
+            client.contacts.isGroupAllowed(groupId.hexToByteArray())
         }
 
         AsyncFunction("isGroupDenied") { inboxId: String, groupId: String ->
             logV("isGroupDenied")
             val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupDenied(Hex.hexStringToByteArray(groupId))
+            client.contacts.isGroupDenied(groupId.hexToByteArray())
         }
     }
 
