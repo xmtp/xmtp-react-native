@@ -180,10 +180,7 @@ export async function createGroup<
   )
   const groupObj = JSON.parse(groupString)
   groupObj.permissionPolicySet = JSON.parse(groupObj.permissionPolicySet)
-  return new Group(
-    client,
-    groupObj
-  )
+  return new Group(client, groupObj)
 }
 
 export async function listGroups<
