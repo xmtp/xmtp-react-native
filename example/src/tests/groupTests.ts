@@ -1050,10 +1050,12 @@ test('can make a group with metadata', async () => {
   const alixGroup = await alix.conversations.newGroup([bo.address], {
     name: 'Start Name',
     imageUrlSquare: 'starturl.com',
+    description: 'a fun description',
   })
 
   const groupName1 = await alixGroup.groupName()
   const groupImageUrl1 = await alixGroup.groupImageUrlSquare()
+  const groupDescription1 = await alixGroup.groupDescription()
   assert(
     groupName1 === 'Start Name',
     `the group should start with a name of Start Name not ${groupName1}`
@@ -1064,8 +1066,14 @@ test('can make a group with metadata', async () => {
     `the group should start with a name of starturl.com not ${groupImageUrl1}`
   )
 
+  assert(
+    groupDescription1 === 'a fun description',
+    `the group should start with a name of a fun description not ${groupDescription1}`
+  )
+
   await alixGroup.updateGroupName('New Name')
   await alixGroup.updateGroupImageUrlSquare('newurl.com')
+  await alixGroup.updateGroupDescription('a new group description')
   await alixGroup.sync()
   await bo.conversations.syncGroups()
   const boGroups = await bo.conversations.listGroups()
@@ -1074,6 +1082,7 @@ test('can make a group with metadata', async () => {
 
   const groupName2 = await alixGroup.groupName()
   const groupImageUrl2 = await alixGroup.groupImageUrlSquare()
+  const groupDescription2 = await alixGroup.groupDescription()
   assert(
     groupName2 === 'New Name',
     `the group should start with a name of New Name not ${groupName2}`
@@ -1082,6 +1091,11 @@ test('can make a group with metadata', async () => {
   assert(
     groupImageUrl2 === 'newurl.com',
     `the group should start with a name of newurl.com not ${groupImageUrl2}`
+  )
+
+  assert(
+    groupDescription2 === 'a fun description',
+    `the group should start with a name of a new group description not ${groupDescription2}`
   )
 
   const groupName3 = await boGroup.groupName()
