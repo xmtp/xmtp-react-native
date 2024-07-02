@@ -17,7 +17,6 @@ class GroupWrapper {
                 "peerInboxIds" to group.peerInboxIds(),
                 "version" to "GROUP",
                 "topic" to group.topic,
-                "permissionPolicySet" to permissionPolicySet,
                 "creatorInboxId" to group.creatorInboxId(),
                 "name" to group.name,
                 "isActive" to group.isActive(),
