@@ -21,7 +21,8 @@ class GroupWrapper {
                 "creatorInboxId" to group.creatorInboxId(),
                 "name" to group.name,
                 "isActive" to group.isActive(),
-                "imageUrlSquare" to group.imageUrlSquare
+                "imageUrlSquare" to group.imageUrlSquare,
+                "description" to group.description
             )
         }
 
