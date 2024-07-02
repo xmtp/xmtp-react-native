@@ -318,7 +318,7 @@ test('can find a group by id', async () => {
 test('can find a message by id', async () => {
   const [alixClient, boClient] = await createClients(2)
   const alixGroup = await alixClient.conversations.newGroup([boClient.address])
-  const alixMessageId = await alixGroup.send("Hello")
+  const alixMessageId = await alixGroup.send('Hello')
 
   await boClient.conversations.syncGroups()
   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
@@ -1094,7 +1094,7 @@ test('can make a group with metadata', async () => {
   )
 
   assert(
-    groupDescription2 === 'a fun description',
+    groupDescription2 === 'a new group description',
     `the group should start with a name of a new group description not ${groupDescription2}`
   )
 
@@ -1116,10 +1116,15 @@ test('can make a group with metadata', async () => {
     'Unexpected message content ' + JSON.stringify(boMessages[0].contentTypeId)
   )
 
-  const message = boMessages[0].content() as GroupUpdatedContent
+  const message = boMessages[1].content() as GroupUpdatedContent
   assert(
     message.metadataFieldsChanged[0].fieldName === 'group_image_url_square',
     `the metadata field changed should be group_image_url_square but was ${message.metadataFieldsChanged[0].fieldName}`
+  )
+  const message2 = boMessages[0].content() as GroupUpdatedContent
+  assert(
+    message2.metadataFieldsChanged[0].fieldName === 'description',
+    `the metadata field changed should be description but was ${message2.metadataFieldsChanged[0].fieldName}`
   )
   return true
 })
@@ -1132,15 +1137,15 @@ test('can make a group with admin permissions', async () => {
     { permissionLevel: 'admin_only' }
   )
 
-  if (group.permissionLevel !== 'admin_only') {
+  if (group.permissionPolicySet.addMemberPolicy !== 'admin') {
     throw Error(
-      `Group permission level should be admin_only but was ${group.permissionLevel}`
+      `Group permission level should be admin but was ${group.permissionPolicySet.addMemberPolicy}`
     )
   }
 
-  const isAdmin = await group.isAdmin(adminClient.inboxId)
-  if (!isAdmin) {
-    throw Error(`adminClient should be the admin`)
+  const isSuperAdmin = await group.isSuperAdmin(adminClient.inboxId)
+  if (!isSuperAdmin) {
+    throw Error(`adminClient should be the super admin`)
   }
 
   // Creator id not working, see https://github.com/xmtp/libxmtp/issues/788
@@ -1783,7 +1788,6 @@ test('can list groups does not fork', async () => {
 
   return true
 })
-
 
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
