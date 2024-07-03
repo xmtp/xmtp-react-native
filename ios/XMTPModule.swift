@@ -696,7 +696,7 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("createGroup") { (inboxId: String, peerAddresses: [String], permission: String, groupName: String, groupImageUrlSquare: String, groupDescription: String) -> String in
+		AsyncFunction("createGroup") { (inboxId: String, peerAddresses: [String], permission: String, groupOptionsJson: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -709,7 +709,15 @@ public class XMTPModule: Module {
 				}
 			}()
 			do {
-				let group = try await client.conversations.newGroup(with: peerAddresses, permissions: permissionLevel, name: groupName, imageUrlSquare: groupImageUrlSquare, description: groupDescription)
+				let createGroupParams = CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
+				let group = try await client.conversations.newGroup(
+					with: peerAddresses, 
+					permissions: permissionLevel, 
+					name: createGroupParams.groupName, 
+					imageUrlSquare: createGroupParams.groupImageUrlSquare, 
+					description: createGroupParams.groupDescription, 
+					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+				)
 				return try GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -876,6 +884,30 @@ public class XMTPModule: Module {
 			}
 
 			try await group.updateGroupDescription(groupDescription: description)
+		}
+
+		AsyncFunction("groupPinnedFrameUrl") { (inboxId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			return try group.groupPinnedFrameUrl()
+		}
+
+		AsyncFunction("updateGroupPinnedFrameUrl") { (inboxId: String, id: String, pinnedFrameUrl: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			try await group.updateGroupPinnedFrameUrl(groupPinnedFrameUrl: pinnedFrameUrl)
 		}
 		
 		AsyncFunction("isGroupActive") { (inboxId: String, id: String) -> Bool in
@@ -1056,6 +1088,16 @@ public class XMTPModule: Module {
                 throw Error.conversationNotFound("no group found for \(id)")
             }
             try await group.updateGroupDescriptionPermission(newPermissionOption: getPermissionOption(permission: newPermission))
+        }
+
+		AsyncFunction("updateGroupPinnedFrameUrlPermission") { (clientInboxId: String, id: String, newPermission: String) in
+            guard let client = await clientsManager.getClient(key: clientInboxId) else {
+                throw Error.noClient
+            }
+            guard let group = try await findGroup(inboxId: clientInboxId, id: id) else {
+                throw Error.conversationNotFound("no group found for \(id)")
+            }
+            try await group.updateGroupPinnedFrameUrlPermission(newPermissionOption: getPermissionOption(permission: newPermission))
         }
         
         AsyncFunction("permissionPolicySet") { (inboxId: String, id: String) async throws -> String in

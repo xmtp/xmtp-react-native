@@ -32,7 +32,8 @@ class PermissionPolicySetWrapper {
 			"removeAdminPolicy": fromPermissionOption(policySet.removeAdminPolicy),
 			"updateGroupNamePolicy": fromPermissionOption(policySet.updateGroupNamePolicy),
 			"updateGroupDescriptionPolicy": fromPermissionOption(policySet.updateGroupDescriptionPolicy),
-			"updateGroupImagePolicy": fromPermissionOption(policySet.updateGroupImagePolicy)
+			"updateGroupImagePolicy": fromPermissionOption(policySet.updateGroupImagePolicy),
+			"updateGroupPinnedFrameUrlPolicy": fromPermissionOption(policySet.updateGroupPinnedFrameUrlPolicy)
 		]
 	}
 

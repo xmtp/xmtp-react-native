@@ -304,7 +304,6 @@ test('can not remove a super admin from a group', async () => {
 
   // Now bo can remove Alix from the group
   await boGroup.removeMembers([alix.address])
-  console.log('alix inbox id:' + String(alix.inboxId))
   await boGroup.sync()
   numMembers = (await boGroup.memberInboxIds()).length
   assert(
