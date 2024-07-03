@@ -182,7 +182,8 @@ export default class Conversations<
       opts?.permissionLevel,
       opts?.name,
       opts?.imageUrlSquare,
-      opts?.description
+      opts?.description,
+      opts?.pinnedFrameUrl
     )
   }
 

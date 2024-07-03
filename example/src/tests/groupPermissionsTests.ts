@@ -304,7 +304,6 @@ test('can not remove a super admin from a group', async () => {
 
   // Now bo can remove Alix from the group
   await boGroup.removeMembers([alix.address])
-  console.log('alix inbox id:' + String(alix.inboxId))
   await boGroup.sync()
   numMembers = (await boGroup.memberInboxIds()).length
   assert(
@@ -459,6 +458,56 @@ test('can update group permissions', async () => {
   assert(
     (await alixGroup.groupDescription()) === 'new description 2',
     `alixGroup.groupDescription should be "new description 2" but was ${alixGroup.groupDescription}`
+  )
+
+  return true
+})
+
+test('can update group pinned frame', async () => {
+  // Create clients
+  const [alix, bo, caro] = await createClients(3)
+
+  // Bo creates a group with Alix and Caro
+  const boGroup = await bo.conversations.newGroup(
+    [alix.address, caro.address],
+    { permissionLevel: 'admin_only' }
+  )
+
+  // Verify that alix can not update the group pinned frame
+  await alix.conversations.syncGroups()
+  const alixGroup = (await alix.conversations.listGroups())[0]
+  try {
+    await alixGroup.updateGroupPinnedFrameUrl('new pinned frame')
+    assert(false, 'Alix should not be able to update the group pinned frame')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+  }
+
+  // Verify that bo can update the group pinned frame
+  await boGroup.updateGroupPinnedFrameUrl('new pinned frame 2')
+  await boGroup.sync()
+  assert(
+    (await boGroup.groupPinnedFrameUrl()) === 'new pinned frame 2',
+    `boGroup.groupPinnedFrameUrl should be "new pinned frame 2" but was ${boGroup.groupPinnedFrameUrl}`
+  )
+
+  // Verify that bo can update the pinned frame permission
+  await boGroup.updateGroupPinnedFrameUrlPermission('allow')
+  await boGroup.sync()
+  assert(
+    (await boGroup.permissionPolicySet()).updateGroupPinnedFrameUrlPolicy ===
+      'allow',
+    `boGroup.permissionPolicySet.updateGroupPinnedFrameUrlPolicy should be allow but was ${(await boGroup.permissionPolicySet()).updateGroupPinnedFrameUrlPolicy}`
+  )
+
+  // Verify that Alix can now update pinned frames
+  await alixGroup.updateGroupPinnedFrameUrl('new pinned frame 3')
+  await alixGroup.sync()
+  await boGroup.sync()
+  assert(
+    (await boGroup.groupPinnedFrameUrl()) === 'new pinned frame 3',
+    `alixGroup.groupPinnedFrameUrl should be "new pinned frame 3" but was ${boGroup.groupPinnedFrameUrl}`
   )
 
   return true

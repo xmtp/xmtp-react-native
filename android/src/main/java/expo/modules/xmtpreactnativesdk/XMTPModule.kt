@@ -20,6 +20,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consent
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
@@ -834,7 +835,7 @@ class XMTPModule : Module() {
                 ConversationWrapper.encode(client, conversation)
             }
         }
-        AsyncFunction("createGroup") Coroutine { inboxId: String, peerAddresses: List<String>, permission: String, groupName: String, groupImageUrlSquare: String, groupDescription: String ->
+        AsyncFunction("createGroup") Coroutine { inboxId: String, peerAddresses: List<String>, permission: String, groupOptionsJson: String ->
             withContext(Dispatchers.IO) {
                 logV("createGroup")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
@@ -842,16 +843,19 @@ class XMTPModule : Module() {
                     "admin_only" -> GroupPermissionPreconfiguration.ADMIN_ONLY
                     else -> GroupPermissionPreconfiguration.ALL_MEMBERS
                 }
+                val createGroupParams = CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
                 val group = client.conversations.newGroup(
                     peerAddresses,
                     permissionLevel,
-                    groupName,
-                    groupImageUrlSquare,
-                    groupDescription
+                    createGroupParams.groupName,
+                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupDescription,
+                    createGroupParams.groupPinnedFrameUrl
                 )
                 GroupWrapper.encode(client, group)
             }
         }
+
 
         AsyncFunction("listMemberInboxIds") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
@@ -985,6 +989,26 @@ class XMTPModule : Module() {
                 val group = findGroup(inboxId, id)
 
                 group?.updateGroupDescription(groupDescription)
+            }
+        }
+
+        AsyncFunction("groupPinnedFrameUrl") Coroutine { inboxId: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("groupPinnedFrameUrl")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = findGroup(inboxId, id)
+
+                group?.pinnedFrameUrl
+            }
+        }
+
+        AsyncFunction("updateGroupPinnedFrameUrl") Coroutine { inboxId: String, id: String, pinnedFrameUrl: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupPinnedFrameUrl")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = findGroup(inboxId, id)
+
+                group?.updateGroupPinnedFrameUrl(pinnedFrameUrl)
             }
         }
 
@@ -1163,6 +1187,16 @@ class XMTPModule : Module() {
                 val group = findGroup(clientInboxId, id)
 
                 group?.updateGroupDescriptionPermission(getPermissionOption(newPermission))
+            }
+        }
+
+        AsyncFunction("updateGroupPinnedFrameUrlPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupPinnedFrameUrlPermission")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                val group = findGroup(clientInboxId, id)
+
+                group?.updateGroupPinnedFrameUrlPermission(getPermissionOption(newPermission))
             }
         }
 

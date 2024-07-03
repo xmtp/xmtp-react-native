@@ -287,6 +287,30 @@ export class Group<
   }
 
   /**
+   * Returns the group pinned frame.
+   * To get the latest group pinned frame url from the network, call sync() first.
+   * @returns {string} A Promise that resolves to the group pinned frame url.
+   */
+  async groupPinnedFrameUrl(): Promise<string> {
+    return XMTP.groupPinnedFrameUrl(this.client.inboxId, this.id)
+  }
+
+  /**
+   * Updates the group pinned frame url.
+   * Will throw if the user does not have the required permissions.
+   * @param {string} pinnedFrameUrl new group pinned frame url
+   * @returns
+   */
+
+  async updateGroupPinnedFrameUrl(pinnedFrameUrl: string): Promise<void> {
+    return XMTP.updateGroupPinnedFrameUrl(
+      this.client.inboxId,
+      this.id,
+      pinnedFrameUrl
+    )
+  }
+
+  /**
    * Returns whether the group is active.
    * To get the latest active status from the network, call sync() first
    * @returns {Promise<boolean>} A Promise that resolves if the group is active or not
@@ -489,6 +513,22 @@ export class Group<
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateGroupDescriptionPermission(
+      this.client.inboxId,
+      this.id,
+      permissionOption
+    )
+  }
+
+  /**
+   *
+   * @param {PermissionOption} permissionOption
+   * @returns {Promise<void>} A Promise that resolves when the groupPinnedFrameUrl permission is updated for the group.
+   * Will throw if the user does not have the required permissions.
+   */
+  async updateGroupPinnedFrameUrlPermission(
+    permissionOption: PermissionUpdateOption
+  ): Promise<void> {
+    return XMTP.updateGroupPinnedFrameUrlPermission(
       this.client.inboxId,
       this.id,
       permissionOption
