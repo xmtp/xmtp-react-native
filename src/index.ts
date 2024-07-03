@@ -169,8 +169,15 @@ export async function createGroup<
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = ''
+  description: string = '',
+  pinnedFrameUrl: string = ''
 ): Promise<Group<ContentTypes>> {
+  const options: CreateGroupParams = {
+    name,
+    imageUrlSquare,
+    description,
+    pinnedFrameUrl,
+  }
   return new Group(
     client,
     JSON.parse(
@@ -178,9 +185,7 @@ export async function createGroup<
         client.inboxId,
         peerAddresses,
         permissionLevel,
-        name,
-        imageUrlSquare,
-        description
+        JSON.stringify(options)
       )
     )
   )
@@ -362,6 +367,21 @@ export function updateGroupName(
   groupName: string
 ): Promise<void> {
   return XMTPModule.updateGroupName(inboxId, id, groupName)
+}
+
+export function groupPinnedFrameUrl(
+  inboxId: string,
+  id: string
+): string | PromiseLike<string> {
+  return XMTPModule.groupPinnedFrameUrl(inboxId, id)
+}
+
+export function updateGroupPinnedFrameUrl(
+  inboxId: string,
+  id: string,
+  pinnedFrameUrl: string
+): Promise<void> {
+  return XMTPModule.updateGroupPinnedFrameUrl(inboxId, id, pinnedFrameUrl)
 }
 
 export async function sign(
@@ -964,6 +984,18 @@ export async function updateGroupDescriptionPermission(
   )
 }
 
+export async function updateGroupPinnedFrameUrlPermission(
+  clientInboxId: string,
+  id: string,
+  permissionOption: PermissionUpdateOption
+): Promise<void> {
+  return XMTPModule.updateGroupPinnedFrameUrlPermission(
+    clientInboxId,
+    id,
+    permissionOption
+  )
+}
+
 export async function permissionPolicySet(
   clientInboxId: string,
   id: string
@@ -1064,6 +1096,13 @@ interface AuthParams {
   enableV3?: boolean
   dbDirectory?: string
   historySyncUrl?: string
+}
+
+interface CreateGroupParams {
+  name: string
+  imageUrlSquare: string
+  description: string
+  pinnedFrameUrl: string
 }
 
 export * from './XMTP.types'

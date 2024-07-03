@@ -25,6 +25,7 @@ class PermissionPolicySetWrapper {
                 "updateGroupNamePolicy" to fromPermissionOption(policySet.updateGroupNamePolicy),
                 "updateGroupDescriptionPolicy" to fromPermissionOption(policySet.updateGroupDescriptionPolicy),
                 "updateGroupImagePolicy" to fromPermissionOption(policySet.updateGroupImagePolicy),
+                "updateGroupPinnedFrameUrlPolicy" to fromPermissionOption(policySet.updateGroupPinnedFrameUrlPolicy),
             )
         }
 
