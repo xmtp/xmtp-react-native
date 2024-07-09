@@ -6,7 +6,6 @@ import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
 import androidx.core.net.toUri
-import com.facebook.common.util.Hex
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.exception.Exceptions
@@ -62,14 +61,13 @@ import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.messages.getPublicKeyBundle
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
-import org.xmtp.android.library.toHex
-import org.xmtp.android.library.hexToByteArray
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
+import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.UnpublishedMessage
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -151,6 +149,7 @@ class XMTPModule : Module() {
     }
 
     private var clients: MutableMap<String, Client> = mutableMapOf()
+    private var unpublishedLocalMessages: MutableMap<String, UnpublishedMessage> = mutableMapOf()
     private var xmtpPush: XMTPPush? = null
     private var signer: ReactNativeSigner? = null
     private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
@@ -707,9 +706,20 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("publishPreparedGroupMessage") Coroutine { messageId: String ->
+            withContext(Dispatchers.IO) {
+                logV("publishPreparedGroupMessage")
+                val unpublishedMessage = unpublishedLocalMessages[messageId] ?: throw XMTPException(
+                    "No message found for $messageId"
+                )
+
+                unpublishedMessage.publish()
+            }
+        }
+
         AsyncFunction("prepareGroupMessage") Coroutine { inboxId: String, id: String, contentJson: String ->
             withContext(Dispatchers.IO) {
-                logV("sendMessageToGroup")
+                logV("prepareGroupMessage")
                 val group =
                     findGroup(
                         inboxId = inboxId,
@@ -721,7 +731,7 @@ class XMTPModule : Module() {
                     content = sending.content,
                     options = SendOptions(contentType = sending.type)
                 )
-
+                unpublishedLocalMessages[unpublishedMessage.messageId] = unpublishedMessage
                 unpublishedMessage.messageId
             }
         }
@@ -862,7 +872,8 @@ class XMTPModule : Module() {
                     "admin_only" -> GroupPermissionPreconfiguration.ADMIN_ONLY
                     else -> GroupPermissionPreconfiguration.ALL_MEMBERS
                 }
-                val createGroupParams = CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
+                val createGroupParams =
+                    CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
                 val group = client.conversations.newGroup(
                     peerAddresses,
                     permissionLevel,
@@ -1144,7 +1155,7 @@ class XMTPModule : Module() {
                 logV("updateAddMemberPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
                 val group = findGroup(clientInboxId, id)
-                
+
                 group?.updateAddMemberPermission(getPermissionOption(newPermission))
             }
         }
@@ -1154,7 +1165,7 @@ class XMTPModule : Module() {
                 logV("updateRemoveMemberPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
                 val group = findGroup(clientInboxId, id)
-                
+
                 group?.updateRemoveMemberPermission(getPermissionOption(newPermission))
             }
         }
@@ -1164,7 +1175,7 @@ class XMTPModule : Module() {
                 logV("updateAddAdminPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
                 val group = findGroup(clientInboxId, id)
-                
+
                 group?.updateAddAdminPermission(getPermissionOption(newPermission))
             }
         }
@@ -1174,7 +1185,7 @@ class XMTPModule : Module() {
                 logV("updateRemoveAdminPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
                 val group = findGroup(clientInboxId, id)
-                
+
                 group?.updateRemoveAdminPermission(getPermissionOption(newPermission))
             }
         }

@@ -234,6 +234,12 @@ export async function sendMessageToGroup(
   return await XMTPModule.sendMessageToGroup(inboxId, groupId, contentJson)
 }
 
+export async function publishPreparedGroupMessage(
+  messageId: string,
+): Promise<string> {
+  return await XMTPModule.publishPreparedGroupMessage(messageId)
+}
+
 export async function groupMessages<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(

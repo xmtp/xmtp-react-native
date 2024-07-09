@@ -130,6 +130,22 @@ export class Group<
   }
 
   /**
+   * Publish a prepared message.
+   *
+   * @param {string} - The string id for the message to publish.
+   * @returns {Promise<string>} A Promise that resolves to a string identifier for the published message.
+   * @throws {Error} Throws an error if there is an issue finding the unpublished message
+   */
+  async publishPreparedMessage(messageId: string): Promise<string> {
+    try {
+      return await XMTP.publishPreparedGroupMessage(messageId)
+    } catch (e) {
+      console.info('ERROR in publishPreparedMessage()', e.message)
+      throw e
+    }
+  }
+
+  /**
    * This method returns an array of messages associated with the group.
    * To get the latest messages from the network, call sync() first.
    *
