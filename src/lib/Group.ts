@@ -69,8 +69,6 @@ export class Group<
    * @param {string | MessageContent} content - The content of the message. It can be either a string or a structured MessageContent object.
    * @returns {Promise<string>} A Promise that resolves to a string identifier for the sent message.
    * @throws {Error} Throws an error if there is an issue with sending the message.
-   *
-   * @todo Support specifying a conversation ID in future implementations.
    */
   async send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
     content: ConversationSendPayload<SendContentTypes>,
@@ -93,6 +91,40 @@ export class Group<
       )
     } catch (e) {
       console.info('ERROR in send()', e.message)
+      throw e
+    }
+  }
+
+  /**
+   * Prepare a group message to be sent.
+   *
+   * @param {string | MessageContent} content - The content of the message. It can be either a string or a structured MessageContent object.
+   * @returns {Promise<string>} A Promise that resolves to a string identifier for the prepared message to be sent.
+   * @throws {Error} Throws an error if there is an issue with sending the message.
+   */
+  async prepareMessage<
+    SendContentTypes extends DefaultContentTypes = ContentTypes,
+  >(
+    content: ConversationSendPayload<SendContentTypes>,
+    opts?: SendOptions
+  ): Promise<string> {
+    // TODO: Enable other content types
+    // if (opts && opts.contentType) {
+    // return await this._sendWithJSCodec(content, opts.contentType)
+    // }
+
+    try {
+      if (typeof content === 'string') {
+        content = { text: content }
+      }
+
+      return await XMTP.prepareGroupMessage(
+        this.client.inboxId,
+        this.id,
+        content
+      )
+    } catch (e) {
+      console.info('ERROR in prepareGroupMessage()', e.message)
       throw e
     }
   }

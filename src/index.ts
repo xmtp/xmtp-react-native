@@ -216,6 +216,15 @@ export async function listGroupMembers(
   })
 }
 
+export async function prepareGroupMessage(
+  inboxId: string,
+  groupId: string,
+  content: any
+): Promise<string> {
+  const contentJson = JSON.stringify(content)
+  return await XMTPModule.prepareGroupMessage(inboxId, groupId, contentJson)
+}
+
 export async function sendMessageToGroup(
   inboxId: string,
   groupId: string,
