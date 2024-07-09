@@ -608,7 +608,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findV3Message")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val message = client.findMessage(Hex.hexStringToByteArray(messageId))
+                val message = client.findMessage(messageId)
                 message?.let {
                     DecodedMessageWrapper.encode(it.decrypt())
                 }
@@ -619,7 +619,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findGroup")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = client.findGroup(Hex.hexStringToByteArray(groupId))
+                val group = client.findGroup(groupId)
                 group?.let {
                     GroupWrapper.encode(client, it)
                 }
@@ -704,6 +704,25 @@ class XMTPModule : Module() {
                     content = sending.content,
                     options = SendOptions(contentType = sending.type)
                 )
+            }
+        }
+
+        AsyncFunction("prepareGroupMessage") Coroutine { inboxId: String, id: String, contentJson: String ->
+            withContext(Dispatchers.IO) {
+                logV("sendMessageToGroup")
+                val group =
+                    findGroup(
+                        inboxId = inboxId,
+                        id = id
+                    )
+                        ?: throw XMTPException("no group found for $id")
+                val sending = ContentJson.fromJson(contentJson)
+                val unpublishedMessage = group.prepareMessage(
+                    content = sending.content,
+                    options = SendOptions(contentType = sending.type)
+                )
+
+                unpublishedMessage.messageId
             }
         }
 
@@ -1471,29 +1490,31 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("allowGroups") Coroutine { inboxId: String, groupIds: List<String> ->
-            logV("allowGroups")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            val groupDataIds = groupIds.map { Hex.hexStringToByteArray(it) }
-            client.contacts.allowGroups(groupDataIds)
+            withContext(Dispatchers.IO) {
+                logV("allowGroups")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.allowGroups(groupIds)
+            }
         }
 
         AsyncFunction("denyGroups") Coroutine { inboxId: String, groupIds: List<String> ->
-            logV("denyGroups")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            val groupDataIds = groupIds.map { Hex.hexStringToByteArray(it) }
-            client.contacts.denyGroups(groupDataIds)
+            withContext(Dispatchers.IO) {
+                logV("denyGroups")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.denyGroups(groupIds)
+            }
         }
 
         AsyncFunction("isGroupAllowed") { inboxId: String, groupId: String ->
             logV("isGroupAllowed")
             val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupAllowed(groupId.hexToByteArray())
+            client.contacts.isGroupAllowed(groupId)
         }
 
         AsyncFunction("isGroupDenied") { inboxId: String, groupId: String ->
             logV("isGroupDenied")
             val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupDenied(groupId.hexToByteArray())
+            client.contacts.isGroupDenied(groupId)
         }
     }
 
@@ -1532,7 +1553,7 @@ class XMTPModule : Module() {
         return null
     }
 
-    private suspend fun findGroup(
+    private fun findGroup(
         inboxId: String,
         id: String,
     ): Group? {
@@ -1543,8 +1564,7 @@ class XMTPModule : Module() {
         if (cacheGroup != null) {
             return cacheGroup
         } else {
-            val group = client.conversations.listGroups()
-                .firstOrNull { it.id.toHex() == id }
+            val group = client.findGroup(id)
             if (group != null) {
                 groups[group.cacheKey(inboxId)] = group
                 return group

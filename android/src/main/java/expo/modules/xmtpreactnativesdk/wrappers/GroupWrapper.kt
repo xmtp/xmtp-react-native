@@ -11,7 +11,7 @@ class GroupWrapper {
         fun encodeToObj(client: Client, group: Group): Map<String, Any> {
             return mapOf(
                 "clientAddress" to client.address,
-                "id" to group.id.toHex(),
+                "id" to group.id,
                 "createdAt" to group.createdAt.time,
                 "peerInboxIds" to group.peerInboxIds(),
                 "version" to "GROUP",
