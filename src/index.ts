@@ -234,10 +234,11 @@ export async function sendMessageToGroup(
   return await XMTPModule.sendMessageToGroup(inboxId, groupId, contentJson)
 }
 
-export async function publishPreparedGroupMessage(
-  messageId: string,
-): Promise<string> {
-  return await XMTPModule.publishPreparedGroupMessage(messageId)
+export async function publishPreparedGroupMessages(
+  inboxId: string,
+  groupId: string
+) {
+  return await XMTPModule.publishPreparedGroupMessages(inboxId, groupId)
 }
 
 export async function groupMessages<

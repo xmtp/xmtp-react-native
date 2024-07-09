@@ -706,7 +706,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("publishPreparedGroupMessages") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
-                logV("publishPreparedGroupMessage")
+                logV("publishPreparedGroupMessages")
                 val group =
                     findGroup(
                         inboxId = inboxId,
