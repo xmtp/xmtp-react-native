@@ -216,6 +216,15 @@ export async function listGroupMembers(
   })
 }
 
+export async function prepareGroupMessage(
+  inboxId: string,
+  groupId: string,
+  content: any
+): Promise<string> {
+  const contentJson = JSON.stringify(content)
+  return await XMTPModule.prepareGroupMessage(inboxId, groupId, contentJson)
+}
+
 export async function sendMessageToGroup(
   inboxId: string,
   groupId: string,
@@ -223,6 +232,13 @@ export async function sendMessageToGroup(
 ): Promise<string> {
   const contentJson = JSON.stringify(content)
   return await XMTPModule.sendMessageToGroup(inboxId, groupId, contentJson)
+}
+
+export async function publishPreparedGroupMessages(
+  inboxId: string,
+  groupId: string
+) {
+  return await XMTPModule.publishPreparedGroupMessages(inboxId, groupId)
 }
 
 export async function groupMessages<

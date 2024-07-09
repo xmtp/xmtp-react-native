@@ -18,7 +18,7 @@ extension XMTP.Group {
 	}
 	
 	func cacheKey(_ inboxId: String) -> String {
-		return XMTP.Group.cacheKeyForId(inboxId: inboxId, id: id.toHex)
+		return XMTP.Group.cacheKeyForId(inboxId: inboxId, id: id)
 	}
 }
 
@@ -492,7 +492,7 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			if let message = try client.findMessage(messageId: Data(hex: messageId) ?? Data()) {
+			if let message = try client.findMessage(messageId: messageId) {
 				return try DecodedMessageWrapper.encode(message.decrypt(), client: client)
 			} else {
 				return nil
@@ -503,7 +503,7 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			if let group = try client.findGroup(groupId: Data(hex: groupId) ?? Data()) {
+			if let group = try client.findGroup(groupId: groupId) {
 				return try GroupWrapper.encode(group, client: client)
 			} else {
 				return nil
@@ -588,6 +588,26 @@ public class XMTPModule: Module {
 
 			let sending = try ContentJson.fromJson(contentJson)
 			return try await group.send(
+				content: sending.content,
+				options: SendOptions(contentType: sending.type)
+			)
+		}
+		
+		AsyncFunction("publishPreparedGroupMessages") { (inboxId: String, id: String) in
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			try await group.publishMessages()
+		}
+
+		AsyncFunction("prepareGroupMessage") { (inboxId: String, id: String, contentJson: String) -> String in
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			let sending = try ContentJson.fromJson(contentJson)
+			return try await group.prepareMessage(
 				content: sending.content,
 				options: SendOptions(contentType: sending.type)
 			)
@@ -1364,40 +1384,32 @@ public class XMTPModule: Module {
 			}
 		}
     
-    AsyncFunction("allowGroups") { (inboxId: String, groupIds: [String]) in
-      guard let client = await clientsManager.getClient(key: inboxId) else {
-        throw Error.noClient
-      }
-		let groupDataIds = groupIds.compactMap { $0.hexToData }
-      try await client.contacts.allowGroups(groupIds: groupDataIds)
-    }
-    
-    AsyncFunction("denyGroups") { (inboxId: String, groupIds: [String]) in
-      guard let client = await clientsManager.getClient(key: inboxId) else {
-        throw Error.noClient
-      }
-		let groupDataIds = groupIds.compactMap { $0.hexToData }
-      try await client.contacts.denyGroups(groupIds: groupDataIds)
-    }
+		AsyncFunction("allowGroups") { (inboxId: String, groupIds: [String]) in
+		  guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.noClient
+		  }
+		  try await client.contacts.allowGroups(groupIds: groupIds)
+		}
+		
+		AsyncFunction("denyGroups") { (inboxId: String, groupIds: [String]) in
+		  guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.noClient
+		  }
+		  try await client.contacts.denyGroups(groupIds: groupIds)
+		}
 
-    AsyncFunction("isGroupAllowed") { (inboxId: String, groupId: String) -> Bool in
-      guard let client = await clientsManager.getClient(key: inboxId) else {
-        throw Error.noClient
-      }
-      guard let groupDataId = Data(hex: groupId) else {
-        throw Error.invalidString
-      }
-      return await client.contacts.isGroupAllowed(groupId: groupDataId)
-    }
-    
-    AsyncFunction("isGroupDenied") { (inboxId: String, groupId: String) -> Bool in
-      guard let client = await clientsManager.getClient(key: inboxId) else {
-        throw Error.invalidString
-      }
-      guard let groupDataId = Data(hex: groupId) else {
-        throw Error.invalidString
-      }
-      return await client.contacts.isGroupDenied(groupId: groupDataId)
+		AsyncFunction("isGroupAllowed") { (inboxId: String, groupId: String) -> Bool in
+		  guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.noClient
+		  }
+		  return await client.contacts.isGroupAllowed(groupId: groupId)
+		}
+		
+		AsyncFunction("isGroupDenied") { (inboxId: String, groupId: String) -> Bool in
+		  guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.invalidString
+		  }
+		  return await client.contacts.isGroupDenied(groupId: groupId)
 		}
 	}
 
@@ -1468,7 +1480,7 @@ public class XMTPModule: Module {
 		let cacheKey = XMTP.Group.cacheKeyForId(inboxId: client.inboxID, id: id)
 		if let group = await groupsManager.get(cacheKey) {
 			return group
-		} else if let group = try await client.conversations.groups().first(where: { $0.id.toHex == id }) {
+		} else if let group = try client.findGroup(groupId: id) {
 			await groupsManager.set(cacheKey, group)
 			return group
 		}

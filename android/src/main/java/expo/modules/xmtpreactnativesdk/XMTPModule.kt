@@ -6,7 +6,6 @@ import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
 import androidx.core.net.toUri
-import com.facebook.common.util.Hex
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.exception.Exceptions
@@ -62,8 +61,6 @@ import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.messages.getPublicKeyBundle
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
-import org.xmtp.android.library.toHex
-import org.xmtp.android.library.hexToByteArray
 import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
 import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
@@ -608,7 +605,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findV3Message")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val message = client.findMessage(Hex.hexStringToByteArray(messageId))
+                val message = client.findMessage(messageId)
                 message?.let {
                     DecodedMessageWrapper.encode(it.decrypt())
                 }
@@ -619,7 +616,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findGroup")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = client.findGroup(Hex.hexStringToByteArray(groupId))
+                val group = client.findGroup(groupId)
                 group?.let {
                     GroupWrapper.encode(client, it)
                 }
@@ -701,6 +698,37 @@ class XMTPModule : Module() {
                         ?: throw XMTPException("no group found for $id")
                 val sending = ContentJson.fromJson(contentJson)
                 group.send(
+                    content = sending.content,
+                    options = SendOptions(contentType = sending.type)
+                )
+            }
+        }
+
+        AsyncFunction("publishPreparedGroupMessages") Coroutine { inboxId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("publishPreparedGroupMessages")
+                val group =
+                    findGroup(
+                        inboxId = inboxId,
+                        id = groupId
+                    )
+                        ?: throw XMTPException("no group found for $groupId")
+
+                group.publishMessages()
+            }
+        }
+
+        AsyncFunction("prepareGroupMessage") Coroutine { inboxId: String, id: String, contentJson: String ->
+            withContext(Dispatchers.IO) {
+                logV("prepareGroupMessage")
+                val group =
+                    findGroup(
+                        inboxId = inboxId,
+                        id = id
+                    )
+                        ?: throw XMTPException("no group found for $id")
+                val sending = ContentJson.fromJson(contentJson)
+                group.prepareMessage(
                     content = sending.content,
                     options = SendOptions(contentType = sending.type)
                 )
@@ -843,7 +871,8 @@ class XMTPModule : Module() {
                     "admin_only" -> GroupPermissionPreconfiguration.ADMIN_ONLY
                     else -> GroupPermissionPreconfiguration.ALL_MEMBERS
                 }
-                val createGroupParams = CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
+                val createGroupParams =
+                    CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
                 val group = client.conversations.newGroup(
                     peerAddresses,
                     permissionLevel,
@@ -1125,7 +1154,7 @@ class XMTPModule : Module() {
                 logV("updateAddMemberPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
                 val group = findGroup(clientInboxId, id)
-                
+
                 group?.updateAddMemberPermission(getPermissionOption(newPermission))
             }
         }
@@ -1135,7 +1164,7 @@ class XMTPModule : Module() {
                 logV("updateRemoveMemberPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
                 val group = findGroup(clientInboxId, id)
-                
+
                 group?.updateRemoveMemberPermission(getPermissionOption(newPermission))
             }
         }
@@ -1145,7 +1174,7 @@ class XMTPModule : Module() {
                 logV("updateAddAdminPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
                 val group = findGroup(clientInboxId, id)
-                
+
                 group?.updateAddAdminPermission(getPermissionOption(newPermission))
             }
         }
@@ -1155,7 +1184,7 @@ class XMTPModule : Module() {
                 logV("updateRemoveAdminPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
                 val group = findGroup(clientInboxId, id)
-                
+
                 group?.updateRemoveAdminPermission(getPermissionOption(newPermission))
             }
         }
@@ -1471,29 +1500,31 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("allowGroups") Coroutine { inboxId: String, groupIds: List<String> ->
-            logV("allowGroups")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            val groupDataIds = groupIds.map { Hex.hexStringToByteArray(it) }
-            client.contacts.allowGroups(groupDataIds)
+            withContext(Dispatchers.IO) {
+                logV("allowGroups")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.allowGroups(groupIds)
+            }
         }
 
         AsyncFunction("denyGroups") Coroutine { inboxId: String, groupIds: List<String> ->
-            logV("denyGroups")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            val groupDataIds = groupIds.map { Hex.hexStringToByteArray(it) }
-            client.contacts.denyGroups(groupDataIds)
+            withContext(Dispatchers.IO) {
+                logV("denyGroups")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.denyGroups(groupIds)
+            }
         }
 
         AsyncFunction("isGroupAllowed") { inboxId: String, groupId: String ->
             logV("isGroupAllowed")
             val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupAllowed(groupId.hexToByteArray())
+            client.contacts.isGroupAllowed(groupId)
         }
 
         AsyncFunction("isGroupDenied") { inboxId: String, groupId: String ->
             logV("isGroupDenied")
             val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupDenied(groupId.hexToByteArray())
+            client.contacts.isGroupDenied(groupId)
         }
     }
 
@@ -1532,7 +1563,7 @@ class XMTPModule : Module() {
         return null
     }
 
-    private suspend fun findGroup(
+    private fun findGroup(
         inboxId: String,
         id: String,
     ): Group? {
@@ -1543,8 +1574,7 @@ class XMTPModule : Module() {
         if (cacheGroup != null) {
             return cacheGroup
         } else {
-            val group = client.conversations.listGroups()
-                .firstOrNull { it.id.toHex() == id }
+            val group = client.findGroup(id)
             if (group != null) {
                 groups[group.cacheKey(inboxId)] = group
                 return group
