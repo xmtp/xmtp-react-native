@@ -13,7 +13,7 @@ struct GroupWrapper {
 	static func encodeToObj(_ group: XMTP.Group, client: XMTP.Client) throws -> [String: Any] {
 		return [
 			"clientAddress": client.address,
-			"id": group.id.toHex,
+			"id": group.id,
 			"createdAt": UInt64(group.createdAt.timeIntervalSince1970 * 1000),
 			"peerInboxIds": try group.peerInboxIds,
 			"version": "GROUP",

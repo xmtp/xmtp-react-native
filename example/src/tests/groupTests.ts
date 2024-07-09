@@ -555,7 +555,7 @@ test('unpublished messages handling', async () => {
   }
 
   // Publish the prepared message
-  await alixGroup.publishPreparedMessage(preparedMessageId)
+  await alixGroup.publishPreparedMessages()
 
   // Sync the group after publishing the message
   await alixGroup.sync()
