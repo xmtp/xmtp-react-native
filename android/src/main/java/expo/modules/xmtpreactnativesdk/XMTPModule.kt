@@ -67,7 +67,6 @@ import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.UnpublishedMessage
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -149,7 +148,6 @@ class XMTPModule : Module() {
     }
 
     private var clients: MutableMap<String, Client> = mutableMapOf()
-    private var unpublishedLocalMessages: MutableMap<String, UnpublishedMessage> = mutableMapOf()
     private var xmtpPush: XMTPPush? = null
     private var signer: ReactNativeSigner? = null
     private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
@@ -706,15 +704,17 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("publishPreparedGroupMessage") Coroutine { messageId: String ->
+        AsyncFunction("publishPreparedGroupMessages") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("publishPreparedGroupMessage")
-                val unpublishedMessage = unpublishedLocalMessages[messageId] ?: throw XMTPException(
-                    "No message found for $messageId"
-                )
+                val group =
+                    findGroup(
+                        inboxId = inboxId,
+                        id = groupId
+                    )
+                        ?: throw XMTPException("no group found for $groupId")
 
-                unpublishedLocalMessages.remove(messageId)
-                unpublishedMessage.publish()
+                group.publishMessages()
             }
         }
 
@@ -728,12 +728,10 @@ class XMTPModule : Module() {
                     )
                         ?: throw XMTPException("no group found for $id")
                 val sending = ContentJson.fromJson(contentJson)
-                val unpublishedMessage = group.prepareMessage(
+                group.prepareMessage(
                     content = sending.content,
                     options = SendOptions(contentType = sending.type)
                 )
-                unpublishedLocalMessages[unpublishedMessage.messageId] = unpublishedMessage
-                unpublishedMessage.messageId
             }
         }
 
