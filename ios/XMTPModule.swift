@@ -18,7 +18,7 @@ extension XMTP.Group {
 	}
 	
 	func cacheKey(_ inboxId: String) -> String {
-		return XMTP.Group.cacheKeyForId(inboxId: inboxId, id: id.toHex)
+		return XMTP.Group.cacheKeyForId(inboxId: inboxId, id: id)
 	}
 }
 
@@ -1384,38 +1384,32 @@ public class XMTPModule: Module {
 			}
 		}
     
-    AsyncFunction("allowGroups") { (inboxId: String, groupIds: [String]) in
-      guard let client = await clientsManager.getClient(key: inboxId) else {
-        throw Error.noClient
-      }
-      try await client.contacts.allowGroups(groupIds: groupIds)
-    }
-    
-    AsyncFunction("denyGroups") { (inboxId: String, groupIds: [String]) in
-      guard let client = await clientsManager.getClient(key: inboxId) else {
-        throw Error.noClient
-      }
-      try await client.contacts.denyGroups(groupIds: groupIds)
-    }
+		AsyncFunction("allowGroups") { (inboxId: String, groupIds: [String]) in
+		  guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.noClient
+		  }
+		  try await client.contacts.allowGroups(groupIds: groupIds)
+		}
+		
+		AsyncFunction("denyGroups") { (inboxId: String, groupIds: [String]) in
+		  guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.noClient
+		  }
+		  try await client.contacts.denyGroups(groupIds: groupIds)
+		}
 
-    AsyncFunction("isGroupAllowed") { (inboxId: String, groupId: String) -> Bool in
-      guard let client = await clientsManager.getClient(key: inboxId) else {
-        throw Error.noClient
-      }
-      guard let groupDataId = Data(hex: groupId) else {
-        throw Error.invalidString
-      }
-      return await client.contacts.isGroupAllowed(groupId: groupDataId)
-    }
-    
-    AsyncFunction("isGroupDenied") { (inboxId: String, groupId: String) -> Bool in
-      guard let client = await clientsManager.getClient(key: inboxId) else {
-        throw Error.invalidString
-      }
-      guard let groupDataId = Data(hex: groupId) else {
-        throw Error.invalidString
-      }
-      return await client.contacts.isGroupDenied(groupId: groupDataId)
+		AsyncFunction("isGroupAllowed") { (inboxId: String, groupId: String) -> Bool in
+		  guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.noClient
+		  }
+		  return await client.contacts.isGroupAllowed(groupId: groupId)
+		}
+		
+		AsyncFunction("isGroupDenied") { (inboxId: String, groupId: String) -> Bool in
+		  guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.invalidString
+		  }
+		  return await client.contacts.isGroupDenied(groupId: groupId)
 		}
 	}
 
