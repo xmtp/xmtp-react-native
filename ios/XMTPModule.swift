@@ -592,6 +592,26 @@ public class XMTPModule: Module {
 				options: SendOptions(contentType: sending.type)
 			)
 		}
+		
+		AsyncFunction("publishPreparedGroupMessages") { (inboxId: String, id: String) in
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			try await group.publishMessages()
+		}
+
+		AsyncFunction("prepareGroupMessage") { (inboxId: String, id: String, contentJson: String) -> String in
+			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
+				throw Error.conversationNotFound("no group found for \(id)")
+			}
+
+			let sending = try ContentJson.fromJson(contentJson)
+			return try await group.prepareMessage(
+				content: sending.content,
+				options: SendOptions(contentType: sending.type)
+			)
+		}
 
 		AsyncFunction("prepareMessage") { (
 			inboxId: String,
