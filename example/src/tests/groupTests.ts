@@ -497,6 +497,102 @@ test('can message in a group', async () => {
   return true
 })
 
+test('unpublished messages handling', async () => {
+  // Initialize fixture clients
+  const [alixClient, boClient] = await createClients(3)
+
+  // Create a new group with Bob and Alice
+  const boGroup = await boClient.conversations.newGroup([alixClient.address])
+
+  // Sync Alice's client to get the new group
+  await alixClient.conversations.syncGroups()
+  const alixGroup = await alixClient.conversations.findGroup(boGroup.id)
+  if (!alixGroup) {
+    throw new Error(`Group not found for id: ${boGroup.id}`)
+  }
+
+  // Check if the group is allowed initially
+  let isGroupAllowed = await alixClient.contacts.isGroupAllowed(boGroup.id)
+  if (isGroupAllowed) {
+    throw new Error('Group should not be allowed initially')
+  }
+
+  // Prepare a message in the group
+  const preparedMessageId = await alixGroup.prepareMessage('Test text')
+
+  // Check if the group is allowed after preparing the message
+  isGroupAllowed = await alixClient.contacts.isGroupAllowed(boGroup.id)
+  if (!isGroupAllowed) {
+    throw new Error('Group should be allowed after preparing a message')
+  }
+
+  // Verify the message count in the group
+  let messageCount = (await alixGroup.messages()).length
+  if (messageCount !== 1) {
+    throw new Error(`Message count should be 1, but it is ${messageCount}`)
+  }
+
+  // Verify the count of published and unpublished messages
+  let messageCountPublished = (
+    await alixGroup.messages({
+      deliveryStatus: MessageDeliveryStatus.PUBLISHED,
+    })
+  ).length
+  let messageCountUnpublished = (
+    await alixGroup.messages({
+      deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
+    })
+  ).length
+  if (messageCountPublished !== 0) {
+    throw new Error(
+      `Published message count should be 0, but it is ${messageCountPublished}`
+    )
+  }
+  if (messageCountUnpublished !== 1) {
+    throw new Error(
+      `Unpublished message count should be 1, but it is ${messageCountUnpublished}`
+    )
+  }
+
+  // Publish the prepared message
+  await alixGroup.publishPreparedMessage(preparedMessageId)
+
+  // Sync the group after publishing the message
+  await alixGroup.sync()
+
+  // Verify the message counts again
+  messageCountPublished = (
+    await alixGroup.messages({
+      deliveryStatus: MessageDeliveryStatus.PUBLISHED,
+    })
+  ).length
+  messageCountUnpublished = (
+    await alixGroup.messages({
+      deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
+    })
+  ).length
+  messageCount = (await alixGroup.messages()).length
+  if (messageCountPublished !== 1) {
+    throw new Error(
+      `Published message count should be 1, but it is ${messageCountPublished}`
+    )
+  }
+  if (messageCountUnpublished !== 0) {
+    throw new Error(
+      `Unpublished message count should be 0, but it is ${messageCountUnpublished}`
+    )
+  }
+  if (messageCount !== 1) {
+    throw new Error(`Message count should be 1, but it is ${messageCount}`)
+  }
+
+  // Retrieve all messages and verify the prepared message ID
+  const messages = await alixGroup.messages()
+  if (preparedMessageId !== messages[0].id) {
+    throw new Error(`Message ID should match the prepared message ID`)
+  }
+})
+
 test('can add members to a group', async () => {
   // Create three MLS enabled Clients
   const [alixClient, boClient, caroClient] = await createClients(3)
