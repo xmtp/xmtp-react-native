@@ -713,6 +713,7 @@ class XMTPModule : Module() {
                     "No message found for $messageId"
                 )
 
+                unpublishedLocalMessages.remove(messageId)
                 unpublishedMessage.publish()
             }
         }
