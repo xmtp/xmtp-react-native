@@ -591,6 +591,8 @@ test('unpublished messages handling', async () => {
   if (preparedMessageId !== messages[0].id) {
     throw new Error(`Message ID should match the prepared message ID`)
   }
+
+  return true
 })
 
 test('can add members to a group', async () => {
