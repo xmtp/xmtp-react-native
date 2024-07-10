@@ -52,10 +52,14 @@ export class Client<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
     wallet: Signer | WalletClient | null,
-    opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
+    options: ClientOptions & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
-    const options = defaultOptions(opts)
-
+    if (
+      options.dbEncryptionKey === undefined ||
+      options.dbEncryptionKey.length !== 32
+    ) {
+      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
+    }
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
     const signer = getSigner(wallet)
@@ -109,7 +113,7 @@ export class Client<
                 message.address,
                 message.inboxId as InboxId,
                 message.installationId,
-                opts?.codecs || []
+                options.codecs || []
               )
             )
           }
@@ -152,9 +156,14 @@ export class Client<
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance with a random address.
    */
   static async createRandom<ContentTypes extends DefaultContentTypes>(
-    opts?: Partial<ClientOptions> & { codecs?: ContentTypes }
+    options: ClientOptions & { codecs?: ContentTypes }
   ): Promise<Client<ContentTypes>> {
-    const options = defaultOptions(opts)
+    if (
+      options.dbEncryptionKey === undefined ||
+      options.dbEncryptionKey.length !== 32
+    ) {
+      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
+    }
     const { enableSubscription, createSubscription } =
       this.setupSubscriptions(options)
     const client = await XMTPModule.createRandom(
@@ -174,7 +183,7 @@ export class Client<
       client['address'],
       client['inboxId'],
       client['installationId'],
-      opts?.codecs || []
+      options?.codecs || []
     )
   }
 
@@ -192,9 +201,14 @@ export class Client<
     ContentCodecs extends DefaultContentTypes = [],
   >(
     keyBundle: string,
-    opts?: Partial<ClientOptions> & { codecs?: ContentCodecs }
+    options: ClientOptions & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
-    const options = defaultOptions(opts)
+    if (
+      options.dbEncryptionKey === undefined ||
+      options.dbEncryptionKey.length !== 32
+    ) {
+      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
+    }
     const client = await XMTPModule.createFromKeyBundle(
       keyBundle,
       options.env,
@@ -209,7 +223,7 @@ export class Client<
       client['address'],
       client['inboxId'],
       client['installationId'],
-      opts?.codecs || []
+      options.codecs || []
     )
   }
 
@@ -507,7 +521,7 @@ export type ClientOptions = {
    */
   enableV3?: boolean
   /**
-   * OPTIONAL specify the encryption key for the database. The encryption key must be exactly 32 bytes.
+   * REQUIRED specify the encryption key for the database. The encryption key must be exactly 32 bytes.
    */
   dbEncryptionKey?: Uint8Array
   /**
