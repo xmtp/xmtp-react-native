@@ -7,7 +7,7 @@ import { DefaultContentTypes } from '../lib/types/DefaultContentType'
 
 interface InitializeClientOptions {
   signer: Signer | null
-  options?: ClientOptions
+  options: ClientOptions
 }
 
 export const useClient = <
