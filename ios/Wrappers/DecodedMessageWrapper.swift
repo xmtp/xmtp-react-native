@@ -16,6 +16,7 @@ struct DecodedMessageWrapper {
 			"senderAddress": model.senderAddress,
 			"sent": UInt64(model.sentAt.timeIntervalSince1970 * 1000),
 			"fallback": fallback,
+			"deliveryStatus": model.deliveryStatus.rawValue.uppercased(),
 		]
 	}
 
@@ -44,8 +45,7 @@ struct ContentJson {
 		ReplyCodec(),
 		RemoteAttachmentCodec(),
 		ReadReceiptCodec(),
-		// TODO:
-		// CompositeCodec(),
+		GroupUpdatedCodec(),
 	]
 
 	static func initCodecs(client: Client) {
@@ -162,6 +162,28 @@ struct ContentJson {
 			]]
 		case ContentTypeReadReceipt.id where content is XMTP.ReadReceipt:
 			return ["readReceipt": ""]
+		case ContentTypeGroupUpdated.id where content is XMTP.GroupUpdated:
+			let groupUpdated = content as! XMTP.GroupUpdated
+			return ["groupUpdated": [
+				"initiatedByInboxId": groupUpdated.initiatedByInboxID,
+				"membersAdded": groupUpdated.addedInboxes.map { member in
+					[
+						"inboxId": member.inboxID,
+					]
+				},
+				"membersRemoved": groupUpdated.removedInboxes.map { member in
+					[
+						"inboxId": member.inboxID,
+					]
+				},
+				"metadataFieldsChanged": groupUpdated.metadataFieldChanges.map { metadata in
+					[
+						"oldValue": metadata.oldValue,
+						"newValue": metadata.newValue,
+						"fieldName": metadata.fieldName,
+					]
+				}
+			]]
 		default:
 			if let encodedContent, let encodedContentJSON = try? encodedContent.jsonString() {
 				return ["encoded": encodedContentJSON]

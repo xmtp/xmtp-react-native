@@ -9,6 +9,7 @@ import org.xmtp.android.library.Client
 import org.xmtp.android.library.codecs.Attachment
 import org.xmtp.android.library.codecs.AttachmentCodec
 import org.xmtp.android.library.codecs.ContentTypeAttachment
+import org.xmtp.android.library.codecs.ContentTypeGroupUpdated
 import org.xmtp.android.library.codecs.ContentTypeId
 import org.xmtp.android.library.codecs.ContentTypeReaction
 import org.xmtp.android.library.codecs.ContentTypeReadReceipt
@@ -16,6 +17,8 @@ import org.xmtp.android.library.codecs.ContentTypeRemoteAttachment
 import org.xmtp.android.library.codecs.ContentTypeReply
 import org.xmtp.android.library.codecs.ContentTypeText
 import org.xmtp.android.library.codecs.EncodedContent
+import org.xmtp.android.library.codecs.GroupUpdated
+import org.xmtp.android.library.codecs.GroupUpdatedCodec
 import org.xmtp.android.library.codecs.Reaction
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.ReadReceipt
@@ -51,6 +54,7 @@ class ContentJson(
             Client.register(RemoteAttachmentCodec())
             Client.register(ReplyCodec())
             Client.register(ReadReceiptCodec())
+            Client.register(GroupUpdatedCodec())
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -169,6 +173,29 @@ class ContentJson(
 
             ContentTypeReadReceipt.id -> mapOf(
                 "readReceipt" to ""
+            )
+
+            ContentTypeGroupUpdated.id -> mapOf(
+                "initiatedByInboxId" to (content as GroupUpdated).initiatedByInboxId,
+                "groupUpdated" to mapOf(
+                    "membersAdded" to content.addedInboxesList.map {
+                        mapOf(
+                            "inboxId" to it.inboxId
+                        )
+                    },
+                    "membersRemoved" to content.removedInboxesList.map {
+                        mapOf(
+                            "inboxId" to it.inboxId
+                        )
+                    },
+                    "metadataFieldsChanged" to content.metadataFieldChangesList.map {
+                        mapOf(
+                            "oldValue" to it.oldValue,
+                            "newValue" to it.newValue,
+                            "fieldName" to it.fieldName,
+                        )
+                    },
+                )
             )
 
             else -> {
