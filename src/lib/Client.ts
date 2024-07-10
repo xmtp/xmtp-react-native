@@ -55,8 +55,9 @@ export class Client<
     options: ClientOptions & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
     if (
-      options.dbEncryptionKey === undefined ||
-      options.dbEncryptionKey.length !== 32
+      options.enableV3 === true &&
+      (options.dbEncryptionKey === undefined ||
+        options.dbEncryptionKey.length !== 32)
     ) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
@@ -159,8 +160,9 @@ export class Client<
     options: ClientOptions & { codecs?: ContentTypes }
   ): Promise<Client<ContentTypes>> {
     if (
-      options.dbEncryptionKey === undefined ||
-      options.dbEncryptionKey.length !== 32
+      options.enableV3 === true &&
+      (options.dbEncryptionKey === undefined ||
+        options.dbEncryptionKey.length !== 32)
     ) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
@@ -204,8 +206,9 @@ export class Client<
     options: ClientOptions & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
     if (
-      options.dbEncryptionKey === undefined ||
-      options.dbEncryptionKey.length !== 32
+      options.enableV3 === true &&
+      (options.dbEncryptionKey === undefined ||
+        options.dbEncryptionKey.length !== 32)
     ) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }

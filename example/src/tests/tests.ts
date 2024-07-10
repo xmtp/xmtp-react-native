@@ -175,7 +175,9 @@ function test(name: string, perform: () => Promise<boolean>) {
 }
 
 test('can make a client', async () => {
-  const [client] = await createClients(1)
+  const client = await Client.createRandom({
+    env: 'local',
+  })
 
   client.register(new RemoteAttachmentCodec())
   if (Object.keys(client.codecRegistry).length !== 2) {
