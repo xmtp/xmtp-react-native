@@ -27,10 +27,15 @@ function test(name: string, perform: () => Promise<boolean>) {
 
 test('can make a MLS V3 client', async () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
   const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,
+    dbEncryptionKey: keyBytes,
   })
 
   return true
@@ -591,6 +596,8 @@ test('unpublished messages handling', async () => {
   if (preparedMessageId !== messages[0].id) {
     throw new Error(`Message ID should match the prepared message ID`)
   }
+
+  return true
 })
 
 test('can add members to a group', async () => {
