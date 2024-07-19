@@ -443,6 +443,11 @@ PODS:
   - RNSVG (13.14.0):
     - React-Core
   - secp256k1.swift (0.1.4)
+  - SQLCipher (4.6.0):
+    - SQLCipher/standard (= 4.6.0)
+  - SQLCipher/common (4.6.0)
+  - SQLCipher/standard (4.6.0):
+    - SQLCipher/common
   - SwiftProtobuf (1.25.2)
   - web3.swift (1.6.0):
     - BigInt (~> 5.0.0)
@@ -458,6 +463,7 @@ PODS:
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
+    - SQLCipher
     - XMTP (= 0.13.6)
   - Yoga (1.14.0)
 
@@ -547,6 +553,7 @@ SPEC REPOS:
     - MMKVCore
     - OpenSSL-Universal
     - secp256k1.swift
+    - SQLCipher
     - SwiftProtobuf
     - web3.swift
     - XMTP
@@ -761,10 +768,11 @@ SPEC CHECKSUMS:
   RNScreens: 218801c16a2782546d30bd2026bb625c0302d70f
   RNSVG: d00c8f91c3cbf6d476451313a18f04d220d4f396
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
+  SQLCipher: 30a8e81afa6128e600b17ffa77d0f92fa05ed208
   SwiftProtobuf: 407a385e97fd206c4fbe880cc84123989167e0d1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
   XMTP: aeeff5ecac80f7ec9a2ba4f732d439ab600545ed
-  XMTPReactNative: 7a5fb82f5e8392ea53b5231edceb87ed07761e0b
+  XMTPReactNative: ee19ad5bbcd115abeb6a00041c92942c4243d0e1
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 95d6ace79946933ecf80684613842ee553dd76a2
