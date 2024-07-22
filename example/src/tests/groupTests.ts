@@ -885,15 +885,15 @@ test('can stream groups', async () => {
     caroClient.address,
   ])
   await delayToPropogate()
-  if (groups.length !== 2) {
-    throw Error('Expected group length 2 but it is: ' + groups.length)
+  if (groups.length !== 3) {
+    throw Error('Expected group length 3 but it is: ' + groups.length)
   }
   // Sync groups after creation if you created a group
   const listedGroups = await alixClient.conversations.listGroups()
   await delayToPropogate()
   groups.push(listedGroups[listedGroups.length - 1])
-  if ((groups.length as number) !== 3) {
-    throw Error('Expected group length 3 but it is: ' + groups.length)
+  if ((groups.length as number) !== 4) {
+    throw Error('Expected group length 4 but it is: ' + groups.length)
   }
 
   cancelStreamGroups()
@@ -905,8 +905,8 @@ test('can stream groups', async () => {
     alixClient.address,
   ])
   await delayToPropogate()
-  if ((groups.length as number) !== 3) {
-    throw Error('Unexpected num groups (should be 3): ' + groups.length)
+  if ((groups.length as number) !== 4) {
+    throw Error('Unexpected num groups (should be 4): ' + groups.length)
   }
 
   return true

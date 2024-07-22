@@ -68,6 +68,10 @@ In the `ios` directory, update your `Podfile` file as follows:
 
 - Set this value: `platform :ios, '16.0'`. This is required by XMTP.
 
+If you get the error `The SQLCipher Sqlite extension is not present, but an encryption key is given`
+
+- At the project configuration level in XCode make sure that xmtpV3 is loaded before all other packages by setting `Other Linker Flags` first item to `-l"xmtpv3"`
+
 ```bash
 npx pod-install
 ```
