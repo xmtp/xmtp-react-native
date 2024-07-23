@@ -6,12 +6,12 @@ import {
 
 export type ReplyContent = {
   reference: string
-  content: any
-  contentType: string
+  // Right now this will assume any NativeMessageContent is valid, but really should only be the supported content types
+  content: NativeMessageContent
 }
 
 export class ReplyCodec implements NativeContentCodec<ReplyContent> {
-  contentKey: string = 'reply'
+  contentKey: 'reply' = 'reply'
 
   contentType: ContentTypeId = {
     authorityId: 'xmtp.org',

@@ -1,7 +1,13 @@
+import { useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
 
-import { tests, Test } from './tests'
+import { createdAtTests } from './tests/createdAtTests'
+import { groupPermissionsTests } from './tests/groupPermissionsTests'
+import { groupTests } from './tests/groupTests'
+import { restartStreamTests } from './tests/restartStreamsTests'
+import { Test } from './tests/test-utils'
+import { tests } from './tests/tests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
@@ -42,7 +48,9 @@ function TestView({
   useEffect(() => {
     ;(async () => {
       await run()
-    })()
+    })().catch((e) => {
+      console.error(e)
+    })
   }, [test])
 
   const backgroundColor = {
@@ -95,24 +103,71 @@ function TestView({
   )
 }
 
+export enum TestCategory {
+  all = 'all',
+  tests = 'tests',
+  group = 'group',
+  createdAt = 'createdAt',
+  restartStreans = 'restartStreams',
+  groupPermissions = 'groupPermissions',
+}
+
 export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0)
+  const route = useRoute()
+  const params = route.params as {
+    testSelection: TestCategory
+  }
+  const allTests = [
+    ...tests,
+    ...groupTests,
+    ...createdAtTests,
+    ...restartStreamTests,
+    ...groupPermissionsTests,
+  ]
+  let activeTests, title
+  switch (params.testSelection) {
+    case TestCategory.all:
+      activeTests = allTests
+      title = 'All Unit Tests'
+      break
+    case TestCategory.tests:
+      activeTests = tests
+      title = 'Original Unit Tests'
+      break
+    case TestCategory.group:
+      activeTests = groupTests
+      title = 'Group Unit Tests'
+      break
+    case TestCategory.createdAt:
+      activeTests = createdAtTests
+      title = 'Created At Unit Tests'
+      break
+    case TestCategory.restartStreans:
+      activeTests = restartStreamTests
+      title = 'Restart Streams Unit Tests'
+      break
+    case TestCategory.groupPermissions:
+      activeTests = groupPermissionsTests
+      title = 'Group Permissions Unit Tests'
+      break
+  }
 
   return (
     <ScrollView>
       <View>
         <View style={{ padding: 12 }}>
           <Text testID="Test View" accessible accessibilityLabel="Test View">
-            Unit Tests
+            {title}
           </Text>
           <View
             style={{ flexDirection: 'row', justifyContent: 'space-between' }}
           >
             <Text>
-              Running {completedTests}/{tests.length}
+              Running {completedTests}/{activeTests.length}
             </Text>
 
-            {completedTests === tests.length && (
+            {completedTests === activeTests.length && (
               <Text
                 testID="tests-complete"
                 accessible
@@ -129,17 +184,19 @@ export default function TestScreen(): JSX.Element {
           accessibilityLabel="tests-complete"
           style={{ paddingHorizontal: 12 }}
         >
-          {(tests || []).slice(0, completedTests + 1).map((test: Test, i) => {
-            return (
-              <TestView
-                test={test}
-                onComplete={() => {
-                  setCompletedTests((prev) => prev + 1)
-                }}
-                key={i}
-              />
-            )
-          })}
+          {(activeTests || [])
+            .slice(0, completedTests + 1)
+            .map((test: Test, i) => {
+              return (
+                <TestView
+                  test={test}
+                  onComplete={() => {
+                    setCompletedTests((prev) => prev + 1)
+                  }}
+                  key={i}
+                />
+              )
+            })}
         </View>
       </View>
     </ScrollView>

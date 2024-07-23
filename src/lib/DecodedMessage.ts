@@ -1,17 +1,28 @@
 import { Buffer } from 'buffer'
 
-import { Client } from './Client'
+import { Client, ExtractDecodedType } from './Client'
 import {
   JSContentCodec,
   NativeContentCodec,
   NativeMessageContent,
 } from './ContentCodec'
+import { TextCodec } from './NativeCodecs/TextCodec'
+import { DefaultContentTypes } from './types/DefaultContentType'
 
 const allowEmptyProperties: (keyof NativeMessageContent)[] = [
   'text',
   'readReceipt',
 ]
-export class DecodedMessage<ContentTypes = any> {
+export enum MessageDeliveryStatus {
+  UNPUBLISHED = 'UNPUBLISHED',
+  PUBLISHED = 'PUBLISHED',
+  FAILED = 'FAILED',
+  ALL = 'ALL',
+}
+
+export class DecodedMessage<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+> {
   client: Client<ContentTypes>
   id: string
   topic: string
@@ -20,11 +31,12 @@ export class DecodedMessage<ContentTypes = any> {
   sent: number // timestamp in milliseconds
   nativeContent: NativeMessageContent
   fallback: string | undefined
+  deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
 
-  static from<ContentTypes>(
+  static from<ContentTypes extends DefaultContentTypes = DefaultContentTypes>(
     json: string,
     client: Client<ContentTypes>
-  ): DecodedMessage {
+  ): DecodedMessage<ContentTypes> {
     const decoded = JSON.parse(json)
     return new DecodedMessage<ContentTypes>(
       client,
@@ -34,11 +46,14 @@ export class DecodedMessage<ContentTypes = any> {
       decoded.senderAddress,
       decoded.sent,
       decoded.content,
-      decoded.fallback
+      decoded.fallback,
+      decoded.deliveryStatus
     )
   }
 
-  static fromObject<ContentTypes>(
+  static fromObject<
+    ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+  >(
     object: {
       id: string
       topic: string
@@ -47,6 +62,7 @@ export class DecodedMessage<ContentTypes = any> {
       sent: number // timestamp in milliseconds
       content: any
       fallback: string | undefined
+      deliveryStatus: MessageDeliveryStatus | undefined
     },
     client: Client<ContentTypes>
   ): DecodedMessage<ContentTypes> {
@@ -58,7 +74,8 @@ export class DecodedMessage<ContentTypes = any> {
       object.senderAddress,
       object.sent,
       object.content,
-      object.fallback
+      object.fallback,
+      object.deliveryStatus
     )
   }
 
@@ -70,7 +87,8 @@ export class DecodedMessage<ContentTypes = any> {
     senderAddress: string,
     sent: number,
     content: any,
-    fallback: string | undefined
+    fallback: string | undefined,
+    deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
   ) {
     this.client = client
     this.id = id
@@ -81,15 +99,18 @@ export class DecodedMessage<ContentTypes = any> {
     this.nativeContent = content
     // undefined comes back as null when bridged, ensure undefined so integrators don't have to add a new check for null as well
     this.fallback = fallback ?? undefined
+    this.deliveryStatus = deliveryStatus
   }
 
-  content(): ContentTypes {
+  content(): ExtractDecodedType<[...ContentTypes, TextCodec][number] | string> {
     const encodedJSON = this.nativeContent.encoded
     if (encodedJSON) {
       const encoded = JSON.parse(encodedJSON)
       const codec = this.client.codecRegistry[
         this.contentTypeId
-      ] as JSContentCodec<ContentTypes>
+      ] as JSContentCodec<
+        ExtractDecodedType<[...ContentTypes, TextCodec][number]>
+      >
       if (!codec) {
         throw new Error(
           `no content type found ${JSON.stringify(this.contentTypeId)}`
@@ -107,9 +128,11 @@ export class DecodedMessage<ContentTypes = any> {
             this.nativeContent.hasOwnProperty(prop)
           )
         ) {
-          return (codec as NativeContentCodec<ContentTypes>).decode(
-            this.nativeContent
-          )
+          return (
+            codec as NativeContentCodec<
+              ExtractDecodedType<[...ContentTypes, TextCodec][number]>
+            >
+          ).decode(this.nativeContent)
         }
       }
 
