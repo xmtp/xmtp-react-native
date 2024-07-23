@@ -228,41 +228,44 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
-            logV("auth")
-            val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
-            signer = reactSigner
-            val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+        AsyncFunction("auth") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
+            withContext(Dispatchers.IO) {
 
-            if (hasCreateIdentityCallback == true)
-                preCreateIdentityCallbackDeferred = CompletableDeferred()
-            if (hasEnableIdentityCallback == true)
-                preEnableIdentityCallbackDeferred = CompletableDeferred()
-            val preCreateIdentityCallback: PreEventCallback? =
-                preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
-            val preEnableIdentityCallback: PreEventCallback? =
-                preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
-            val context = if (authOptions.enableV3) context else null
-            val encryptionKeyBytes =
-                dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
-                    a.apply { set(i, v.toByte()) }
-                }
+                logV("auth")
+                val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
+                signer = reactSigner
+                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 
-            val options = ClientOptions(
-                api = apiEnvironments(authOptions.environment, authOptions.appVersion),
-                preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback,
-                enableV3 = authOptions.enableV3,
-                appContext = context,
-                dbEncryptionKey = encryptionKeyBytes,
-                dbDirectory = authOptions.dbDirectory,
-                historySyncUrl = authOptions.historySyncUrl
-            )
-            val client = Client().create(account = reactSigner, options = options)
-            clients[client.inboxId] = client
-            ContentJson.Companion
-            signer = null
-            sendEvent("authed", ClientWrapper.encodeToObj(client))
+                if (hasCreateIdentityCallback == true)
+                    preCreateIdentityCallbackDeferred = CompletableDeferred()
+                if (hasEnableIdentityCallback == true)
+                    preEnableIdentityCallbackDeferred = CompletableDeferred()
+                val preCreateIdentityCallback: PreEventCallback? =
+                    preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
+                val preEnableIdentityCallback: PreEventCallback? =
+                    preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+                val context = if (authOptions.enableV3) context else null
+                val encryptionKeyBytes =
+                    dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+
+                val options = ClientOptions(
+                    api = apiEnvironments(authOptions.environment, authOptions.appVersion),
+                    preCreateIdentityCallback = preCreateIdentityCallback,
+                    preEnableIdentityCallback = preEnableIdentityCallback,
+                    enableV3 = authOptions.enableV3,
+                    appContext = context,
+                    dbEncryptionKey = encryptionKeyBytes,
+                    dbDirectory = authOptions.dbDirectory,
+                    historySyncUrl = authOptions.historySyncUrl
+                )
+                val client = Client().create(account = reactSigner, options = options)
+                clients[client.inboxId] = client
+                ContentJson.Companion
+                signer = null
+                sendEvent("authed", ClientWrapper.encodeToObj(client))
+            }
         }
 
         Function("receiveSignature") { requestID: String, signature: String ->
@@ -271,74 +274,78 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
-            logV("createRandom")
-            val privateKey = PrivateKeyBuilder()
+        AsyncFunction("createRandom") Coroutine { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
+            withContext(Dispatchers.IO) {
+                logV("createRandom")
+                val privateKey = PrivateKeyBuilder()
 
-            if (hasCreateIdentityCallback == true)
-                preCreateIdentityCallbackDeferred = CompletableDeferred()
-            if (hasEnableIdentityCallback == true)
-                preEnableIdentityCallbackDeferred = CompletableDeferred()
-            val preCreateIdentityCallback: PreEventCallback? =
-                preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
-            val preEnableIdentityCallback: PreEventCallback? =
-                preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+                if (hasCreateIdentityCallback == true)
+                    preCreateIdentityCallbackDeferred = CompletableDeferred()
+                if (hasEnableIdentityCallback == true)
+                    preEnableIdentityCallbackDeferred = CompletableDeferred()
+                val preCreateIdentityCallback: PreEventCallback? =
+                    preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
+                val preEnableIdentityCallback: PreEventCallback? =
+                    preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
 
-            val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
-            val context = if (authOptions.enableV3) context else null
-            val encryptionKeyBytes =
-                dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
-                    a.apply { set(i, v.toByte()) }
-                }
-
-            val options = ClientOptions(
-                api = apiEnvironments(authOptions.environment, authOptions.appVersion),
-                preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback,
-                enableV3 = authOptions.enableV3,
-                appContext = context,
-                dbEncryptionKey = encryptionKeyBytes,
-                dbDirectory = authOptions.dbDirectory,
-                historySyncUrl = authOptions.historySyncUrl
-
-            )
-            val randomClient = Client().create(account = privateKey, options = options)
-
-            ContentJson.Companion
-            clients[randomClient.inboxId] = randomClient
-            ClientWrapper.encodeToObj(randomClient)
-        }
-
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, dbEncryptionKey: List<Int>?, authParams: String ->
-            logV("createFromKeyBundle")
-            val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
-            try {
+                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
                 val context = if (authOptions.enableV3) context else null
                 val encryptionKeyBytes =
                     dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                         a.apply { set(i, v.toByte()) }
                     }
+
                 val options = ClientOptions(
                     api = apiEnvironments(authOptions.environment, authOptions.appVersion),
+                    preCreateIdentityCallback = preCreateIdentityCallback,
+                    preEnableIdentityCallback = preEnableIdentityCallback,
                     enableV3 = authOptions.enableV3,
                     appContext = context,
                     dbEncryptionKey = encryptionKeyBytes,
                     dbDirectory = authOptions.dbDirectory,
                     historySyncUrl = authOptions.historySyncUrl
+
                 )
-                val bundle =
-                    PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
-                        Base64.decode(
-                            keyBundle,
-                            NO_WRAP
-                        )
-                    )
-                val client = Client().buildFromBundle(bundle = bundle, options = options)
+                val randomClient = Client().create(account = privateKey, options = options)
+
                 ContentJson.Companion
-                clients[client.inboxId] = client
-                ClientWrapper.encodeToObj(client)
-            } catch (e: Exception) {
-                throw XMTPException("Failed to create client: $e")
+                clients[randomClient.inboxId] = randomClient
+                ClientWrapper.encodeToObj(randomClient)
+            }
+        }
+
+        AsyncFunction("createFromKeyBundle") Coroutine { keyBundle: String, dbEncryptionKey: List<Int>?, authParams: String ->
+            withContext(Dispatchers.IO) {
+                logV("createFromKeyBundle")
+                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+                try {
+                    val context = if (authOptions.enableV3) context else null
+                    val encryptionKeyBytes =
+                        dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
+                            a.apply { set(i, v.toByte()) }
+                        }
+                    val options = ClientOptions(
+                        api = apiEnvironments(authOptions.environment, authOptions.appVersion),
+                        enableV3 = authOptions.enableV3,
+                        appContext = context,
+                        dbEncryptionKey = encryptionKeyBytes,
+                        dbDirectory = authOptions.dbDirectory,
+                        historySyncUrl = authOptions.historySyncUrl
+                    )
+                    val bundle =
+                        PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
+                            Base64.decode(
+                                keyBundle,
+                                NO_WRAP
+                            )
+                        )
+                    val client = Client().buildFromBundle(bundle = bundle, options = options)
+                    ContentJson.Companion
+                    clients[client.inboxId] = client
+                    ClientWrapper.encodeToObj(client)
+                } catch (e: Exception) {
+                    throw XMTPException("Failed to create client: $e")
+                }
             }
         }
 
