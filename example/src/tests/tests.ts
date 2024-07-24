@@ -1,15 +1,14 @@
-import { sha256 } from '@noble/hashes/sha256'
 import { FramesClient } from '@xmtp/frames-client'
-import { content, invitation, signature as signatureProto } from '@xmtp/proto'
+import { content, invitation } from '@xmtp/proto'
 import { createHmac } from 'crypto'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import Config from 'react-native-config'
 import { TextEncoder, TextDecoder } from 'text-encoding'
-import { createWalletClient, custom, PrivateKeyAccount, toHex } from 'viem'
+import { PrivateKeyAccount } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, createClients, delayToPropogate } from './test-utils'
+import { Test, assert, delayToPropogate } from './test-utils'
 import {
   Query,
   JSContentCodec,

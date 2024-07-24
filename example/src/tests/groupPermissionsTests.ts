@@ -1,6 +1,6 @@
-import { permissionPolicySet } from 'xmtp-react-native-sdk'
-import { Test, assert, createClients } from './test-utils'
 import { PermissionPolicySet } from 'xmtp-react-native-sdk/lib/types/PermissionPolicySet'
+
+import { Test, assert, createClients } from './test-utils'
 
 export const groupPermissionsTests: Test[] = []
 let counter = 1
@@ -540,14 +540,44 @@ test('can create a group with custom permissions', async () => {
   await alix.conversations.syncGroups()
   const alixGroup = (await alix.conversations.listGroups())[0]
   const permissions = await alixGroup.permissionPolicySet()
-  assert(permissions.addMemberPolicy === customPermissionsPolicySet.addMemberPolicy, `permissions.addMemberPolicy should be ${customPermissionsPolicySet.addMemberPolicy} but was ${permissions.addMemberPolicy}`)
-  assert(permissions.removeMemberPolicy === customPermissionsPolicySet.removeMemberPolicy, `permissions.removeMemberPolicy should be ${customPermissionsPolicySet.removeMemberPolicy} but was ${permissions.removeMemberPolicy}`)
-  assert(permissions.addAdminPolicy === customPermissionsPolicySet.addAdminPolicy, `permissions.addAdminPolicy should be ${customPermissionsPolicySet.addAdminPolicy} but was ${permissions.addAdminPolicy}`)
-  assert(permissions.removeAdminPolicy === customPermissionsPolicySet.removeAdminPolicy, `permissions.removeAdminPolicy should be ${customPermissionsPolicySet.removeAdminPolicy} but was ${permissions.removeAdminPolicy}`)
-  assert(permissions.updateGroupNamePolicy === customPermissionsPolicySet.updateGroupNamePolicy, `permissions.updateGroupNamePolicy should be ${customPermissionsPolicySet.updateGroupNamePolicy} but was ${permissions.updateGroupNamePolicy}`)
-  assert(permissions.updateGroupDescriptionPolicy === customPermissionsPolicySet.updateGroupDescriptionPolicy, `permissions.updateGroupDescriptionPolicy should be ${customPermissionsPolicySet.updateGroupDescriptionPolicy} but was ${permissions.updateGroupDescriptionPolicy}`)
-  assert(permissions.updateGroupImagePolicy === customPermissionsPolicySet.updateGroupImagePolicy, `permissions.updateGroupImagePolicy should be ${customPermissionsPolicySet.updateGroupImagePolicy} but was ${permissions.updateGroupImagePolicy}`)
-  assert(permissions.updateGroupPinnedFrameUrlPolicy === customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy, `permissions.updateGroupPinnedFrameUrlPolicy should be ${customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy} but was ${permissions.updateGroupPinnedFrameUrlPolicy}`)
+  assert(
+    permissions.addMemberPolicy === customPermissionsPolicySet.addMemberPolicy,
+    `permissions.addMemberPolicy should be ${customPermissionsPolicySet.addMemberPolicy} but was ${permissions.addMemberPolicy}`
+  )
+  assert(
+    permissions.removeMemberPolicy ===
+      customPermissionsPolicySet.removeMemberPolicy,
+    `permissions.removeMemberPolicy should be ${customPermissionsPolicySet.removeMemberPolicy} but was ${permissions.removeMemberPolicy}`
+  )
+  assert(
+    permissions.addAdminPolicy === customPermissionsPolicySet.addAdminPolicy,
+    `permissions.addAdminPolicy should be ${customPermissionsPolicySet.addAdminPolicy} but was ${permissions.addAdminPolicy}`
+  )
+  assert(
+    permissions.removeAdminPolicy ===
+      customPermissionsPolicySet.removeAdminPolicy,
+    `permissions.removeAdminPolicy should be ${customPermissionsPolicySet.removeAdminPolicy} but was ${permissions.removeAdminPolicy}`
+  )
+  assert(
+    permissions.updateGroupNamePolicy ===
+      customPermissionsPolicySet.updateGroupNamePolicy,
+    `permissions.updateGroupNamePolicy should be ${customPermissionsPolicySet.updateGroupNamePolicy} but was ${permissions.updateGroupNamePolicy}`
+  )
+  assert(
+    permissions.updateGroupDescriptionPolicy ===
+      customPermissionsPolicySet.updateGroupDescriptionPolicy,
+    `permissions.updateGroupDescriptionPolicy should be ${customPermissionsPolicySet.updateGroupDescriptionPolicy} but was ${permissions.updateGroupDescriptionPolicy}`
+  )
+  assert(
+    permissions.updateGroupImagePolicy ===
+      customPermissionsPolicySet.updateGroupImagePolicy,
+    `permissions.updateGroupImagePolicy should be ${customPermissionsPolicySet.updateGroupImagePolicy} but was ${permissions.updateGroupImagePolicy}`
+  )
+  assert(
+    permissions.updateGroupPinnedFrameUrlPolicy ===
+      customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy,
+    `permissions.updateGroupPinnedFrameUrlPolicy should be ${customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy} but was ${permissions.updateGroupPinnedFrameUrlPolicy}`
+  )
 
   // Verify that bo can not update the pinned frame even though they are a super admin
   try {
@@ -556,7 +586,7 @@ test('can create a group with custom permissions', async () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
-  }  
+  }
 
   // Verify that alix can update the group description
   await alixGroup.updateGroupDescription('new description')
@@ -596,14 +626,14 @@ test('creating a group with invalid permissions should fail', async () => {
 
   // Bo creates a group with Alix and Caro
   try {
-    const boGroup = await bo.conversations.newGroupCustomPermissions(
+    await bo.conversations.newGroupCustomPermissions(
       [alix.address, caro.address],
-    customPermissionsPolicySet
-  )
-  assert(false, 'Group creation should fail')
+      customPermissionsPolicySet
+    )
+    assert(false, 'Group creation should fail')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
   }
   return true
 })
-

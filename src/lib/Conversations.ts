@@ -10,11 +10,11 @@ import { DecodedMessage } from './DecodedMessage'
 import { Group } from './Group'
 import { CreateGroupOptions } from './types/CreateGroupOptions'
 import { EventTypes } from './types/EventTypes'
+import { PermissionPolicySet } from './types/PermissionPolicySet'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
 import { getAddress } from '../utils/address'
-import { PermissionPolicySet } from './types/PermissionPolicySet'
 
 export default class Conversations<
   ContentTypes extends ContentCodec<any>[] = [],
@@ -189,7 +189,7 @@ export default class Conversations<
     )
   }
 
-   /**
+  /**
    * Creates a new group with custom permissions.
    *
    * This method creates a new group with the specified peer addresses and options.
@@ -199,7 +199,7 @@ export default class Conversations<
    * @param {CreateGroupOptions} opts - The options to use for the group.
    * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
    */
-   async newGroupCustomPermissions(
+  async newGroupCustomPermissions(
     peerAddresses: string[],
     permissionPolicySet: PermissionPolicySet,
     opts?: CreateGroupOptions | undefined
