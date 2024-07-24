@@ -191,6 +191,36 @@ export async function createGroup<
   )
 }
 
+export async function createGroupCustomPermissions<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  peerAddresses: string[],
+  permissionPolicySet: PermissionPolicySet,
+  name: string = '',
+  imageUrlSquare: string = '',
+  description: string = '',
+  pinnedFrameUrl: string = ''
+): Promise<Group<ContentTypes>> {
+  const options: CreateGroupParams = {
+    name,
+    imageUrlSquare,
+    description,
+    pinnedFrameUrl,
+  }
+  return new Group(
+    client,
+    JSON.parse(
+      await XMTPModule.createGroupCustomPermissions(
+        client.inboxId,
+        peerAddresses,
+        JSON.stringify(permissionPolicySet),
+        JSON.stringify(options)
+      )
+    )
+  )
+}
+
 export async function listGroups<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(client: Client<ContentTypes>): Promise<Group<ContentTypes>[]> {

@@ -1,6 +1,7 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionPolicySet
 
@@ -16,6 +17,16 @@ class PermissionPolicySetWrapper {
                 PermissionOption.Unknown -> "unknown"
             }
         }
+
+        fun createPermissionOptionFromString(permissionOptionString: String): PermissionOption {
+            return when (permissionOptionString) {
+                "allow" -> PermissionOption.Allow
+                "deny" -> PermissionOption.Deny
+                "admin" -> PermissionOption.Admin
+                "superAdmin" -> PermissionOption.SuperAdmin
+                else -> PermissionOption.Unknown
+            }
+        }
         fun encodeToObj(policySet: PermissionPolicySet): Map<String, Any> {
             return mapOf(
                 "addMemberPolicy" to fromPermissionOption(policySet.addMemberPolicy),
@@ -26,6 +37,20 @@ class PermissionPolicySetWrapper {
                 "updateGroupDescriptionPolicy" to fromPermissionOption(policySet.updateGroupDescriptionPolicy),
                 "updateGroupImagePolicy" to fromPermissionOption(policySet.updateGroupImagePolicy),
                 "updateGroupPinnedFrameUrlPolicy" to fromPermissionOption(policySet.updateGroupPinnedFrameUrlPolicy),
+            )
+        }
+
+        fun createPermissionPolicySetFromJson(permissionPolicySetJson: String): PermissionPolicySet {
+            val jsonObj = JsonParser.parseString(permissionPolicySetJson).asJsonObject
+            return PermissionPolicySet(
+                addMemberPolicy = createPermissionOptionFromString(jsonObj.get("addMemberPolicy").asString),
+                removeMemberPolicy = createPermissionOptionFromString(jsonObj.get("removeMemberPolicy").asString),
+                addAdminPolicy = createPermissionOptionFromString(jsonObj.get("addAdminPolicy").asString),
+                removeAdminPolicy = createPermissionOptionFromString(jsonObj.get("removeAdminPolicy").asString),
+                updateGroupNamePolicy = createPermissionOptionFromString(jsonObj.get("updateGroupNamePolicy").asString),
+                updateGroupDescriptionPolicy = createPermissionOptionFromString(jsonObj.get("updateGroupDescriptionPolicy").asString),
+                updateGroupImagePolicy = createPermissionOptionFromString(jsonObj.get("updateGroupImagePolicy").asString),
+                updateGroupPinnedFrameUrlPolicy = createPermissionOptionFromString(jsonObj.get("updateGroupPinnedFrameUrlPolicy").asString)
             )
         }
 

@@ -744,6 +744,28 @@ public class XMTPModule: Module {
 				throw error
 			}
 		}
+
+		AsyncFunction("createGroupCustomPermissions") { (inboxId: String, peerAddresses: [String], permissionPolicySetJson: String, groupOptionsJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			do {
+				let createGroupParams = CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
+                let permissionPolicySet = try PermissionPolicySetWrapper.createPermissionPolicySet(from: permissionPolicySetJson)
+				let group = try await client.conversations.newGroupCustomPermissions(
+					with: peerAddresses,
+                    permissionPolicySet: permissionPolicySet,
+					name: createGroupParams.groupName,
+					imageUrlSquare: createGroupParams.groupImageUrlSquare, 
+					description: createGroupParams.groupDescription, 
+					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+				)
+				return try GroupWrapper.encode(group, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
 		
 		AsyncFunction("listMemberInboxIds") { (inboxId: String, groupId: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {

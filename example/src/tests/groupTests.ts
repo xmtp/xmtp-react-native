@@ -31,7 +31,7 @@ test('can make a MLS V3 client', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const client = await Client.createRandom({
+  await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,

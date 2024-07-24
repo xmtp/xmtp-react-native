@@ -1,3 +1,5 @@
+import { PermissionPolicySet } from 'xmtp-react-native-sdk/lib/types/PermissionPolicySet'
+
 import { Test, assert, createClients } from './test-utils'
 
 export const groupPermissionsTests: Test[] = []
@@ -57,9 +59,7 @@ test('super admin can add a new admin', async () => {
   const boGroup = (await bo.conversations.listGroups())[0]
   try {
     await boGroup.addAdmin(caro.inboxId)
-    throw new Error(
-      'Expected exception when non-super admin attempts to add an admin.'
-    )
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
@@ -139,6 +139,7 @@ test('in admin only group, members can update group name once they are an admin'
   const boGroup = (await bo.conversations.listGroups())[0]
   try {
     await boGroup.updateGroupName("bo's group")
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
@@ -214,6 +215,7 @@ test('in admin only group, members can not update group name after admin status 
   // Bo can no longer update the group name
   try {
     await boGroup.updateGroupName('new name 2')
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected error
@@ -256,6 +258,7 @@ test('can not remove a super admin from a group', async () => {
   // Bo should not be able to remove alix from the group
   try {
     await boGroup.removeMembersByInboxId([alix.inboxId])
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
@@ -282,6 +285,7 @@ test('can not remove a super admin from a group', async () => {
   // Verify bo can not remove alix bc alix is a super admin
   try {
     await boGroup.removeMembersByInboxId([alix.inboxId])
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
@@ -333,6 +337,7 @@ test('can commit after invalid permissions commit', async () => {
   )
   try {
     await alixGroup.addAdmin(alix.inboxId)
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
@@ -374,7 +379,7 @@ test('group with All Members policy has remove function that is admin only', asy
   // Verify that Alix cannot remove a member
   try {
     await alixGroup.removeMembers([caro.address])
-    assert(false, 'Alix should not be able to remove a member')
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
@@ -427,8 +432,8 @@ test('can update group permissions', async () => {
   await alix.conversations.syncGroups()
   const alixGroup = (await alix.conversations.listGroups())[0]
   try {
-    await alixGroup.updateGroupDescription('new description')
-    assert(false, 'Alix should not be able to update the group description')
+    await alixGroup.updateGroupDescription('new description 2')
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
@@ -437,7 +442,7 @@ test('can update group permissions', async () => {
   // Verify that alix can not update permissions
   try {
     await alixGroup.updateGroupDescriptionPermission('allow')
-    assert(false, 'Alix should not be able to update the group name permission')
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
@@ -478,7 +483,7 @@ test('can update group pinned frame', async () => {
   const alixGroup = (await alix.conversations.listGroups())[0]
   try {
     await alixGroup.updateGroupPinnedFrameUrl('new pinned frame')
-    assert(false, 'Alix should not be able to update the group pinned frame')
+    return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // expected
@@ -511,4 +516,128 @@ test('can update group pinned frame', async () => {
   )
 
   return true
+})
+
+test('can create a group with custom permissions', async () => {
+  // Create clients
+  const [alix, bo, caro] = await createClients(3)
+
+  const customPermissionsPolicySet: PermissionPolicySet = {
+    addMemberPolicy: 'allow',
+    removeMemberPolicy: 'deny',
+    addAdminPolicy: 'admin',
+    removeAdminPolicy: 'superAdmin',
+    updateGroupNamePolicy: 'admin',
+    updateGroupDescriptionPolicy: 'allow',
+    updateGroupImagePolicy: 'admin',
+    updateGroupPinnedFrameUrlPolicy: 'deny',
+  }
+
+  // Bo creates a group with Alix and Caro with custom permissions
+  const boGroup = await bo.conversations.newGroupCustomPermissions(
+    [alix.address, caro.address],
+    customPermissionsPolicySet
+  )
+
+  // Verify that bo can read the correct permissions
+  await alix.conversations.syncGroups()
+  const alixGroup = (await alix.conversations.listGroups())[0]
+  const permissions = await alixGroup.permissionPolicySet()
+  assert(
+    permissions.addMemberPolicy === customPermissionsPolicySet.addMemberPolicy,
+    `permissions.addMemberPolicy should be ${customPermissionsPolicySet.addMemberPolicy} but was ${permissions.addMemberPolicy}`
+  )
+  assert(
+    permissions.removeMemberPolicy ===
+      customPermissionsPolicySet.removeMemberPolicy,
+    `permissions.removeMemberPolicy should be ${customPermissionsPolicySet.removeMemberPolicy} but was ${permissions.removeMemberPolicy}`
+  )
+  assert(
+    permissions.addAdminPolicy === customPermissionsPolicySet.addAdminPolicy,
+    `permissions.addAdminPolicy should be ${customPermissionsPolicySet.addAdminPolicy} but was ${permissions.addAdminPolicy}`
+  )
+  assert(
+    permissions.removeAdminPolicy ===
+      customPermissionsPolicySet.removeAdminPolicy,
+    `permissions.removeAdminPolicy should be ${customPermissionsPolicySet.removeAdminPolicy} but was ${permissions.removeAdminPolicy}`
+  )
+  assert(
+    permissions.updateGroupNamePolicy ===
+      customPermissionsPolicySet.updateGroupNamePolicy,
+    `permissions.updateGroupNamePolicy should be ${customPermissionsPolicySet.updateGroupNamePolicy} but was ${permissions.updateGroupNamePolicy}`
+  )
+  assert(
+    permissions.updateGroupDescriptionPolicy ===
+      customPermissionsPolicySet.updateGroupDescriptionPolicy,
+    `permissions.updateGroupDescriptionPolicy should be ${customPermissionsPolicySet.updateGroupDescriptionPolicy} but was ${permissions.updateGroupDescriptionPolicy}`
+  )
+  assert(
+    permissions.updateGroupImagePolicy ===
+      customPermissionsPolicySet.updateGroupImagePolicy,
+    `permissions.updateGroupImagePolicy should be ${customPermissionsPolicySet.updateGroupImagePolicy} but was ${permissions.updateGroupImagePolicy}`
+  )
+  assert(
+    permissions.updateGroupPinnedFrameUrlPolicy ===
+      customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy,
+    `permissions.updateGroupPinnedFrameUrlPolicy should be ${customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy} but was ${permissions.updateGroupPinnedFrameUrlPolicy}`
+  )
+
+  // Verify that bo can not update the pinned frame even though they are a super admin
+  try {
+    await boGroup.updateGroupPinnedFrameUrl('new pinned frame')
+    return false
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+  }
+
+  // Verify that alix can update the group description
+  await alixGroup.updateGroupDescription('new description')
+  await alixGroup.sync()
+  assert(
+    (await alixGroup.groupDescription()) === 'new description',
+    `alixGroup.groupDescription should be "new description" but was ${alixGroup.groupDescription}`
+  )
+
+  // Verify that alix can not update the group name
+  try {
+    await alixGroup.updateGroupName('new name')
+    return false
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+  }
+
+  return true
+})
+
+test('creating a group with invalid permissions should fail', async () => {
+  // Create clients
+  const [alix, bo, caro] = await createClients(3)
+
+  // Add/Remove admin can not be set to allow
+  const customPermissionsPolicySet: PermissionPolicySet = {
+    addMemberPolicy: 'allow',
+    removeMemberPolicy: 'deny',
+    addAdminPolicy: 'allow',
+    removeAdminPolicy: 'superAdmin',
+    updateGroupNamePolicy: 'admin',
+    updateGroupDescriptionPolicy: 'allow',
+    updateGroupImagePolicy: 'admin',
+    updateGroupPinnedFrameUrlPolicy: 'deny',
+  }
+
+  // Bo creates a group with Alix and Caro
+  try {
+    await bo.conversations.newGroupCustomPermissions(
+      [alix.address, caro.address],
+      customPermissionsPolicySet
+    )
+    return false
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+    console.log('error', error)
+    return true
+  }
 })
