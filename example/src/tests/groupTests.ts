@@ -18,6 +18,7 @@ import {
   GroupUpdatedContent,
   GroupUpdatedCodec,
 } from '../../../src/index'
+import { Wallet } from 'ethers'
 
 export const groupTests: Test[] = []
 let counter = 1
@@ -131,6 +132,65 @@ test('can make a MLS V3 client with encryption key and database directory', asyn
     }`
   )
   return true
+})
+
+test('cannot instantiate a second client with same inbox and different encryption key', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  const key1 = new Uint8Array([
+    105, 19, 239, 41, 136, 71, 223, 187, 3, 211, 57, 207, 184, 183, 13, 32, 90,
+    238, 145, 26, 29, 39, 166, 118, 22, 47, 251, 50, 212, 137, 174, 12,
+  ])
+  const signer1 = new Wallet(Wallet.createRandom().privateKey)
+  const signer2 = new Wallet(Wallet.createRandom().privateKey)
+  const client1 = await Client.create(signer1, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: key1,
+    dbDirectory: dbDirPath,
+  })
+  await Client.create(signer2, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: key1,
+    dbDirectory: dbDirPath,
+  })
+  const group1 = await client1.conversations.newGroup([signer2.address], {
+    name: 'My Test Group',
+  })
+
+  // Now let's generate other client with same wallet but other key
+  const key2 = new Uint8Array([
+    47, 189, 234, 101, 82, 42, 113, 67, 174, 150, 5, 20, 120, 29, 217, 95, 70,
+    8, 162, 238, 47, 253, 99, 51, 182, 65, 239, 118, 203, 15, 154, 88,
+  ])
+
+  try {
+    const client1Copy = await Client.create(signer1, {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      enableV3: true,
+      dbEncryptionKey: key2,
+      dbDirectory: dbDirPath,
+    })
+    const groups = await client1Copy.conversations.listGroups()
+    assert(groups[0].id === group1.id, 'Got back the same group id')
+  } catch (error) {
+    return true
+  }
+
+  // If we got here we managed to instantiate a new client with another encryption key
+  // and get back the same group so there's an issue
+
+  throw new Error(
+    'did not throw when instantiating with another dbEncryptionKey'
+  )
 })
 
 test('can drop a local database', async () => {
