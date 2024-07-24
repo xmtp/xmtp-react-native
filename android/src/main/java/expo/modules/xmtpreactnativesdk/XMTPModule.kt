@@ -32,7 +32,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -349,29 +348,29 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("sign") { inboxId: String, digest: List<Int>, keyType: String, preKeyIndex: Int ->
-            logV("sign")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            val digestBytes =
-                digest.foldIndexed(ByteArray(digest.size)) { i, a, v ->
-                    a.apply {
-                        set(
-                            i,
-                            v.toByte()
-                        )
+        AsyncFunction("sign") Coroutine { inboxId: String, digest: List<Int>, keyType: String, preKeyIndex: Int ->
+            withContext(Dispatchers.IO) {
+                logV("sign")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val digestBytes =
+                    digest.foldIndexed(ByteArray(digest.size)) { i, a, v ->
+                        a.apply {
+                            set(
+                                i,
+                                v.toByte()
+                            )
+                        }
                     }
+                val privateKeyBundle = client.keys
+                val signedPrivateKey = if (keyType == "prekey") {
+                    privateKeyBundle.preKeysList[preKeyIndex]
+                } else {
+                    privateKeyBundle.identityKey
                 }
-            val privateKeyBundle = client.keys
-            val signedPrivateKey = if (keyType == "prekey") {
-                privateKeyBundle.preKeysList[preKeyIndex]
-            } else {
-                privateKeyBundle.identityKey
-            }
-            val signature = runBlocking {
                 val privateKey = PrivateKeyBuilder.buildFromSignedPrivateKey(signedPrivateKey)
-                PrivateKeyBuilder(privateKey).sign(digestBytes)
+                val signature = PrivateKeyBuilder(privateKey).sign(digestBytes)
+                signature.toByteArray().map { it.toInt() and 0xFF }
             }
-            signature.toByteArray().map { it.toInt() and 0xFF }
         }
 
         AsyncFunction("exportPublicKeyBundle") { inboxId: String ->
