@@ -25,6 +25,7 @@ class PermissionPolicySetWrapper {
 	}
 
 	static func encodeToObj(_ policySet: XMTP.PermissionPolicySet) -> [String: Any] {
+        
 		return [
 			"addMemberPolicy": fromPermissionOption(policySet.addMemberPolicy),
 			"removeMemberPolicy": fromPermissionOption(policySet.removeMemberPolicy),

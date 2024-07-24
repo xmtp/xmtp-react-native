@@ -1,4 +1,6 @@
+import { permissionPolicySet } from 'xmtp-react-native-sdk'
 import { Test, assert, createClients } from './test-utils'
+import { PermissionPolicySet } from 'xmtp-react-native-sdk/lib/types/PermissionPolicySet'
 
 export const groupPermissionsTests: Test[] = []
 let counter = 1
@@ -512,3 +514,96 @@ test('can update group pinned frame', async () => {
 
   return true
 })
+
+test('can create a group with custom permissions', async () => {
+  // Create clients
+  const [alix, bo, caro] = await createClients(3)
+
+  const customPermissionsPolicySet: PermissionPolicySet = {
+    addMemberPolicy: 'allow',
+    removeMemberPolicy: 'deny',
+    addAdminPolicy: 'admin',
+    removeAdminPolicy: 'superAdmin',
+    updateGroupNamePolicy: 'admin',
+    updateGroupDescriptionPolicy: 'allow',
+    updateGroupImagePolicy: 'admin',
+    updateGroupPinnedFrameUrlPolicy: 'deny',
+  }
+
+  // Bo creates a group with Alix and Caro with custom permissions
+  const boGroup = await bo.conversations.newGroupCustomPermissions(
+    [alix.address, caro.address],
+    customPermissionsPolicySet
+  )
+
+  // Verify that bo can read the correct permissions
+  await alix.conversations.syncGroups()
+  const alixGroup = (await alix.conversations.listGroups())[0]
+  const permissions = await alixGroup.permissionPolicySet()
+  assert(permissions.addMemberPolicy === customPermissionsPolicySet.addMemberPolicy, `permissions.addMemberPolicy should be ${customPermissionsPolicySet.addMemberPolicy} but was ${permissions.addMemberPolicy}`)
+  assert(permissions.removeMemberPolicy === customPermissionsPolicySet.removeMemberPolicy, `permissions.removeMemberPolicy should be ${customPermissionsPolicySet.removeMemberPolicy} but was ${permissions.removeMemberPolicy}`)
+  assert(permissions.addAdminPolicy === customPermissionsPolicySet.addAdminPolicy, `permissions.addAdminPolicy should be ${customPermissionsPolicySet.addAdminPolicy} but was ${permissions.addAdminPolicy}`)
+  assert(permissions.removeAdminPolicy === customPermissionsPolicySet.removeAdminPolicy, `permissions.removeAdminPolicy should be ${customPermissionsPolicySet.removeAdminPolicy} but was ${permissions.removeAdminPolicy}`)
+  assert(permissions.updateGroupNamePolicy === customPermissionsPolicySet.updateGroupNamePolicy, `permissions.updateGroupNamePolicy should be ${customPermissionsPolicySet.updateGroupNamePolicy} but was ${permissions.updateGroupNamePolicy}`)
+  assert(permissions.updateGroupDescriptionPolicy === customPermissionsPolicySet.updateGroupDescriptionPolicy, `permissions.updateGroupDescriptionPolicy should be ${customPermissionsPolicySet.updateGroupDescriptionPolicy} but was ${permissions.updateGroupDescriptionPolicy}`)
+  assert(permissions.updateGroupImagePolicy === customPermissionsPolicySet.updateGroupImagePolicy, `permissions.updateGroupImagePolicy should be ${customPermissionsPolicySet.updateGroupImagePolicy} but was ${permissions.updateGroupImagePolicy}`)
+  assert(permissions.updateGroupPinnedFrameUrlPolicy === customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy, `permissions.updateGroupPinnedFrameUrlPolicy should be ${customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy} but was ${permissions.updateGroupPinnedFrameUrlPolicy}`)
+
+  // Verify that bo can not update the pinned frame even though they are a super admin
+  try {
+    await boGroup.updateGroupPinnedFrameUrl('new pinned frame')
+    assert(false, 'Bo should not be able to update the group pinned frame')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+  }  
+
+  // Verify that alix can update the group description
+  await alixGroup.updateGroupDescription('new description')
+  await alixGroup.sync()
+  assert(
+    (await alixGroup.groupDescription()) === 'new description',
+    `alixGroup.groupDescription should be "new description" but was ${alixGroup.groupDescription}`
+  )
+
+  // Verify that alix can not update the group name
+  try {
+    await alixGroup.updateGroupName('new name')
+    assert(false, 'Alix should not be able to update the group name')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // expected
+  }
+
+  return true
+})
+
+test('creating a group with invalid permissions should fail', async () => {
+  // Create clients
+  const [alix, bo, caro] = await createClients(3)
+
+  // Add/Remove admin must be admin or super admin
+  const customPermissionsPolicySet: PermissionPolicySet = {
+    addMemberPolicy: 'allow',
+    removeMemberPolicy: 'deny',
+    addAdminPolicy: 'allow',
+    removeAdminPolicy: 'superAdmin',
+    updateGroupNamePolicy: 'admin',
+    updateGroupDescriptionPolicy: 'allow',
+    updateGroupImagePolicy: 'admin',
+    updateGroupPinnedFrameUrlPolicy: 'deny',
+  }
+
+  // Bo creates a group with Alix and Caro
+  try {
+    const boGroup = await bo.conversations.newGroupCustomPermissions(
+      [alix.address, caro.address],
+    customPermissionsPolicySet
+  )
+  assert(false, 'Group creation should fail')
+  } catch (error) {
+    // expected
+  }
+  return true
+})
+

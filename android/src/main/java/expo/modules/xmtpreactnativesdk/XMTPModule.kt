@@ -892,6 +892,25 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("createGroupCustomPermissions") Coroutine { inboxId: String, peerAddresses: List<String>, permissionPolicySetJson: String, groupOptionsJson: String ->
+            withContext(Dispatchers.IO) {
+                logV("createGroup")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val createGroupParams =
+                    CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
+                val permissionPolicySet = PermissionPolicySetWrapper.createPermissionPolicySetFromJson(permissionPolicySetJson)
+                val group = client.conversations.newGroupCustomPermissions(
+                    peerAddresses,
+                    permissionPolicySet,
+                    createGroupParams.groupName,
+                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupDescription,
+                    createGroupParams.groupPinnedFrameUrl
+                )
+                GroupWrapper.encode(client, group)
+            }
+        }
+
 
         AsyncFunction("listMemberInboxIds") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
