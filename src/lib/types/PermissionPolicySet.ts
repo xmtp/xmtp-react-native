@@ -5,7 +5,7 @@ export type PermissionOption =
   | 'superAdmin' // Only the super admin of the group can perform this action
   | 'unknown'
 
-// Add Admin and Remove admin must be set to either 'admin' or 'superAdmin' to be valid
+// Add Admin and Remove admin must be set to either 'admin', 'superAdmin' or 'deny' to be valid
 export type PermissionPolicySet = {
   addMemberPolicy: PermissionOption
   removeMemberPolicy: PermissionOption

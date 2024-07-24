@@ -745,26 +745,27 @@ public class XMTPModule: Module {
 			}
 		}
 
-//		AsyncFunction("createGroupCustomPermissions") { (inboxId: String, peerAddresses: [String], permissionJson: String, groupOptionsJson: String) -> String in
-//			guard let client = await clientsManager.getClient(key: inboxId) else {
-//				throw Error.noClient
-//			}
-//			do {
-//				let createGroupParams = CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
-//				let group = try await client.conversations.newGroupCustomP(
-//					with: peerAddresses,
-//					permissions: permissionLevel, 
-//					name: createGroupParams.groupName, 
-//					imageUrlSquare: createGroupParams.groupImageUrlSquare, 
-//					description: createGroupParams.groupDescription, 
-//					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
-//				)
-//				return try GroupWrapper.encode(group, client: client)
-//			} catch {
-//				print("ERRRO!: \(error.localizedDescription)")
-//				throw error
-//			}
-//		}
+		AsyncFunction("createGroupCustomPermissions") { (inboxId: String, peerAddresses: [String], permissionPolicySetJson: String, groupOptionsJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			do {
+				let createGroupParams = CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
+                let permissionPolicySet = try PermissionPolicySetWrapper.createPermissionPolicySet(from: permissionPolicySetJson)
+				let group = try await client.conversations.newGroupCustomPermissions(
+					with: peerAddresses,
+                    permissionPolicySet: permissionPolicySet,
+					name: createGroupParams.groupName,
+					imageUrlSquare: createGroupParams.groupImageUrlSquare, 
+					description: createGroupParams.groupDescription, 
+					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+				)
+				return try GroupWrapper.encode(group, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
 		
 		AsyncFunction("listMemberInboxIds") { (inboxId: String, groupId: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
@@ -1452,13 +1453,6 @@ public class XMTPModule: Module {
             throw Error.invalidPermissionOption
         }
     }
-    
-//    func createPermissionPolicySetFromJSON(permissionPolicySetJson: String) -> PermissionPolicySet {
-//        let data = permissionPolicySetJson.data(using: .utf8) ?? Data()
-//        let jsonObj = (try? JSONSerialization.jsonObject(with: data, options: [])) as? [String: Any] ?? [:]
-//        
-//        return PermissionPolicySet
-//    }
 
 	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, enableV3: Bool = false, dbEncryptionKey: Data? = nil, dbDirectory: String? = nil, historySyncUrl: String? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
