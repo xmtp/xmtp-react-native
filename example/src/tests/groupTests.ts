@@ -267,12 +267,12 @@ test('group message delivery status', async () => {
   )
 
   const alixMessagesFiltered: DecodedMessage[] = await alixGroup.messages({
-    deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
+    deliveryStatus: MessageDeliveryStatus.PUBLISHED,
   })
 
   assert(
-    alixMessagesFiltered.length === 1,
-    `the messages length should be 1 but was ${alixMessagesFiltered.length}`
+    alixMessagesFiltered.length === 2,
+    `the messages length should be 2 but was ${alixMessagesFiltered.length}`
   )
 
   await alixGroup.sync()
