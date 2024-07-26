@@ -56,12 +56,12 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.14)
   - hermes-engine/Pre-built (0.71.14)
   - libevent (2.1.12)
-  - LibXMTP (0.5.6-beta2)
+  - LibXMTP (0.5.6-beta3)
   - Logging (1.0.0)
   - MessagePacker (0.4.7)
-  - MMKV (1.3.7):
-    - MMKVCore (~> 1.3.7)
-  - MMKVCore (1.3.7)
+  - MMKV (1.3.9):
+    - MMKVCore (~> 1.3.9)
+  - MMKVCore (1.3.9)
   - OpenSSL-Universal (1.1.2200)
   - RCT-Folly (2021.07.22.00):
     - boost
@@ -449,16 +449,16 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (0.13.11):
+  - XMTP (0.13.12):
     - Connect-Swift (= 0.12.0)
     - GzipSwift
-    - LibXMTP (= 0.5.6-beta2)
+    - LibXMTP (= 0.5.6-beta3)
     - web3.swift
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 0.13.11)
+    - XMTP (= 0.13.12)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -711,11 +711,11 @@ SPEC CHECKSUMS:
   GzipSwift: 893f3e48e597a1a4f62fafcb6514220fcf8287fa
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  LibXMTP: cae91842555974022b1fda751a63e695fc45fc7f
+  LibXMTP: 37008ba93a197bdfdcef5a1d7a6a3206e26a958e
   Logging: 9ef4ecb546ad3169398d5a723bc9bea1c46bef26
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
-  MMKV: 36a22a9ec84c9bb960613a089ddf6f48be9312b0
-  MMKVCore: 158e61c8516401a9fac730288acb29e6fc19bbf9
+  MMKV: 817ba1eea17421547e01e087285606eb270a8dcb
+  MMKVCore: af055b00e27d88cd92fad301c5fecd1ff9b26dd9
   OpenSSL-Universal: 6e1ae0555546e604dbc632a2b9a24a9c46c41ef6
   RCT-Folly: 424b8c9a7a0b9ab2886ffe9c3b041ef628fd4fb1
   RCTRequired: e9df143e880d0e879e7a498dc06923d728809c79
@@ -763,8 +763,8 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: 407a385e97fd206c4fbe880cc84123989167e0d1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 8c00384ebe4ca0952093236c02f04cbf4abc7b0e
-  XMTPReactNative: 4c7955a5b186a7a2cbbd4c574d544b2e89f4bf0e
+  XMTP: 9be1cec6720c282d91ebfa054a10a426a9b9d123
+  XMTPReactNative: 83d101a1ff82329361b10c11a3f366ddb7eadc73
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 95d6ace79946933ecf80684613842ee553dd76a2
