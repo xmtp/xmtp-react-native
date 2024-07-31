@@ -292,6 +292,15 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 		}
+		
+		AsyncFunction("getOrCreateInboxId") { (address: String, environment: String) in
+			do {
+				let options = createClientConfig(env: environment, appVersion: nil)
+				return try await XMTP.Client.getOrCreateInboxId(options: options, address: address)
+			} catch {
+				throw Error.noClient
+			}
+		}
 
 		AsyncFunction("encryptAttachment") { (inboxId: String, fileJson: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
