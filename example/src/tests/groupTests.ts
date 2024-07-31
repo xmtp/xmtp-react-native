@@ -912,6 +912,16 @@ test('can stream groups', async () => {
   return true
 })
 
+test('can list groups', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3)
+
+  // Add one group and one conversation
+  const boGroup = await boClient.conversations.newGroup([alixClient.address])
+
+
+  return true
+})
+
 test('can list all groups and conversations', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 

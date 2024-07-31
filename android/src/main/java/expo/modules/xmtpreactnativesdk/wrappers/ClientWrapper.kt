@@ -9,7 +9,8 @@ class ClientWrapper {
             return mapOf(
                 "inboxId" to client.inboxId,
                 "address" to client.address,
-                "installationId" to client.installationId
+                "installationId" to client.installationId,
+                "dbPath" to client.dbPath
             )
         }
 
