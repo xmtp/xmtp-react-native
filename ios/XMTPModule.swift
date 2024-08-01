@@ -160,8 +160,8 @@ public class XMTPModule: Module {
 			let options = self.createClientConfig(
 				env: authOptions.environment,
 				appVersion: authOptions.appVersion,
-				preCreateIdentityCallback: preCreateIdentityCallback,
 				preEnableIdentityCallback: preEnableIdentityCallback,
+				preCreateIdentityCallback: preCreateIdentityCallback,
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 				enableV3: authOptions.enableV3,
 				dbEncryptionKey: encryptionKeyData,
