@@ -21,11 +21,10 @@ async function createGroups(
   const addresses: string[] = peers.map((client) => client.address)
   for (let i = 0; i < numGroups; i++) {
     await client.conversations.newGroup(addresses, {
-      // name: `group ${groups}`,
-      // imageUrlSquare: `www.group${groups}.com`,
-      // description: `group ${group}`,
+      name: `group ${groups}`,
+      imageUrlSquare: `www.group${groups}.com`,
+      description: `group ${group}`,
     })
-
     groups++
   }
   return groups
@@ -61,7 +60,7 @@ test('testing large group listing with metadata performance', async () => {
 
 test('testing large group listing with members performance', async () => {
   const [alixClient] = await createClients(1)
-  const peers = await createClients(20)
+  const peers = await createClients(10)
 
   await createGroups(alixClient, peers, 5)
 
