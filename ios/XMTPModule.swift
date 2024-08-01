@@ -293,7 +293,7 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("getOrCreateInboxId") { (address: String, environment: String) in
+		AsyncFunction("getOrCreateInboxId") { (address: String, environment: String) -> String in
 			do {
 				let options = createClientConfig(env: environment, appVersion: nil)
 				return try await XMTP.Client.getOrCreateInboxId(options: options, address: address)

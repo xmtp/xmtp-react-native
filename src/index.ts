@@ -513,6 +513,13 @@ export async function staticCanMessage(
   )
 }
 
+export async function getOrCreateInboxId(
+  address: string,
+  environment: 'local' | 'dev' | 'production'
+): Promise<InboxId> {
+  return await XMTPModule.getOrCreateInboxId(getAddress(address), environment)
+}
+
 export async function encryptAttachment(
   inboxId: string,
   file: DecryptedLocalAttachment
