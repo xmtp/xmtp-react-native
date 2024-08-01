@@ -15,6 +15,7 @@ struct ClientWrapper {
 			"inboxId": client.inboxID,
 			"address": client.address,
 			"installationId": client.installationID,
+			"dbPath": client.dbPath,
 		]
 	}
 

@@ -460,6 +460,18 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("getOrCreateInboxId") Coroutine { address: String, environment: String ->
+            withContext(Dispatchers.IO) {
+                try {
+                    logV("getOrCreateInboxId")
+                    val options = ClientOptions(api = apiEnvironments(environment, null))
+                    Client.getOrCreateInboxId(options = options, address = address)
+                } catch (e: Exception) {
+                    throw XMTPException("Failed to getOrCreateInboxId: ${e.message}")
+                }
+            }
+        }
+
         AsyncFunction("encryptAttachment") { inboxId: String, fileJson: String ->
             logV("encryptAttachment")
             val client = clients[inboxId] ?: throw XMTPException("No client")
