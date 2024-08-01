@@ -152,11 +152,16 @@ export class Client<
     enableSubscription?: Subscription,
     authInboxSubscription?: Subscription
   ): void {
-    [createSubscription, enableSubscription, authInboxSubscription, this.signSubscription, this.authSubscription]
-      .forEach(subscription => subscription?.remove());
-  
-    this.signSubscription = null;
-    this.authSubscription = null;
+    ;[
+      createSubscription,
+      enableSubscription,
+      authInboxSubscription,
+      this.signSubscription,
+      this.authSubscription,
+    ].forEach((subscription) => subscription?.remove())
+
+    this.signSubscription = null
+    this.authSubscription = null
   }
 
   /**
@@ -328,10 +333,10 @@ export class Client<
 
   /**
    * Static method to determine the inboxId for the address.
-   * 
+   *
    * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
    * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
-   * @returns {Promise<InboxId>} 
+   * @returns {Promise<InboxId>}
    */
   static async getOrCreateInboxId(
     address: string,

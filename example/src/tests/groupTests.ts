@@ -49,12 +49,11 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
-
 test('calls preAuthenticateToInboxCallback when supplied', async () => {
   let isCallbackCalled = 0
   let isPreAuthCalled = false
   const preAuthenticateToInboxCallback = () => {
-    isCallbackCalled++;
+    isCallbackCalled++
     isPreAuthCalled = true
   }
   const preEnableIdentityCallback = () => {
@@ -65,11 +64,9 @@ test('calls preAuthenticateToInboxCallback when supplied', async () => {
   }
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135,
-    145,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
 
-  
   await Client.createRandom({
     env: 'local',
     enableV3: true,
