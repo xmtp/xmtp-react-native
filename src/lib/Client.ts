@@ -33,6 +33,7 @@ export class Client<
   address: string
   inboxId: InboxId
   installationId: string
+  dbPath: string
   conversations: Conversations<ContentTypes>
   contacts: Contacts
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
@@ -104,6 +105,7 @@ export class Client<
             inboxId: string
             address: string
             installationId: string
+            dbPath: string
           }) => {
             this.removeSubscription(enableSubscription)
             this.removeSubscription(createSubscription)
@@ -114,6 +116,7 @@ export class Client<
                 message.address,
                 message.inboxId as InboxId,
                 message.installationId,
+                message.dbPath,
                 options.codecs || []
               )
             )
@@ -185,6 +188,7 @@ export class Client<
       client['address'],
       client['inboxId'],
       client['installationId'],
+      client['dbPath'],
       options?.codecs || []
     )
   }
@@ -226,6 +230,7 @@ export class Client<
       client['address'],
       client['inboxId'],
       client['installationId'],
+      client['dbPath'],
       options.codecs || []
     )
   }
@@ -303,15 +308,32 @@ export class Client<
     return { enableSubscription, createSubscription }
   }
 
+  /**
+   * Static method to determine the inboxId for the address.
+   * 
+   * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
+   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
+   * @returns {Promise<InboxId>} 
+   */
+  static async getOrCreateInboxId(
+    address: string,
+    opts?: Partial<ClientOptions>
+  ): Promise<InboxId> {
+    const options = defaultOptions(opts)
+    return await XMTPModule.getOrCreateInboxId(address, options.env)
+  }
+
   constructor(
     address: string,
     inboxId: InboxId,
     installationId: string,
+    dbPath: string,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {
     this.address = address
     this.inboxId = inboxId
     this.installationId = installationId
+    this.dbPath = dbPath
     this.conversations = new Conversations(this)
     this.contacts = new Contacts(this)
     this.codecRegistry = {}

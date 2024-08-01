@@ -20,6 +20,10 @@ struct GroupWrapper {
 			"topic": group.topic,
 			"creatorInboxId": try group.creatorInboxId(),
 			"isActive": try group.isActive(),
+			"name": try group.groupName(),
+			"imageUrlSquare": try group.groupImageUrlSquare(),
+			"description": try group.groupDescription(),
+			"pinnedFrameUrl": try group.groupPinnedFrameUrl()
 		]
 	}
 

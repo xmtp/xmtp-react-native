@@ -31,13 +31,21 @@ test('can make a MLS V3 client', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  await Client.createRandom({
+  const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 
+  const inboxId = await Client.getOrCreateInboxId(client.address, {
+    env: 'local',
+  })
+
+  assert(
+    client.inboxId === inboxId,
+    `inboxIds should match but were ${client.inboxId} and ${inboxId}`
+  )
   return true
 })
 
@@ -53,6 +61,10 @@ test('can delete a local database', async () => {
     }`
   )
 
+  assert(
+    client.dbPath !== '',
+    `client dbPath should be set but was ${client.dbPath}`
+  )
   await client.deleteLocalDatabase()
   client = await Client.createRandom({
     env: 'local',
@@ -908,6 +920,56 @@ test('can stream groups', async () => {
   if ((groups.length as number) !== 4) {
     throw Error('Unexpected num groups (should be 4): ' + groups.length)
   }
+
+  return true
+})
+
+test('can list groups', async () => {
+  const [alixClient, boClient] = await createClients(2)
+
+  const group1 = await boClient.conversations.newGroup([alixClient.address], {
+    name: 'group1 name',
+    imageUrlSquare: 'www.group1image.com',
+  })
+  const group2 = await boClient.conversations.newGroup([alixClient.address], {
+    name: 'group2 name',
+    imageUrlSquare: 'www.group2image.com',
+  })
+
+  const boGroups = await boClient.conversations.listGroups()
+  await alixClient.conversations.syncGroups()
+  const alixGroups = await alixClient.conversations.listGroups()
+
+  assert(
+    boGroups.length === alixGroups.length,
+    `group lengths should be the same but bo was ${boGroups.length} and alix was ${alixGroups.length}`
+  )
+
+  const boGroup1 = await boClient.conversations.findGroup(group1.id)
+  const boGroup2 = await boClient.conversations.findGroup(group2.id)
+
+  const alixGroup1 = await alixClient.conversations.findGroup(group1.id)
+  const alixGroup2 = await alixClient.conversations.findGroup(group2.id)
+
+  assert(
+    boGroup2?.name === 'group2 name',
+    `Group 2 name for bo should be group2 name but was ${boGroup2?.name}`
+  )
+
+  assert(
+    boGroup1?.imageUrlSquare === 'www.group1image.com',
+    `Group 2 url for bo should be www.group1image.com but was ${boGroup1?.imageUrlSquare}`
+  )
+
+  assert(
+    alixGroup1?.name === 'group1 name',
+    `Group 1 name for alix should be group1 name but was ${alixGroup1?.name}`
+  )
+
+  assert(
+    alixGroup2?.imageUrlSquare === 'www.group2image.com',
+    `Group 2 url for alix should be www.group2image.com but was ${alixGroup2?.imageUrlSquare}`
+  )
 
   return true
 })
