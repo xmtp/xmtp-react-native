@@ -49,6 +49,45 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
+test('calls preAuthenticateToInboxCallback when supplied', async () => {
+  let isCallbackCalled = 0
+  let isPreAuthCalled = false
+  const preAuthenticateToInboxCallback = () => {
+    isCallbackCalled++
+    isPreAuthCalled = true
+  }
+  const preEnableIdentityCallback = () => {
+    isCallbackCalled++
+  }
+  const preCreateIdentityCallback = () => {
+    isCallbackCalled++
+  }
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+
+  await Client.createRandom({
+    env: 'local',
+    enableV3: true,
+    preEnableIdentityCallback,
+    preCreateIdentityCallback,
+    preAuthenticateToInboxCallback,
+    dbEncryptionKey: keyBytes,
+  })
+
+  assert(
+    isCallbackCalled === 3,
+    `callback should be called 3 times but was ${isCallbackCalled}`
+  )
+
+  if (!isPreAuthCalled) {
+    throw new Error('preAuthenticateToInboxCallback not called')
+  }
+
+  return true
+})
+
 test('can delete a local database', async () => {
   let [client, anotherClient] = await createClients(2)
 

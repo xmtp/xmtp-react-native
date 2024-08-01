@@ -62,7 +62,7 @@ export class Client<
     ) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
-    const { enableSubscription, createSubscription } =
+    const { enableSubscription, createSubscription, authInboxSubscription } =
       this.setupSubscriptions(options)
     const signer = getSigner(wallet)
     if (!signer) {
@@ -90,10 +90,11 @@ export class Client<
             } catch (e) {
               const errorMessage = 'ERROR in create. User rejected signature'
               console.info(errorMessage, e)
-              this.removeSubscription(enableSubscription)
-              this.removeSubscription(createSubscription)
-              this.removeSignSubscription()
-              this.removeAuthSubscription()
+              this.removeAllSubscriptions(
+                createSubscription,
+                enableSubscription,
+                authInboxSubscription
+              )
               reject(errorMessage)
             }
           }
@@ -107,10 +108,11 @@ export class Client<
             installationId: string
             dbPath: string
           }) => {
-            this.removeSubscription(enableSubscription)
-            this.removeSubscription(createSubscription)
-            this.removeSignSubscription()
-            this.removeAuthSubscription()
+            this.removeAllSubscriptions(
+              createSubscription,
+              enableSubscription,
+              authInboxSubscription
+            )
             resolve(
               new Client(
                 message.address,
@@ -128,29 +130,38 @@ export class Client<
           options.appVersion,
           Boolean(createSubscription),
           Boolean(enableSubscription),
+          Boolean(authInboxSubscription),
           Boolean(options.enableV3),
           options.dbEncryptionKey,
           options.dbDirectory,
           options.historySyncUrl
         )
       })().catch((error) => {
+        this.removeAllSubscriptions(
+          createSubscription,
+          enableSubscription,
+          authInboxSubscription
+        )
         console.error('ERROR in create: ', error)
       })
     })
   }
 
-  private static removeSignSubscription(): void {
-    if (this.signSubscription) {
-      this.signSubscription.remove()
-      this.signSubscription = null
-    }
-  }
+  private static removeAllSubscriptions(
+    createSubscription?: Subscription,
+    enableSubscription?: Subscription,
+    authInboxSubscription?: Subscription
+  ): void {
+    ;[
+      createSubscription,
+      enableSubscription,
+      authInboxSubscription,
+      this.signSubscription,
+      this.authSubscription,
+    ].forEach((subscription) => subscription?.remove())
 
-  private static removeAuthSubscription(): void {
-    if (this.authSubscription) {
-      this.authSubscription.remove()
-      this.authSubscription = null
-    }
+    this.signSubscription = null
+    this.authSubscription = null
   }
 
   /**
@@ -169,20 +180,22 @@ export class Client<
     ) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
-    const { enableSubscription, createSubscription } =
+    const { createSubscription, enableSubscription, authInboxSubscription } =
       this.setupSubscriptions(options)
     const client = await XMTPModule.createRandom(
       options.env,
       options.appVersion,
       Boolean(createSubscription),
       Boolean(enableSubscription),
+      Boolean(authInboxSubscription),
       Boolean(options.enableV3),
       options.dbEncryptionKey,
       options.dbDirectory,
       options.historySyncUrl
     )
-    this.removeSubscription(enableSubscription)
     this.removeSubscription(createSubscription)
+    this.removeSubscription(enableSubscription)
+    this.removeSubscription(authInboxSubscription)
 
     return new Client(
       client['address'],
@@ -284,8 +297,9 @@ export class Client<
   }
 
   private static setupSubscriptions(opts: ClientOptions): {
-    enableSubscription?: Subscription
     createSubscription?: Subscription
+    enableSubscription?: Subscription
+    authInboxSubscription?: Subscription
   } {
     const enableSubscription = this.addSubscription(
       'preEnableIdentityCallback',
@@ -305,15 +319,24 @@ export class Client<
       }
     )
 
-    return { enableSubscription, createSubscription }
+    const authInboxSubscription = this.addSubscription(
+      'preAuthenticateToInboxCallback',
+      opts,
+      async () => {
+        await this.executeCallback(opts?.preAuthenticateToInboxCallback)
+        XMTPModule.preAuthenticateToInboxCallbackCompleted()
+      }
+    )
+
+    return { createSubscription, enableSubscription, authInboxSubscription }
   }
 
   /**
    * Static method to determine the inboxId for the address.
-   * 
+   *
    * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
    * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
-   * @returns {Promise<InboxId>} 
+   * @returns {Promise<InboxId>}
    */
   static async getOrCreateInboxId(
     address: string,
@@ -541,6 +564,7 @@ export type ClientOptions = {
    */
   preCreateIdentityCallback?: () => Promise<void> | void
   preEnableIdentityCallback?: () => Promise<void> | void
+  preAuthenticateToInboxCallback?: () => Promise<void> | void
   /**
    * Specify whether to enable V3 version of MLS (Group Chat)
    */

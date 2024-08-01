@@ -155,6 +155,7 @@ class XMTPModule : Module() {
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
     private var preEnableIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
     private var preCreateIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
+    private var preAuthenticateToInboxCallbackDeferred: CompletableDeferred<Unit>? = null
 
 
     override fun definition() = ModuleDefinition {
@@ -165,6 +166,7 @@ class XMTPModule : Module() {
             "authed",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
+            "preAuthenticateToInboxCallback",
             // Conversations
             "conversation",
             "group",
@@ -227,7 +229,7 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
+        AsyncFunction("auth") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             withContext(Dispatchers.IO) {
 
                 logV("auth")
@@ -239,10 +241,14 @@ class XMTPModule : Module() {
                     preCreateIdentityCallbackDeferred = CompletableDeferred()
                 if (hasEnableIdentityCallback == true)
                     preEnableIdentityCallbackDeferred = CompletableDeferred()
+                if (hasAuthInboxCallback == true)
+                    preAuthenticateToInboxCallbackDeferred = CompletableDeferred()
                 val preCreateIdentityCallback: PreEventCallback? =
                     preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
                 val preEnableIdentityCallback: PreEventCallback? =
                     preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+                val preAuthenticateToInboxCallback: PreEventCallback? =
+                    preAuthenticateToInboxCallback.takeIf { hasAuthInboxCallback == true }
                 val context = if (authOptions.enableV3) context else null
                 val encryptionKeyBytes =
                     dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
@@ -253,6 +259,7 @@ class XMTPModule : Module() {
                     api = apiEnvironments(authOptions.environment, authOptions.appVersion),
                     preCreateIdentityCallback = preCreateIdentityCallback,
                     preEnableIdentityCallback = preEnableIdentityCallback,
+                    preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
                     enableV3 = authOptions.enableV3,
                     appContext = context,
                     dbEncryptionKey = encryptionKeyBytes,
@@ -273,7 +280,7 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") Coroutine { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
+        AsyncFunction("createRandom") Coroutine { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("createRandom")
                 val privateKey = PrivateKeyBuilder()
@@ -282,10 +289,14 @@ class XMTPModule : Module() {
                     preCreateIdentityCallbackDeferred = CompletableDeferred()
                 if (hasEnableIdentityCallback == true)
                     preEnableIdentityCallbackDeferred = CompletableDeferred()
+                if (hasPreAuthenticateToInboxCallback == true)
+                    preAuthenticateToInboxCallbackDeferred = CompletableDeferred()
                 val preCreateIdentityCallback: PreEventCallback? =
                     preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
                 val preEnableIdentityCallback: PreEventCallback? =
                     preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+                val preAuthenticateToInboxCallback: PreEventCallback? =
+                    preAuthenticateToInboxCallback.takeIf { hasPreAuthenticateToInboxCallback == true }
 
                 val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
                 val context = if (authOptions.enableV3) context else null
@@ -298,6 +309,7 @@ class XMTPModule : Module() {
                     api = apiEnvironments(authOptions.environment, authOptions.appVersion),
                     preCreateIdentityCallback = preCreateIdentityCallback,
                     preEnableIdentityCallback = preEnableIdentityCallback,
+                    preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
                     enableV3 = authOptions.enableV3,
                     appContext = context,
                     dbEncryptionKey = encryptionKeyBytes,
@@ -1536,6 +1548,11 @@ class XMTPModule : Module() {
             preEnableIdentityCallbackDeferred?.complete(Unit)
         }
 
+        Function("preAuthenticateToInboxCallbackCompleted") {
+            logV("preAuthenticateToInboxCallbackCompleted")
+            preAuthenticateToInboxCallbackDeferred?.complete(Unit)
+        }
+
         AsyncFunction("allowGroups") Coroutine { inboxId: String, groupIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("allowGroups")
@@ -1855,6 +1872,12 @@ class XMTPModule : Module() {
         sendEvent("preCreateIdentityCallback")
         preCreateIdentityCallbackDeferred?.await()
         preCreateIdentityCallbackDeferred = null
+    }
+
+    private val preAuthenticateToInboxCallback: suspend () -> Unit = {
+        sendEvent("preAuthenticateToInboxCallback")
+        preAuthenticateToInboxCallbackDeferred?.await()
+        preAuthenticateToInboxCallbackDeferred = null
     }
 }
 

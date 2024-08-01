@@ -42,6 +42,7 @@ public class XMTPModule: Module {
 	let subscriptionsManager = IsolatedManager<Task<Void, Never>>()
 	private var preEnableIdentityCallbackDeferred: DispatchSemaphore?
 	private var preCreateIdentityCallbackDeferred: DispatchSemaphore?
+	private var preAuthenticateToInboxCallbackDeferred: DispatchSemaphore?
 
 	actor ClientsManager {
 		private var clients: [String: XMTP.Client] = [:]
@@ -71,6 +72,7 @@ public class XMTPModule: Module {
             "authed",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
+			"preAuthenticateToInboxCallback",
             // Conversations
             "conversation",
             "group",
@@ -137,7 +139,7 @@ public class XMTPModule: Module {
 		//
 		// Auth functions
 		//
-		AsyncFunction("auth") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
+		AsyncFunction("auth") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
 			let signer = ReactNativeSigner(module: self, address: address)
 			self.signer = signer
 			if(hasCreateIdentityCallback ?? false) {
@@ -146,12 +148,26 @@ public class XMTPModule: Module {
 			if(hasEnableIdentityCallback ?? false) {
 				self.preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
 			}
+			if(hasAuthenticateToInboxCallback ?? false) {
+				self.preAuthenticateToInboxCallbackDeferred = DispatchSemaphore(value: 0)
+			}
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+			let preAuthenticateToInboxCallback: PreEventCallback? = hasAuthenticateToInboxCallback ?? false ? self.preAuthenticateToInboxCallback : nil
 			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			
-			let options = self.createClientConfig(env: authOptions.environment, appVersion: authOptions.appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: authOptions.enableV3, dbEncryptionKey: encryptionKeyData, dbDirectory: authOptions.dbDirectory, historySyncUrl: authOptions.historySyncUrl)
+			let options = self.createClientConfig(
+				env: authOptions.environment,
+				appVersion: authOptions.appVersion,
+				preEnableIdentityCallback: preEnableIdentityCallback,
+				preCreateIdentityCallback: preCreateIdentityCallback,
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+				enableV3: authOptions.enableV3,
+				dbEncryptionKey: encryptionKeyData,
+				dbDirectory: authOptions.dbDirectory,
+				historySyncUrl: authOptions.historySyncUrl
+			)
 			let client = try await XMTP.Client.create(account: signer, options: options)
 			await self.clientsManager.updateClient(key: client.inboxID, client: client)
 			self.signer = nil
@@ -163,7 +179,7 @@ public class XMTPModule: Module {
 		}
 
 		// Generate a random wallet and set the client to that
-		AsyncFunction("createRandom") { (hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
+		AsyncFunction("createRandom") { (hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
 
 			let privateKey = try PrivateKey.generate()
 			if(hasCreateIdentityCallback ?? false) {
@@ -172,12 +188,26 @@ public class XMTPModule: Module {
 			if(hasEnableIdentityCallback ?? false) {
 				preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
 			}
+			if(hasAuthenticateToInboxCallback ?? false) {
+				preAuthenticateToInboxCallbackDeferred = DispatchSemaphore(value: 0)
+			}
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+			let preAuthenticateToInboxCallback: PreEventCallback? = hasAuthenticateToInboxCallback ?? false ? self.preAuthenticateToInboxCallback : nil
 			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 
-			let options = createClientConfig(env: authOptions.environment, appVersion: authOptions.appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: authOptions.enableV3, dbEncryptionKey: encryptionKeyData, dbDirectory: authOptions.dbDirectory, historySyncUrl: authOptions.historySyncUrl)
+			let options = createClientConfig(
+				env: authOptions.environment,
+				appVersion: authOptions.appVersion,
+				preEnableIdentityCallback: preEnableIdentityCallback,
+				preCreateIdentityCallback: preCreateIdentityCallback,
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+				enableV3: authOptions.enableV3,
+				dbEncryptionKey: encryptionKeyData,
+				dbDirectory: authOptions.dbDirectory,
+				historySyncUrl: authOptions.historySyncUrl
+			)
 			let client = try await Client.create(account: privateKey, options: options)
 
 			await clientsManager.updateClient(key: client.inboxID, client: client)
@@ -1414,6 +1444,13 @@ public class XMTPModule: Module {
 				self.preCreateIdentityCallbackDeferred = nil
 			}
 		}
+
+		Function("preAuthenticateToInboxCallbackCompleted") {
+			DispatchQueue.global().async {
+				self.preAuthenticateToInboxCallbackDeferred?.signal()
+				self.preAuthenticateToInboxCallbackDeferred = nil
+			}
+		}
     
 		AsyncFunction("allowGroups") { (inboxId: String, groupIds: [String]) in
 		  guard let client = await clientsManager.getClient(key: inboxId) else {
@@ -1463,7 +1500,7 @@ public class XMTPModule: Module {
         }
     }
 
-	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, enableV3: Bool = false, dbEncryptionKey: Data? = nil, dbDirectory: String? = nil, historySyncUrl: String? = nil) -> XMTP.ClientOptions {
+	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, preAuthenticateToInboxCallback: PreEventCallback? = nil, enableV3: Bool = false, dbEncryptionKey: Data? = nil, dbDirectory: String? = nil, historySyncUrl: String? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
 		switch env {
 		case "local":
@@ -1471,19 +1508,19 @@ public class XMTPModule: Module {
 				env: XMTP.XMTPEnvironment.local,
 				isSecure: false,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: enableV3, encryptionKey: dbEncryptionKey, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, preAuthenticateToInboxCallback: preAuthenticateToInboxCallback, enableV3: enableV3, encryptionKey: dbEncryptionKey, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
 		case "production":
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
 				isSecure: true,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: enableV3, encryptionKey: dbEncryptionKey, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, preAuthenticateToInboxCallback: preAuthenticateToInboxCallback, enableV3: enableV3, encryptionKey: dbEncryptionKey, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
 		default:
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
 				isSecure: true,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: enableV3, encryptionKey: dbEncryptionKey, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, preAuthenticateToInboxCallback: preAuthenticateToInboxCallback, enableV3: enableV3, encryptionKey: dbEncryptionKey, dbDirectory: dbDirectory, historySyncUrl: historySyncUrl)
 		}
 	}
 
@@ -1733,5 +1770,10 @@ public class XMTPModule: Module {
 	func preCreateIdentityCallback() {
 		sendEvent("preCreateIdentityCallback")
 		self.preCreateIdentityCallbackDeferred?.wait()
+	}
+
+	func preAuthenticateToInboxCallback() {
+		sendEvent("preAuthenticateToInboxCallback")
+		self.preAuthenticateToInboxCallbackDeferred?.wait()
 	}
 }
