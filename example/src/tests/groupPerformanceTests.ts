@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-extra-non-null-assertion */
 import { group } from 'console'
 import { Client, Group } from 'xmtp-react-native-sdk'
 
 import { Test, assert, createClients } from './test-utils'
+import { supportedCodecs } from '../contentTypes/contentTypes'
 
 export const groupPerformanceTests: Test[] = []
 let counter = 1
@@ -74,7 +76,150 @@ async function createMessages(
 //   return true
 // })
 
+// test('testing large groups with large members and messages performance', async () => {
+//   const [alixClient] = await createClients(1)
+//   const peers = await createClients(10)
+//   const boClient = peers[0]
+//   const caroClient = peers[1]
+//   const davonClient = peers[2]
+//   const eriClient = peers[3]
+//   const frankieClient = peers[4]
+
+//   const [alixGroup] = await createGroups(alixClient, peers, 1, 100)
+
+//   let start = Date.now()
+//   let messages = await alixGroup.messages()
+//   let end = Date.now()
+//   console.log(`Alix loaded ${messages.length} messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   await alixGroup.sync()
+//   end = Date.now()
+//   console.log(`Alix synced messages in ${end - start}ms`)
+
+//   await boClient.conversations.syncGroups()
+//   await caroClient.conversations.syncGroups()
+//   await davonClient.conversations.syncGroups()
+//   await eriClient.conversations.syncGroups()
+//   await frankieClient.conversations.syncGroups()
+
+//   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+//   const caroGroup = await caroClient.conversations.findGroup(alixGroup.id)
+//   const davonGroup = await davonClient.conversations.findGroup(alixGroup.id)
+//   const eriGroup = await eriClient.conversations.findGroup(alixGroup.id)
+//   const frankieGroup = await frankieClient.conversations.findGroup(alixGroup.id)
+
+//   start = Date.now()
+//   await boGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Bo synced messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   messages = await boGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Bo loaded ${messages.length} messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   await caroGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Caro synced messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   messages = await caroGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Caro loaded ${messages.length} messages in ${end - start}ms`)
+
+//   await createMessages(davonGroup!!, 50)
+//   await createMessages(frankieGroup!!, 50)
+//   await createMessages(boGroup!!, 50)
+//   await createMessages(alixGroup!!, 50)
+//   await createMessages(caroGroup!!, 50)
+//   await createMessages(eriGroup!!, 50)
+
+//   start = Date.now()
+//   await caroGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Caro synced messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   messages = await caroGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Caro loaded ${messages.length} messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   await alixGroup.sync()
+//   end = Date.now()
+//   console.log(`Alix synced messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   messages = await alixGroup.messages()
+//   end = Date.now()
+//   console.log(`Alix loaded ${messages.length} messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   await davonGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Davon synced messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   messages = await davonGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Davon loaded ${messages.length} messages in ${end - start}ms`)
+
+//   await createMessages(davonGroup!!, 50)
+//   await createMessages(frankieGroup!!, 50)
+//   await createMessages(boGroup!!, 50)
+//   await createMessages(alixGroup!!, 50)
+//   await createMessages(caroGroup!!, 50)
+
+//   start = Date.now()
+//   await caroGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Caro synced messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   messages = await caroGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Caro loaded ${messages.length} messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   await alixGroup.sync()
+//   end = Date.now()
+//   console.log(`Alix synced messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   messages = await alixGroup.messages()
+//   end = Date.now()
+//   console.log(`Alix loaded ${messages.length} messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   await davonGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Davon synced messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   messages = await davonGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Davon loaded ${messages.length} messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   await eriGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Eri synced messages in ${end - start}ms`)
+
+//   start = Date.now()
+//   messages = await eriGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Eri loaded ${messages.length} messages in ${end - start}ms`)
+
+//   return true
+// })
+
 test('testing large groups with large members and messages performance', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
   const [alixClient] = await createClients(1)
   const peers = await createClients(10)
   const boClient = peers[0]
@@ -82,6 +227,9 @@ test('testing large groups with large members and messages performance', async (
   const davonClient = peers[2]
   const eriClient = peers[3]
   const frankieClient = peers[4]
+  const alixBundle = await alixClient.exportKeyBundle()
+  const boBundle = await boClient.exportKeyBundle()
+  const caroBundle = await caroClient.exportKeyBundle()
 
   const [alixGroup] = await createGroups(alixClient, peers, 1, 100)
 
@@ -97,15 +245,9 @@ test('testing large groups with large members and messages performance', async (
 
   await boClient.conversations.syncGroups()
   await caroClient.conversations.syncGroups()
-  await davonClient.conversations.syncGroups()
-  await eriClient.conversations.syncGroups()
-  await frankieClient.conversations.syncGroups()
 
   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
   const caroGroup = await caroClient.conversations.findGroup(alixGroup.id)
-  const davonGroup = await davonClient.conversations.findGroup(alixGroup.id)
-  const eriGroup = await eriClient.conversations.findGroup(alixGroup.id)
-  const frankieGroup = await frankieClient.conversations.findGroup(alixGroup.id)
 
   start = Date.now()
   await boGroup!!.sync()
@@ -127,12 +269,16 @@ test('testing large groups with large members and messages performance', async (
   end = Date.now()
   console.log(`Caro loaded ${messages.length} messages in ${end - start}ms`)
 
-  await createMessages(davonGroup!!, 50)
-  await createMessages(frankieGroup!!, 50)
-  await createMessages(boGroup!!, 50)
-  await createMessages(alixGroup!!, 50)
-  await createMessages(caroGroup!!, 50)
-  await createMessages(eriGroup!!, 50)
+  await davonClient.conversations.syncGroups()
+  await frankieClient.conversations.syncGroups()
+  const davonGroup = await davonClient.conversations.findGroup(alixGroup.id)
+  const frankieGroup = await frankieClient.conversations.findGroup(alixGroup.id)
+
+  await createMessages(davonGroup!!, 5)
+  await createMessages(frankieGroup!!, 5)
+  await createMessages(boGroup!!, 5)
+  await createMessages(alixGroup!!, 5)
+  await createMessages(caroGroup!!, 5)
 
   start = Date.now()
   await caroGroup!!.sync()
@@ -154,29 +300,63 @@ test('testing large groups with large members and messages performance', async (
   end = Date.now()
   console.log(`Alix loaded ${messages.length} messages in ${end - start}ms`)
 
+  await eriClient.conversations.syncGroups()
+  const eriGroup = await eriClient.conversations.findGroup(alixGroup.id)
+  await createMessages(eriGroup!!, 5)
+
   start = Date.now()
-  await davonGroup!!.sync()
+  messages = await eriGroup!!.messages()
   end = Date.now()
-  console.log(`Davon synced messages in ${end - start}ms`)
+  console.log(`Eri loaded ${messages.length} messages in ${end - start}ms`)
 
   start = Date.now()
-  messages = await davonGroup!!.messages()
+  await eriGroup!!.sync()
   end = Date.now()
-  console.log(`Davon loaded ${messages.length} messages in ${end - start}ms`)
-
-  await createMessages(davonGroup!!, 50)
-  await createMessages(frankieGroup!!, 50)
-  await createMessages(boGroup!!, 50)
-  await createMessages(alixGroup!!, 50)
-  await createMessages(caroGroup!!, 50)
+  console.log(`Eri synced messages in ${end - start}ms`)
 
   start = Date.now()
-  await caroGroup!!.sync()
+  messages = await eriGroup!!.messages()
+  end = Date.now()
+  console.log(`Eri loaded ${messages.length} messages in ${end - start}ms`)
+
+  const alixFromBundle = await Client.createFromKeyBundle(alixBundle, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  const boFromBundle = await Client.createFromKeyBundle(boBundle, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  const caroFromBundle = await Client.createFromKeyBundle(caroBundle, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  const alixBundleGroup = await alixFromBundle.conversations.findGroup(alixGroup.id)
+  const boBundleGroup = await boFromBundle.conversations.findGroup(alixGroup.id)
+  const caroBundleGroup = await caroFromBundle.conversations.findGroup(alixGroup.id)
+
+  await createMessages(eriGroup!!, 5)
+  await createMessages(frankieGroup!!, 5)
+  await createMessages(alixBundleGroup!!, 5)
+  await createMessages(boBundleGroup!!, 5)
+  await createMessages(caroBundleGroup!!, 5)
+
+  start = Date.now()
+  await caroBundleGroup!!.sync()
   end = Date.now()
   console.log(`Caro synced messages in ${end - start}ms`)
 
   start = Date.now()
-  messages = await caroGroup!!.messages()
+  messages = await caroBundleGroup!!.messages()
   end = Date.now()
   console.log(`Caro loaded ${messages.length} messages in ${end - start}ms`)
 
