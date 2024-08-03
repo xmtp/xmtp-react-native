@@ -2,9 +2,9 @@
 import { group } from 'console'
 import Config from 'react-native-config'
 import { privateKeyToAccount } from 'viem/accounts'
-import { Client, Group } from 'xmtp-react-native-sdk'
+import { Client, Group, GroupUpdatedCodec } from 'xmtp-react-native-sdk'
 
-import { Test, assert, createClients } from './test-utils'
+import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import { convertPrivateKeyAccountToSigner } from './tests'
 import { supportedCodecs } from '../contentTypes/contentTypes'
 
@@ -33,7 +33,7 @@ async function createGroups(
     })
     groups.push(group)
     for (let i = 0; i < numMessages; i++) {
-      await group.send({ text: `Message ${i}` })
+      await group.send({ text: `Alix message ${i}` })
     }
   }
   return groups
@@ -41,11 +41,12 @@ async function createGroups(
 
 async function createMessages(
   group: Group,
-  numMessages: number
+  numMessages: number,
+  name: string
 ): Promise<number> {
   let messages = 0
   for (let i = 0; i < numMessages; i++) {
-    await group.send({ text: `Message ${i}` })
+    await group.send({ text: `${name} Message ${i}` })
     messages++
   }
   return messages
@@ -365,16 +366,26 @@ async function createMessages(
 //   await createMessages(boGroup2!!, 5)
 //   //106
 
-//   const alixClient4 = await Client.create(alixSigner, {
+//   await alixClient.dropLocalDatabaseConnection()
+//   await alixClient.deleteLocalDatabase()
+//   const alixSigner4 = convertPrivateKeyAccountToSigner(
+//     privateKeyToAccount(alixPrivateKeyHex)
+//   )
+//   const keyBytes4 = new Uint8Array([
+//     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+//     166, 44, 208, 44, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+//   ])
+
+//   const alixClient4 = await Client.create(alixSigner4, {
 //     env: 'local',
 //     enableV3: true,
-//     dbEncryptionKey: keyBytes,
+//     dbEncryptionKey: keyBytes4,
 //   })
 
 //   const boClient4 = await Client.create(boSigner, {
 //     env: 'local',
 //     enableV3: true,
-//     dbEncryptionKey: keyBytes,
+//     dbEncryptionKey: keyBytes4,
 //   })
 //   const alixGroup4 = await alixClient4.conversations.findGroup(alixGroup.id)
 //   const boGroup4 = await boClient4.conversations.findGroup(alixGroup.id)
@@ -398,7 +409,7 @@ async function createMessages(
 //   start = Date.now()
 //   messages = await alixGroup4!!.messages()
 //   end = Date.now()
-//   //107
+//   //0
 //   console.log(`Alix4 loaded ${messages.length} messages in ${end - start}ms`)
 
 //   start = Date.now()
@@ -454,6 +465,17 @@ async function createMessages(
 //   return true
 // })
 
+function convertToStringList(anyList: any[]): string[] {
+  return anyList.map((item) => {
+    // Use type checking and conversion to ensure the item is a string
+    if (typeof item === 'string') {
+      return item // If it's already a string, return it as is
+    } else {
+      return String(item) // Convert non-string items to strings
+    }
+  })
+}
+
 test('testing min repro of messages getting lost', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -483,6 +505,8 @@ test('testing min repro of messages getting lost', async () => {
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
+  alixClient.register(new GroupUpdatedCodec())
+  boClient.register(new GroupUpdatedCodec())
 
   const peers = await createClients(10)
   const caroClient = peers[1]
@@ -495,10 +519,15 @@ test('testing min repro of messages getting lost', async () => {
   let start = Date.now()
   let messages = await alixGroup.messages()
   let end = Date.now()
+  let ids = messages.map((message) => message.id)
+  let texts = messages.map((message) => message.content())
+
   //11
   console.log(
     `Alix loaded ${messages.length} messages in ${end - start}ms (should have been 11)`
   )
+  console.log('Alix message ids:', convertToStringList(texts))
+  console.log('Alix message ids:', ids)
 
   await caroClient.conversations.syncGroups()
   await davonClient.conversations.syncGroups()
@@ -519,17 +548,21 @@ test('testing min repro of messages getting lost', async () => {
   messages = await caroGroup!!.messages()
   end = Date.now()
   //10
+  ids = messages.map((message) => message.id)
+  texts = messages.map((message) => message.content())
   console.log(
     `Caro loaded ${messages.length} messages in ${end - start}ms (should have been 10)`
   )
+  console.log('Caro message ids:', ids)
+  console.log('Caro message ids:', convertToStringList(texts))
 
-  await createMessages(davonGroup!!, 5)
+  await createMessages(davonGroup!!, 5, "Davon")
   await alixGroup.addMembers([boClient.address])
-  await createMessages(frankieGroup!!, 5)
-  await createMessages(alixGroup!!, 5)
-  await createMessages(caroGroup!!, 5)
-  await createMessages(eriGroup!!, 5)
-
+  await createMessages(frankieGroup!!, 5, "Frankie")
+  await createMessages(alixGroup!!, 5, "Alix")
+  await createMessages(caroGroup!!, 5, "Caro")
+  await createMessages(eriGroup!!, 5, "Eri")
+  await delayToPropogate(5000)
   await boClient.conversations.syncGroups()
   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
 
@@ -541,18 +574,27 @@ test('testing min repro of messages getting lost', async () => {
   start = Date.now()
   messages = await boGroup!!.messages()
   end = Date.now()
+  ids = messages.map((message) => message.id)
+  texts = messages.map((message) => message.content())
   //20
   console.log(
     `Bo loaded ${messages.length} messages in ${end - start}ms (should have been 20)`
   )
 
+  console.log('Bo message ids:', ids)
+  console.log('Bo message ids:', convertToStringList(texts))
+
   start = Date.now()
   messages = await eriGroup!!.messages()
   end = Date.now()
+  ids = messages.map((message) => message.id)
+  texts = messages.map((message) => message.content())
   //36
   console.log(
     `Eri loaded ${messages.length} messages in ${end - start}ms (should have been 36)`
   )
+  console.log('Eri message content:', convertToStringList(texts))
+  console.log('Eri message content:', ids)
 
   start = Date.now()
   await alixGroup!!.sync()
@@ -562,10 +604,14 @@ test('testing min repro of messages getting lost', async () => {
   start = Date.now()
   messages = await alixGroup!!.messages()
   end = Date.now()
+  ids = messages.map((message) => message.id)
+  texts = messages.map((message) => message.content())
   //37
   console.log(
     `Alix loaded ${messages.length} messages in ${end - start}ms (should have been 37)`
   )
+  console.log('Alix message ids:', convertToStringList(texts))
+  console.log('Alix message content:', ids)
 
   start = Date.now()
   await boGroup!!.sync()
@@ -575,20 +621,28 @@ test('testing min repro of messages getting lost', async () => {
   start = Date.now()
   messages = await boGroup!!.messages()
   end = Date.now()
+  ids = messages.map((message) => message.id)
+  texts = messages.map((message) => message.content())
   //20
   console.log(
     `Bo loaded ${messages.length} messages in ${end - start}ms (should have been 20)`
   )
-  
-  await createMessages(frankieGroup!!, 5)
-  await createMessages(boGroup!!, 5)
+  console.log('Bo message ids:', ids)
+  console.log('Bo message ids:', convertToStringList(texts))
+
+  await createMessages(frankieGroup!!, 5, "Frankie")
+  await createMessages(boGroup!!, 5, "Bo")
   start = Date.now()
   messages = await boGroup!!.messages()
   end = Date.now()
+  texts = messages.map((message) => message.content())
+  ids = messages.map((message) => message.id)
   //30
   console.log(
     `Bo loaded ${messages.length} messages in ${end - start}ms (should have been 30)`
   )
+  console.log('Bo message ids:', ids)
+  console.log('Bo message ids:', convertToStringList(texts))
 
   return true
 })
