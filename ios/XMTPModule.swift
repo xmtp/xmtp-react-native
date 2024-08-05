@@ -387,27 +387,21 @@ public class XMTPModule: Module {
 				return results
 			}
 		}
-		
+
 		AsyncFunction("listGroups") { (inboxId: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let groupList = try await client.conversations.groups()
-			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
-				for group in groupList {
-					taskGroup.addTask {
-						await self.groupsManager.set(group.cacheKey(inboxId), group)
-						return try GroupWrapper.encode(group, client: client)
-					}
-				}
-
-				var results: [String] = []
-				for try await result in taskGroup {
-					results.append(result)
-				}
-
-				return results
+			
+			var results: [String] = []
+			for group in groupList {
+				await self.groupsManager.set(group.cacheKey(inboxId), group)
+				let encodedGroup = try GroupWrapper.encode(group, client: client)
+				results.append(encodedGroup)
 			}
+			
+			return results
 		}
 		
 		AsyncFunction("listAll") { (inboxId: String) -> [String] in

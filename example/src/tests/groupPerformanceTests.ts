@@ -34,9 +34,14 @@ async function createGroups(
 test('testing large group listing with metadata performance', async () => {
   const [alixClient, boClient] = await createClients(2)
 
-  await createGroups(alixClient, [boClient], 10)
+  let numGroups = 100
 
+  console.log('Creating groups')
   let start = Date.now()
+  await createGroups(alixClient, [boClient], numGroups)
+  console.log(`Created groups in ${Date.now() - start}ms`)
+
+  start = Date.now()
   let groups = await alixClient.conversations.listGroups()
   let end = Date.now()
   console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
