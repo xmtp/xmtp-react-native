@@ -41,7 +41,7 @@ export class Group<
       creatorInboxId: InboxId
       topic: string
       name: string
-      isGroupActive: boolean
+      isActive: boolean
       imageUrlSquare: string
       description: string
       // pinnedFrameUrl: string
@@ -54,7 +54,7 @@ export class Group<
     this.topic = params.topic
     this.creatorInboxId = params.creatorInboxId
     this.name = params.name
-    this.isGroupActive = params.isGroupActive
+    this.isGroupActive = params.isActive
     this.imageUrlSquare = params.imageUrlSquare
     this.description = params.description
     // this.pinnedFrameUrl = params.pinnedFrameUrl
