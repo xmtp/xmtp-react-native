@@ -30,7 +30,6 @@ test('group createdAt matches listGroups', async () => {
   await alix.conversations.syncGroups()
   const alixGroups = await alix.conversations.listGroups()
 
-
   const first = 0
   const second = 1
   assert(alixGroups.length === 2, 'Alix should have two groups')
@@ -52,9 +51,9 @@ test('group createdAt matches listGroups', async () => {
     assert(
       alixGroups[second].createdAt === boGroup.createdAt,
       'Second group returned from listGroups shows ' +
-          alixGroups[second].createdAt +
-          ' but should be ' +
-          boGroup.createdAt
+        alixGroups[second].createdAt +
+        ' but should be ' +
+        boGroup.createdAt
     )
   }
   return true

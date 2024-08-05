@@ -6,7 +6,6 @@ import {
   assert,
   createClients,
   delayToPropogate,
-  isIos,
 } from './test-utils'
 import {
   Client,
@@ -207,32 +206,32 @@ test('can make a MLS V3 client with encryption key and database directory', asyn
 })
 
 test('testing large group listing with metadata performance', async () => {
-    const [alixClient, boClient] = await createClients(2)
-  
-    await createGroups(alixClient, [boClient], 50, 10)
-  
-    let start = Date.now()
-    let groups = await alixClient.conversations.listGroups()
-    let end = Date.now()
-    console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
-  
-    start = Date.now()
-    await alixClient.conversations.syncGroups()
-    end = Date.now()
-    console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
-  
-    start = Date.now()
-    await boClient.conversations.syncGroups()
-    end = Date.now()
-    console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
-  
-    start = Date.now()
-    groups = await boClient.conversations.listGroups()
-    end = Date.now()
-    console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
-  
-    return true
-  })
+  const [alixClient, boClient] = await createClients(2)
+
+  await createGroups(alixClient, [boClient], 50, 10)
+
+  let start = Date.now()
+  let groups = await alixClient.conversations.listGroups()
+  let end = Date.now()
+  console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
+
+  start = Date.now()
+  await alixClient.conversations.syncGroups()
+  end = Date.now()
+  console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
+
+  start = Date.now()
+  await boClient.conversations.syncGroups()
+  end = Date.now()
+  console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
+
+  start = Date.now()
+  groups = await boClient.conversations.listGroups()
+  end = Date.now()
+  console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
+
+  return true
+})
 
 test('can drop a local database', async () => {
   const [client, anotherClient] = await createClients(2)
@@ -1077,8 +1076,8 @@ test('can list all groups and conversations', async () => {
   // Verify information in listed containers is correct
   // BUG - List All returns in Chronological order on iOS
   // and reverse Chronological order on Android
-  const first = 0//isIos() ? 1 : 0
-  const second = 1//isIos() ? 0 : 1
+  const first = 0
+  const second = 1
   if (
     listedContainers[first].topic !== boGroup.topic ||
     listedContainers[first].version !== ConversationVersion.GROUP ||
