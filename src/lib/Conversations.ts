@@ -7,7 +7,7 @@ import {
   ConversationContainer,
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
-import { Group } from './Group'
+import { Group, GroupParams } from './Group'
 import { CreateGroupOptions } from './types/CreateGroupOptions'
 import { EventTypes } from './types/EventTypes'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
@@ -144,13 +144,7 @@ export default class Conversations<
     XMTPModule.subscribeToGroups(this.client.inboxId)
     const groupsSubscription = XMTPModule.emitter.addListener(
       EventTypes.Group,
-      async ({
-        inboxId,
-        group,
-      }: {
-        inboxId: string
-        group: Group<ContentTypes>
-      }) => {
+      async ({ inboxId, group }: { inboxId: string; group: GroupParams }) => {
         if (this.known[group.id]) {
           return
         }
@@ -293,7 +287,10 @@ export default class Conversations<
         this.known[conversationContainer.topic] = true
         if (conversationContainer.version === ConversationVersion.GROUP) {
           return await callback(
-            new Group(this.client, conversationContainer as Group<ContentTypes>)
+            new Group(
+              this.client,
+              conversationContainer as unknown as GroupParams
+            )
           )
         } else {
           return await callback(
