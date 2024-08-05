@@ -15,6 +15,18 @@ import * as XMTP from '../index'
 
 export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
 
+export interface GroupParams {
+  id: string
+  createdAt: number
+  peerInboxIds: InboxId[]
+  creatorInboxId: InboxId
+  topic: string
+  name: string
+  isActive: boolean
+  imageUrlSquare: string
+  description: string
+}
+
 export class Group<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > implements ConversationContainer<ContentTypes>
@@ -32,21 +44,7 @@ export class Group<
   description: string
   // pinnedFrameUrl: string
 
-  constructor(
-    client: XMTP.Client<ContentTypes>,
-    params: {
-      id: string
-      createdAt: number
-      peerInboxIds: InboxId[]
-      creatorInboxId: InboxId
-      topic: string
-      name: string
-      isGroupActive: boolean
-      imageUrlSquare: string
-      description: string
-      // pinnedFrameUrl: string
-    }
-  ) {
+  constructor(client: XMTP.Client<ContentTypes>, params: GroupParams) {
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
@@ -54,7 +52,7 @@ export class Group<
     this.topic = params.topic
     this.creatorInboxId = params.creatorInboxId
     this.name = params.name
-    this.isGroupActive = params.isGroupActive
+    this.isGroupActive = params.isActive
     this.imageUrlSquare = params.imageUrlSquare
     this.description = params.description
     // this.pinnedFrameUrl = params.pinnedFrameUrl

@@ -1010,6 +1010,8 @@ test('can list groups', async () => {
     `Group 2 url for alix should be www.group2image.com but was ${alixGroup2?.imageUrlSquare}`
   )
 
+  assert(boGroup1?.isGroupActive === true, `Group 1 should be active for bo`)
+
   return true
 })
 
@@ -1343,7 +1345,9 @@ test('can make a group with admin permissions', async () => {
 
   if ((await group.permissionPolicySet()).addMemberPolicy !== 'admin') {
     throw Error(
-      `Group permission level should be admin but was ${(await group.permissionPolicySet()).addMemberPolicy}`
+      `Group permission level should be admin but was ${
+        (await group.permissionPolicySet()).addMemberPolicy
+      }`
     )
   }
 
