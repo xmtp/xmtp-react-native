@@ -49,6 +49,28 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
+async function createGroups(
+  client: Client,
+  peers: Client[],
+  numGroups: number,
+  numMessages: number
+): Promise<Group[]> {
+  const groups = []
+  const addresses: string[] = peers.map((client) => client.address)
+  for (let i = 0; i < numGroups; i++) {
+    const group = await client.conversations.newGroup(addresses, {
+      name: `group ${i}`,
+      imageUrlSquare: `www.group${i}.com`,
+      description: `group ${i}`,
+    })
+    groups.push(group)
+    for (let i = 0; i < numMessages; i++) {
+      await group.send({ text: `Message ${i}` })
+    }
+  }
+  return groups
+}
+
 test('calls preAuthenticateToInboxCallback when supplied', async () => {
   let isCallbackCalled = 0
   let isPreAuthCalled = false
@@ -183,6 +205,34 @@ test('can make a MLS V3 client with encryption key and database directory', asyn
   )
   return true
 })
+
+test('testing large group listing with metadata performance', async () => {
+    const [alixClient, boClient] = await createClients(2)
+  
+    await createGroups(alixClient, [boClient], 50, 10)
+  
+    let start = Date.now()
+    let groups = await alixClient.conversations.listGroups()
+    let end = Date.now()
+    console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
+  
+    start = Date.now()
+    await alixClient.conversations.syncGroups()
+    end = Date.now()
+    console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
+  
+    start = Date.now()
+    await boClient.conversations.syncGroups()
+    end = Date.now()
+    console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
+  
+    start = Date.now()
+    groups = await boClient.conversations.listGroups()
+    end = Date.now()
+    console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
+  
+    return true
+  })
 
 test('can drop a local database', async () => {
   const [client, anotherClient] = await createClients(2)
