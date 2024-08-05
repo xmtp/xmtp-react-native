@@ -400,22 +400,15 @@ public class XMTPModule: Module {
 			}
 
 			let conversations = try await client.conversations.list()
-
-			return try await withThrowingTaskGroup(of: String.self) { group in
-				for conversation in conversations {
-					group.addTask {
-						await self.conversationsManager.set(conversation.cacheKey(inboxId), conversation)
-						return try ConversationWrapper.encode(conversation, client: client)
-					}
-				}
-
-				var results: [String] = []
-				for try await result in group {
-					results.append(result)
-				}
-
-				return results
+			
+			var results: [String] = []
+			for conversation in conversations {
+				await self.conversationsManager.set(conversation.cacheKey(inboxId), conversation)
+				let encodedConversation = try ConversationWrapper.encode(conversation, client: client)
+				results.append(encodedConversation)
 			}
+
+			return results
 		}
 		
 		AsyncFunction("listGroups") { (inboxId: String) -> [String] in
@@ -423,21 +416,15 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			let groupList = try await client.conversations.groups()
-			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
-				for group in groupList {
-					taskGroup.addTask {
-						await self.groupsManager.set(group.cacheKey(inboxId), group)
-						return try GroupWrapper.encode(group, client: client)
-					}
-				}
-
-				var results: [String] = []
-				for try await result in taskGroup {
-					results.append(result)
-				}
-
-				return results
+			
+			var results: [String] = []
+			for group in groupList {
+				await self.groupsManager.set(group.cacheKey(inboxId), group)
+				let encodedGroup = try GroupWrapper.encode(group, client: client)
+				results.append(encodedGroup)
 			}
+			
+			return results
 		}
 		
 		AsyncFunction("listAll") { (inboxId: String) -> [String] in
@@ -446,21 +433,14 @@ public class XMTPModule: Module {
 			}
 			let conversationContainerList = try await client.conversations.list(includeGroups: true)
 			
-			return try await withThrowingTaskGroup(of: String.self) { taskGroup in
-				for conversation in conversationContainerList {
-					taskGroup.addTask {
-						await self.conversationsManager.set(conversation.cacheKey(inboxId), conversation)
-						return try ConversationContainerWrapper.encode(conversation, client: client)
-					}
-				}
-
-				var results: [String] = []
-				for try await result in taskGroup {
-					results.append(result)
-				}
-
-				return results
+			var results: [String] = []
+			for conversation in conversationContainerList {
+				await self.conversationsManager.set(conversation.cacheKey(inboxId), conversation)
+				let encodedConversationContainer = try ConversationContainerWrapper.encode(conversation, client: client)
+				results.append(encodedConversationContainer)
 			}
+
+			return results
 		}
 
 		AsyncFunction("loadMessages") { (inboxId: String, topic: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in

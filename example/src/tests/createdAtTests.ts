@@ -30,10 +30,9 @@ test('group createdAt matches listGroups', async () => {
   await alix.conversations.syncGroups()
   const alixGroups = await alix.conversations.listGroups()
 
-  // BUG - List returns in Reverse Chronological order on iOS
-  // and Chronological order on Android
-  const first = isIos() ? 1 : 0
-  const second = isIos() ? 0 : 1
+
+  const first = 0
+  const second = 1
   assert(alixGroups.length === 2, 'Alix should have two groups')
   assert(
     alixGroups[first].id === alixGroup.id,
@@ -47,16 +46,13 @@ test('group createdAt matches listGroups', async () => {
     alixGroups[second].id === boGroup.id,
     'Bo group createdAt should match'
   )
-  // Below assertion fails on Android
-  if (isIos()) {
-    assert(
-      alixGroups[second].createdAt === boGroup.createdAt,
-      'Second group returned from listGroups shows ' +
+  assert(
+    alixGroups[second].createdAt === boGroup.createdAt,
+    'Second group returned from listGroups shows ' +
         alixGroups[second].createdAt +
         ' but should be ' +
         boGroup.createdAt
-    )
-  }
+  )
   return true
 })
 
@@ -80,39 +76,37 @@ test('group createdAt matches listAll', async () => {
   assert(alixGroups.length === 2, 'alix should have two groups')
 
   // Returns reverse Chronological order on Android and iOS
-  const first = 1
-  const second = 0
+  const first = 0
+  const second = 1
   assert(
-    alixGroups[1].topic === alixGroup.topic,
+    alixGroups[first].topic === alixGroup.topic,
     'First group returned from listGroups shows ' +
-      alixGroups[1].topic +
+      alixGroups[first].topic +
       ' but should be ' +
       alixGroup.topic
   )
   assert(
-    alixGroups[0].topic === boGroup.topic,
+    alixGroups[second].topic === boGroup.topic,
     'Second group returned from listGroups shows ' +
-      alixGroups[0].topic +
+      alixGroups[second].topic +
       ' but should be ' +
       boGroup.topic
   )
   assert(
     alixGroups[first].createdAt === alixGroup.createdAt,
     'alix group returned from listGroups shows createdAt ' +
-      alixGroups[1].createdAt +
+      alixGroups[first].createdAt +
       ' but should be ' +
       alixGroup.createdAt
   )
-  // Below assertion fail on Android
-  if (isIos()) {
-    assert(
-      alixGroups[second].createdAt === boGroup.createdAt,
-      'bo group returned from listGroups shows createdAt ' +
-        alixGroups[0].createdAt +
-        ' but should be ' +
-        boGroup.createdAt
-    )
-  }
+
+  assert(
+    alixGroups[second].createdAt === boGroup.createdAt,
+    'bo group returned from listGroups shows createdAt ' +
+      alixGroups[second].createdAt +
+      ' but should be ' +
+      boGroup.createdAt
+  )
   return true
 })
 
@@ -152,19 +146,15 @@ test('group createdAt matches streamGroups', async () => {
     'second ' + allGroups[1].id + ' != ' + caroGroup.id
   )
 
-  // CreatedAt returned from stream matches createAt from create function
-  // Assertion below fails on Android
-  if (isIos()) {
-    assert(
-      allGroups[0].createdAt === boGroup.createdAt,
-      'first ' + allGroups[0].createdAt + ' != ' + boGroup.createdAt
-    )
+  assert(
+    allGroups[0].createdAt === boGroup.createdAt,
+    'first ' + allGroups[0].createdAt + ' != ' + boGroup.createdAt
+  )
 
-    assert(
-      allGroups[1].createdAt === caroGroup.createdAt,
-      'second ' + allGroups[1].createdAt + ' != ' + caroGroup.createdAt
-    )
-  }
+  assert(
+    allGroups[1].createdAt === caroGroup.createdAt,
+    'second ' + allGroups[1].createdAt + ' != ' + caroGroup.createdAt
+  )
 
   cancelStream()
 
@@ -207,18 +197,14 @@ test('group createdAt matches streamAll', async () => {
     'second ' + allGroups[1].topic + ' != ' + caroGroup.topic
   )
 
-  // CreatedAt returned from stream matches createAt from create function
-  // Assertion below fails on Android
-  if (isIos()) {
-    assert(
-      allGroups[0].createdAt === boGroup.createdAt,
-      'first ' + allGroups[0].createdAt + ' != ' + boGroup.createdAt
-    )
-    assert(
-      allGroups[1].createdAt === caroGroup.createdAt,
-      'second ' + allGroups[1].createdAt + ' != ' + caroGroup.createdAt
-    )
-  }
+  assert(
+    allGroups[0].createdAt === boGroup.createdAt,
+    'first ' + allGroups[0].createdAt + ' != ' + boGroup.createdAt
+  )
+  assert(
+    allGroups[1].createdAt === caroGroup.createdAt,
+    'second ' + allGroups[1].createdAt + ' != ' + caroGroup.createdAt
+  )
 
   cancelStream()
 
@@ -243,8 +229,8 @@ test('conversation createdAt matches list', async () => {
 
   // BUG - List returns in Chronological order on iOS
   // and reverse Chronological order on Android
-  const first = isIos() ? 0 : 1
-  const second = isIos() ? 1 : 0
+  const first = 0
+  const second = 1
 
   assert(
     alixConversations[first].topic === alixConversation.topic,
@@ -284,10 +270,8 @@ test('conversation createdAt matches listAll', async () => {
   const alixConversations = await alix.conversations.listAll()
   assert(alixConversations.length === 2, 'alix should have two conversations')
 
-  // BUG - List returns in Chronological order on iOS
-  // and reverse Chronological order on Android
-  const first = isIos() ? 0 : 1
-  const second = isIos() ? 1 : 0
+  const first = 0
+  const second = 1
 
   // List returns in reverse Chronological order
   assert(

@@ -1027,8 +1027,8 @@ test('can list all groups and conversations', async () => {
   // Verify information in listed containers is correct
   // BUG - List All returns in Chronological order on iOS
   // and reverse Chronological order on Android
-  const first = isIos() ? 1 : 0
-  const second = isIos() ? 0 : 1
+  const first = 0//isIos() ? 1 : 0
+  const second = 1//isIos() ? 0 : 1
   if (
     listedContainers[first].topic !== boGroup.topic ||
     listedContainers[first].version !== ConversationVersion.GROUP ||
