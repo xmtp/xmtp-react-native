@@ -30,7 +30,7 @@ export class Group<
   isGroupActive: boolean
   imageUrlSquare: string
   description: string
-  pinnedFrameUrl: string
+  // pinnedFrameUrl: string
 
   constructor(
     client: XMTP.Client<ContentTypes>,
@@ -44,7 +44,7 @@ export class Group<
       isGroupActive: boolean
       imageUrlSquare: string
       description: string
-      pinnedFrameUrl: string
+      // pinnedFrameUrl: string
     }
   ) {
     this.client = client
@@ -57,7 +57,7 @@ export class Group<
     this.isGroupActive = params.isGroupActive
     this.imageUrlSquare = params.imageUrlSquare
     this.description = params.description
-    this.pinnedFrameUrl = params.pinnedFrameUrl
+    // this.pinnedFrameUrl = params.pinnedFrameUrl
   }
 
   /**

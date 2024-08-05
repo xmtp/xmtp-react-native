@@ -22,8 +22,8 @@ struct GroupWrapper {
 			"isActive": try group.isActive(),
 			"name": try group.groupName(),
 			"imageUrlSquare": try group.groupImageUrlSquare(),
-			"description": try group.groupDescription(),
-			"pinnedFrameUrl": try group.groupPinnedFrameUrl()
+			"description": try group.groupDescription()
+			// "pinnedFrameUrl": try group.groupPinnedFrameUrl()
 		]
 	}
 
