@@ -20,8 +20,8 @@ class GroupWrapper {
                 "isActive" to group.isActive(),
                 "name" to group.name,
                 "imageUrlSquare" to group.imageUrlSquare,
-                "description" to group.description,
-                "pinnedFrameUrl" to group.pinnedFrameUrl
+                "description" to group.description
+                // "pinnedFrameUrl" to group.pinnedFrameUrl
             )
         }
 
