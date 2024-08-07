@@ -2076,12 +2076,9 @@ test('can create new installation without breaking group', async () => {
   await client1.conversations.syncGroups()
   await client2.conversations.syncGroups()
 
-  const client1Group = (await client1.conversations.listGroups()).find(
-    (g) => g.id === group.id
-  )
-  const client2Group = (await client2.conversations.listGroups()).find(
-    (g) => g.id === group.id
-  )
+  const client1Group = await client1.conversations.findGroup(group.id)
+  const client2Group = await client2.conversations.findGroup(group.id)
+
   await client1Group?.sync()
   await client2Group?.sync()
 
