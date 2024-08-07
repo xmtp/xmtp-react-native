@@ -76,6 +76,7 @@ export async function auth(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
+  hasPreAuthenticateToInboxCallback?: boolean | undefined,
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined,
@@ -96,6 +97,7 @@ export async function auth(
     address,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
+    hasPreAuthenticateToInboxCallback,
     encryptionKey,
     JSON.stringify(authParams)
   )
@@ -110,6 +112,7 @@ export async function createRandom(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
+  hasPreAuthenticateToInboxCallback?: boolean | undefined,
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined,
@@ -129,6 +132,7 @@ export async function createRandom(
   return await XMTPModule.createRandom(
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
+    hasPreAuthenticateToInboxCallback,
     encryptionKey,
     JSON.stringify(authParams)
   )
@@ -868,6 +872,10 @@ export function preEnableIdentityCallbackCompleted() {
 
 export function preCreateIdentityCallbackCompleted() {
   XMTPModule.preCreateIdentityCallbackCompleted()
+}
+
+export function preAuthenticateToInboxCallbackCompleted() {
+  XMTPModule.preAuthenticateToInboxCallbackCompleted()
 }
 
 export async function isGroupActive(

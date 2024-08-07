@@ -2,7 +2,6 @@ import { useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
 
-import { createdAtTests } from './tests/createdAtTests'
 import { groupPerformanceTests } from './tests/groupPerformanceTests'
 import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
@@ -108,7 +107,6 @@ export enum TestCategory {
   all = 'all',
   tests = 'tests',
   group = 'group',
-  createdAt = 'createdAt',
   restartStreans = 'restartStreams',
   groupPermissions = 'groupPermissions',
   groupPerformance = 'groupPerformance',
@@ -123,7 +121,6 @@ export default function TestScreen(): JSX.Element {
   const allTests = [
     ...tests,
     ...groupTests,
-    ...createdAtTests,
     ...restartStreamTests,
     ...groupPermissionsTests,
     ...groupPerformanceTests,
@@ -141,10 +138,6 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.group:
       activeTests = groupTests
       title = 'Group Unit Tests'
-      break
-    case TestCategory.createdAt:
-      activeTests = createdAtTests
-      title = 'Created At Unit Tests'
       break
     case TestCategory.restartStreans:
       activeTests = restartStreamTests
