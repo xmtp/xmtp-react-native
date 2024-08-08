@@ -1149,6 +1149,10 @@ export async function processWelcomeMessage<
   return new Group(client, JSON.parse(json))
 }
 
+export async function exportNativeLogs() {
+  return XMTPModule.exportNativeLogs()
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 interface AuthParams {

@@ -147,6 +147,10 @@ export class Client<
     })
   }
 
+  static async exportNativeLogs() {
+    return XMTPModule.exportNativeLogs()
+  }
+
   private static removeAllSubscriptions(
     createSubscription?: Subscription,
     enableSubscription?: Subscription,

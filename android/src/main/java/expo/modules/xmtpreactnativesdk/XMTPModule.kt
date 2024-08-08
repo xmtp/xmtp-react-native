@@ -66,7 +66,9 @@ import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
+import java.io.BufferedReader
 import java.io.File
+import java.io.InputStreamReader
 import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
@@ -1564,13 +1566,29 @@ class XMTPModule : Module() {
             val client = clients[inboxId] ?: throw XMTPException("No client")
             client.contacts.isGroupAllowed(groupId)
         }
-
         AsyncFunction("isGroupDenied") { inboxId: String, groupId: String ->
             logV("isGroupDenied")
             val client = clients[inboxId] ?: throw XMTPException("No client")
             client.contacts.isGroupDenied(groupId)
         }
-    }
+
+        AsyncFunction("exportNativeLogs") Coroutine { ->
+            withContext(Dispatchers.IO) {
+                try {
+                    val process = Runtime.getRuntime().exec("logcat -d")
+                    val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
+
+                    val log = StringBuilder()
+                    var line: String?
+                    while (bufferedReader.readLine().also { line = it } != null) {
+                        log.append(line).append("\n")
+                    }
+                    log.toString()
+                } catch (e: Exception) {
+                    e.message
+                }
+            }
+        }
 
     //
     // Helpers
