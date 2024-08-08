@@ -1,5 +1,5 @@
 import { Platform } from 'expo-modules-core'
-import { Client } from 'xmtp-react-native-sdk'
+import { Client, GroupUpdatedCodec } from 'xmtp-react-native-sdk'
 
 export type Test = {
   name: string
@@ -29,13 +29,13 @@ export async function createClients(numClients: number): Promise<Client[]> {
       166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135,
       145,
     ])
-    clients.push(
-      await Client.createRandom({
-        env: 'local',
-        enableV3: true,
-        dbEncryptionKey: keyBytes,
-      })
-    )
+    const client = await Client.createRandom({
+      env: 'local',
+      enableV3: true,
+      dbEncryptionKey: keyBytes,
+    })
+    client.register(new GroupUpdatedCodec())
+    clients.push(client)
   }
   return clients
 }
