@@ -60,20 +60,20 @@ public class XMTPModule: Module {
 		}
         
         // A method to disconnect all dbs
-        func dropAllLocalDatabaseConnections() throws {
-            for (_, client) in clients {
-                // Call the method on each client
-                try client.dropLocalDatabaseConnection()
-            }
-        }
-        
-        // A method to disconnect all dbs
-        func reconnectAllLocalDatabaseConnections() async throws {
-            for (_, client) in clients {
-                // Call the method on each client
-                try await client.reconnectLocalDatabase()
-            }
-        }
+		func dropAllLocalDatabaseConnections() throws {
+			for (_, client) in clients {
+				// Call the method on each client
+				try client.dropLocalDatabaseConnection()
+			}
+		}
+
+		// A method to disconnect all dbs
+		func reconnectAllLocalDatabaseConnections() async throws {
+			for (_, client) in clients {
+				// Call the method on each client
+				try await client.reconnectLocalDatabase()
+			}
+		}
 	}
 
 	enum Error: Swift.Error {
@@ -1476,6 +1476,12 @@ public class XMTPModule: Module {
 		  }
 		  return await client.contacts.isGroupDenied(groupId: groupId)
 		}
+
+		OnAppBecomesActive {
+			Task {
+				try await clientsManager.reconnectAllLocalDatabaseConnections()
+			}
+		}
         
 		AsyncFunction("exportNativeLogs") { () -> String in
 			var logOutput = ""
@@ -1492,17 +1498,18 @@ public class XMTPModule: Module {
 			return logOutput
 		}
 
-        OnAppBecomesActive {
-            Task {
-                try await clientsManager.reconnectAllLocalDatabaseConnections()
-            }
-        }
-        
-        OnAppEntersBackground {
-            Task {
-                try await clientsManager.dropAllLocalDatabaseConnections()
-            }
-        }
+		OnAppBecomesActive {
+			Task {
+				try await clientsManager.reconnectAllLocalDatabaseConnections()
+			}
+		}
+
+
+		OnAppEntersBackground {
+			Task {
+				try await clientsManager.dropAllLocalDatabaseConnections()
+			}
+		}
 	}
 
 	//
