@@ -1483,14 +1483,23 @@ public class XMTPModule: Module {
         
 		AsyncFunction("exportNativeLogs") { () -> String in
 			var logOutput = ""
-			let logStore = try OSLogStore(scope: .currentProcessIdentifier)
-			let position = logStore.position(timeIntervalSinceLatestBoot: -300) // Last 5 min of logs
-			let entries = try logStore.getEntries(at: position)
+			if #available(iOS 15.0, *) {
+				do {
+					let logStore = try OSLogStore(scope: .currentProcessIdentifier)
+					let position = logStore.position(timeIntervalSinceLatestBoot: -300) // Last 5 min of logs
+					let entries = try logStore.getEntries(at: position)
 
-			for entry in entries {
-				if let logEntry = entry as? OSLogEntryLog {
-					logOutput.append("\(logEntry.date): \(logEntry.composedMessage)\n")
+					for entry in entries {
+						if let logEntry = entry as? OSLogEntryLog {
+							logOutput.append("\(logEntry.date): \(logEntry.composedMessage)\n")
+						}
+					}
+				} catch {
+					logOutput = "Failed to fetch logs: \(error.localizedDescription)"
 				}
+			} else {
+				// Fallback for iOS 14
+				logOutput = "OSLogStore is only available on iOS 15 and above. Logging is not supported on this iOS version."
 			}
 			
 			return logOutput
