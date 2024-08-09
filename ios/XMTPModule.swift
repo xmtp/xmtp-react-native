@@ -59,7 +59,7 @@ public class XMTPModule: Module {
 			return clients[key]
 		}
         
-        // A method to disconnect all dbs
+		// A method to disconnect all dbs
 		func dropAllLocalDatabaseConnections() throws {
 			for (_, client) in clients {
 				// Call the method on each client
@@ -67,7 +67,7 @@ public class XMTPModule: Module {
 			}
 		}
 
-		// A method to disconnect all dbs
+		// A method to reconnect all dbs
 		func reconnectAllLocalDatabaseConnections() async throws {
 			for (_, client) in clients {
 				// Call the method on each client
