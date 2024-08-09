@@ -1589,6 +1589,7 @@ class XMTPModule : Module() {
                 }
             }
         }
+    }
 
     //
     // Helpers
