@@ -1464,7 +1464,7 @@ public class XMTPModule: Module {
 		AsyncFunction("exportNativeLogs") { () -> String in
 			var logOutput = ""
 			let logStore = try OSLogStore(scope: .currentProcessIdentifier)
-			let position = logStore.position(timeIntervalSinceLatestBoot: -600) // Last 10 min of logs
+			let position = logStore.position(timeIntervalSinceLatestBoot: -300) // Last 5 min of logs
 			let entries = try logStore.getEntries(at: position)
 
 			for entry in entries {
