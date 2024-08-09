@@ -63,19 +63,19 @@ public class XMTPModule: Module {
 		func dropAllLocalDatabaseConnections() throws {
 			for (_, client) in clients {
 				// Call the drop method on each v3 client
-                if (!client.installationID.isEmpty) {
-                    try client.dropLocalDatabaseConnection()
-                }
+				if (!client.installationID.isEmpty) {
+					try client.dropLocalDatabaseConnection()
+				}
 			}
 		}
 
 		// A method to reconnect all dbs
 		func reconnectAllLocalDatabaseConnections() async throws {
 			for (_, client) in clients {
-                // Call the reconnect method on each v3 client
-                if (!client.installationID.isEmpty) {
-                    try await client.reconnectLocalDatabase()
-                }
+				// Call the reconnect method on each v3 client
+				if (!client.installationID.isEmpty) {
+					try await client.reconnectLocalDatabase()
+				}
 			}
 		}
 	}
