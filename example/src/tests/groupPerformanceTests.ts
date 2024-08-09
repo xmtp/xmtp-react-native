@@ -48,6 +48,88 @@ async function createMessages(
   return messages
 }
 
+test('testing small repro of odd streaming', async () => {
+  let groupCallbacks = 0
+  let messageCallbacks = 0
+
+  const [alixClient] = await createClients(1)
+
+  await alixClient.conversations.streamGroups(async () => {
+    groupCallbacks++
+  })
+
+  await alixClient.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  const peers = await createClients(20)
+  const groups = await createGroups(alixClient, peers, 10, 10)
+
+  console.log(`Alix Streamed ${groupCallbacks} groups (10)`)
+  console.log(`Alix Streamed ${messageCallbacks} messages (10)`)
+
+  const alixGroup = groups[0]
+
+  let start = Date.now()
+  let messages = await alixGroup.messages()
+  let end = Date.now()
+  console.log(`Alix loaded ${messages.length} messages in ${end - start}ms (11)`)
+
+  start = Date.now()
+  await alixGroup.sync()
+  end = Date.now()
+  console.log(`Alix synced messages in ${end - start}ms`)
+
+  const caroClient = peers[0]
+  const boClient = peers[1]
+
+  await boClient.conversations.syncGroups()
+  await caroClient.conversations.syncGroups()
+  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+  const caroGroup = await caroClient.conversations.findGroup(alixGroup.id)
+
+  start = Date.now()
+  await boGroup!!.sync()
+  end = Date.now()
+  console.log(`Bo synced messages in ${end - start}ms`)
+
+  start = Date.now()
+  messages = await boGroup!!.messages()
+  end = Date.now()
+  console.log(`Bo loaded ${messages.length} messages in ${end - start}ms (10)`)
+
+  start = Date.now()
+  await caroGroup!!.sync()
+  end = Date.now()
+  console.log(`Caro synced messages in ${end - start}ms`)
+
+  start = Date.now()
+  messages = await caroGroup!!.messages()
+  end = Date.now()
+  console.log(`Caro loaded ${messages.length} messages in ${end - start}ms (10)`)
+
+  await createMessages(boGroup!!, 10, 'Bo')
+  await createMessages(alixGroup!!, 10, 'Alix')
+  await createMessages(caroGroup!!, 10, 'Caro')
+
+  start = Date.now()
+  await alixGroup.sync()
+  end = Date.now()
+  console.log(`Alix synced messages in ${end - start}ms`)
+
+  start = Date.now()
+  messages = await alixGroup.messages()
+  end = Date.now()
+  console.log(`Alix loaded ${messages.length} messages in ${end - start}ms (41)`)
+
+  console.log(`Alix Streamed ${groupCallbacks} groups (10)`)
+  console.log(`Alix Streamed ${messageCallbacks} messages (40)`)
+
+  return true
+})
+
+
+
 let keyBytes: Uint8Array
 let alixWallet: Wallet
 let boWallet: Wallet
@@ -66,30 +148,30 @@ let boMessageCallbacks = 0
 
 
 async function beforeAll() {
-  keyBytes = new Uint8Array([
-    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
-  ])
-  alixWallet = new Wallet(
-    '0xc54c62dd3ad018ef94f20f0722cae33919e65270ad74f2d1794291088800f788'
-  )
-  boWallet = new Wallet(
-    '0x8d40c1c40473975cc6bbdc0465e70cc2e98f45f3c3474ca9b809caa9c4f53c0b'
-  )
-  alixClient = await Client.create(alixWallet, {
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    enableV3: true,
-    dbEncryptionKey: keyBytes,
-  })
-  boClient = await Client.create(boWallet, {
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    enableV3: true,
-    dbEncryptionKey: keyBytes,
-  })
+  // keyBytes = new Uint8Array([
+  //   233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+  //   166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  // ])
+  // alixWallet = new Wallet(
+  //   '0xc54c62dd3ad018ef94f20f0722cae33919e65270ad74f2d1794291088800f788'
+  // )
+  // boWallet = new Wallet(
+  //   '0x8d40c1c40473975cc6bbdc0465e70cc2e98f45f3c3474ca9b809caa9c4f53c0b'
+  // )
+  // alixClient = await Client.create(alixWallet, {
+  //   env: 'local',
+  //   appVersion: 'Testing/0.0.0',
+  //   enableV3: true,
+  //   dbEncryptionKey: keyBytes,
+  // })
+  // boClient = await Client.create(boWallet, {
+  //   env: 'local',
+  //   appVersion: 'Testing/0.0.0',
+  //   enableV3: true,
+  //   dbEncryptionKey: keyBytes,
+  // })
 
-  // [alixClient, boClient] = await createClients(2)
+  [alixClient, boClient] = await createClients(2)
 
   await alixClient.conversations.streamGroups(async () => {
     groupCallbacks++
@@ -252,145 +334,145 @@ async function beforeAll() {
 //   return true
 // })
 
-test('testing large groups with large members and messages performance', async () => {
-  await beforeAll()
-  console.log(`Alix Streamed ${groupCallbacks} groups (10)`)
-  console.log(`Alix Streamed ${messageCallbacks} messages (10)`)
-  console.log(`Bo Streamed ${boGroupCallbacks} groups (10)`)
-  console.log(`Bo Streamed ${boMessageCallbacks} messages (10)`)
-  const alixGroup = initialGroups[0]
+// test('testing large groups with large members and messages performance', async () => {
+//   await beforeAll()
+//   console.log(`Alix Streamed ${groupCallbacks} groups (10)`)
+//   console.log(`Alix Streamed ${messageCallbacks} messages (10)`)
+//   console.log(`Bo Streamed ${boGroupCallbacks} groups (10)`)
+//   console.log(`Bo Streamed ${boMessageCallbacks} messages (10)`)
+//   const alixGroup = initialGroups[0]
 
-  let start = Date.now()
-  let messages = await alixGroup.messages()
-  let end = Date.now()
-  console.log(`Alix loaded ${messages.length} messages in ${end - start}ms (11)`)
+//   let start = Date.now()
+//   let messages = await alixGroup.messages()
+//   let end = Date.now()
+//   console.log(`Alix loaded ${messages.length} messages in ${end - start}ms (11)`)
 
-  start = Date.now()
-  await alixGroup.sync()
-  end = Date.now()
-  console.log(`Alix synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await alixGroup.sync()
+//   end = Date.now()
+//   console.log(`Alix synced messages in ${end - start}ms`)
 
-  await boClient.conversations.syncGroups()
-  await caroClient.conversations.syncGroups()
-  await davonClient.conversations.syncGroups()
-  await eriClient.conversations.syncGroups()
-  await frankieClient.conversations.syncGroups()
+//   await boClient.conversations.syncGroups()
+//   await caroClient.conversations.syncGroups()
+//   await davonClient.conversations.syncGroups()
+//   await eriClient.conversations.syncGroups()
+//   await frankieClient.conversations.syncGroups()
 
-  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
-  const caroGroup = await caroClient.conversations.findGroup(alixGroup.id)
-  const davonGroup = await davonClient.conversations.findGroup(alixGroup.id)
-  const eriGroup = await eriClient.conversations.findGroup(alixGroup.id)
-  const frankieGroup = await frankieClient.conversations.findGroup(alixGroup.id)
+//   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+//   const caroGroup = await caroClient.conversations.findGroup(alixGroup.id)
+//   const davonGroup = await davonClient.conversations.findGroup(alixGroup.id)
+//   const eriGroup = await eriClient.conversations.findGroup(alixGroup.id)
+//   const frankieGroup = await frankieClient.conversations.findGroup(alixGroup.id)
 
-  start = Date.now()
-  await boGroup!!.sync()
-  end = Date.now()
-  console.log(`Bo synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await boGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Bo synced messages in ${end - start}ms`)
 
-  start = Date.now()
-  messages = await boGroup!!.messages()
-  end = Date.now()
-  console.log(`Bo loaded ${messages.length} messages in ${end - start}ms (10)`)
+//   start = Date.now()
+//   messages = await boGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Bo loaded ${messages.length} messages in ${end - start}ms (10)`)
 
-  start = Date.now()
-  await caroGroup!!.sync()
-  end = Date.now()
-  console.log(`Caro synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await caroGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Caro synced messages in ${end - start}ms`)
 
-  start = Date.now()
-  messages = await caroGroup!!.messages()
-  end = Date.now()
-  console.log(`Caro loaded ${messages.length} messages in ${end - start}ms (10)`)
+//   start = Date.now()
+//   messages = await caroGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Caro loaded ${messages.length} messages in ${end - start}ms (10)`)
 
-  await createMessages(davonGroup!!, 10, 'Davon')
-  await createMessages(frankieGroup!!, 10, 'Frankie')
-  await createMessages(boGroup!!, 10, 'Bo')
-  await createMessages(alixGroup!!, 10, 'Alix')
-  await createMessages(caroGroup!!, 10, 'Caro')
-  await createMessages(eriGroup!!, 10, 'Eri')
-  await createGroups(eriClient, [alixClient, boClient], 1, 10)
-  await createGroups(boClient, [alixClient], 1, 10)
+//   await createMessages(davonGroup!!, 10, 'Davon')
+//   await createMessages(frankieGroup!!, 10, 'Frankie')
+//   await createMessages(boGroup!!, 10, 'Bo')
+//   await createMessages(alixGroup!!, 10, 'Alix')
+//   await createMessages(caroGroup!!, 10, 'Caro')
+//   await createMessages(eriGroup!!, 10, 'Eri')
+//   // await createGroups(eriClient, [alixClient, boClient], 1, 10)
+//   // await createGroups(boClient, [alixClient], 1, 10)
 
-  start = Date.now()
-  await caroGroup!!.sync()
-  end = Date.now()
-  console.log(`Caro synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await caroGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Caro synced messages in ${end - start}ms`)
 
-  start = Date.now()
-  messages = await caroGroup!!.messages()
-  end = Date.now()
-  console.log(`Caro loaded ${messages.length} messages in ${end - start}ms (90)`)
+//   start = Date.now()
+//   messages = await caroGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Caro loaded ${messages.length} messages in ${end - start}ms (90)`)
 
-  start = Date.now()
-  await alixGroup.sync()
-  end = Date.now()
-  console.log(`Alix synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await alixGroup.sync()
+//   end = Date.now()
+//   console.log(`Alix synced messages in ${end - start}ms`)
 
-  start = Date.now()
-  messages = await alixGroup.messages()
-  end = Date.now()
-  console.log(`Alix loaded ${messages.length} messages in ${end - start}ms (91)`)
+//   start = Date.now()
+//   messages = await alixGroup.messages()
+//   end = Date.now()
+//   console.log(`Alix loaded ${messages.length} messages in ${end - start}ms (91)`)
 
-  start = Date.now()
-  await davonGroup!!.sync()
-  end = Date.now()
-  console.log(`Davon synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await davonGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Davon synced messages in ${end - start}ms`)
 
-  start = Date.now()
-  messages = await davonGroup!!.messages()
-  end = Date.now()
-  console.log(`Davon loaded ${messages.length} messages in ${end - start}ms (90)`)
+//   start = Date.now()
+//   messages = await davonGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Davon loaded ${messages.length} messages in ${end - start}ms (90)`)
 
-  await createMessages(davonGroup!!, 10, 'Davon')
-  await createMessages(frankieGroup!!, 10, 'Frankie')
-  await createMessages(boGroup!!, 10, 'Bo')
-  await createMessages(alixGroup!!, 10, 'Alix')
-  await createMessages(caroGroup!!, 10, 'Caro')
+//   await createMessages(davonGroup!!, 10, 'Davon')
+//   await createMessages(frankieGroup!!, 10, 'Frankie')
+//   await createMessages(boGroup!!, 10, 'Bo')
+//   await createMessages(alixGroup!!, 10, 'Alix')
+//   await createMessages(caroGroup!!, 10, 'Caro')
 
-  start = Date.now()
-  await caroGroup!!.sync()
-  end = Date.now()
-  console.log(`Caro synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await caroGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Caro synced messages in ${end - start}ms`)
 
-  start = Date.now()
-  messages = await caroGroup!!.messages()
-  end = Date.now()
-  console.log(`Caro loaded ${messages.length} messages in ${end - start}ms (140)`)
+//   start = Date.now()
+//   messages = await caroGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Caro loaded ${messages.length} messages in ${end - start}ms (140)`)
 
-  start = Date.now()
-  await alixGroup.sync()
-  end = Date.now()
-  console.log(`Alix synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await alixGroup.sync()
+//   end = Date.now()
+//   console.log(`Alix synced messages in ${end - start}ms`)
 
-  start = Date.now()
-  messages = await alixGroup.messages()
-  end = Date.now()
-  console.log(`Alix loaded ${messages.length} messages in ${end - start}ms (141)`)
+//   start = Date.now()
+//   messages = await alixGroup.messages()
+//   end = Date.now()
+//   console.log(`Alix loaded ${messages.length} messages in ${end - start}ms (141)`)
 
-  start = Date.now()
-  await davonGroup!!.sync()
-  end = Date.now()
-  console.log(`Davon synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await davonGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Davon synced messages in ${end - start}ms`)
 
-  start = Date.now()
-  messages = await davonGroup!!.messages()
-  end = Date.now()
-  console.log(`Davon loaded ${messages.length} messages in ${end - start}ms (140)`)
+//   start = Date.now()
+//   messages = await davonGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Davon loaded ${messages.length} messages in ${end - start}ms (140)`)
 
-  start = Date.now()
-  await eriGroup!!.sync()
-  end = Date.now()
-  console.log(`Eri synced messages in ${end - start}ms`)
+//   start = Date.now()
+//   await eriGroup!!.sync()
+//   end = Date.now()
+//   console.log(`Eri synced messages in ${end - start}ms`)
 
-  start = Date.now()
-  messages = await eriGroup!!.messages()
-  end = Date.now()
-  console.log(`Eri loaded ${messages.length} messages in ${end - start}ms (140)`)
+//   start = Date.now()
+//   messages = await eriGroup!!.messages()
+//   end = Date.now()
+//   console.log(`Eri loaded ${messages.length} messages in ${end - start}ms (140)`)
 
-  console.log(`Alix Streamed ${groupCallbacks} groups (12)`)
-  console.log(`Alix Streamed ${messageCallbacks} messages (140)`)
-  console.log(`Bo Streamed ${boGroupCallbacks} groups (12)`)
-  console.log(`Bo Streamed ${boMessageCallbacks} messages (140)`)
+//   console.log(`Alix Streamed ${groupCallbacks} groups (12)`)
+//   console.log(`Alix Streamed ${messageCallbacks} messages (140)`)
+//   console.log(`Bo Streamed ${boGroupCallbacks} groups (12)`)
+//   console.log(`Bo Streamed ${boMessageCallbacks} messages (140)`)
 
-  return true
-})
+//   return true
+// })
