@@ -76,6 +76,7 @@ export async function auth(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
+  hasPreAuthenticateToInboxCallback?: boolean | undefined,
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined,
@@ -96,6 +97,7 @@ export async function auth(
     address,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
+    hasPreAuthenticateToInboxCallback,
     encryptionKey,
     JSON.stringify(authParams)
   )
@@ -110,6 +112,7 @@ export async function createRandom(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
+  hasPreAuthenticateToInboxCallback?: boolean | undefined,
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined,
@@ -129,6 +132,7 @@ export async function createRandom(
   return await XMTPModule.createRandom(
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
+    hasPreAuthenticateToInboxCallback,
     encryptionKey,
     JSON.stringify(authParams)
   )
@@ -185,6 +189,36 @@ export async function createGroup<
         client.inboxId,
         peerAddresses,
         permissionLevel,
+        JSON.stringify(options)
+      )
+    )
+  )
+}
+
+export async function createGroupCustomPermissions<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  peerAddresses: string[],
+  permissionPolicySet: PermissionPolicySet,
+  name: string = '',
+  imageUrlSquare: string = '',
+  description: string = '',
+  pinnedFrameUrl: string = ''
+): Promise<Group<ContentTypes>> {
+  const options: CreateGroupParams = {
+    name,
+    imageUrlSquare,
+    description,
+    pinnedFrameUrl,
+  }
+  return new Group(
+    client,
+    JSON.parse(
+      await XMTPModule.createGroupCustomPermissions(
+        client.inboxId,
+        peerAddresses,
+        JSON.stringify(permissionPolicySet),
         JSON.stringify(options)
       )
     )
@@ -481,6 +515,13 @@ export async function staticCanMessage(
     environment,
     appVersion
   )
+}
+
+export async function getOrCreateInboxId(
+  address: string,
+  environment: 'local' | 'dev' | 'production'
+): Promise<InboxId> {
+  return await XMTPModule.getOrCreateInboxId(getAddress(address), environment)
 }
 
 export async function encryptAttachment(
@@ -833,6 +874,10 @@ export function preCreateIdentityCallbackCompleted() {
   XMTPModule.preCreateIdentityCallbackCompleted()
 }
 
+export function preAuthenticateToInboxCallbackCompleted() {
+  XMTPModule.preAuthenticateToInboxCallbackCompleted()
+}
+
 export async function isGroupActive(
   inboxId: string,
   id: string
@@ -1102,6 +1147,10 @@ export async function processWelcomeMessage<
     encryptedMessage
   )
   return new Group(client, JSON.parse(json))
+}
+
+export async function exportNativeLogs() {
+  return XMTPModule.exportNativeLogs()
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)

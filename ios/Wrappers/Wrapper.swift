@@ -8,6 +8,7 @@ import Foundation
 
 enum WrapperError: Swift.Error {
 	case encodeError(String)
+    case decodeError(String)
 }
 
 protocol Wrapper: Codable {

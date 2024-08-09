@@ -7,9 +7,10 @@ import {
   ConversationContainer,
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
-import { Group } from './Group'
+import { Group, GroupParams } from './Group'
 import { CreateGroupOptions } from './types/CreateGroupOptions'
 import { EventTypes } from './types/EventTypes'
+import { PermissionPolicySet } from './types/PermissionPolicySet'
 import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
@@ -143,13 +144,7 @@ export default class Conversations<
     XMTPModule.subscribeToGroups(this.client.inboxId)
     const groupsSubscription = XMTPModule.emitter.addListener(
       EventTypes.Group,
-      async ({
-        inboxId,
-        group,
-      }: {
-        inboxId: string
-        group: Group<ContentTypes>
-      }) => {
+      async ({ inboxId, group }: { inboxId: string; group: GroupParams }) => {
         if (this.known[group.id]) {
           return
         }
@@ -167,9 +162,10 @@ export default class Conversations<
   /**
    * Creates a new group.
    *
-   * This method creates a new conversation with the specified peer address and context.
+   * This method creates a new group with the specified peer addresses and options.
    *
    * @param {string[]} peerAddresses - The addresses of the peers to create a group with.
+   * @param {CreateGroupOptions} opts - The options to use for the group.
    * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
    */
   async newGroup(
@@ -180,6 +176,32 @@ export default class Conversations<
       this.client,
       peerAddresses,
       opts?.permissionLevel,
+      opts?.name,
+      opts?.imageUrlSquare,
+      opts?.description,
+      opts?.pinnedFrameUrl
+    )
+  }
+
+  /**
+   * Creates a new group with custom permissions.
+   *
+   * This method creates a new group with the specified peer addresses and options.
+   *
+   * @param {string[]} peerAddresses - The addresses of the peers to create a group with.
+   * @param {PermissionPolicySet} permissionPolicySet - The permission policy set to use for the group.
+   * @param {CreateGroupOptions} opts - The options to use for the group.
+   * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
+   */
+  async newGroupCustomPermissions(
+    peerAddresses: string[],
+    permissionPolicySet: PermissionPolicySet,
+    opts?: CreateGroupOptions | undefined
+  ): Promise<Group<ContentTypes>> {
+    return await XMTPModule.createGroupCustomPermissions(
+      this.client,
+      peerAddresses,
+      permissionPolicySet,
       opts?.name,
       opts?.imageUrlSquare,
       opts?.description,
@@ -265,7 +287,10 @@ export default class Conversations<
         this.known[conversationContainer.topic] = true
         if (conversationContainer.version === ConversationVersion.GROUP) {
           return await callback(
-            new Group(this.client, conversationContainer as Group<ContentTypes>)
+            new Group(
+              this.client,
+              conversationContainer as unknown as GroupParams
+            )
           )
         } else {
           return await callback(

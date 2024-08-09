@@ -25,7 +25,7 @@ First create a free account and download your client id from https://thirdweb.co
 cd example
 cp EXAMPLE.env .env
 ```
-Finally, insert yout Thirdweb client id in specified location of `example/.env` file:
+Finally, insert your Thirdweb client id in specified location of `example/.env` file:
 ```
 THIRD_WEB_CLIENT_ID=INSERT_CLIENT_ID_HERE
 ```

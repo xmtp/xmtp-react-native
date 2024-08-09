@@ -26,7 +26,7 @@ These are the same SDKs that native iOS or Android apps would use, but are wrapp
          |-> executes as part of Gradle build
          |-> finds @xmtp/react-native-sdk/expo-module.config.json
           |-> Resolves reference to `org.xmtp.android`
-           |-> This is an artifact published from `xmtp-android` (canonical Android XMTP SDK, used by Android projects direclty)
+           |-> This is an artifact published from `xmtp-android` (canonical Android XMTP SDK, used by Android projects directly)
            |-> Gradle finds `org.xmtp.android` in whatever repositories are configured (Maven, etc)
             |-> Fetches `org.xmtp.android` jar files and metadata
            |-> Finishes Android-specific module setup
