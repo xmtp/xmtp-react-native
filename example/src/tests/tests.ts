@@ -8,7 +8,7 @@ import { PrivateKeyAccount } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, delayToPropogate } from './test-utils'
+import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
   Query,
   JSContentCodec,
@@ -1524,5 +1524,15 @@ test('can start conversations without consent proofs', async () => {
   await delayToPropogate()
   assert(!alixConvo.consentProof, 'consentProof should not exist')
   await delayToPropogate()
+  return true
+})
+
+test('can export logs', async () => {
+  await createClients(2)
+
+  const logs = await Client.exportNativeLogs()
+  console.log(logs)
+  assert(logs.includes('libxmtp'), 'should be able to read libxmtp logs')
+
   return true
 })

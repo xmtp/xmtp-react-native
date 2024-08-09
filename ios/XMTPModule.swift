@@ -1,6 +1,7 @@
 import ExpoModulesCore
 import XMTP
 import LibXMTP
+import OSLog
 
 extension Conversation {
 	static func cacheKeyForTopic(inboxId: String, topic: String) -> String {
@@ -1458,6 +1459,21 @@ public class XMTPModule: Module {
 			throw Error.invalidString
 		  }
 		  return await client.contacts.isGroupDenied(groupId: groupId)
+		}
+        
+		AsyncFunction("exportNativeLogs") { () -> String in
+			var logOutput = ""
+			let logStore = try OSLogStore(scope: .currentProcessIdentifier)
+			let position = logStore.position(timeIntervalSinceLatestBoot: -300) // Last 5 min of logs
+			let entries = try logStore.getEntries(at: position)
+
+			for entry in entries {
+				if let logEntry = entry as? OSLogEntryLog {
+					logOutput.append("\(logEntry.date): \(logEntry.composedMessage)\n")
+				}
+			}
+			
+			return logOutput
 		}
 	}
 

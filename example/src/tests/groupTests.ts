@@ -1,12 +1,8 @@
+import { Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import {
-  Test,
-  assert,
-  createClients,
-  delayToPropogate,
-} from './test-utils'
+import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
   Client,
   Conversation,
@@ -17,7 +13,6 @@ import {
   GroupUpdatedContent,
   GroupUpdatedCodec,
 } from '../../../src/index'
-import { Wallet } from 'ethers'
 
 export const groupTests: Test[] = []
 let counter = 1
