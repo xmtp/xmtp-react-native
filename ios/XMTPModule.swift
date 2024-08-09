@@ -48,16 +48,32 @@ public class XMTPModule: Module {
 	actor ClientsManager {
 		private var clients: [String: XMTP.Client] = [:]
 
-		// A method to update the conversations
+		// A method to update the client
 		func updateClient(key: String, client: XMTP.Client) {
 			ContentJson.initCodecs(client: client)
 			clients[key] = client
 		}
 
-		// A method to retrieve a conversation
+		// A method to retrieve a client
 		func getClient(key: String) -> XMTP.Client? {
 			return clients[key]
 		}
+        
+        // A method to disconnect all dbs
+        func dropAllLocalDatabaseConnections() throws {
+            for (_, client) in clients {
+                // Call the method on each client
+                try client.dropLocalDatabaseConnection()
+            }
+        }
+        
+        // A method to disconnect all dbs
+        func reconnectAllLocalDatabaseConnections() async throws {
+            for (_, client) in clients {
+                // Call the method on each client
+                try await client.reconnectLocalDatabase()
+            }
+        }
 	}
 
 	enum Error: Swift.Error {
@@ -1475,6 +1491,18 @@ public class XMTPModule: Module {
 			
 			return logOutput
 		}
+
+        OnAppBecomesActive {
+            Task {
+                try await clientsManager.reconnectAllLocalDatabaseConnections()
+            }
+        }
+        
+        OnAppEntersBackground {
+            Task {
+                try await clientsManager.dropAllLocalDatabaseConnections()
+            }
+        }
 	}
 
 	//
