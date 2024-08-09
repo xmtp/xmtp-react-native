@@ -1480,12 +1480,6 @@ public class XMTPModule: Module {
 		  }
 		  return await client.contacts.isGroupDenied(groupId: groupId)
 		}
-
-		OnAppBecomesActive {
-			Task {
-				try await clientsManager.reconnectAllLocalDatabaseConnections()
-			}
-		}
         
 		AsyncFunction("exportNativeLogs") { () -> String in
 			var logOutput = ""
