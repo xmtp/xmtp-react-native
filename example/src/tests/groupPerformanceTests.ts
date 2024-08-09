@@ -89,6 +89,8 @@ async function beforeAll() {
     dbEncryptionKey: keyBytes,
   })
 
+  // [alixClient, boClient] = await createClients(2)
+
   await alixClient.conversations.streamGroups(async () => {
     groupCallbacks++
   })
@@ -306,8 +308,8 @@ test('testing large groups with large members and messages performance', async (
   await createMessages(alixGroup!!, 10, 'Alix')
   await createMessages(caroGroup!!, 10, 'Caro')
   await createMessages(eriGroup!!, 10, 'Eri')
-  await createGroups(eriClient, initialPeers, 1, 10)
-  await createGroups(boClient, initialPeers, 1, 10)
+  await createGroups(eriClient, [alixClient, boClient], 1, 10)
+  await createGroups(boClient, [alixClient], 1, 10)
 
   start = Date.now()
   await caroGroup!!.sync()
