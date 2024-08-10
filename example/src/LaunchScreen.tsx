@@ -106,7 +106,7 @@ export default function LaunchScreen(
   const networkOptions = [
     { key: 0, label: 'dev' },
     { key: 1, label: 'local' },
-    // { key: 2, label: 'production' },
+    { key: 2, label: 'production' },
   ]
 
   const groupOptions = [
