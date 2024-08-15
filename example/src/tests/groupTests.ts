@@ -2107,6 +2107,50 @@ test('can create new installation without breaking group', async () => {
   return true
 })
 
+test('can create 10 groups in parallel', async () => {
+  const [client1, client2] = await createClients(2)
+  const groupsPromise: Promise<Group>[] = []
+
+  // Creating 9 groups in // works
+  for (let index = 0; index < 9; index++) {
+    groupsPromise.push(client1.conversations.newGroup([client2.address]))
+  }
+  console.log('Creating 9 groups...')
+  await Promise.race([
+    Promise.all(groupsPromise),
+    new Promise((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              'Creating 9 groups took more than 5 secons long to resolve'
+            )
+          ),
+        5000
+      )
+    ),
+  ])
+  console.log('Created 9 groups')
+
+  // Creating 10 groups in // never resolves
+  for (let index = 0; index < 10; index++) {
+    groupsPromise.push(client1.conversations.newGroup([client2.address]))
+  }
+  console.log('Creating 10 groups...')
+  await Promise.race([
+    Promise.all(groupsPromise),
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Creating 9 groups worked but not 10 groups')),
+        5000
+      )
+    ),
+  ])
+  console.log('Created 10 groups')
+
+  return true
+})
+
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
 //   const bo = await Client.createRandom({ env: 'local', enableV3: true })
