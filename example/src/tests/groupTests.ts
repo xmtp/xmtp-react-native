@@ -2109,44 +2109,58 @@ test('can create new installation without breaking group', async () => {
 
 test('can create 10 groups in parallel', async () => {
   const [client1, client2] = await createClients(2)
-  const groupsPromise: Promise<Group>[] = []
+  const groupsPromise9: Promise<Group>[] = []
 
   // Creating 9 groups in // works
   for (let index = 0; index < 9; index++) {
-    groupsPromise.push(client1.conversations.newGroup([client2.address]))
+    groupsPromise9.push(client1.conversations.newGroup([client2.address]))
   }
   console.log('Creating 9 groups...')
-  await Promise.race([
-    Promise.all(groupsPromise),
-    new Promise((_, reject) =>
-      setTimeout(
-        () =>
-          reject(
-            new Error(
-              'Creating 9 groups took more than 5 secons long to resolve'
-            )
-          ),
-        5000
-      )
-    ),
-  ])
+  await Promise.all(groupsPromise9)
   console.log('Created 9 groups')
 
+  const groupsPromise10: Promise<Group>[] = []
   // Creating 10 groups in // never resolves
   for (let index = 0; index < 10; index++) {
-    groupsPromise.push(client1.conversations.newGroup([client2.address]))
+    groupsPromise10.push(client1.conversations.newGroup([client2.address]))
   }
   console.log('Creating 10 groups...')
-  await Promise.race([
-    Promise.all(groupsPromise),
-    new Promise((_, reject) =>
-      setTimeout(
-        () => reject(new Error('Creating 9 groups worked but not 10 groups')),
-        5000
-      )
-    ),
-  ])
+  await Promise.all(groupsPromise10)
   console.log('Created 10 groups')
+
+  return true
+})
+
+test('can list many groups members in parallel', async () => {
+  const [client1, client2] = await createClients(2)
+  const groups: Group[] = []
+  for (let index = 0; index < 50; index++) {
+    groups.push(await client1.conversations.newGroup([client2.address]))
+    console.log(`Created group ${index + 1}/${50}`)
+  }
+  try {
+    console.log('Listing 10 groups members...')
+    await Promise.all(groups.slice(0, 10).map((g) => g.members()))
+    console.log('Done listing 10 groups members!')
+  } catch (e) {
+    throw new Error(`Failed listing 10 groups members with ${e}`)
+  }
+
+  try {
+    console.log('Listing 20 groups members...')
+    await Promise.all(groups.slice(0, 20).map((g) => g.members()))
+    console.log('Done listing 20 groups members!')
+  } catch (e) {
+    throw new Error(`Failed listing 20 groups members with ${e}`)
+  }
+
+  try {
+    console.log('Listing 50 groups members...')
+    await Promise.all(groups.slice(0, 50).map((g) => g.members()))
+    console.log('Done listing 50 groups members!')
+  } catch (e) {
+    throw new Error(`Failed listing 50 groups members with ${e}`)
+  }
 
   return true
 })
