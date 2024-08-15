@@ -2165,6 +2165,43 @@ test('can list many groups members in parallel', async () => {
   return true
 })
 
+test('whole RN thread should not be blocked during a pool timeout', async () => {
+  const [client1, client2] = await createClients(2)
+  const groupsPromise10: Promise<Group>[] = []
+  // Creating 10 groups in // never resolves
+  for (let index = 0; index < 10; index++) {
+    groupsPromise10.push(client1.conversations.newGroup([client2.address]))
+  }
+  Promise.all(groupsPromise10).catch((e) => {
+    assert(
+      `${e}`.includes('timed out waiting for connection'),
+      `Unexpected error: ${e}`
+    )
+    console.log('As expected, creating 10 groups resulted in a timeout')
+  })
+  // Wait 1 sec, thread is blocked but it shouldn't
+  await new Promise((r) => setTimeout(r, 1000))
+  console.log(
+    'Calling canMessage which does not use the libxmtp database and should be fast'
+  )
+  await Promise.race([
+    client1.canMessage(client2.address),
+    new Promise((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              'During the database lock, the rest of the RN thread should not be blocked'
+            )
+          ),
+        5000
+      )
+    ),
+  ])
+
+  return true
+})
+
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
 //   const bo = await Client.createRandom({ env: 'local', enableV3: true })
