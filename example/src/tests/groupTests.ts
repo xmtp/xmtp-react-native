@@ -950,6 +950,8 @@ test('can stream groups', async () => {
     throw Error('Unexpected num groups (should be 1): ' + groups.length)
   }
 
+  assert(groups[0].members.length == 2, "should be 2")
+
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const boGroup = await boClient.conversations.newGroup([alixClient.address])
@@ -2035,12 +2037,9 @@ test('can create new installation without breaking group', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const wallet1 = new Wallet(
-    '0xc54c62dd3ad018ef94f20f0722cae33919e65270ad74f2d1794291088800f788'
-  )
-  const wallet2 = new Wallet(
-    '0x8d40c1c40473975cc6bbdc0465e70cc2e98f45f3c3474ca9b809caa9c4f53c0b'
-  )
+  const wallet1 = Wallet.createRandom()
+  const wallet2 = Wallet.createRandom()
+
   const client1 = await Client.create(wallet1, {
     env: 'local',
     appVersion: 'Testing/0.0.0',

@@ -18,6 +18,7 @@ export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
 export interface GroupParams {
   id: string
   createdAt: number
+  members: string[]
   creatorInboxId: InboxId
   topic: string
   name: string

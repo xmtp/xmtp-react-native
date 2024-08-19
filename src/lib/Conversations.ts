@@ -8,6 +8,7 @@ import {
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { Group, GroupParams } from './Group'
+import { Member } from './Member'
 import { CreateGroupOptions } from './types/CreateGroupOptions'
 import { EventTypes } from './types/EventTypes'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
@@ -149,7 +150,10 @@ export default class Conversations<
           return
         }
         this.known[group.id] = true
-        await callback(new Group(this.client, group))
+        const members = group['members'].map((mem: string) => {
+          return Member.from(mem)
+        })
+        await callback(new Group(this.client, group, members))
       }
     )
     this.subscriptions[EventTypes.Group] = groupsSubscription
@@ -286,10 +290,16 @@ export default class Conversations<
 
         this.known[conversationContainer.topic] = true
         if (conversationContainer.version === ConversationVersion.GROUP) {
+          const members = conversationContainer['members'].map(
+            (mem: string) => {
+              return Member.from(mem)
+            }
+          )
           return await callback(
             new Group(
               this.client,
-              conversationContainer as unknown as GroupParams
+              conversationContainer as unknown as GroupParams,
+              members
             )
           )
         } else {
