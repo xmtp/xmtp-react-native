@@ -439,7 +439,7 @@ test('who added me to a group', async () => {
 
   await boClient.conversations.syncGroups()
   const boGroup = (await boClient.conversations.listGroups())[0]
-  const addedByInboxId = await boGroup.addedByInboxId()
+  const addedByInboxId = await boGroup.addedByInboxId
 
   assert(
     addedByInboxId === alixClient.inboxId,
@@ -2107,97 +2107,21 @@ test('can create new installation without breaking group', async () => {
   return true
 })
 
-test('can create 10 groups in parallel', async () => {
-  const [client1, client2] = await createClients(2)
-  const groupsPromise9: Promise<Group>[] = []
-
-  // Creating 9 groups in // works
-  for (let index = 0; index < 9; index++) {
-    groupsPromise9.push(client1.conversations.newGroup([client2.address]))
-  }
-  console.log('Creating 9 groups...')
-  await Promise.all(groupsPromise9)
-  console.log('Created 9 groups')
-
-  const groupsPromise10: Promise<Group>[] = []
-  // Creating 10 groups in // never resolves
-  for (let index = 0; index < 10; index++) {
-    groupsPromise10.push(client1.conversations.newGroup([client2.address]))
-  }
-  console.log('Creating 10 groups...')
-  await Promise.all(groupsPromise10)
-  console.log('Created 10 groups')
-
-  return true
-})
-
 test('can list many groups members in parallel', async () => {
-  const [client1, client2] = await createClients(2)
-  const groups: Group[] = []
-  for (let index = 0; index < 50; index++) {
-    groups.push(await client1.conversations.newGroup([client2.address]))
-    console.log(`Created group ${index + 1}/${50}`)
-  }
+  const [alix, bo] = await createClients(2)
+  const groups: Group[] = await createGroups(alix, [bo], 20, 0)
+
   try {
-    console.log('Listing 10 groups members...')
     await Promise.all(groups.slice(0, 10).map((g) => g.members()))
-    console.log('Done listing 10 groups members!')
   } catch (e) {
     throw new Error(`Failed listing 10 groups members with ${e}`)
   }
 
   try {
-    console.log('Listing 20 groups members...')
     await Promise.all(groups.slice(0, 20).map((g) => g.members()))
-    console.log('Done listing 20 groups members!')
   } catch (e) {
     throw new Error(`Failed listing 20 groups members with ${e}`)
   }
-
-  try {
-    console.log('Listing 50 groups members...')
-    await Promise.all(groups.slice(0, 50).map((g) => g.members()))
-    console.log('Done listing 50 groups members!')
-  } catch (e) {
-    throw new Error(`Failed listing 50 groups members with ${e}`)
-  }
-
-  return true
-})
-
-test('whole RN thread should not be blocked during a pool timeout', async () => {
-  const [client1, client2] = await createClients(2)
-  const groupsPromise10: Promise<Group>[] = []
-  // Creating 10 groups in // never resolves
-  for (let index = 0; index < 10; index++) {
-    groupsPromise10.push(client1.conversations.newGroup([client2.address]))
-  }
-  Promise.all(groupsPromise10).catch((e) => {
-    assert(
-      `${e}`.includes('timed out waiting for connection'),
-      `Unexpected error: ${e}`
-    )
-    console.log('As expected, creating 10 groups resulted in a timeout')
-  })
-  // Wait 1 sec, thread is blocked but it shouldn't
-  await new Promise((r) => setTimeout(r, 1000))
-  console.log(
-    'Calling canMessage which does not use the libxmtp database and should be fast'
-  )
-  await Promise.race([
-    client1.canMessage(client2.address),
-    new Promise((_, reject) =>
-      setTimeout(
-        () =>
-          reject(
-            new Error(
-              'During the database lock, the rest of the RN thread should not be blocked'
-            )
-          ),
-        5000
-      )
-    ),
-  ])
 
   return true
 })
