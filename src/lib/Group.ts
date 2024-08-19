@@ -18,11 +18,12 @@ export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
 export interface GroupParams {
   id: string
   createdAt: number
-  peerInboxIds: InboxId[]
+  // members: Member[]
   creatorInboxId: InboxId
   topic: string
   name: string
   isActive: boolean
+  addedByInboxId: InboxId
   imageUrlSquare: string
   description: string
 }
@@ -34,12 +35,13 @@ export class Group<
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
-  peerInboxIds: InboxId[]
+  // members: Member[]
   version = ConversationVersion.GROUP
   topic: string
   creatorInboxId: InboxId
   name: string
   isGroupActive: boolean
+  addedByInboxId: InboxId
   imageUrlSquare: string
   description: string
   // pinnedFrameUrl: string
@@ -48,11 +50,12 @@ export class Group<
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
-    this.peerInboxIds = params.peerInboxIds
+    // this.members = params.members
     this.topic = params.topic
     this.creatorInboxId = params.creatorInboxId
     this.name = params.name
     this.isGroupActive = params.isActive
+    this.addedByInboxId = params.addedByInboxId
     this.imageUrlSquare = params.imageUrlSquare
     this.description = params.description
     // this.pinnedFrameUrl = params.pinnedFrameUrl
@@ -371,15 +374,6 @@ export class Group<
 
   async isActive(): Promise<boolean> {
     return XMTP.isGroupActive(this.client.inboxId, this.id)
-  }
-
-  /**
-   * Returns the inbox id that added you to the group.
-   * To get the latest added by inbox id from the network, call sync() first.
-   * @returns {Promise<string>} A Promise that resolves to the inbox id that added you to the group.
-   */
-  async addedByInboxId(): Promise<InboxId> {
-    return XMTP.addedByInboxId(this.client.inboxId, this.id)
   }
 
   /**
