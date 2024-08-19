@@ -439,7 +439,7 @@ test('who added me to a group', async () => {
 
   await boClient.conversations.syncGroups()
   const boGroup = (await boClient.conversations.listGroups())[0]
-  const addedByInboxId = await boGroup.addedByInboxId()
+  const addedByInboxId = await boGroup.addedByInboxId
 
   assert(
     addedByInboxId === alixClient.inboxId,
@@ -452,7 +452,7 @@ test('can get members of a group', async () => {
   const [alixClient, boClient] = await createClients(2)
   const group = await alixClient.conversations.newGroup([boClient.address])
 
-  const members = await group.members()
+  const members = group.members
 
   assert(members.length === 2, `Should be 2 members but was ${members.length}`)
 
@@ -514,10 +514,7 @@ test('can message in a group', async () => {
   if (memberInboxIds.length !== 3) {
     throw new Error('num group members should be 3')
   }
-  const peerInboxIds = await alixGroup.peerInboxIds
-  if (peerInboxIds.length !== 2) {
-    throw new Error('num peer group members should be 2')
-  }
+
   if (
     !(
       memberInboxIds.includes(alixClient.inboxId) &&
@@ -526,15 +523,6 @@ test('can message in a group', async () => {
     )
   ) {
     throw new Error('missing address')
-  }
-
-  if (
-    !(
-      peerInboxIds.includes(boClient.inboxId) &&
-      peerInboxIds.includes(caroClient.inboxId)
-    )
-  ) {
-    throw new Error('should include self')
   }
 
   // alix can send messages
@@ -961,6 +949,8 @@ test('can stream groups', async () => {
   if ((groups.length as number) !== 1) {
     throw Error('Unexpected num groups (should be 1): ' + groups.length)
   }
+
+  assert(groups[0].members.length == 2, "should be 2")
 
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -2047,12 +2037,9 @@ test('can create new installation without breaking group', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const wallet1 = new Wallet(
-    '0xc54c62dd3ad018ef94f20f0722cae33919e65270ad74f2d1794291088800f788'
-  )
-  const wallet2 = new Wallet(
-    '0x8d40c1c40473975cc6bbdc0465e70cc2e98f45f3c3474ca9b809caa9c4f53c0b'
-  )
+  const wallet1 = Wallet.createRandom()
+  const wallet2 = Wallet.createRandom()
+
   const client1 = await Client.create(wallet1, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
@@ -2077,13 +2064,10 @@ test('can create new installation without breaking group', async () => {
   await client1Group?.sync()
   await client2Group?.sync()
 
-  assert(
-    (await client1Group?.members())?.length === 2,
-    `client 1 should see 2 members`
-  )
+  assert(client1Group?.members?.length === 2, `client 1 should see 2 members`)
 
   assert(
-    (await client2Group?.members())?.length === 2,
+    (await client2Group?.membersList())?.length === 2,
     `client 2 should see 2 members`
   )
 
@@ -2100,9 +2084,28 @@ test('can create new installation without breaking group', async () => {
 
   await client1Group?.send('This message will break the group')
   assert(
-    (await client1Group?.members())?.length === 2,
+    client1Group?.members?.length === 2,
     `client 1 should still see the 2 members`
   )
+
+  return true
+})
+
+test('can list many groups members in parallel', async () => {
+  const [alix, bo] = await createClients(2)
+  const groups: Group[] = await createGroups(alix, [bo], 20, 0)
+
+  try {
+    await Promise.all(groups.slice(0, 10).map((g) => g.membersList()))
+  } catch (e) {
+    throw new Error(`Failed listing 10 groups members with ${e}`)
+  }
+
+  try {
+    await Promise.all(groups.slice(0, 20).map((g) => g.membersList()))
+  } catch (e) {
+    throw new Error(`Failed listing 20 groups members with ${e}`)
+  }
 
   return true
 })

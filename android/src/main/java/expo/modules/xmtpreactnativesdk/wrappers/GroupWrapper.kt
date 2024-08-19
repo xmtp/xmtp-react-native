@@ -13,11 +13,12 @@ class GroupWrapper {
                 "clientAddress" to client.address,
                 "id" to group.id,
                 "createdAt" to group.createdAt.time,
-                "peerInboxIds" to group.peerInboxIds(),
+                "members" to group.members().map { MemberWrapper.encode(it) },
                 "version" to "GROUP",
                 "topic" to group.topic,
                 "creatorInboxId" to group.creatorInboxId(),
                 "isActive" to group.isActive(),
+                "addedByInboxId" to group.addedByInboxId(),
                 "name" to group.name,
                 "imageUrlSquare" to group.imageUrlSquare,
                 "description" to group.description

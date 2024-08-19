@@ -15,11 +15,12 @@ struct GroupWrapper {
 			"clientAddress": client.address,
 			"id": group.id,
 			"createdAt": UInt64(group.createdAt.timeIntervalSince1970 * 1000),
-			"peerInboxIds": try group.peerInboxIds,
+			"members": try group.members.compactMap { member in return try MemberWrapper.encode(member) },
 			"version": "GROUP",
 			"topic": group.topic,
 			"creatorInboxId": try group.creatorInboxId(),
 			"isActive": try group.isActive(),
+			"addedByInboxId": try group.addedByInboxId(),
 			"name": try group.groupName(),
 			"imageUrlSquare": try group.groupImageUrlSquare(),
 			"description": try group.groupDescription()
