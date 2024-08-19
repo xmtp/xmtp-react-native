@@ -13,7 +13,7 @@ class GroupWrapper {
                 "clientAddress" to client.address,
                 "id" to group.id,
                 "createdAt" to group.createdAt.time,
-//                "members" to group.members().map { MemberWrapper.encode(it) },
+                "members" to group.members().map { MemberWrapper.encode(it) },
                 "version" to "GROUP",
                 "topic" to group.topic,
                 "creatorInboxId" to group.creatorInboxId(),
