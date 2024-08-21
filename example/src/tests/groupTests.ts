@@ -859,10 +859,9 @@ test('can remove members from a group', async () => {
   }
 
   const caroGroupMembers = await caroGroups[0].memberInboxIds()
-  // should be 3 since they wont get new updates to the group after being removed
-  if (caroGroupMembers.length !== 3) {
+  if (caroGroupMembers.length !== 2) {
     throw new Error(
-      'num group members should be 3 but was' + caroGroupMembers.length
+      'num group members should be 2 but was' + caroGroupMembers.length
     )
   }
 
