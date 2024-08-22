@@ -293,7 +293,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val inboxState = client.inboxState(refreshFromNetwork)
-                InboxStateWrapper.encodeToObj(inboxState)
+                InboxStateWrapper.encode(inboxState)
             }
         }
 

@@ -79,7 +79,6 @@ test('can revoke all other installations', async () => {
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
-  await alix.dropLocalDatabaseConnection()
   await alix.deleteLocalDatabase()
 
   const alix2 = await Client.create(alixWallet, {
@@ -2116,7 +2115,6 @@ test('can revoke all other installations', async () => {
 //     `client 2 should see 2 members`
 //   )
 
-//   await client2.dropLocalDatabaseConnection()
 //   await client2.deleteLocalDatabase()
 
 //   // Recreating a client with wallet 2 (new installation!)
