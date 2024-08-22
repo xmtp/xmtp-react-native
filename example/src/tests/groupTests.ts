@@ -123,13 +123,13 @@ test('can sync all groups', async () => {
   const boGroup = await bo.conversations.findGroup(alixGroup.id)
   await alixGroup.send('hi')
   assert(
-    boGroup?.messages?.length === 0,
+    (await boGroup?.messages())?.length === 0,
     `messages should be empty before sync but was ${boGroup?.messages?.length}`
   )
 
   await bo.conversations.syncAllGroups()
   assert(
-    boGroup?.messages?.length === 1,
+    (await boGroup?.messages())?.length === 1,
     `messages should be 4 after sync but was ${boGroup?.messages?.length}`
   )
   return true
