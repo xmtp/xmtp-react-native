@@ -228,7 +228,6 @@ class XMTPModule : Module() {
             "conversationMessage",
             // Group
             "groupMessage",
-//            "revoke"
         )
 
         Function("address") { inboxId: String ->
@@ -287,7 +286,6 @@ class XMTPModule : Module() {
 
                 client.revokeAllOtherInstallations(reactSigner)
                 signer = null
-//                sendEvent("revoke")
             }
         }
 

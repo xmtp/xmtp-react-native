@@ -157,22 +157,23 @@ public class XMTPModule: Module {
 			try await client.requestMessageHistorySync()
 		}
 		
-		AsyncFunction("revokeAllOtherInstallations") { (inboxId: String, refreshFromNetwork: Bool) in
+		AsyncFunction("revokeAllOtherInstallations") { (inboxId: String) in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let signer = ReactNativeSigner(module: self, address: client.address)
 			self.signer = signer
 
-			try await client.revokeAllOtherInstallations(signer)
+			try await client.revokeAllOtherInstallations(signingKey: signer)
 			self.signer = nil
 		}
 		
-		AsyncFunction("getInboxState") { (inboxId: String, refreshFromNetwork: Bool) in -> String
+		AsyncFunction("getInboxState") { (inboxId: String, refreshFromNetwork: Bool) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			try await client.inboxState(refreshFromNetwork)
+			let inboxState = try await client.inboxState(refreshFromNetwork: refreshFromNetwork)
+			return try InboxStateWrapper.encode(inboxState)
 		}
 
 		//
