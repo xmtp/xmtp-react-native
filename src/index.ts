@@ -70,6 +70,17 @@ export async function requestMessageHistorySync(inboxId: string) {
   return XMTPModule.requestMessageHistorySync(inboxId)
 }
 
+export async function getInboxState(
+  inboxId: string,
+  refreshFromNetwork: boolean
+) {
+  return XMTPModule.getInboxState(inboxId, refreshFromNetwork)
+}
+
+export async function revokeAllOtherInstallations(inboxId: string) {
+  return XMTPModule.revokeAllOtherInstallations(inboxId)
+}
+
 export async function auth(
   address: string,
   environment: 'local' | 'dev' | 'production',
@@ -336,6 +347,10 @@ export async function findV3Message<
 
 export async function syncGroups(inboxId: string) {
   await XMTPModule.syncGroups(inboxId)
+}
+
+export async function syncAllGroups(inboxId: string) {
+  await XMTPModule.syncAllGroups(inboxId)
 }
 
 export async function syncGroup(inboxId: string, id: string) {

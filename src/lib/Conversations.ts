@@ -214,11 +214,21 @@ export default class Conversations<
   }
 
   /**
-   * Executes a network request to fetch the latest list of groups assoociated with the client
+   * Executes a network request to fetch the latest list of groups associated with the client
    * and save them to the local state.
    */
   async syncGroups() {
     await XMTPModule.syncGroups(this.client.inboxId)
+  }
+
+  /**
+   * Executes a network request to fetch the latest list of messages for all local groups associated with the client
+   * and save them to the local state.
+   *
+   * @warning call {@linkcode Conversations.syncGroups | syncGroups()} first to get the latest list of groups locally
+   */
+  async syncAllGroups() {
+    await XMTPModule.syncAllGroups(this.client.inboxId)
   }
 
   /**
