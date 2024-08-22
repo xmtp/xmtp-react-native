@@ -24,6 +24,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PermissionPolicySetWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
@@ -65,6 +66,7 @@ import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
+import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.InboxState
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
 import java.io.BufferedReader
 import java.io.File
@@ -225,8 +227,8 @@ class XMTPModule : Module() {
             // Conversation
             "conversationMessage",
             // Group
-            "groupMessage"
-
+            "groupMessage",
+//            "revoke"
         )
 
         Function("address") { inboxId: String ->
@@ -272,6 +274,28 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 client.requestMessageHistorySync()
+            }
+        }
+
+        AsyncFunction("revokeAllOtherInstallations") Coroutine { inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("revokeAllOtherInstallations")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val reactSigner =
+                    ReactNativeSigner(module = this@XMTPModule, address = client.address)
+                signer = reactSigner
+
+                client.revokeAllOtherInstallations(reactSigner)
+                signer = null
+//                sendEvent("revoke")
+            }
+        }
+
+        AsyncFunction("getInboxState") Coroutine { inboxId: String, refreshFromNetwork: Boolean ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val inboxState = client.inboxState(refreshFromNetwork)
+                InboxStateWrapper.encodeToObj(inboxState)
             }
         }
 
@@ -950,6 +974,14 @@ class XMTPModule : Module() {
                 logV("syncGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 client.conversations.syncGroups()
+            }
+        }
+
+        AsyncFunction("syncAllGroups") Coroutine { inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("syncAllGroups")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.conversations.syncAllGroups()
             }
         }
 
