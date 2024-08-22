@@ -457,51 +457,6 @@ export class Client<
   }
 
   /**
-   * Revoke all other installations but the current one.
-   */
-  async revokeAllOtherInstallations(wallet: Signer | WalletClient | null) {
-    const signer = getSigner(wallet)
-    if (!signer) {
-      throw new Error('Signer is not configured')
-    }
-    XMTPModule.emitter.addListener(
-      'sign',
-      async (message: { id: string; message: string }) => {
-        const request: { id: string; message: string } = message
-        try {
-          const signatureString = await signer.signMessage(request.message)
-          const eSig = splitSignature(signatureString)
-          const r = hexToBytes(eSig.r)
-          const s = hexToBytes(eSig.s)
-          const sigBytes = new Uint8Array(65)
-          sigBytes.set(r)
-          sigBytes.set(s, r.length)
-          sigBytes[64] = eSig.recoveryParam
-
-          const signature = Buffer.from(sigBytes).toString('base64')
-
-          await XMTPModule.receiveSignature(request.id, signature)
-          await XMTPModule.revokeAllOtherInstallations(this.inboxId)
-        } catch (e) {
-          const errorMessage =
-            'ERROR in revoke installations. User rejected signature'
-          console.info(errorMessage, e)
-        }
-      }
-    )
-  }
-
-  /**
-   * Make a request for a inboxs state.
-   *
-   * @param {boolean} refreshFromNetwork - If you want to refresh the current state of in the inbox from the network or not.
-   * @returns {Promise<InboxState>} A Promise resolving to a InboxState.
-   */
-  async inboxState(refreshFromNetwork: boolean): Promise<InboxState> {
-    return await XMTPModule.getInboxState(this.inboxId, refreshFromNetwork)
-  }
-
-  /**
    * Determines whether the current user can send messages to the specified peers over groups.
    *
    * This method checks if the specified peers are using clients that support group messaging.
