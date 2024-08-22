@@ -9,7 +9,6 @@ import type {
   PreparedLocalMessage,
 } from './ContentCodec'
 import Conversations from './Conversations'
-import { InboxState } from './InboxState'
 import { TextCodec } from './NativeCodecs/TextCodec'
 import { Query } from './Query'
 import { Signer, getSigner } from './Signer'

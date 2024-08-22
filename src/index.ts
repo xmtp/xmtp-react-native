@@ -25,7 +25,6 @@ import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
-import { InboxState } from './lib/InboxState'
 
 export * from './context'
 export * from './hooks'
