@@ -156,6 +156,24 @@ public class XMTPModule: Module {
 			}
 			try await client.requestMessageHistorySync()
 		}
+		
+		AsyncFunction("revokeAllOtherInstallations") { (inboxId: String, refreshFromNetwork: Bool) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			let signer = ReactNativeSigner(module: self, address: client.address)
+			self.signer = signer
+
+			try await client.revokeAllOtherInstallations(signer)
+			self.signer = nil
+		}
+		
+		AsyncFunction("getInboxState") { (inboxId: String, refreshFromNetwork: Bool) in -> String
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			try await client.inboxState(refreshFromNetwork)
+		}
 
 		//
 		// Auth functions
@@ -837,6 +855,13 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			try await client.conversations.sync()
+		}
+		
+		AsyncFunction("syncAllGroups") { (inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			try await client.conversations.syncAllGroups()
 		}
 
 		AsyncFunction("syncGroup") { (inboxId: String, id: String) in
