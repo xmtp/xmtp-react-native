@@ -457,7 +457,17 @@ export class Client<
   }
 
   /**
-   * Make a request for a message history sync.
+   * Revoke all other installations but the current one.
+   */
+  async revokeAllOtherInstallations() {
+    return await XMTPModule.revokeAllOtherInstallations(this.inboxId)
+  }
+
+  /**
+   * Make a request for a inboxs state.
+   *
+   * @param {boolean} refreshFromNetwork - If you want to refresh the current state of in the inbox from the network or not.
+   * @returns {Promise<InboxState>} A Promise resolving to a InboxState.
    */
   async inboxState(refreshFromNetwork: boolean): Promise<InboxState> {
     return await XMTPModule.getInboxState(this.inboxId, refreshFromNetwork)
