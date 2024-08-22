@@ -75,7 +75,7 @@ export async function getInboxState(
   inboxId: string,
   refreshFromNetwork: boolean
 ): Promise<InboxState> {
-  const inboxState = XMTPModule.getInboxState(inboxId, refreshFromNetwork)
+  const inboxState = await XMTPModule.getInboxState(inboxId, refreshFromNetwork)
   return InboxState.from(inboxState)
 }
 

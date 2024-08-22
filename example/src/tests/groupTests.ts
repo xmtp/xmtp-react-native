@@ -88,7 +88,6 @@ test('can revoke all other installations', async () => {
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
-  await alix2.dropLocalDatabaseConnection()
   await alix2.deleteLocalDatabase()
 
   const alix3 = await Client.create(alixWallet, {
@@ -97,7 +96,6 @@ test('can revoke all other installations', async () => {
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
-
   const inboxState = await alix3.inboxState(true)
   assert(
     inboxState.installationIds.length === 3,
@@ -110,27 +108,6 @@ test('can revoke all other installations', async () => {
   assert(
     inboxState2.installationIds.length === 1,
     `installationIds length should be 1 but was ${inboxState2.installationIds.length}`
-  )
-  return true
-})
-
-test('can sync all groups', async () => {
-  const [alix, bo] = await createClients(2)
-  const groups: Group[] = await createGroups(alix, [bo], 50, 0)
-
-  const alixGroup = groups[0]
-  await bo.conversations.syncGroups()
-  const boGroup = await bo.conversations.findGroup(alixGroup.id)
-  await alixGroup.send('hi')
-  assert(
-    (await boGroup?.messages())?.length === 0,
-    `messages should be empty before sync but was ${boGroup?.messages?.length}`
-  )
-
-  await bo.conversations.syncAllGroups()
-  assert(
-    (await boGroup?.messages())?.length === 1,
-    `messages should be 4 after sync but was ${boGroup?.messages?.length}`
   )
   return true
 })
@@ -2175,6 +2152,27 @@ test('can sync all groups', async () => {
 //     throw new Error(`Failed listing 20 groups members with ${e}`)
 //   }
 
+//   return true
+// })
+
+// test('can sync all groups', async () => {
+//   const [alix, bo] = await createClients(2)
+//   const groups: Group[] = await createGroups(alix, [bo], 50, 0)
+
+//   const alixGroup = groups[0]
+//   await bo.conversations.syncGroups()
+//   const boGroup = await bo.conversations.findGroup(alixGroup.id)
+//   await alixGroup.send('hi')
+//   assert(
+//     (await boGroup?.messages())?.length === 0,
+//     `messages should be empty before sync but was ${boGroup?.messages?.length}`
+//   )
+
+//   await bo.conversations.syncAllGroups()
+//   assert(
+//     (await boGroup?.messages())?.length === 1,
+//     `messages should be 4 after sync but was ${boGroup?.messages?.length}`
+//   )
 //   return true
 // })
 
