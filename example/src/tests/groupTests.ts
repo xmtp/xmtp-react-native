@@ -20,6 +20,28 @@ function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name: String(counter++) + '. ' + name, run: perform })
 }
 
+async function createGroups(
+  client: Client,
+  peers: Client[],
+  numGroups: number,
+  numMessages: number
+): Promise<Group[]> {
+  const groups = []
+  const addresses: string[] = peers.map((client) => client.address)
+  for (let i = 0; i < numGroups; i++) {
+    const group = await client.conversations.newGroup(addresses, {
+      name: `group ${i}`,
+      imageUrlSquare: `www.group${i}.com`,
+      description: `group ${i}`,
+    })
+    groups.push(group)
+    for (let i = 0; i < numMessages; i++) {
+      await group.send({ text: `Message ${i}` })
+    }
+  }
+  return groups
+}
+
 test('can make a MLS V3 client', async () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const keyBytes = new Uint8Array([
@@ -44,27 +66,53 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
-async function createGroups(
-  client: Client,
-  peers: Client[],
-  numGroups: number,
-  numMessages: number
-): Promise<Group[]> {
-  const groups = []
-  const addresses: string[] = peers.map((client) => client.address)
-  for (let i = 0; i < numGroups; i++) {
-    const group = await client.conversations.newGroup(addresses, {
-      name: `group ${i}`,
-      imageUrlSquare: `www.group${i}.com`,
-      description: `group ${i}`,
-    })
-    groups.push(group)
-    for (let i = 0; i < numMessages; i++) {
-      await group.send({ text: `Message ${i}` })
-    }
-  }
-  return groups
-}
+test('can revoke all other installations', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const alixWallet = Wallet.createRandom()
+
+  const alix = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+  await alix.dropLocalDatabaseConnection()
+  await alix.deleteLocalDatabase()
+
+  const alix2 = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+  await alix2.dropLocalDatabaseConnection()
+  await alix2.deleteLocalDatabase()
+
+  const alix3 = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  const inboxState = await alix3.inboxState(true)
+  assert(
+    inboxState.installationIds.length === 3,
+    `installationIds length should be 3 but was ${inboxState.installationIds.length}`
+  )
+
+  await alix3.revokeAllOtherInstallations(alixWallet)
+
+  const inboxState2 = await alix3.inboxState(true)
+  assert(
+    inboxState2.installationIds.length === 1,
+    `installationIds length should be 1 but was ${inboxState2.installationIds.length}`
+  )
+  return true
+})
 
 test('calls preAuthenticateToInboxCallback when supplied', async () => {
   let isCallbackCalled = 0
@@ -949,7 +997,7 @@ test('can stream groups', async () => {
     throw Error('Unexpected num groups (should be 1): ' + groups.length)
   }
 
-  assert(groups[0].members.length == 2, "should be 2")
+  assert(groups[0].members.length == 2, 'should be 2')
 
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -2106,6 +2154,21 @@ test('can list many groups members in parallel', async () => {
     throw new Error(`Failed listing 20 groups members with ${e}`)
   }
 
+  return true
+})
+
+test('can sync all groups', async () => {
+  const [alix, bo] = await createClients(2)
+  const groups: Group[] = await createGroups(alix, [bo], 50, 1)
+
+  await bo.conversations.syncGroups()
+  const boGroup = await bo.conversations.findGroup(groups[0].id)
+  assert(
+    boGroup?.messages?.length === 0,
+    `messages should be empty before sync`
+  )
+  await bo.conversations.syncAllGroups()
+  assert(boGroup?.messages?.length === 1, `messages should be 1 after sync`)
   return true
 })
 
