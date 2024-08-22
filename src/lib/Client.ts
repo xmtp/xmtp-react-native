@@ -16,6 +16,7 @@ import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
 import { DecodedMessage } from '../index'
+import { InboxState } from './InboxState'
 
 declare const Buffer
 
