@@ -20,6 +20,28 @@ function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name: String(counter++) + '. ' + name, run: perform })
 }
 
+async function createGroups(
+  client: Client,
+  peers: Client[],
+  numGroups: number,
+  numMessages: number
+): Promise<Group[]> {
+  const groups = []
+  const addresses: string[] = peers.map((client) => client.address)
+  for (let i = 0; i < numGroups; i++) {
+    const group = await client.conversations.newGroup(addresses, {
+      name: `group ${i}`,
+      imageUrlSquare: `www.group${i}.com`,
+      description: `group ${i}`,
+    })
+    groups.push(group)
+    for (let i = 0; i < numMessages; i++) {
+      await group.send({ text: `Message ${i}` })
+    }
+  }
+  return groups
+}
+
 test('can make a MLS V3 client', async () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const keyBytes = new Uint8Array([
@@ -43,28 +65,6 @@ test('can make a MLS V3 client', async () => {
   )
   return true
 })
-
-async function createGroups(
-  client: Client,
-  peers: Client[],
-  numGroups: number,
-  numMessages: number
-): Promise<Group[]> {
-  const groups = []
-  const addresses: string[] = peers.map((client) => client.address)
-  for (let i = 0; i < numGroups; i++) {
-    const group = await client.conversations.newGroup(addresses, {
-      name: `group ${i}`,
-      imageUrlSquare: `www.group${i}.com`,
-      description: `group ${i}`,
-    })
-    groups.push(group)
-    for (let i = 0; i < numMessages; i++) {
-      await group.send({ text: `Message ${i}` })
-    }
-  }
-  return groups
-}
 
 test('calls preAuthenticateToInboxCallback when supplied', async () => {
   let isCallbackCalled = 0
@@ -949,7 +949,7 @@ test('can stream groups', async () => {
     throw Error('Unexpected num groups (should be 1): ' + groups.length)
   }
 
-  assert(groups[0].members.length == 2, "should be 2")
+  assert(groups[0].members.length == 2, 'should be 2')
 
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -2070,7 +2070,6 @@ test('can create new installation without breaking group', async () => {
     `client 2 should see 2 members`
   )
 
-  await client2.dropLocalDatabaseConnection()
   await client2.deleteLocalDatabase()
 
   // Recreating a client with wallet 2 (new installation!)
@@ -2106,6 +2105,27 @@ test('can list many groups members in parallel', async () => {
     throw new Error(`Failed listing 20 groups members with ${e}`)
   }
 
+  return true
+})
+
+test('can sync all groups', async () => {
+  const [alix, bo] = await createClients(2)
+  const groups: Group[] = await createGroups(alix, [bo], 50, 0)
+
+  const alixGroup = groups[0]
+  await bo.conversations.syncGroups()
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  await alixGroup.send('hi')
+  assert(
+    (await boGroup?.messages())?.length === 0,
+    `messages should be empty before sync but was ${boGroup?.messages?.length}`
+  )
+
+  await bo.conversations.syncAllGroups()
+  assert(
+    (await boGroup?.messages())?.length === 1,
+    `messages should be 4 after sync but was ${boGroup?.messages?.length}`
+  )
   return true
 })
 

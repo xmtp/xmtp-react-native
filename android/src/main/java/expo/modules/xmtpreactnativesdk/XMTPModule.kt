@@ -225,8 +225,7 @@ class XMTPModule : Module() {
             // Conversation
             "conversationMessage",
             // Group
-            "groupMessage"
-
+            "groupMessage",
         )
 
         Function("address") { inboxId: String ->
@@ -950,6 +949,14 @@ class XMTPModule : Module() {
                 logV("syncGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 client.conversations.syncGroups()
+            }
+        }
+
+        AsyncFunction("syncAllGroups") Coroutine { inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("syncAllGroups")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.conversations.syncAllGroups()
             }
         }
 
