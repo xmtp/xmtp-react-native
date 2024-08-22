@@ -25,6 +25,7 @@ import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
+import { InboxState } from './lib/InboxState'
 
 export * from './context'
 export * from './hooks'
@@ -73,8 +74,9 @@ export async function requestMessageHistorySync(inboxId: string) {
 export async function getInboxState(
   inboxId: string,
   refreshFromNetwork: boolean
-) {
-  return XMTPModule.getInboxState(inboxId, refreshFromNetwork)
+): Promise<InboxState> {
+  const inboxState = XMTPModule.getInboxState(inboxId, refreshFromNetwork)
+  return InboxState.from(inboxState)
 }
 
 export async function revokeAllOtherInstallations(inboxId: string) {

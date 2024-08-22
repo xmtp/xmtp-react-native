@@ -16,6 +16,7 @@ import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
 import { DecodedMessage } from '../index'
+import { InboxState } from './InboxState'
 
 declare const Buffer
 
@@ -453,6 +454,13 @@ export class Client<
    */
   async requestMessageHistorySync() {
     return await XMTPModule.requestMessageHistorySync(this.inboxId)
+  }
+
+  /**
+   * Make a request for a message history sync.
+   */
+  async inboxState(refreshFromNetwork: boolean): Promise<InboxState> {
+    return await XMTPModule.getInboxState(this.inboxId, refreshFromNetwork)
   }
 
   /**
