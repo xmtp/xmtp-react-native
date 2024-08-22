@@ -70,6 +70,18 @@ export async function requestMessageHistorySync(inboxId: string) {
   return XMTPModule.requestMessageHistorySync(inboxId)
 }
 
+export async function getInboxState(
+  inboxId: string,
+  refreshFromNetwork: boolean
+): Promise<InboxState> {
+  const inboxState = await XMTPModule.getInboxState(inboxId, refreshFromNetwork)
+  return InboxState.from(inboxState)
+}
+
+export async function revokeAllOtherInstallations(inboxId: string) {
+  return XMTPModule.revokeAllOtherInstallations(inboxId)
+}
+
 export async function auth(
   address: string,
   environment: 'local' | 'dev' | 'production',
