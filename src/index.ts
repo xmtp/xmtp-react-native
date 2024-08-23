@@ -19,6 +19,7 @@ import {
 } from './lib/ConversationContainer'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
 import { Group, PermissionUpdateOption } from './lib/Group'
+import { InboxState } from './lib/InboxState'
 import { Member } from './lib/Member'
 import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
@@ -68,6 +69,18 @@ export async function reconnectLocalDatabase(inboxId: string) {
 
 export async function requestMessageHistorySync(inboxId: string) {
   return XMTPModule.requestMessageHistorySync(inboxId)
+}
+
+export async function getInboxState(
+  inboxId: string,
+  refreshFromNetwork: boolean
+): Promise<InboxState> {
+  const inboxState = await XMTPModule.getInboxState(inboxId, refreshFromNetwork)
+  return InboxState.from(inboxState)
+}
+
+export async function revokeAllOtherInstallations(inboxId: string) {
+  return XMTPModule.revokeAllOtherInstallations(inboxId)
 }
 
 export async function auth(

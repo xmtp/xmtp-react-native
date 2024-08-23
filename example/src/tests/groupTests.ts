@@ -66,6 +66,44 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
+test('can revoke all other installations', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const alixWallet = Wallet.createRandom()
+
+  const alix = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+  await alix.deleteLocalDatabase()
+
+  const alix2 = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  const inboxState = await alix2.inboxState(true)
+  assert(
+    inboxState.installationIds.length === 2,
+    `installationIds length should be 2 but was ${inboxState.installationIds.length}`
+  )
+
+  await alix2.revokeAllOtherInstallations(alixWallet)
+
+  const inboxState2 = await alix2.inboxState(true)
+  assert(
+    inboxState2.installationIds.length === 1,
+    `installationIds length should be 1 but was ${inboxState2.installationIds.length}`
+  )
+  return true
+})
+
 test('calls preAuthenticateToInboxCallback when supplied', async () => {
   let isCallbackCalled = 0
   let isPreAuthCalled = false
