@@ -484,7 +484,8 @@ export class Client<
 
               await XMTPModule.receiveSignature(request.id, signature)
             } catch (e) {
-              const errorMessage = 'ERROR in revokeInstallations. User rejected signature'
+              const errorMessage =
+                'ERROR in revokeInstallations. User rejected signature'
               Client.signSubscription?.remove()
               console.info(errorMessage, e)
               reject(errorMessage)
