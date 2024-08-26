@@ -1,4 +1,5 @@
 import { Wallet } from 'ethers'
+import { Platform } from 'expo-modules-core'
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
@@ -2159,10 +2160,40 @@ test('can sync all groups', async () => {
     `messages should be empty before sync but was ${boGroup?.messages?.length}`
   )
 
-  await bo.conversations.syncAllGroups()
+  const numGroupsSynced = await bo.conversations.syncAllGroups()
   assert(
     (await boGroup?.messages())?.length === 1,
     `messages should be 4 after sync but was ${boGroup?.messages?.length}`
+  )
+  assert(
+    numGroupsSynced === 50,
+    `should have synced 50 groups but synced ${numGroupsSynced}`
+  )
+
+  for (const group of groups) {
+    await group.removeMembers([bo.address])
+  }
+
+  // First syncAllGroups after removal will still sync each group to set group inactive
+  // For some reason on Android (RN only), first syncAllGroups already returns 0
+  const numGroupsSynced2 = await bo.conversations.syncAllGroups()
+  if (Platform.OS === 'ios') {
+    assert(
+      numGroupsSynced2 === 50,
+      `should have synced 50 groups but synced ${numGroupsSynced2}`
+    )
+  } else {
+    assert(
+      numGroupsSynced2 === 0,
+      `should have synced 0 groups but synced ${numGroupsSynced2}`
+    )
+  }
+
+  // Next syncAllGroups will not sync inactive groups
+  const numGroupsSynced3 = await bo.conversations.syncAllGroups()
+  assert(
+    numGroupsSynced3 === 0,
+    `should have synced 0 groups but synced ${numGroupsSynced3}`
   )
   return true
 })
