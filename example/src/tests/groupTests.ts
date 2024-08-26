@@ -1,4 +1,5 @@
 import { Wallet } from 'ethers'
+import { Platform } from 'expo-modules-core'
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
@@ -13,7 +14,6 @@ import {
   GroupUpdatedContent,
   GroupUpdatedCodec,
 } from '../../../src/index'
-import { Platform } from 'expo-modules-core'
 
 export const groupTests: Test[] = []
 let counter = 1
@@ -2188,7 +2188,6 @@ test('can sync all groups', async () => {
       `should have synced 0 groups but synced ${numGroupsSynced2}`
     )
   }
-  
 
   // Next syncAllGroups will not sync inactive groups
   const numGroupsSynced3 = await bo.conversations.syncAllGroups()
