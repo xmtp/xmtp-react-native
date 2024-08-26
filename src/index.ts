@@ -351,8 +351,8 @@ export async function syncGroups(inboxId: string) {
   await XMTPModule.syncGroups(inboxId)
 }
 
-export async function syncAllGroups(inboxId: string) {
-  await XMTPModule.syncAllGroups(inboxId)
+export async function syncAllGroups(inboxId: string): Promise<number> {
+  return await XMTPModule.syncAllGroups(inboxId)
 }
 
 export async function syncGroup(inboxId: string, id: string) {

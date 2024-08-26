@@ -858,11 +858,11 @@ public class XMTPModule: Module {
 			try await client.conversations.sync()
 		}
 		
-		AsyncFunction("syncAllGroups") { (inboxId: String) in
+		AsyncFunction("syncAllGroups") { (inboxId: String) -> UInt32 in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			try await client.conversations.syncAllGroups()
+			return try await client.conversations.syncAllGroups()
 		}
 
 		AsyncFunction("syncGroup") { (inboxId: String, id: String) in

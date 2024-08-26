@@ -222,13 +222,12 @@ export default class Conversations<
   }
 
   /**
-   * Executes a network request to fetch the latest list of messages for all local groups associated with the client
-   * and save them to the local state.
+   * Executes a network request to sync all active groups associated with the client
    *
-   * @warning call {@linkcode Conversations.syncGroups | syncGroups()} first to get the latest list of groups locally
+   * @returns {Promise<number>} A Promise that resolves to the number of groups synced.
    */
-  async syncAllGroups() {
-    await XMTPModule.syncAllGroups(this.client.inboxId)
+  async syncAllGroups(): Promise<number> {
+    return await XMTPModule.syncAllGroups(this.client.inboxId)
   }
 
   /**
