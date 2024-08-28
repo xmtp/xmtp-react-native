@@ -53,6 +53,11 @@ public class XMTPModule: Module {
 			ContentJson.initCodecs(client: client)
 			clients[key] = client
 		}
+        
+        // A method to drop client for a given key from memory
+        func dropClient(key: String) {
+            clients[key] = nil
+        }
 
 		// A method to retrieve a client
 		func getClient(key: String) -> XMTP.Client? {
@@ -271,10 +276,15 @@ public class XMTPModule: Module {
 				await clientsManager.updateClient(key: client.inboxID, client: client)
 				return try ClientWrapper.encodeToObj(client)
 			} catch {
-				print("ERRO! Failed to create client: \(error)")
+				print("ERROR! Failed to create client: \(error)")
 				throw error
 			}
 		}
+        
+        // Remove a client from memory for a given inboxId
+        AsyncFunction("dropClient") { (inboxId: String) in
+            await clientsManager.dropClient(key: inboxId)
+        }
 		
 		AsyncFunction("sign") { (inboxId: String, digest: [UInt8], keyType: String, preKeyIndex: Int) -> [UInt8] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {

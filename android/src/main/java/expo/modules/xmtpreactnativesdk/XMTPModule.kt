@@ -371,6 +371,13 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("dropClient") Coroutine { inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("dropClient")
+                clients.remove(inboxId)
+            }
+        }
+
         AsyncFunction("sign") Coroutine { inboxId: String, digest: List<Int>, keyType: String, preKeyIndex: Int ->
             withContext(Dispatchers.IO) {
                 logV("sign")
