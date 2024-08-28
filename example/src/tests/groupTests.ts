@@ -1,6 +1,5 @@
 import { Wallet } from 'ethers'
 import { Platform } from 'expo-modules-core'
-import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
@@ -291,6 +290,23 @@ test('can drop a local database', async () => {
     return true
   }
   throw new Error('should throw when local database not connected')
+})
+
+test('can drop client from memory', async () => {
+  const [client, anotherClient] = await createClients(2)
+  await client.dropLocalDatabaseConnection()
+  await anotherClient.dropLocalDatabaseConnection()
+
+  await client.reconnectLocalDatabase()
+  await Client.dropClient(anotherClient.inboxId)
+  try {
+    await anotherClient.reconnectLocalDatabase()
+    return false
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // We cannot reconnect anotherClient because it was successfully dropped
+    return true
+  }
 })
 
 test('can get a inboxId from an address', async () => {
@@ -988,7 +1004,7 @@ test('can stream groups', async () => {
     throw Error('Unexpected num groups (should be 1): ' + groups.length)
   }
 
-  assert(groups[0].members.length == 2, 'should be 2')
+  assert(groups[0].members.length === 2, 'should be 2')
 
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
