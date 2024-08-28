@@ -178,6 +178,10 @@ export async function createFromKeyBundle(
   )
 }
 
+export async function dropClient(inboxId: string) {
+  return await XMTPModule.dropClient(inboxId)
+}
+
 export async function createGroup<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(

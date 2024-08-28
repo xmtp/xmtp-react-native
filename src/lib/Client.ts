@@ -254,6 +254,13 @@ export class Client<
   }
 
   /**
+   * Drop the client from memory. Use when you want to remove the client from memory and are done with it.
+   */
+  static async dropClient(inboxId: string) {
+    return await XMTPModule.dropClient(inboxId)
+  }
+
+  /**
    * Static method to determine if the address is currently in our network.
    *
    * This method checks if the specified peer has signed up for XMTP.
