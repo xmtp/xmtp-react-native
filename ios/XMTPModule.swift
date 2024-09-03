@@ -1298,7 +1298,6 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("unsubscribeFromAllMessages") { (inboxId: String) in
-			print("unsubscribeFromAllMessages")
 			await subscriptionsManager.get(getMessagesKey(inboxId: inboxId))?.cancel()
 		}
 		
