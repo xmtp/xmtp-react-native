@@ -1,5 +1,6 @@
 import { Wallet } from 'ethers'
 import { Platform } from 'expo-modules-core'
+import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
