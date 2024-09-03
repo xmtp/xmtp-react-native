@@ -1,5 +1,6 @@
 import { Wallet } from 'ethers'
 import { Platform } from 'expo-modules-core'
+import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
@@ -953,6 +954,52 @@ test('can remove and add members from a group by inbox id', async () => {
   if (alixGroupMembers2.length !== 3) {
     throw new Error('num group members should be 3')
   }
+
+  return true
+})
+
+test('can cancel streams', async () => {
+  const [alix, bo] = await createClients(2)
+  let messageCallbacks = 0
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  const group = await alix.conversations.newGroup([bo.address])
+  await group.send('hello')
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 1,
+    'message stream should have received 1 message'
+  )
+
+  await bo.conversations.cancelStreamAllMessages()
+  await delayToPropogate()
+
+  await group.send('hello')
+  await group.send('hello')
+  await group.send('hello')
+
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 1,
+    'message stream should still only received 1 message'
+  )
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  await group.send('hello')
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 2,
+    'message stream should have received 2 message'
+  )
 
   return true
 })
