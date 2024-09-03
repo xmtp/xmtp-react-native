@@ -978,8 +978,8 @@ test('can cancel streams', async () => {
   await delayToPropogate()
 
   await group.send('hello')
-  // await group.send('hello')
-  // await group.send('hello')
+  await group.send('hello')
+  await group.send('hello')
 
   await delayToPropogate()
 
