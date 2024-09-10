@@ -65,24 +65,36 @@ test('testing large group listings', async () => {
   let end = Date.now()
   console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
   assert(
-    end - start < 5000,
-    'listing 1000 groups should take less than a 5 second'
+    end - start < 2000,
+    'listing 1000 groups should take less than a 2 second'
   )
 
   start = Date.now()
   await alixClient.conversations.syncGroups()
   end = Date.now()
   console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'syncing 1000 cached groups should take less than a .1 second'
+  )
 
   start = Date.now()
   await boClient.conversations.syncGroups()
   end = Date.now()
   console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 5000,
+    'syncing 1000 groups should take less than a 5 second'
+  )
 
   start = Date.now()
   groups = await boClient.conversations.listGroups()
   end = Date.now()
   console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 2000,
+    'loading 1000 groups should take less than a 2 second'
+  )
 
   return true
 })
@@ -96,14 +108,18 @@ test('testing large message listings', async () => {
   let end = Date.now()
   console.log(`Alix loaded ${messages.length} messages in ${end - start}ms`)
   assert(
-    end - start < 2000,
-    'listing 2000 messages should take less than a 2 second'
+    end - start < 200,
+    'listing 2000 self messages should take less than a .2 second'
   )
 
   start = Date.now()
   await alixGroup.sync()
   end = Date.now()
   console.log(`Alix synced ${messages.length} messages in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'syncing 2000 self messages should take less than a .1 second'
+  )
 
   await boClient.conversations.syncGroups()
   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
@@ -111,11 +127,19 @@ test('testing large message listings', async () => {
   await boGroup!.sync()
   end = Date.now()
   console.log(`Bo synced ${messages.length} messages in ${end - start}ms`)
+  assert(
+    end - start < 1000,
+    'syncing 2000 messages should take less than a 1 second'
+  )
 
   start = Date.now()
   messages = await boGroup!.messages()
   end = Date.now()
   console.log(`Bo loaded ${messages.length} messages in ${end - start}ms`)
+  assert(
+    end - start < 200,
+    'loading 2000 messages should take less than a .2 second'
+  )
 
   return true
 })
