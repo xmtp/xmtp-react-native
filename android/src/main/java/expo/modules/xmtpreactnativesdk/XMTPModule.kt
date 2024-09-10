@@ -375,6 +375,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("dropClient")
                 clients.remove(inboxId)
+                Unit
             }
         }
 
