@@ -34,25 +34,8 @@ async function createGroups(
   return groups
 }
 
-async function createMessages(
-  group: Group,
-  numMessages: number,
-  name: string
-): Promise<number> {
-  let messages = 0
-  for (let i = 0; i < numMessages; i++) {
-    await group.send({ text: `${name} Message ${i}` })
-    messages++
-  }
-  return messages
-}
-
 let alixClient: Client
 let boClient: Client
-let caroClient: Client
-let davonClient: Client
-let eriClient: Client
-let frankieClient: Client
 let initialPeers: Client[]
 let initialGroups: Group[]
 
@@ -65,10 +48,6 @@ async function beforeAll(
 
   initialPeers = await createClients(peersSize)
   boClient = initialPeers[0]
-  caroClient = initialPeers[1]
-  davonClient = initialPeers[2]
-  eriClient = initialPeers[3]
-  frankieClient = initialPeers[4]
 
   initialGroups = await createGroups(
     alixClient,
@@ -151,7 +130,7 @@ test('testing large member listings', async () => {
   console.log(`Alix loaded ${members.length} members in ${end - start}ms`)
   assert(
     end - start < 2000,
-    'listing 2000 messages should take less than a 2 second'
+    'listing 2000 members should take less than a 2 second'
   )
 
   start = Date.now()
@@ -164,18 +143,67 @@ test('testing large member listings', async () => {
   start = Date.now()
   await boGroup!.sync()
   end = Date.now()
-  console.log(`Bo synced ${members.length} messages in ${end - start}ms`)
+  console.log(`Bo synced ${members.length} members in ${end - start}ms`)
 
   start = Date.now()
-  messages = await boGroup!.members()
+  members = await boGroup!.members
   end = Date.now()
-  console.log(`Bo loaded ${members.length} messages in ${end - start}ms`)
+  console.log(`Bo loaded ${members.length} members in ${end - start}ms`)
 
+  const [davonClient] = await createClients(1)
+
+  start = Date.now()
+  await alixGroup.addMembers([davonClient.address])
+  end = Date.now()
+  console.log(`Alix added 1 member in ${end - start}ms`)
+
+  start = Date.now()
+  members = await alixGroup.members
+  end = Date.now()
+  console.log(`Alix loaded ${members.length} members in ${end - start}ms`)
+
+  start = Date.now()
+  await boGroup!.sync()
+  end = Date.now()
+  console.log(`Bo synced ${members.length} members in ${end - start}ms`)
+
+  start = Date.now()
+  members = await boGroup!.members
+  end = Date.now()
+  console.log(`Bo loaded ${members.length} members in ${end - start}ms`)
 
   return true
 })
 
 test('testing sending message in large group', async () => {
+  await beforeAll(1, 2000, 1000)
+
+  const alixGroup = initialGroups[0]
+  let start = Date.now()
+  await alixGroup.send({ text: `Alix message` })
+  let end = Date.now()
+  console.log(`Alix sent a message in ${end - start}ms`)
+  assert(
+    end - start < 1000,
+    'sending a message should take less than a 1 second'
+  )
+
+  await boClient.conversations.syncGroups()
+  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+  start = Date.now()
+  await boGroup!.send({ text: `Bo message` })
+  end = Date.now()
+  console.log(`Bo sent a message in ${end - start}ms`)
+
+  start = Date.now()
+  await boGroup!.sync()
+  end = Date.now()
+  console.log(`Bo synced messages in ${end - start}ms`)
+
+  start = Date.now()
+  await boGroup!.send({ text: `Bo message 2` })
+  end = Date.now()
+  console.log(`Bo sent a message in ${end - start}ms`)
 
   return true
 })
