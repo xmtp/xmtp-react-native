@@ -1,12 +1,9 @@
+import { Wallet } from 'ethers'
+import { Platform } from 'expo-modules-core'
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import {
-  Test,
-  assert,
-  createClients,
-  delayToPropogate,
-} from './test-utils'
+import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
   Client,
   Conversation,
@@ -17,12 +14,33 @@ import {
   GroupUpdatedContent,
   GroupUpdatedCodec,
 } from '../../../src/index'
-import { Wallet } from 'ethers'
 
 export const groupTests: Test[] = []
 let counter = 1
 function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name: String(counter++) + '. ' + name, run: perform })
+}
+
+async function createGroups(
+  client: Client,
+  peers: Client[],
+  numGroups: number,
+  numMessages: number
+): Promise<Group[]> {
+  const groups = []
+  const addresses: string[] = peers.map((client) => client.address)
+  for (let i = 0; i < numGroups; i++) {
+    const group = await client.conversations.newGroup(addresses, {
+      name: `group ${i}`,
+      imageUrlSquare: `www.group${i}.com`,
+      description: `group ${i}`,
+    })
+    groups.push(group)
+    for (let i = 0; i < numMessages; i++) {
+      await group.send({ text: `Message ${i}` })
+    }
+  }
+  return groups
 }
 
 test('can make a MLS V3 client', async () => {
@@ -49,27 +67,43 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
-async function createGroups(
-  client: Client,
-  peers: Client[],
-  numGroups: number,
-  numMessages: number
-): Promise<Group[]> {
-  const groups = []
-  const addresses: string[] = peers.map((client) => client.address)
-  for (let i = 0; i < numGroups; i++) {
-    const group = await client.conversations.newGroup(addresses, {
-      name: `group ${i}`,
-      imageUrlSquare: `www.group${i}.com`,
-      description: `group ${i}`,
-    })
-    groups.push(group)
-    for (let i = 0; i < numMessages; i++) {
-      await group.send({ text: `Message ${i}` })
-    }
-  }
-  return groups
-}
+test('can revoke all other installations', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const alixWallet = Wallet.createRandom()
+
+  const alix = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+  await alix.deleteLocalDatabase()
+
+  const alix2 = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  const inboxState = await alix2.inboxState(true)
+  assert(
+    inboxState.installationIds.length === 2,
+    `installationIds length should be 2 but was ${inboxState.installationIds.length}`
+  )
+
+  await alix2.revokeAllOtherInstallations(alixWallet)
+
+  const inboxState2 = await alix2.inboxState(true)
+  assert(
+    inboxState2.installationIds.length === 1,
+    `installationIds length should be 1 but was ${inboxState2.installationIds.length}`
+  )
+  return true
+})
 
 test('calls preAuthenticateToInboxCallback when supplied', async () => {
   let isCallbackCalled = 0
@@ -259,6 +293,23 @@ test('can drop a local database', async () => {
   throw new Error('should throw when local database not connected')
 })
 
+test('can drop client from memory', async () => {
+  const [client, anotherClient] = await createClients(2)
+  await client.dropLocalDatabaseConnection()
+  await anotherClient.dropLocalDatabaseConnection()
+
+  await client.reconnectLocalDatabase()
+  await Client.dropClient(anotherClient.inboxId)
+  try {
+    await anotherClient.reconnectLocalDatabase()
+    return false
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // We cannot reconnect anotherClient because it was successfully dropped
+    return true
+  }
+})
+
 test('can get a inboxId from an address', async () => {
   const [alix, bo] = await createClients(2)
 
@@ -444,7 +495,7 @@ test('who added me to a group', async () => {
 
   await boClient.conversations.syncGroups()
   const boGroup = (await boClient.conversations.listGroups())[0]
-  const addedByInboxId = await boGroup.addedByInboxId()
+  const addedByInboxId = await boGroup.addedByInboxId
 
   assert(
     addedByInboxId === alixClient.inboxId,
@@ -457,7 +508,7 @@ test('can get members of a group', async () => {
   const [alixClient, boClient] = await createClients(2)
   const group = await alixClient.conversations.newGroup([boClient.address])
 
-  const members = await group.members()
+  const members = group.members
 
   assert(members.length === 2, `Should be 2 members but was ${members.length}`)
 
@@ -519,10 +570,7 @@ test('can message in a group', async () => {
   if (memberInboxIds.length !== 3) {
     throw new Error('num group members should be 3')
   }
-  const peerInboxIds = await alixGroup.peerInboxIds
-  if (peerInboxIds.length !== 2) {
-    throw new Error('num peer group members should be 2')
-  }
+
   if (
     !(
       memberInboxIds.includes(alixClient.inboxId) &&
@@ -531,15 +579,6 @@ test('can message in a group', async () => {
     )
   ) {
     throw new Error('missing address')
-  }
-
-  if (
-    !(
-      peerInboxIds.includes(boClient.inboxId) &&
-      peerInboxIds.includes(caroClient.inboxId)
-    )
-  ) {
-    throw new Error('should include self')
   }
 
   // alix can send messages
@@ -876,10 +915,9 @@ test('can remove members from a group', async () => {
   }
 
   const caroGroupMembers = await caroGroups[0].memberInboxIds()
-  // should be 3 since they wont get new updates to the group after being removed
-  if (caroGroupMembers.length !== 3) {
+  if (caroGroupMembers.length !== 2) {
     throw new Error(
-      'num group members should be 3 but was' + caroGroupMembers.length
+      'num group members should be 2 but was' + caroGroupMembers.length
     )
   }
 
@@ -916,6 +954,52 @@ test('can remove and add members from a group by inbox id', async () => {
   if (alixGroupMembers2.length !== 3) {
     throw new Error('num group members should be 3')
   }
+
+  return true
+})
+
+test('can cancel streams', async () => {
+  const [alix, bo] = await createClients(2)
+  let messageCallbacks = 0
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  const group = await alix.conversations.newGroup([bo.address])
+  await group.send('hello')
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 1,
+    'message stream should have received 1 message'
+  )
+
+  await bo.conversations.cancelStreamAllMessages()
+  await delayToPropogate()
+
+  await group.send('hello')
+  await group.send('hello')
+  await group.send('hello')
+
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 1,
+    'message stream should still only received 1 message'
+  )
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  await group.send('hello')
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 2,
+    'message stream should have received 2 message'
+  )
 
   return true
 })
@@ -966,6 +1050,8 @@ test('can stream groups', async () => {
   if ((groups.length as number) !== 1) {
     throw Error('Unexpected num groups (should be 1): ' + groups.length)
   }
+
+  assert(groups[0].members.length === 2, 'should be 2')
 
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -2052,12 +2138,9 @@ test('can create new installation without breaking group', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const wallet1 = new Wallet(
-    '0xc54c62dd3ad018ef94f20f0722cae33919e65270ad74f2d1794291088800f788'
-  )
-  const wallet2 = new Wallet(
-    '0x8d40c1c40473975cc6bbdc0465e70cc2e98f45f3c3474ca9b809caa9c4f53c0b'
-  )
+  const wallet1 = Wallet.createRandom()
+  const wallet2 = Wallet.createRandom()
+
   const client1 = await Client.create(wallet1, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
@@ -2082,17 +2165,13 @@ test('can create new installation without breaking group', async () => {
   await client1Group?.sync()
   await client2Group?.sync()
 
-  assert(
-    (await client1Group?.members())?.length === 2,
-    `client 1 should see 2 members`
-  )
+  assert(client1Group?.members?.length === 2, `client 1 should see 2 members`)
 
   assert(
-    (await client2Group?.members())?.length === 2,
+    (await client2Group?.membersList())?.length === 2,
     `client 2 should see 2 members`
   )
 
-  await client2.dropLocalDatabaseConnection()
   await client2.deleteLocalDatabase()
 
   // Recreating a client with wallet 2 (new installation!)
@@ -2105,10 +2184,80 @@ test('can create new installation without breaking group', async () => {
 
   await client1Group?.send('This message will break the group')
   assert(
-    (await client1Group?.members())?.length === 2,
+    client1Group?.members?.length === 2,
     `client 1 should still see the 2 members`
   )
 
+  return true
+})
+
+test('can list many groups members in parallel', async () => {
+  const [alix, bo] = await createClients(2)
+  const groups: Group[] = await createGroups(alix, [bo], 20, 0)
+
+  try {
+    await Promise.all(groups.slice(0, 10).map((g) => g.membersList()))
+  } catch (e) {
+    throw new Error(`Failed listing 10 groups members with ${e}`)
+  }
+
+  try {
+    await Promise.all(groups.slice(0, 20).map((g) => g.membersList()))
+  } catch (e) {
+    throw new Error(`Failed listing 20 groups members with ${e}`)
+  }
+
+  return true
+})
+
+test('can sync all groups', async () => {
+  const [alix, bo] = await createClients(2)
+  const groups: Group[] = await createGroups(alix, [bo], 50, 0)
+
+  const alixGroup = groups[0]
+  await bo.conversations.syncGroups()
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  await alixGroup.send('hi')
+  assert(
+    (await boGroup?.messages())?.length === 0,
+    `messages should be empty before sync but was ${boGroup?.messages?.length}`
+  )
+
+  const numGroupsSynced = await bo.conversations.syncAllGroups()
+  assert(
+    (await boGroup?.messages())?.length === 1,
+    `messages should be 4 after sync but was ${boGroup?.messages?.length}`
+  )
+  assert(
+    numGroupsSynced === 50,
+    `should have synced 50 groups but synced ${numGroupsSynced}`
+  )
+
+  for (const group of groups) {
+    await group.removeMembers([bo.address])
+  }
+
+  // First syncAllGroups after removal will still sync each group to set group inactive
+  // For some reason on Android (RN only), first syncAllGroups already returns 0
+  const numGroupsSynced2 = await bo.conversations.syncAllGroups()
+  if (Platform.OS === 'ios') {
+    assert(
+      numGroupsSynced2 === 50,
+      `should have synced 50 groups but synced ${numGroupsSynced2}`
+    )
+  } else {
+    assert(
+      numGroupsSynced2 === 0,
+      `should have synced 0 groups but synced ${numGroupsSynced2}`
+    )
+  }
+
+  // Next syncAllGroups will not sync inactive groups
+  const numGroupsSynced3 = await bo.conversations.syncAllGroups()
+  assert(
+    numGroupsSynced3 === 0,
+    `should have synced 0 groups but synced ${numGroupsSynced3}`
+  )
   return true
 })
 

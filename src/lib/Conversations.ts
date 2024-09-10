@@ -8,6 +8,7 @@ import {
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { Group, GroupParams } from './Group'
+import { Member } from './Member'
 import { CreateGroupOptions } from './types/CreateGroupOptions'
 import { EventTypes } from './types/EventTypes'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
@@ -149,7 +150,10 @@ export default class Conversations<
           return
         }
         this.known[group.id] = true
-        await callback(new Group(this.client, group))
+        const members = group['members'].map((mem: string) => {
+          return Member.from(mem)
+        })
+        await callback(new Group(this.client, group, members))
       }
     )
     this.subscriptions[EventTypes.Group] = groupsSubscription
@@ -210,11 +214,20 @@ export default class Conversations<
   }
 
   /**
-   * Executes a network request to fetch the latest list of groups assoociated with the client
+   * Executes a network request to fetch the latest list of groups associated with the client
    * and save them to the local state.
    */
   async syncGroups() {
     await XMTPModule.syncGroups(this.client.inboxId)
+  }
+
+  /**
+   * Executes a network request to sync all active groups associated with the client
+   *
+   * @returns {Promise<number>} A Promise that resolves to the number of groups synced.
+   */
+  async syncAllGroups(): Promise<number> {
+    return await XMTPModule.syncAllGroups(this.client.inboxId)
   }
 
   /**
@@ -286,10 +299,16 @@ export default class Conversations<
 
         this.known[conversationContainer.topic] = true
         if (conversationContainer.version === ConversationVersion.GROUP) {
+          const members = conversationContainer['members'].map(
+            (mem: string) => {
+              return Member.from(mem)
+            }
+          )
           return await callback(
             new Group(
               this.client,
-              conversationContainer as unknown as GroupParams
+              conversationContainer as unknown as GroupParams,
+              members
             )
           )
         } else {

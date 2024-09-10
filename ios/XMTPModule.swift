@@ -1,6 +1,7 @@
 import ExpoModulesCore
 import XMTP
 import LibXMTP
+import OSLog
 
 extension Conversation {
 	static func cacheKeyForTopic(inboxId: String, topic: String) -> String {
@@ -47,15 +48,40 @@ public class XMTPModule: Module {
 	actor ClientsManager {
 		private var clients: [String: XMTP.Client] = [:]
 
-		// A method to update the conversations
+		// A method to update the client
 		func updateClient(key: String, client: XMTP.Client) {
 			ContentJson.initCodecs(client: client)
 			clients[key] = client
 		}
+        
+        // A method to drop client for a given key from memory
+        func dropClient(key: String) {
+            clients[key] = nil
+        }
 
-		// A method to retrieve a conversation
+		// A method to retrieve a client
 		func getClient(key: String) -> XMTP.Client? {
 			return clients[key]
+		}
+        
+		// A method to disconnect all dbs
+		func dropAllLocalDatabaseConnections() throws {
+			for (_, client) in clients {
+				// Call the drop method on each v3 client
+				if (!client.installationID.isEmpty) {
+					try client.dropLocalDatabaseConnection()
+				}
+			}
+		}
+
+		// A method to reconnect all dbs
+		func reconnectAllLocalDatabaseConnections() async throws {
+			for (_, client) in clients {
+				// Call the reconnect method on each v3 client
+				if (!client.installationID.isEmpty) {
+					try await client.reconnectLocalDatabase()
+				}
+			}
 		}
 	}
 
@@ -134,6 +160,25 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			try await client.requestMessageHistorySync()
+		}
+		
+		AsyncFunction("revokeAllOtherInstallations") { (inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			let signer = ReactNativeSigner(module: self, address: client.address)
+			self.signer = signer
+
+			try await client.revokeAllOtherInstallations(signingKey: signer)
+			self.signer = nil
+		}
+		
+		AsyncFunction("getInboxState") { (inboxId: String, refreshFromNetwork: Bool) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			let inboxState = try await client.inboxState(refreshFromNetwork: refreshFromNetwork)
+			return try InboxStateWrapper.encode(inboxState)
 		}
 
 		//
@@ -231,10 +276,15 @@ public class XMTPModule: Module {
 				await clientsManager.updateClient(key: client.inboxID, client: client)
 				return try ClientWrapper.encodeToObj(client)
 			} catch {
-				print("ERRO! Failed to create client: \(error)")
+				print("ERROR! Failed to create client: \(error)")
 				throw error
 			}
 		}
+        
+        // Remove a client from memory for a given inboxId
+        AsyncFunction("dropClient") { (inboxId: String) in
+            await clientsManager.dropClient(key: inboxId)
+        }
 		
 		AsyncFunction("sign") { (inboxId: String, digest: [UInt8], keyType: String, preKeyIndex: Int) -> [UInt8] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
@@ -816,6 +866,13 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			try await client.conversations.sync()
+		}
+		
+		AsyncFunction("syncAllGroups") { (inboxId: String) -> UInt32 in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			return try await client.conversations.syncAllGroups()
 		}
 
 		AsyncFunction("syncGroup") { (inboxId: String, id: String) in
@@ -1458,6 +1515,43 @@ public class XMTPModule: Module {
 			throw Error.invalidString
 		  }
 		  return await client.contacts.isGroupDenied(groupId: groupId)
+		}
+        
+		AsyncFunction("exportNativeLogs") { () -> String in
+			var logOutput = ""
+			if #available(iOS 15.0, *) {
+				do {
+					let logStore = try OSLogStore(scope: .currentProcessIdentifier)
+					let position = logStore.position(timeIntervalSinceLatestBoot: -300) // Last 5 min of logs
+					let entries = try logStore.getEntries(at: position)
+
+					for entry in entries {
+						if let logEntry = entry as? OSLogEntryLog, logEntry.composedMessage.contains("libxmtp") {
+							logOutput.append("\(logEntry.date): \(logEntry.composedMessage)\n")
+						}
+					}
+				} catch {
+					logOutput = "Failed to fetch logs: \(error.localizedDescription)"
+				}
+			} else {
+				// Fallback for iOS 14
+				logOutput = "OSLogStore is only available on iOS 15 and above. Logging is not supported on this iOS version."
+			}
+			
+			return logOutput
+		}
+
+		OnAppBecomesActive {
+			Task {
+				try await clientsManager.reconnectAllLocalDatabaseConnections()
+			}
+		}
+
+
+		OnAppEntersBackground {
+			Task {
+				try await clientsManager.dropAllLocalDatabaseConnections()
+			}
 		}
 	}
 

@@ -24,6 +24,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PermissionPolicySetWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
@@ -65,8 +66,11 @@ import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
+import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.InboxState
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
+import java.io.BufferedReader
 import java.io.File
+import java.io.InputStreamReader
 import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
@@ -223,8 +227,7 @@ class XMTPModule : Module() {
             // Conversation
             "conversationMessage",
             // Group
-            "groupMessage"
-
+            "groupMessage",
         )
 
         Function("address") { inboxId: String ->
@@ -270,6 +273,27 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 client.requestMessageHistorySync()
+            }
+        }
+
+        AsyncFunction("revokeAllOtherInstallations") Coroutine { inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("revokeAllOtherInstallations")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val reactSigner =
+                    ReactNativeSigner(module = this@XMTPModule, address = client.address)
+                signer = reactSigner
+
+                client.revokeAllOtherInstallations(reactSigner)
+                signer = null
+            }
+        }
+
+        AsyncFunction("getInboxState") Coroutine { inboxId: String, refreshFromNetwork: Boolean ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val inboxState = client.inboxState(refreshFromNetwork)
+                InboxStateWrapper.encode(inboxState)
             }
         }
 
@@ -344,6 +368,13 @@ class XMTPModule : Module() {
                 } catch (e: Exception) {
                     throw XMTPException("Failed to create client: $e")
                 }
+            }
+        }
+
+        AsyncFunction("dropClient") Coroutine { inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("dropClient")
+                clients.remove(inboxId)
             }
         }
 
@@ -948,6 +979,17 @@ class XMTPModule : Module() {
                 logV("syncGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 client.conversations.syncGroups()
+            }
+        }
+
+        AsyncFunction("syncAllGroups") Coroutine { inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("syncAllGroups")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.conversations.syncAllGroups()
+                // Expo Modules do not support UInt, so we need to convert to Int
+                val numGroupsSyncedInt: Int = client.conversations.syncAllGroups()?.toInt() ?: throw IllegalArgumentException("Value cannot be null")
+                numGroupsSyncedInt
             }
         }
 
@@ -1564,11 +1606,28 @@ class XMTPModule : Module() {
             val client = clients[inboxId] ?: throw XMTPException("No client")
             client.contacts.isGroupAllowed(groupId)
         }
-
         AsyncFunction("isGroupDenied") { inboxId: String, groupId: String ->
             logV("isGroupDenied")
             val client = clients[inboxId] ?: throw XMTPException("No client")
             client.contacts.isGroupDenied(groupId)
+        }
+
+        AsyncFunction("exportNativeLogs") Coroutine { ->
+            withContext(Dispatchers.IO) {
+                try {
+                    val process = Runtime.getRuntime().exec("logcat -d")
+                    val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
+
+                    val log = StringBuilder()
+                    var line: String?
+                    while (bufferedReader.readLine().also { line = it } != null) {
+                        log.append(line).append("\n")
+                    }
+                    log.toString()
+                } catch (e: Exception) {
+                    e.message
+                }
+            }
         }
     }
 

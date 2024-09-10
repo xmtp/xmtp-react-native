@@ -19,6 +19,7 @@ import {
 } from './lib/ConversationContainer'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
 import { Group, PermissionUpdateOption } from './lib/Group'
+import { InboxState } from './lib/InboxState'
 import { Member } from './lib/Member'
 import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
@@ -68,6 +69,18 @@ export async function reconnectLocalDatabase(inboxId: string) {
 
 export async function requestMessageHistorySync(inboxId: string) {
   return XMTPModule.requestMessageHistorySync(inboxId)
+}
+
+export async function getInboxState(
+  inboxId: string,
+  refreshFromNetwork: boolean
+): Promise<InboxState> {
+  const inboxState = await XMTPModule.getInboxState(inboxId, refreshFromNetwork)
+  return InboxState.from(inboxState)
+}
+
+export async function revokeAllOtherInstallations(inboxId: string) {
+  return XMTPModule.revokeAllOtherInstallations(inboxId)
 }
 
 export async function auth(
@@ -165,6 +178,10 @@ export async function createFromKeyBundle(
   )
 }
 
+export async function dropClient(inboxId: string) {
+  return await XMTPModule.dropClient(inboxId)
+}
+
 export async function createGroup<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
@@ -182,17 +199,19 @@ export async function createGroup<
     description,
     pinnedFrameUrl,
   }
-  return new Group(
-    client,
-    JSON.parse(
-      await XMTPModule.createGroup(
-        client.inboxId,
-        peerAddresses,
-        permissionLevel,
-        JSON.stringify(options)
-      )
+  const group = JSON.parse(
+    await XMTPModule.createGroup(
+      client.inboxId,
+      peerAddresses,
+      permissionLevel,
+      JSON.stringify(options)
     )
   )
+
+  const members = group['members'].map((mem: string) => {
+    return Member.from(mem)
+  })
+  return new Group(client, group, members)
 }
 
 export async function createGroupCustomPermissions<
@@ -212,24 +231,29 @@ export async function createGroupCustomPermissions<
     description,
     pinnedFrameUrl,
   }
-  return new Group(
-    client,
-    JSON.parse(
-      await XMTPModule.createGroupCustomPermissions(
-        client.inboxId,
-        peerAddresses,
-        JSON.stringify(permissionPolicySet),
-        JSON.stringify(options)
-      )
+  const group = JSON.parse(
+    await XMTPModule.createGroupCustomPermissions(
+      client.inboxId,
+      peerAddresses,
+      JSON.stringify(permissionPolicySet),
+      JSON.stringify(options)
     )
   )
+  const members = group['members'].map((mem: string) => {
+    return Member.from(mem)
+  })
+  return new Group(client, group, members)
 }
 
 export async function listGroups<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(client: Client<ContentTypes>): Promise<Group<ContentTypes>[]> {
   return (await XMTPModule.listGroups(client.inboxId)).map((json: string) => {
-    return new Group(client, JSON.parse(json))
+    const group = JSON.parse(json)
+    const members = group['members'].map((mem: string) => {
+      return Member.from(mem)
+    })
+    return new Group(client, group, members)
   })
 }
 
@@ -309,8 +333,12 @@ export async function findGroup<
   client: Client<ContentTypes>,
   groupId: string
 ): Promise<Group<ContentTypes> | undefined> {
-  const group = await XMTPModule.findGroup(client.inboxId, groupId)
-  return new Group(client, JSON.parse(group))
+  const json = await XMTPModule.findGroup(client.inboxId, groupId)
+  const group = JSON.parse(json)
+  const members = group['members'].map((mem: string) => {
+    return Member.from(mem)
+  })
+  return new Group(client, group, members)
 }
 
 export async function findV3Message<
@@ -325,6 +353,10 @@ export async function findV3Message<
 
 export async function syncGroups(inboxId: string) {
   await XMTPModule.syncGroups(inboxId)
+}
+
+export async function syncAllGroups(inboxId: string): Promise<number> {
+  return await XMTPModule.syncAllGroups(inboxId)
 }
 
 export async function syncGroup(inboxId: string, id: string) {
@@ -567,7 +599,10 @@ export async function listAll<
   return list.map((json: string) => {
     const jsonObj = JSON.parse(json)
     if (jsonObj.version === ConversationVersion.GROUP) {
-      return new Group(client, jsonObj)
+      const members = jsonObj.members.map((mem: string) => {
+        return Member.from(mem)
+      })
+      return new Group(client, jsonObj, members)
     } else {
       return new Conversation(client, jsonObj)
     }
@@ -1146,7 +1181,15 @@ export async function processWelcomeMessage<
     client.inboxId,
     encryptedMessage
   )
-  return new Group(client, JSON.parse(json))
+  const group = JSON.parse(json)
+  const members = group['members'].map((mem: string) => {
+    return Member.from(mem)
+  })
+  return new Group(client, group, members)
+}
+
+export async function exportNativeLogs() {
+  return XMTPModule.exportNativeLogs()
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
