@@ -21,10 +21,7 @@ export function assert(condition: boolean, msg: string) {
   }
 }
 
-export async function createClients(
-  numClients: number,
-  env: 'dev' | 'local' | 'production' = 'local'
-): Promise<Client[]> {
+export async function createClients(numClients: number): Promise<Client[]> {
   const clients = []
   for (let i = 0; i < numClients; i++) {
     const keyBytes = new Uint8Array([
@@ -33,7 +30,7 @@ export async function createClients(
       145,
     ])
     const client = await Client.createRandom({
-      env,
+      env: 'local',
       enableV3: true,
       dbEncryptionKey: keyBytes,
     })
