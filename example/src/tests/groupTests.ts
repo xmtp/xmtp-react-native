@@ -1247,6 +1247,35 @@ test('can stream all groups and conversations', async () => {
   return true
 })
 
+test('can stream groups and messages', async () => {
+  for (const env of ['local', 'dev'] as const) {
+    const [alixClient, boClient] = await createClients(2, env)
+
+    // Start streaming groups
+    const groups: Group<any>[] = []
+    await alixClient.conversations.streamGroups(async (group: Group<any>) => {
+      groups.push(group)
+    })
+    // Also stream messages
+    await alixClient.conversations.streamAllMessages(
+      async (message) => {},
+      true
+    )
+
+    // bo creates a group with alix so a stream callback is fired
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    await boClient.conversations.newGroup([alixClient.address])
+    await delayToPropogate()
+    if ((groups.length as number) !== 1) {
+      throw Error(
+        `Test fails in env ${env}: Unexpected num groups (should be 1): ${groups.length}`
+      )
+    }
+  }
+
+  return true
+})
+
 test('canMessage', async () => {
   const [bo, alix, caro] = await createClients(3)
 
