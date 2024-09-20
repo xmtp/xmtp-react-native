@@ -2261,6 +2261,24 @@ test('can sync all groups', async () => {
   return true
 })
 
+test('group members and 1:1 peerAddresses should have same formatting', async () => {
+  const [alix, bo] = await createClients(2)
+  const convo1v1 = await alix.conversations.newConversation(bo.address)
+  assert(
+    convo1v1.peerAddress === bo.address,
+    '1:1 peerAddress is not well formatted'
+  )
+
+  const group = await alix.conversations.newGroup([bo.address])
+  assert(
+    group.members.some((m) => m.addresses.includes(bo.address)) &&
+      group.members.some((m) => m.addresses.includes(alix.address)),
+    'group members addresses are not well formatted'
+  )
+
+  return true
+})
+
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
 //   const bo = await Client.createRandom({ env: 'local', enableV3: true })
