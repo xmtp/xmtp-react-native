@@ -146,7 +146,7 @@ export default class Conversations<
     const groupsSubscription = XMTPModule.emitter.addListener(
       EventTypes.Group,
       async ({ inboxId, group }: { inboxId: string; group: GroupParams }) => {
-        if (this.known[group.id]) {
+        if (this.known[group.id] || this.client.inboxId !== inboxId) {
           return
         }
         this.known[group.id] = true
