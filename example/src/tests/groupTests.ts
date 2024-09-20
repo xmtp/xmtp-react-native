@@ -1247,6 +1247,29 @@ test('can stream all groups and conversations', async () => {
   return true
 })
 
+test('can stream groups and messages', async () => {
+  const [alixClient, boClient] = await createClients(2)
+
+  // Start streaming groups
+  const groups: Group<any>[] = []
+  await alixClient.conversations.streamGroups(async (group: Group<any>) => {
+    groups.push(group)
+  })
+  // Stream messages twice
+  await alixClient.conversations.streamAllMessages(async (message) => {}, true)
+  await alixClient.conversations.streamAllMessages(async (message) => {}, true)
+
+  // bo creates a group with alix so a stream callback is fired
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  await boClient.conversations.newGroup([alixClient.address])
+  await delayToPropogate()
+  if ((groups.length as number) !== 1) {
+    throw Error(`Unexpected num groups (should be 1): ${groups.length}`)
+  }
+
+  return true
+})
+
 test('canMessage', async () => {
   const [bo, alix, caro] = await createClients(3)
 
@@ -2258,6 +2281,43 @@ test('can sync all groups', async () => {
     numGroupsSynced3 === 0,
     `should have synced 0 groups but synced ${numGroupsSynced3}`
   )
+  return true
+})
+
+test('only streams groups that can be decrypted', async () => {
+  // Create three MLS enabled Clients
+  const [alixClient, boClient, caroClient] = await createClients(3)
+  const alixGroups: Group<any>[] = []
+  const boGroups: Group<any>[] = []
+  const caroGroups: Group<any>[] = []
+
+  await alixClient.conversations.streamGroups(async (group: Group<any>) => {
+    alixGroups.push(group)
+  })
+  await boClient.conversations.streamGroups(async (group: Group<any>) => {
+    boGroups.push(group)
+  })
+  await caroClient.conversations.streamGroups(async (group: Group<any>) => {
+    caroGroups.push(group)
+  })
+
+  await alixClient.conversations.newGroup([boClient.address])
+
+  assert(
+    alixGroups.length === 1,
+    `alix group length should be 1 but was ${alixGroups.length}`
+  )
+
+  assert(
+    boGroups.length === 1,
+    `bo group length should be 1 but was ${boGroups.length}`
+  )
+
+  assert(
+    caroGroups.length !== 1,
+    `caro group length should be 0 but was ${caroGroups.length}`
+  )
+
   return true
 })
 
