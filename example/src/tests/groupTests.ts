@@ -1262,7 +1262,7 @@ test('can stream groups and messages', async () => {
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   await boClient.conversations.newGroup([alixClient.address])
-  await delayToPropogate(2000)
+  await delayToPropogate()
   if ((groups.length as number) !== 1) {
     throw Error(`Unexpected num groups (should be 1): ${groups.length}`)
   }
