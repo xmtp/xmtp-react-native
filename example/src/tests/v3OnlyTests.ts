@@ -18,7 +18,7 @@ test('can make a V3 only client', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const client = await Client.createRandom({
+  const client = await Client.createRandomV3({
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,
@@ -33,5 +33,14 @@ test('can make a V3 only client', async () => {
     client.inboxId === inboxId,
     `inboxIds should match but were ${client.inboxId} and ${inboxId}`
   )
+  const canMessageV2 = await client.canMessage(client.address)
+  assert(canMessageV2 === false, `canMessageV2 should be false`)
+  const canMessageV3 = await client.canGroupMessage([client.address])
+
+  assert(
+    canMessageV3[client.address.toLowerCase()] === true,
+    `canMessageV3 should be true`
+  )
+
   return true
 })
