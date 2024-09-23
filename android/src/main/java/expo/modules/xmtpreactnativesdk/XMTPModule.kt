@@ -1487,16 +1487,20 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isAllowed") { inboxId: String, address: String ->
-            logV("isAllowed")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isAllowed(address)
+        AsyncFunction("isAllowed") Coroutine { inboxId: String, address: String ->
+            withContext(Dispatchers.IO) {
+                logV("isAllowed")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.isAllowed(address)
+            }
         }
 
-        Function("isDenied") { inboxId: String, address: String ->
-            logV("isDenied")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isDenied(address)
+        AsyncFunction("isDenied") Coroutine { inboxId: String, address: String ->
+            withContext(Dispatchers.IO) {
+                logV("isDenied")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.isDenied(address)
+            }
         }
 
         AsyncFunction("denyContacts") Coroutine { inboxId: String, addresses: List<String> ->
@@ -1514,16 +1518,20 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isInboxAllowed") { clientInboxId: String, inboxId: String ->
-            logV("isInboxIdAllowed")
-            val client = clients[clientInboxId] ?: throw XMTPException("No client")
-            client.contacts.isInboxAllowed(inboxId)
+        AsyncFunction("isInboxAllowed") Coroutine { clientInboxId: String, inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isInboxIdAllowed")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                client.contacts.isInboxAllowed(inboxId)
+            }
         }
 
-        AsyncFunction("isInboxDenied") { clientInboxId: String, inboxId: String ->
-            logV("isInboxIdDenied")
-            val client = clients[clientInboxId] ?: throw XMTPException("No client")
-            client.contacts.isInboxDenied(inboxId)
+        AsyncFunction("isInboxDenied") Coroutine { clientInboxId: String, inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isInboxIdDenied")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                client.contacts.isInboxDenied(inboxId)
+            }
         }
 
         AsyncFunction("denyInboxes") Coroutine { inboxId: String, inboxIds: List<String> ->
@@ -1602,15 +1610,19 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isGroupAllowed") { inboxId: String, groupId: String ->
-            logV("isGroupAllowed")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupAllowed(groupId)
+        AsyncFunction("isGroupAllowed") Coroutine { inboxId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isGroupAllowed")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.isGroupAllowed(groupId)
+            }
         }
-        AsyncFunction("isGroupDenied") { inboxId: String, groupId: String ->
-            logV("isGroupDenied")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupDenied(groupId)
+        AsyncFunction("isGroupDenied") Coroutine { inboxId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isGroupDenied")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.isGroupDenied(groupId)
+            }
         }
 
         AsyncFunction("exportNativeLogs") Coroutine { ->
