@@ -44,3 +44,23 @@ test('can make a V3 only client', async () => {
 
   return true
 })
+
+test('can create group', async () => {
+
+  return true
+})
+
+test('can send message', async () => {
+
+  return true
+})
+
+test('can stream all messages', async () => {
+
+  return true
+})
+
+test('can stream groups and conversations', async () => {
+
+  return true
+})
