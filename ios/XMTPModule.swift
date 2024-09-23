@@ -96,6 +96,7 @@ public class XMTPModule: Module {
             // Auth
             "sign",
             "authed",
+			"authedV3",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
 			"preAuthenticateToInboxCallback",
@@ -279,6 +280,76 @@ public class XMTPModule: Module {
 				print("ERROR! Failed to create client: \(error)")
 				throw error
 			}
+		}
+		
+		AsyncFunction("createRandomV3") { (hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
+
+			let privateKey = try PrivateKey.generate()
+			if(hasCreateIdentityCallback ?? false) {
+				preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasEnableIdentityCallback ?? false) {
+				preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasAuthenticateToInboxCallback ?? false) {
+				preAuthenticateToInboxCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
+			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+			let preAuthenticateToInboxCallback: PreEventCallback? = hasAuthenticateToInboxCallback ?? false ? self.preAuthenticateToInboxCallback : nil
+			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+
+			let options = createClientConfig(
+				env: authOptions.environment,
+				appVersion: authOptions.appVersion,
+				preEnableIdentityCallback: preEnableIdentityCallback,
+				preCreateIdentityCallback: preCreateIdentityCallback,
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+				enableV3: authOptions.enableV3,
+				dbEncryptionKey: encryptionKeyData,
+				dbDirectory: authOptions.dbDirectory,
+				historySyncUrl: authOptions.historySyncUrl
+			)
+			let client = try await Client.createOrBuild(account: privateKey, options: options)
+
+			await clientsManager.updateClient(key: client.inboxID, client: client)
+			return try ClientWrapper.encodeToObj(client)
+		}
+		
+		AsyncFunction("createOrBuild") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
+			let signer = ReactNativeSigner(module: self, address: address)
+			self.signer = signer
+			if(hasCreateIdentityCallback ?? false) {
+				self.preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasEnableIdentityCallback ?? false) {
+				self.preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasAuthenticateToInboxCallback ?? false) {
+				self.preAuthenticateToInboxCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
+			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+			let preAuthenticateToInboxCallback: PreEventCallback? = hasAuthenticateToInboxCallback ?? false ? self.preAuthenticateToInboxCallback : nil
+			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+			
+			let options = self.createClientConfig(
+				env: authOptions.environment,
+				appVersion: authOptions.appVersion,
+				preEnableIdentityCallback: preEnableIdentityCallback,
+				preCreateIdentityCallback: preCreateIdentityCallback,
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+				enableV3: authOptions.enableV3,
+				dbEncryptionKey: encryptionKeyData,
+				dbDirectory: authOptions.dbDirectory,
+				historySyncUrl: authOptions.historySyncUrl
+			)
+			let client = try await XMTP.Client.createOrBuild(account: signer, options: options)
+			await self.clientsManager.updateClient(key: client.inboxID, client: client)
+			self.signer = nil
+			self.sendEvent("authedV3", try ClientWrapper.encodeToObj(client))
 		}
         
         // Remove a client from memory for a given inboxId
