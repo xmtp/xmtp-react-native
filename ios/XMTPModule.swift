@@ -290,7 +290,7 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			let privateKeyBundle = client.keys
+			let privateKeyBundle = try client.keys
 			let key = keyType == "prekey" ? privateKeyBundle.preKeys[preKeyIndex] : privateKeyBundle.identityKey
 
 			let privateKey = try PrivateKey(key)
@@ -1380,14 +1380,14 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isAllowed(address)
+			return try await client.contacts.isAllowed(address)
 		}
 
 		AsyncFunction("isDenied") { (inboxId: String, address: String) -> Bool in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isDenied(address)
+			return try await client.contacts.isDenied(address)
 		}
 
 		AsyncFunction("denyContacts") { (inboxId: String, addresses: [String]) in
@@ -1408,14 +1408,14 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isInboxAllowed(inboxId: inboxId)
+			return try await client.contacts.isInboxAllowed(inboxId: inboxId)
 		}
 
 		AsyncFunction("isInboxDenied") { (clientInboxId: String,inboxId: String) -> Bool in
 			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isInboxDenied(inboxId: inboxId)
+			return try await client.contacts.isInboxDenied(inboxId: inboxId)
 		}
 
 		AsyncFunction("denyInboxes") { (inboxId: String, inboxIds: [String]) in
@@ -1507,14 +1507,14 @@ public class XMTPModule: Module {
 		  guard let client = await clientsManager.getClient(key: inboxId) else {
 			throw Error.noClient
 		  }
-		  return await client.contacts.isGroupAllowed(groupId: groupId)
+		  return try await client.contacts.isGroupAllowed(groupId: groupId)
 		}
 		
 		AsyncFunction("isGroupDenied") { (inboxId: String, groupId: String) -> Bool in
 		  guard let client = await clientsManager.getClient(key: inboxId) else {
 			throw Error.invalidString
 		  }
-		  return await client.contacts.isGroupDenied(groupId: groupId)
+		  return try await client.contacts.isGroupDenied(groupId: groupId)
 		}
         
 		AsyncFunction("exportNativeLogs") { () -> String in
