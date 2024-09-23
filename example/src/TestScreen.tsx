@@ -8,6 +8,7 @@ import { groupTests } from './tests/groupTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
 import { Test } from './tests/test-utils'
 import { tests } from './tests/tests'
+import { v3OnlyTests } from './tests/v3OnlyTests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
@@ -107,6 +108,7 @@ export enum TestCategory {
   all = 'all',
   tests = 'tests',
   group = 'group',
+  v3Only = 'v3Only',
   restartStreans = 'restartStreams',
   groupPermissions = 'groupPermissions',
   groupPerformance = 'groupPerformance',
@@ -121,6 +123,7 @@ export default function TestScreen(): JSX.Element {
   const allTests = [
     ...tests,
     ...groupTests,
+    ...v3OnlyTests,
     ...restartStreamTests,
     ...groupPermissionsTests,
     ...groupPerformanceTests,
@@ -138,6 +141,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.group:
       activeTests = groupTests
       title = 'Group Unit Tests'
+      break
+    case TestCategory.v3Only:
+      activeTests = v3OnlyTests
+      title = 'V3 Only Tests'
       break
     case TestCategory.restartStreans:
       activeTests = restartStreamTests

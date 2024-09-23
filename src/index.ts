@@ -178,6 +178,70 @@ export async function createFromKeyBundle(
   )
 }
 
+export async function createRandomV3(
+  environment: 'local' | 'dev' | 'production',
+  appVersion?: string | undefined,
+  hasCreateIdentityCallback?: boolean | undefined,
+  hasEnableIdentityCallback?: boolean | undefined,
+  hasPreAuthenticateToInboxCallback?: boolean | undefined,
+  enableV3?: boolean | undefined,
+  dbEncryptionKey?: Uint8Array | undefined,
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined
+): Promise<string> {
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
+    environment,
+    appVersion,
+    enableV3,
+    dbDirectory,
+    historySyncUrl,
+  }
+  return await XMTPModule.createRandomV3(
+    hasCreateIdentityCallback,
+    hasEnableIdentityCallback,
+    hasPreAuthenticateToInboxCallback,
+    encryptionKey,
+    JSON.stringify(authParams)
+  )
+}
+
+export async function createOrBuild(
+  address: string,
+  environment: 'local' | 'dev' | 'production',
+  appVersion?: string | undefined,
+  hasCreateIdentityCallback?: boolean | undefined,
+  hasEnableIdentityCallback?: boolean | undefined,
+  hasPreAuthenticateToInboxCallback?: boolean | undefined,
+  enableV3?: boolean | undefined,
+  dbEncryptionKey?: Uint8Array | undefined,
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined
+) {
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
+    environment,
+    appVersion,
+    enableV3,
+    dbDirectory,
+    historySyncUrl,
+  }
+  return await XMTPModule.createOrBuild(
+    address,
+    hasCreateIdentityCallback,
+    hasEnableIdentityCallback,
+    hasPreAuthenticateToInboxCallback,
+    encryptionKey,
+    JSON.stringify(authParams)
+  )
+}
+
 export async function dropClient(inboxId: string) {
   return await XMTPModule.dropClient(inboxId)
 }

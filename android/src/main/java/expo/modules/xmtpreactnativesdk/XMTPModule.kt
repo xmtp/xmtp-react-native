@@ -215,6 +215,7 @@ class XMTPModule : Module() {
             // Auth
             "sign",
             "authed",
+            "authedV3",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
             "preAuthenticateToInboxCallback",
@@ -368,6 +369,45 @@ class XMTPModule : Module() {
                 } catch (e: Exception) {
                     throw XMTPException("Failed to create client: $e")
                 }
+            }
+        }
+
+        AsyncFunction("createOrBuild") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String  ->
+            withContext(Dispatchers.IO) {
+                logV("createOrBuild")
+                val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
+                signer = reactSigner
+                val options = clientOptions(
+                    dbEncryptionKey,
+                    authParams,
+                    hasCreateIdentityCallback,
+                    hasEnableIdentityCallback,
+                    hasAuthInboxCallback,
+                )
+                val client = Client().createOrBuild(account = reactSigner, options = options)
+                clients[client.inboxId] = client
+                ContentJson.Companion
+                signer = null
+                sendEvent("authedV3", ClientWrapper.encodeToObj(client))
+            }
+        }
+
+        AsyncFunction("createRandomV3") Coroutine { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
+            withContext(Dispatchers.IO) {
+                logV("createRandomV3")
+                val privateKey = PrivateKeyBuilder()
+                val options = clientOptions(
+                    dbEncryptionKey,
+                    authParams,
+                    hasCreateIdentityCallback,
+                    hasEnableIdentityCallback,
+                    hasPreAuthenticateToInboxCallback,
+                )
+                val randomClient = Client().createOrBuild(account = privateKey, options = options)
+
+                ContentJson.Companion
+                clients[randomClient.inboxId] = randomClient
+                ClientWrapper.encodeToObj(randomClient)
             }
         }
 
