@@ -318,7 +318,8 @@ public class XMTPModule: Module {
 		}
 		
 		AsyncFunction("createOrBuild") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
-			let signer = ReactNativeSigner(module: self, address: address)
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+			let signer = ReactNativeSigner(module: self, address: address, isSmartContractWallet: authOptions.isSmartContractWallet, chainId: authOptions.chainId, blockNumber: authOptions.blockNumber)
 			self.signer = signer
 			if(hasCreateIdentityCallback ?? false) {
 				self.preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
@@ -333,7 +334,6 @@ public class XMTPModule: Module {
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
 			let preAuthenticateToInboxCallback: PreEventCallback? = hasAuthenticateToInboxCallback ?? false ? self.preAuthenticateToInboxCallback : nil
 			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
-			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			
 			let options = self.createClientConfig(
 				env: authOptions.environment,

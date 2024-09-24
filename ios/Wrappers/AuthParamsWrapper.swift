@@ -14,19 +14,25 @@ struct AuthParamsWrapper {
 	let enableV3: Bool
 	let dbDirectory: String?
 	let historySyncUrl: String?
-
-	init(environment: String, appVersion: String?, enableV3: Bool, dbDirectory: String?, historySyncUrl: String?) {
+	let isSmartContractWallet: Bool
+	let chainId: UInt64
+	let blockNumber: UInt64
+	
+	init(environment: String, appVersion: String?, enableV3: Bool, dbDirectory: String?, historySyncUrl: String?, isSmartContractWallet: Bool, chainId: UInt64, blockNumber: UInt64) {
 		self.environment = environment
 		self.appVersion = appVersion
 		self.enableV3 = enableV3
 		self.dbDirectory = dbDirectory
 		self.historySyncUrl = historySyncUrl
+		self.isSmartContractWallet = isSmartContractWallet
+		self.chainId = chainId
+		self.blockNumber = blockNumber
 	}
 
 	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper {
 		guard let data = authParams.data(using: .utf8),
 			  let jsonOptions = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
-			return AuthParamsWrapper(environment: "dev", appVersion: nil, enableV3: false, dbDirectory: nil, historySyncUrl: nil)
+			return AuthParamsWrapper(environment: "dev", appVersion: nil, enableV3: false, dbDirectory: nil, historySyncUrl: nil, isSmartContractWallet: false, chainId: 1, blockNumber: 1)
 		}
 
 		let environment = jsonOptions["environment"] as? String ?? "dev"
@@ -34,13 +40,20 @@ struct AuthParamsWrapper {
 		let enableV3 = jsonOptions["enableV3"] as? Bool ?? false
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
 		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
+		let isSmartContractWallet = jsonOptions["isSmartContractWallet"] as? Bool ?? false
+		let chainId = jsonOptions["chainId"] as? UInt64 ?? 1
+		let blockNumber = jsonOptions["blockNumber"] as? UInt64 ?? 1
+
 
 		return AuthParamsWrapper(
 			environment: environment,
 			appVersion: appVersion,
 			enableV3: enableV3,
 			dbDirectory: dbDirectory,
-			historySyncUrl: historySyncUrl
+			historySyncUrl: historySyncUrl,
+			isSmartContractWallet: isSmartContractWallet,
+			chainId: chainId,
+			blockNumber: blockNumber
 		)
 	}
 }
