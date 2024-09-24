@@ -215,6 +215,7 @@ class XMTPModule : Module() {
             // Auth
             "sign",
             "authed",
+            "authedV3",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
             "preAuthenticateToInboxCallback",
@@ -368,6 +369,45 @@ class XMTPModule : Module() {
                 } catch (e: Exception) {
                     throw XMTPException("Failed to create client: $e")
                 }
+            }
+        }
+
+        AsyncFunction("createOrBuild") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String  ->
+            withContext(Dispatchers.IO) {
+                logV("createOrBuild")
+                val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
+                signer = reactSigner
+                val options = clientOptions(
+                    dbEncryptionKey,
+                    authParams,
+                    hasCreateIdentityCallback,
+                    hasEnableIdentityCallback,
+                    hasAuthInboxCallback,
+                )
+                val client = Client().createOrBuild(account = reactSigner, options = options)
+                clients[client.inboxId] = client
+                ContentJson.Companion
+                signer = null
+                sendEvent("authedV3", ClientWrapper.encodeToObj(client))
+            }
+        }
+
+        AsyncFunction("createRandomV3") Coroutine { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
+            withContext(Dispatchers.IO) {
+                logV("createRandomV3")
+                val privateKey = PrivateKeyBuilder()
+                val options = clientOptions(
+                    dbEncryptionKey,
+                    authParams,
+                    hasCreateIdentityCallback,
+                    hasEnableIdentityCallback,
+                    hasPreAuthenticateToInboxCallback,
+                )
+                val randomClient = Client().createOrBuild(account = privateKey, options = options)
+
+                ContentJson.Companion
+                clients[randomClient.inboxId] = randomClient
+                ClientWrapper.encodeToObj(randomClient)
             }
         }
 
@@ -1487,16 +1527,20 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isAllowed") { inboxId: String, address: String ->
-            logV("isAllowed")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isAllowed(address)
+        AsyncFunction("isAllowed") Coroutine { inboxId: String, address: String ->
+            withContext(Dispatchers.IO) {
+                logV("isAllowed")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.isAllowed(address)
+            }
         }
 
-        Function("isDenied") { inboxId: String, address: String ->
-            logV("isDenied")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isDenied(address)
+        AsyncFunction("isDenied") Coroutine { inboxId: String, address: String ->
+            withContext(Dispatchers.IO) {
+                logV("isDenied")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.isDenied(address)
+            }
         }
 
         AsyncFunction("denyContacts") Coroutine { inboxId: String, addresses: List<String> ->
@@ -1514,16 +1558,20 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isInboxAllowed") { clientInboxId: String, inboxId: String ->
-            logV("isInboxIdAllowed")
-            val client = clients[clientInboxId] ?: throw XMTPException("No client")
-            client.contacts.isInboxAllowed(inboxId)
+        AsyncFunction("isInboxAllowed") Coroutine { clientInboxId: String, inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isInboxIdAllowed")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                client.contacts.isInboxAllowed(inboxId)
+            }
         }
 
-        AsyncFunction("isInboxDenied") { clientInboxId: String, inboxId: String ->
-            logV("isInboxIdDenied")
-            val client = clients[clientInboxId] ?: throw XMTPException("No client")
-            client.contacts.isInboxDenied(inboxId)
+        AsyncFunction("isInboxDenied") Coroutine { clientInboxId: String, inboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isInboxIdDenied")
+                val client = clients[clientInboxId] ?: throw XMTPException("No client")
+                client.contacts.isInboxDenied(inboxId)
+            }
         }
 
         AsyncFunction("denyInboxes") Coroutine { inboxId: String, inboxIds: List<String> ->
@@ -1602,15 +1650,19 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isGroupAllowed") { inboxId: String, groupId: String ->
-            logV("isGroupAllowed")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupAllowed(groupId)
+        AsyncFunction("isGroupAllowed") Coroutine { inboxId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isGroupAllowed")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.isGroupAllowed(groupId)
+            }
         }
-        AsyncFunction("isGroupDenied") { inboxId: String, groupId: String ->
-            logV("isGroupDenied")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.isGroupDenied(groupId)
+        AsyncFunction("isGroupDenied") Coroutine { inboxId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isGroupDenied")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.contacts.isGroupDenied(groupId)
+            }
         }
 
         AsyncFunction("exportNativeLogs") Coroutine { ->

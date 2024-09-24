@@ -96,6 +96,7 @@ public class XMTPModule: Module {
             // Auth
             "sign",
             "authed",
+			"authedV3",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
 			"preAuthenticateToInboxCallback",
@@ -280,6 +281,76 @@ public class XMTPModule: Module {
 				throw error
 			}
 		}
+		
+		AsyncFunction("createRandomV3") { (hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
+
+			let privateKey = try PrivateKey.generate()
+			if(hasCreateIdentityCallback ?? false) {
+				preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasEnableIdentityCallback ?? false) {
+				preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasAuthenticateToInboxCallback ?? false) {
+				preAuthenticateToInboxCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
+			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+			let preAuthenticateToInboxCallback: PreEventCallback? = hasAuthenticateToInboxCallback ?? false ? self.preAuthenticateToInboxCallback : nil
+			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+
+			let options = createClientConfig(
+				env: authOptions.environment,
+				appVersion: authOptions.appVersion,
+				preEnableIdentityCallback: preEnableIdentityCallback,
+				preCreateIdentityCallback: preCreateIdentityCallback,
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+				enableV3: authOptions.enableV3,
+				dbEncryptionKey: encryptionKeyData,
+				dbDirectory: authOptions.dbDirectory,
+				historySyncUrl: authOptions.historySyncUrl
+			)
+			let client = try await Client.createOrBuild(account: privateKey, options: options)
+
+			await clientsManager.updateClient(key: client.inboxID, client: client)
+			return try ClientWrapper.encodeToObj(client)
+		}
+		
+		AsyncFunction("createOrBuild") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
+			let signer = ReactNativeSigner(module: self, address: address)
+			self.signer = signer
+			if(hasCreateIdentityCallback ?? false) {
+				self.preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasEnableIdentityCallback ?? false) {
+				self.preEnableIdentityCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			if(hasAuthenticateToInboxCallback ?? false) {
+				self.preAuthenticateToInboxCallbackDeferred = DispatchSemaphore(value: 0)
+			}
+			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
+			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+			let preAuthenticateToInboxCallback: PreEventCallback? = hasAuthenticateToInboxCallback ?? false ? self.preAuthenticateToInboxCallback : nil
+			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+			
+			let options = self.createClientConfig(
+				env: authOptions.environment,
+				appVersion: authOptions.appVersion,
+				preEnableIdentityCallback: preEnableIdentityCallback,
+				preCreateIdentityCallback: preCreateIdentityCallback,
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+				enableV3: authOptions.enableV3,
+				dbEncryptionKey: encryptionKeyData,
+				dbDirectory: authOptions.dbDirectory,
+				historySyncUrl: authOptions.historySyncUrl
+			)
+			let client = try await XMTP.Client.createOrBuild(account: signer, options: options)
+			await self.clientsManager.updateClient(key: client.inboxID, client: client)
+			self.signer = nil
+			self.sendEvent("authedV3", try ClientWrapper.encodeToObj(client))
+		}
         
         // Remove a client from memory for a given inboxId
         AsyncFunction("dropClient") { (inboxId: String) in
@@ -290,7 +361,7 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			let privateKeyBundle = client.keys
+			let privateKeyBundle = try client.keys
 			let key = keyType == "prekey" ? privateKeyBundle.preKeys[preKeyIndex] : privateKeyBundle.identityKey
 
 			let privateKey = try PrivateKey(key)
@@ -1380,14 +1451,14 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isAllowed(address)
+			return try await client.contacts.isAllowed(address)
 		}
 
 		AsyncFunction("isDenied") { (inboxId: String, address: String) -> Bool in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isDenied(address)
+			return try await client.contacts.isDenied(address)
 		}
 
 		AsyncFunction("denyContacts") { (inboxId: String, addresses: [String]) in
@@ -1408,14 +1479,14 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isInboxAllowed(inboxId: inboxId)
+			return try await client.contacts.isInboxAllowed(inboxId: inboxId)
 		}
 
 		AsyncFunction("isInboxDenied") { (clientInboxId: String,inboxId: String) -> Bool in
 			guard let client = await clientsManager.getClient(key: clientInboxId) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isInboxDenied(inboxId: inboxId)
+			return try await client.contacts.isInboxDenied(inboxId: inboxId)
 		}
 
 		AsyncFunction("denyInboxes") { (inboxId: String, inboxIds: [String]) in
@@ -1507,14 +1578,14 @@ public class XMTPModule: Module {
 		  guard let client = await clientsManager.getClient(key: inboxId) else {
 			throw Error.noClient
 		  }
-		  return await client.contacts.isGroupAllowed(groupId: groupId)
+		  return try await client.contacts.isGroupAllowed(groupId: groupId)
 		}
 		
 		AsyncFunction("isGroupDenied") { (inboxId: String, groupId: String) -> Bool in
 		  guard let client = await clientsManager.getClient(key: inboxId) else {
 			throw Error.invalidString
 		  }
-		  return await client.contacts.isGroupDenied(groupId: groupId)
+		  return try await client.contacts.isGroupDenied(groupId: groupId)
 		}
         
 		AsyncFunction("exportNativeLogs") { () -> String in
