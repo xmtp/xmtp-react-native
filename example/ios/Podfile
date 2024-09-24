@@ -8,7 +8,7 @@ podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties
 ENV['RCT_NEW_ARCH_ENABLED'] = podfile_properties['newArchEnabled'] == 'true' ? '1' : '0'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = '1' if podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR'] == 'true'
 
-platform :ios, '16.0'
+platform :ios, '14.0'
 install! 'cocoapods',
   :deterministic_uuids => false
 
@@ -85,11 +85,11 @@ target 'xmtpreactnativesdkexample' do
     installer.generated_projects.each do |project|
         project.targets.each do |target|
             target.build_configurations.each do |config|
-                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
             end
         end
         project.build_configurations.each do |config|
-            config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+            config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
         end
     end
   end

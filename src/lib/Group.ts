@@ -15,6 +15,19 @@ import * as XMTP from '../index'
 
 export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
 
+export interface GroupParams {
+  id: string
+  createdAt: number
+  members: string[]
+  creatorInboxId: InboxId
+  topic: string
+  name: string
+  isActive: boolean
+  addedByInboxId: InboxId
+  imageUrlSquare: string
+  description: string
+}
+
 export class Group<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > implements ConversationContainer<ContentTypes>
@@ -22,36 +35,34 @@ export class Group<
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
-  peerInboxIds: InboxId[]
+  members: Member[]
   version = ConversationVersion.GROUP
   topic: string
   creatorInboxId: InboxId
   name: string
   isGroupActive: boolean
+  addedByInboxId: InboxId
   imageUrlSquare: string
+  description: string
+  // pinnedFrameUrl: string
 
   constructor(
     client: XMTP.Client<ContentTypes>,
-    params: {
-      id: string
-      createdAt: number
-      peerInboxIds: InboxId[]
-      creatorInboxId: InboxId
-      topic: string
-      name: string
-      isGroupActive: boolean
-      imageUrlSquare: string
-    }
+    params: GroupParams,
+    members: Member[]
   ) {
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
-    this.peerInboxIds = params.peerInboxIds
+    this.members = members
     this.topic = params.topic
     this.creatorInboxId = params.creatorInboxId
     this.name = params.name
-    this.isGroupActive = params.isGroupActive
+    this.isGroupActive = params.isActive
+    this.addedByInboxId = params.addedByInboxId
     this.imageUrlSquare = params.imageUrlSquare
+    this.description = params.description
+    // this.pinnedFrameUrl = params.pinnedFrameUrl
   }
 
   /**
@@ -370,15 +381,6 @@ export class Group<
   }
 
   /**
-   * Returns the inbox id that added you to the group.
-   * To get the latest added by inbox id from the network, call sync() first.
-   * @returns {Promise<string>} A Promise that resolves to the inbox id that added you to the group.
-   */
-  async addedByInboxId(): Promise<InboxId> {
-    return XMTP.addedByInboxId(this.client.inboxId, this.id)
-  }
-
-  /**
    *
    * @param inboxId
    * @returns {Promise<boolean>} whether a given inboxId is an admin of the group.
@@ -630,7 +632,7 @@ export class Group<
    * @returns {Promise<Member[]>} A Promise that resolves to an array of Member objects.
    * To get the latest member list from the network, call sync() first.
    */
-  async members(): Promise<Member[]> {
+  async membersList(): Promise<Member[]> {
     return await XMTP.listGroupMembers(this.client.inboxId, this.id)
   }
 }

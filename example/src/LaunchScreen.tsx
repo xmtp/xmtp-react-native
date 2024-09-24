@@ -99,10 +99,14 @@ export default function LaunchScreen(
     console.log('Pre Enable Identity Callback')
   }
 
+  const preAuthenticateToInboxCallback = async () => {
+    console.log('Pre Authenticate To Inbox Callback')
+  }
+
   const networkOptions = [
     { key: 0, label: 'dev' },
     { key: 1, label: 'local' },
-    // { key: 2, label: 'production' },
+    { key: 2, label: 'production' },
   ]
 
   const groupOptions = [
@@ -222,8 +226,10 @@ export default function LaunchScreen(
                     XMTP.Client.create(signer, {
                       env: selectedNetwork,
                       appVersion,
+                      codecs: supportedCodecs,
                       preCreateIdentityCallback,
                       preEnableIdentityCallback,
+                      preAuthenticateToInboxCallback,
                       enableV3: enableGroups === 'true',
                       dbEncryptionKey,
                     })
@@ -258,6 +264,7 @@ export default function LaunchScreen(
                   codecs: supportedCodecs,
                   preCreateIdentityCallback,
                   preEnableIdentityCallback,
+                  preAuthenticateToInboxCallback,
                   enableV3: enableGroups === 'true',
                   dbEncryptionKey,
                 })

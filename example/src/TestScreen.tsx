@@ -2,12 +2,13 @@ import { useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
 
-import { createdAtTests } from './tests/createdAtTests'
+import { groupPerformanceTests } from './tests/groupPerformanceTests'
 import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
 import { Test } from './tests/test-utils'
 import { tests } from './tests/tests'
+import { v3OnlyTests } from './tests/v3OnlyTests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
@@ -107,9 +108,10 @@ export enum TestCategory {
   all = 'all',
   tests = 'tests',
   group = 'group',
-  createdAt = 'createdAt',
+  v3Only = 'v3Only',
   restartStreans = 'restartStreams',
   groupPermissions = 'groupPermissions',
+  groupPerformance = 'groupPerformance',
 }
 
 export default function TestScreen(): JSX.Element {
@@ -121,9 +123,10 @@ export default function TestScreen(): JSX.Element {
   const allTests = [
     ...tests,
     ...groupTests,
-    ...createdAtTests,
+    ...v3OnlyTests,
     ...restartStreamTests,
     ...groupPermissionsTests,
+    ...groupPerformanceTests,
   ]
   let activeTests, title
   switch (params.testSelection) {
@@ -139,9 +142,9 @@ export default function TestScreen(): JSX.Element {
       activeTests = groupTests
       title = 'Group Unit Tests'
       break
-    case TestCategory.createdAt:
-      activeTests = createdAtTests
-      title = 'Created At Unit Tests'
+    case TestCategory.v3Only:
+      activeTests = v3OnlyTests
+      title = 'V3 Only Tests'
       break
     case TestCategory.restartStreans:
       activeTests = restartStreamTests
@@ -150,6 +153,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.groupPermissions:
       activeTests = groupPermissionsTests
       title = 'Group Permissions Unit Tests'
+      break
+    case TestCategory.groupPerformance:
+      activeTests = groupPerformanceTests
+      title = 'Group Performance Unit Tests'
       break
   }
 
