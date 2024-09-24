@@ -2,6 +2,8 @@ import type { WalletClient } from 'viem'
 
 export interface Signer {
   getAddress: () => Promise<string>
+  getChainId: () => bigint
+  isSmartContractWallet: () => boolean
   signMessage: (message: string) => Promise<string>
 }
 
@@ -37,5 +39,8 @@ export function convertWalletClientToSigner(
         message: typeof message === 'string' ? message : { raw: message },
         account,
       }),
+    // Not supported by viem wallet client yet
+    getChainId: () => 1n,
+    isSmartContractWallet: () => false,
   }
 }
