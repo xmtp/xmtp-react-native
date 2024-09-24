@@ -4,8 +4,10 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
 import EncryptedStorage from 'react-native-encrypted-storage'
 import ModalSelector from 'react-native-modal-selector'
+import { useConnect } from 'wagmi'
 import * as XMTP from 'xmtp-react-native-sdk'
 import { useXmtp } from 'xmtp-react-native-sdk'
+import { ClientOptions } from 'xmtp-react-native-sdk/lib/Client'
 
 import { NavigationParamList } from './Navigation'
 import { TestCategory } from './TestScreen'
@@ -70,6 +72,7 @@ export default function LaunchScreen(
   const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
   const { setClient } = useXmtp()
   const savedKeys = useSavedKeys()
+  const { connect, connectors } = useConnect()
   const configureWallet = useCallback(
     (label: string, configuring: Promise<XMTP.Client<any>>) => {
       console.log('Connecting XMTP client', label)
@@ -269,6 +272,47 @@ export default function LaunchScreen(
                   dbEncryptionKey,
                 })
               )
+            })().catch(console.error) // Don't forget error handling
+          }}
+        />
+      </View>
+      <View key="smart-contract-dev" style={{ margin: 16 }}>
+        <Button
+          title="Use Smart Contract Wallet"
+          color="green"
+          onPress={() => {
+            ;(async () => {
+              console.log(
+                'Using network ' +
+                  selectedNetwork +
+                  ' and enableV3 ' +
+                  enableGroups
+              )
+              const dbEncryptionKey = await getDbEncryptionKey(
+                selectedNetwork,
+                true
+              )
+              connect(
+                { connector: connectors[0] },
+                {
+                  onSuccess: (data) => {
+                    console.log('Connected wallet', data)
+                  },
+                  onError: (error) => {
+                    console.log('Error connecting wallet', error)
+                  },
+                }
+              )
+              // XMTP.Client.create(signer, {
+              //   env: selectedNetwork,
+              //   appVersion,
+              //   codecs: supportedCodecs,
+              //   preCreateIdentityCallback,
+              //   preEnableIdentityCallback,
+              //   preAuthenticateToInboxCallback,
+              //   enableV3: enableGroups === 'true',
+              //   dbEncryptionKey,
+              // })
             })().catch(console.error) // Don't forget error handling
           }}
         />
