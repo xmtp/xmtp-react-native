@@ -219,7 +219,10 @@ export async function createOrBuild(
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined
+  historySyncUrl?: string | undefined,
+  isSmartContractWallet?: boolean | undefined,
+  chainId?: bigint | undefined,
+  blockNumber?: bigint | undefined
 ) {
   const encryptionKey = dbEncryptionKey
     ? Array.from(dbEncryptionKey)
@@ -231,6 +234,9 @@ export async function createOrBuild(
     enableV3,
     dbDirectory,
     historySyncUrl,
+    isSmartContractWallet,
+    chainId,
+    blockNumber,
   }
   return await XMTPModule.createOrBuild(
     address,
@@ -1272,6 +1278,9 @@ interface AuthParams {
   enableV3?: boolean
   dbDirectory?: string
   historySyncUrl?: string
+  isSmartContractWallet?: boolean
+  chainId?: bigint
+  blockNumber?: bigint
 }
 
 interface CreateGroupParams {
