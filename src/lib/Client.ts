@@ -389,7 +389,10 @@ export class Client<
           Boolean(options.enableV3),
           options.dbEncryptionKey,
           options.dbDirectory,
-          options.historySyncUrl
+          options.historySyncUrl,
+          signer.isSmartContractWallet(),
+          signer.getChainId(),
+          signer.getBlockNumber()
         )
       })().catch((error) => {
         this.removeAllSubscriptions(
