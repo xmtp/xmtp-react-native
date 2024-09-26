@@ -2,7 +2,7 @@ import {
   createConnectorFromWallet,
   Wallets,
 } from '@mobile-wallet-protocol/wagmi-connectors'
-import { Client } from '@xmtp/react-native-sdk'
+import { Client, DecodedMessage, Group } from '@xmtp/react-native-sdk'
 import * as Linking from 'expo-linking'
 import { useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text } from 'react-native'
@@ -20,6 +20,8 @@ import { base } from 'wagmi/chains'
 
 import Section from './components/section'
 import { SupportedContentTypes, useCreateClient } from './hooks/useCreateClient'
+import { useCreateGroup } from './hooks/useCreateGroup'
+import { useListMessages } from './hooks/useListMessages'
 
 polyfillForWagmi()
 
@@ -45,19 +47,22 @@ export default function WagmiDemo() {
   const [client, setClient] = useState<
     Client<SupportedContentTypes> | undefined
   >(undefined)
+  const [group, setGroup] = useState<Group<SupportedContentTypes> | undefined>(
+    undefined
+  )
+  const [messages, setMessages] = useState<
+    DecodedMessage<SupportedContentTypes>[] | undefined
+  >(undefined)
   const insets = useSafeAreaInsets()
   const { address, chainId } = useAccount()
 
   const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
-  const {
-    data: signMessageHash,
-    error: signMessageError,
-    signMessage,
-    reset,
-  } = useSignMessage()
+  const { reset } = useSignMessage()
   const { data: walletClient } = useWalletClient()
   const createClient = useCreateClient(walletClient)
+  const createGroup = useCreateGroup(client)
+  const listMessages = useListMessages(group)
 
   const contentContainerStyle = useMemo(
     () => ({
@@ -103,21 +108,36 @@ export default function WagmiDemo() {
             }}
           />
           <Section
-            key="useSignMessage"
-            title="useSignMessage"
-            result={signMessageHash ?? signMessageError}
-            onPress={() => signMessage({ message: 'hello world' })}
-          />
-          <Section
             key="useCreateClient"
             title="useCreateClient"
-            result={client?.address ?? "MOOOOO"}
+            buttonLabel="Create Client"
+            result={client?.address ?? 'No client created'}
             onPress={async () => {
-              console.log('hi there');
-              
+              console.log('hi there')
+
               const client = await createClient()
               console.log(client?.address)
               setClient(client)
+            }}
+          />
+          <Section
+            key="useCreateGroup"
+            title="useCreateGroup"
+            buttonLabel="Create Group"
+            result={group?.id ?? 'No group created'}
+            onPress={async () => {
+              const group = await createGroup()
+              setGroup(group)
+            }}
+          />
+          <Section
+            key="useListMessages"
+            title="useListMessages"
+            buttonLabel="List Messages"
+            result={JSON.stringify(messages)}
+            onPress={async () => {
+              const messages = await listMessages()
+              setMessages(messages)
             }}
           />
         </>
