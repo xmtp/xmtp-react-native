@@ -16,10 +16,10 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 	var address: String
 	var isSmartContractWallet: Bool
 	var chainId: UInt64
-	var blockNumber: UInt64
+	var blockNumber: UInt64?
 	var continuations: [String: CheckedContinuation<XMTP.Signature, Swift.Error>] = [:]
 
-	init(module: XMTPModule, address: String, isSmartContractWallet: Bool = false, chainId: UInt64 = 1, blockNumber: UInt64 = 1) {
+	init(module: XMTPModule, address: String, isSmartContractWallet: Bool = false, chainId: UInt64 = 1, blockNumber: UInt64? = nil) {
 		self.module = module
 		self.address = address
 		self.isSmartContractWallet = isSmartContractWallet
