@@ -16,7 +16,7 @@ struct AuthParamsWrapper {
 	let historySyncUrl: String?
 	let isSmartContractWallet: Bool
 	let chainId: UInt64
-	let blockNumber: UInt64
+	let blockNumber: UInt64?
 	
 	init(environment: String, appVersion: String?, enableV3: Bool, dbDirectory: String?, historySyncUrl: String?, isSmartContractWallet: Bool, chainId: UInt64, blockNumber: UInt64) {
 		self.environment = environment
@@ -41,8 +41,8 @@ struct AuthParamsWrapper {
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
 		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
 		let isSmartContractWallet = jsonOptions["isSmartContractWallet"] as? Bool ?? false
-		let chainId = jsonOptions["chainId"] as? UInt64 ?? 1
-		let blockNumber = jsonOptions["blockNumber"] as? UInt64 ?? 1
+		let chainId = jsonOptions["chainId"] as? Int ?? 1
+		let blockNumber = jsonOptions["blockNumber"] as? Int
 
 
 		return AuthParamsWrapper(
@@ -52,8 +52,8 @@ struct AuthParamsWrapper {
 			dbDirectory: dbDirectory,
 			historySyncUrl: historySyncUrl,
 			isSmartContractWallet: isSmartContractWallet,
-			chainId: chainId,
-			blockNumber: blockNumber
+			chainId: UInt64(chainId),
+			blockNumber: blockNumber != nil ? UInt64(blockNumber!) : nil
 		)
 	}
 }
