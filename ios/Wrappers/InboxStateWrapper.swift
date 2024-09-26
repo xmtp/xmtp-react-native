@@ -14,7 +14,7 @@ struct InboxStateWrapper {
 		return [
 			"inboxId": inboxState.inboxId,
 			"addresses": inboxState.addresses,
-			"installationIds": inboxState.installationIds,
+			"installations": inboxState.installations.map { Installation.encodeInstallation(installation: $0) },
 			"recoveryAddress": inboxState.recoveryAddress
 		]
 	}
@@ -26,5 +26,14 @@ struct InboxStateWrapper {
 			throw WrapperError.encodeError("could not encode inboxState")
 		}
 		return result
+	}
+}
+
+struct Installation {
+	static func encodeInstallation(installation: XMTP.Installation) -> [String: Any] {
+		return [
+			"id": installation.id,
+			"createdAt": installation.createdAt?.timeIntervalSince1970 ?? NSNull()
+		]
 	}
 }
