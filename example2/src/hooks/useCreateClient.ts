@@ -5,16 +5,9 @@ import {
   ReplyCodec,
   RemoteAttachmentCodec,
   StaticAttachmentCodec,
+  Signer,
 } from '@xmtp/react-native-sdk'
 import { WalletClient } from 'viem'
-
-interface Signer {
-  getAddress: () => Promise<string>
-  getChainId: () => bigint
-  getBlockNumber: () => bigint
-  isSmartContractWallet: () => boolean
-  signMessage: (message: string) => Promise<string>
-}
 
 const supportedCodecs = [
   new ReactionCodec(),
@@ -40,8 +33,8 @@ export const useCreateClient = (walletClient: WalletClient | undefined) => {
 
   const signer: Signer = {
     getAddress: () => Promise.resolve(walletClient.account?.address ?? ''),
-    getChainId: () => BigInt(walletClient.chain?.id ?? 0),
-    getBlockNumber: () => 0n,
+    getChainId: () => walletClient.chain?.id ?? 0,
+    getBlockNumber: () => undefined,
     isSmartContractWallet: () => true,
     signMessage: (message: string) =>
       walletClient.signMessage({ message, account }),
