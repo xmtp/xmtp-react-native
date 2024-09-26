@@ -99,6 +99,7 @@ export default function WagmiDemo() {
             onPress={() => {
               disconnect({ connector: connectors[0] })
               reset()
+              void client?.deleteLocalDatabase()
             }}
           />
           <Section
@@ -110,9 +111,12 @@ export default function WagmiDemo() {
           <Section
             key="useCreateClient"
             title="useCreateClient"
-            result={client?.address ?? 'No client created'}
+            result={client?.address ?? "MOOOOO"}
             onPress={async () => {
+              console.log('hi there');
+              
               const client = await createClient()
+              console.log(client?.address)
               setClient(client)
             }}
           />

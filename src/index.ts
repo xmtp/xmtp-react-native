@@ -221,8 +221,8 @@ export async function createOrBuild(
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined,
   isSmartContractWallet?: boolean | undefined,
-  chainId?: bigint | undefined,
-  blockNumber?: bigint | undefined
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
 ) {
   const encryptionKey = dbEncryptionKey
     ? Array.from(dbEncryptionKey)
@@ -1271,8 +1271,8 @@ interface AuthParams {
   dbDirectory?: string
   historySyncUrl?: string
   isSmartContractWallet?: boolean
-  chainId?: bigint
-  blockNumber?: bigint
+  chainId?: number
+  blockNumber?: number
 }
 
 interface CreateGroupParams {

@@ -39,14 +39,30 @@ export const useCreateClient = (walletClient: WalletClient | undefined) => {
     signMessage: (message: string) =>
       walletClient.signMessage({ message, account }),
   }
+    console.log('hi 4');
 
-  return () => {
-    const dbEncryptionKey = crypto.getRandomValues(new Uint8Array(32))
-    return Client.createOrBuild(signer, {
+  
+
+  return async () => {
+    console.log('Client create or bhuld');
+try {
+    
+    const foo = await  Client.createOrBuild(signer, {
       env: 'dev',
       appVersion,
       codecs: supportedCodecs,
       dbEncryptionKey,
     })
+    console.log({foo})
+    return foo
+} catch (e) {
+console.log({e});
+
+} finally {
+  console.log('finally something');
+  
+}
+    
+    
   }
 }

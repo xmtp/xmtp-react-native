@@ -4,7 +4,7 @@ import Button from "./button";
 
 type SectionProps = {
   title: string;
-  result?: string | Error | null;
+  result?: any;
   onPress?: () => Promise<string | void> | string | void;
   buttonLabel?: string;
 };

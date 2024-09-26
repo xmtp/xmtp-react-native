@@ -349,6 +349,8 @@ public class XMTPModule: Module {
 			let client = try await XMTP.Client.createOrBuild(account: signer, options: options)
 			await self.clientsManager.updateClient(key: client.inboxID, client: client)
 			self.signer = nil
+			print("LOPI")
+			print(client.address)
 			self.sendEvent("authedV3", try ClientWrapper.encodeToObj(client))
 		}
         
