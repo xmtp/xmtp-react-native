@@ -557,7 +557,7 @@ public class XMTPModule: Module {
 			var results: [String] = []
 			for conversation in conversationContainerList {
 				await self.conversationsManager.set(conversation.cacheKey(inboxId), conversation)
-				let encodedConversationContainer = try ConversationContainerWrapper.encode(conversation, client: client)
+				let encodedConversationContainer = try await ConversationContainerWrapper.encode(conversation, client: client)
 				results.append(encodedConversationContainer)
 			}
 
@@ -1832,7 +1832,7 @@ public class XMTPModule: Module {
 		await subscriptionsManager.set(getConversationsKey(inboxId: inboxId), Task {
 			do {
 				for try await conversation in await client.conversations.streamAll() {
-					try sendEvent("conversationContainer", [
+					try await sendEvent("conversationContainer", [
 						"inboxId": inboxId,
 						"conversationContainer": ConversationContainerWrapper.encodeToObj(conversation, client: client),
 					])
