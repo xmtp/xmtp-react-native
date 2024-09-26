@@ -325,13 +325,16 @@ export class Client<
     }
     return new Promise<Client<ContentCodecs>>((resolve, reject) => {
       ;(async () => {
+        console.log("YARK!")
         this.signSubscription = XMTPModule.emitter.addListener(
-          'sign',
+          'signV3',
           async (message: { id: string; message: string }) => {
+            console.log("incoming request LOPI LOPI")
             const request: { id: string; message: string } = message
-            console.log("incoming request")
+            console.log(request.id)
             try {
               const signatureString = await signer.signMessage(request.message)
+              console.log("about to hit receive signature")
               await XMTPModule.receiveSignature(request.id, signatureString)
             } catch (e) {
               const errorMessage = 'ERROR in create. User rejected signature'
@@ -370,7 +373,7 @@ export class Client<
             )
           }
         )
-        console.log("Howdy")
+        console.log("the subscription is", !!this.signSubscription)
         await XMTPModule.createOrBuild(
           await signer.getAddress(),
           options.env,
@@ -394,6 +397,7 @@ export class Client<
         )
         console.error('ERROR in create: ', error)
       })
+      console.log("Submitted across bridge probably")
     })
   }
 

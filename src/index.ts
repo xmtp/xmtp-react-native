@@ -117,6 +117,7 @@ export async function auth(
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
+  console.log("RECEIVE SIGNATURE")
   return await XMTPModule.receiveSignature(requestID, signature)
 }
 
@@ -542,6 +543,7 @@ export async function sign(
   keyType: string,
   preKeyIndex: number = 0
 ): Promise<Uint8Array> {
+  console.log("DOES this RAW SIGN EVER GET CALLED")
   const signatureArray = await XMTPModule.sign(
     inboxId,
     Array.from(digest),

@@ -95,6 +95,7 @@ public class XMTPModule: Module {
 		Events(
             // Auth
             "sign",
+			"signV3",
             "authed",
 			"authedV3",
             "preCreateIdentityCallback",
