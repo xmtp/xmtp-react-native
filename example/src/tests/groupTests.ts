@@ -91,16 +91,21 @@ test('can revoke all other installations', async () => {
 
   const inboxState = await alix2.inboxState(true)
   assert(
-    inboxState.installationIds.length === 2,
-    `installationIds length should be 2 but was ${inboxState.installationIds.length}`
+    inboxState.installations.length === 2,
+    `installations length should be 2 but was ${inboxState.installations.length}`
   )
 
   await alix2.revokeAllOtherInstallations(alixWallet)
 
   const inboxState2 = await alix2.inboxState(true)
   assert(
-    inboxState2.installationIds.length === 1,
-    `installationIds length should be 1 but was ${inboxState2.installationIds.length}`
+    inboxState2.installations.length === 1,
+    `installations length should be 1 but was ${inboxState2.installations.length}`
+  )
+
+  assert(
+    inboxState2.installations[0].createdAt !== undefined,
+    `installations createdAt should not be undefined`
   )
   return true
 })

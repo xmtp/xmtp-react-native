@@ -9,7 +9,12 @@ class InboxStateWrapper {
             return mapOf(
                 "inboxId" to inboxState.inboxId,
                 "addresses" to inboxState.addresses,
-                "installationIds" to inboxState.installationIds,
+                "installations" to inboxState.installations.map {
+                    mapOf(
+                        "id" to it.installationId,
+                        "createdAt" to it.createdAt?.time
+                    )
+                },
                 "recoveryAddress" to inboxState.recoveryAddress
             )
         }

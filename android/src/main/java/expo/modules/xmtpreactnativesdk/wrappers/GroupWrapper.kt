@@ -8,7 +8,7 @@ import org.xmtp.android.library.toHex
 class GroupWrapper {
 
     companion object {
-        fun encodeToObj(client: Client, group: Group): Map<String, Any> {
+        suspend fun encodeToObj(client: Client, group: Group): Map<String, Any> {
             return mapOf(
                 "clientAddress" to client.address,
                 "id" to group.id,
@@ -26,7 +26,7 @@ class GroupWrapper {
             )
         }
 
-        fun encode(client: Client, group: Group): String {
+        suspend fun encode(client: Client, group: Group): String {
             val gson = GsonBuilder().create()
             val obj = encodeToObj(client, group)
             return gson.toJson(obj)
