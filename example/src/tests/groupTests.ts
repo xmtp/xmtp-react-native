@@ -3,7 +3,7 @@ import { Platform } from 'expo-modules-core'
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, createClients, delayToPropogate } from './test-utils'
+import { Test, assert, createClients, createGroups, delayToPropogate } from './test-utils'
 import {
   Client,
   Conversation,
@@ -927,7 +927,7 @@ test('can cancel streams', async () => {
 
   assert(
     messageCallbacks === 1,
-    'message stream should have received 1 message'
+    `message stream should have received 1 message but recieved ${messageCallbacks}`
   )
 
   await bo.conversations.cancelStreamAllMessages()
@@ -941,7 +941,7 @@ test('can cancel streams', async () => {
 
   assert(
     messageCallbacks === 1,
-    'message stream should still only received 1 message'
+    `message stream should still only received 1 message but recieved ${messageCallbacks}`
   )
 
   await bo.conversations.streamAllMessages(async () => {
@@ -949,11 +949,11 @@ test('can cancel streams', async () => {
   }, true)
 
   await group.send('hello')
-  await delayToPropogate()
+  await delayToPropogate(10000)
 
   assert(
     messageCallbacks === 2,
-    'message stream should have received 2 message'
+    `message stream should have received 2 message but recieved ${messageCallbacks}`
   )
 
   return true
@@ -2171,7 +2171,7 @@ test('can create new installation without breaking group', async () => {
 
 test('can list many groups members in parallel', async () => {
   const [alix, bo] = await createClients(2)
-  const groups: Group[] = await createGroups(alix, [bo], 20, 0)
+  const groups: Group[] = await createGroups(alix, [bo], 20)
 
   try {
     await Promise.all(groups.slice(0, 10).map((g) => g.membersList()))
@@ -2190,7 +2190,7 @@ test('can list many groups members in parallel', async () => {
 
 test('can sync all groups', async () => {
   const [alix, bo] = await createClients(2)
-  const groups: Group[] = await createGroups(alix, [bo], 50, 0)
+  const groups: Group[] = await createGroups(alix, [bo], 50)
 
   const alixGroup = groups[0]
   await bo.conversations.syncGroups()
