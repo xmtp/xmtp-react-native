@@ -360,6 +360,53 @@ test('production MLS V3 client creation does not error', async () => {
   return true
 })
 
+test('can cancel streams', async () => {
+  const [alix, bo] = await createClients(2)
+  let messageCallbacks = 0
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  const group = await alix.conversations.newGroup([bo.address])
+  await group.send('hello')
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 1,
+    `message stream should have received 1 message but recieved ${messageCallbacks}`
+  )
+
+  await bo.conversations.cancelStreamAllMessages()
+  await delayToPropogate()
+
+  await group.send('hello')
+  await group.send('hello')
+  await group.send('hello')
+
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 1,
+    `message stream should still only received 1 message but recieved ${messageCallbacks}`
+  )
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+  
+  await delayToPropogate()
+  await group.send('hello')
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 2,
+    `message stream should have received 2 message but recieved ${messageCallbacks}`
+  )
+
+  return true
+})
+
 test('group message delivery status', async () => {
   const [alixClient, boClient] = await createClients(2)
   const alixGroup = await alixClient.conversations.newGroup([boClient.address])
@@ -909,52 +956,6 @@ test('can remove and add members from a group by inbox id', async () => {
   if (alixGroupMembers2.length !== 3) {
     throw new Error('num group members should be 3')
   }
-
-  return true
-})
-
-test('can cancel streams', async () => {
-  const [alix, bo] = await createClients(2)
-  let messageCallbacks = 0
-
-  await bo.conversations.streamAllMessages(async () => {
-    messageCallbacks++
-  }, true)
-
-  const group = await alix.conversations.newGroup([bo.address])
-  await group.send('hello')
-  await delayToPropogate()
-
-  assert(
-    messageCallbacks === 1,
-    `message stream should have received 1 message but recieved ${messageCallbacks}`
-  )
-
-  await bo.conversations.cancelStreamAllMessages()
-  await delayToPropogate()
-
-  await group.send('hello')
-  await group.send('hello')
-  await group.send('hello')
-
-  await delayToPropogate()
-
-  assert(
-    messageCallbacks === 1,
-    `message stream should still only received 1 message but recieved ${messageCallbacks}`
-  )
-
-  await bo.conversations.streamAllMessages(async () => {
-    messageCallbacks++
-  }, true)
-
-  await group.send('hello')
-  await delayToPropogate(10000)
-
-  assert(
-    messageCallbacks === 2,
-    `message stream should have received 2 message but recieved ${messageCallbacks}`
-  )
 
   return true
 })
