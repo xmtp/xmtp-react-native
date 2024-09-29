@@ -1,5 +1,5 @@
 import { Platform } from 'expo-modules-core'
-import { Client, GroupUpdatedCodec } from 'xmtp-react-native-sdk'
+import { Client, GroupUpdatedCodec, Group } from 'xmtp-react-native-sdk'
 
 export type Test = {
   name: string
@@ -64,4 +64,22 @@ export async function createV3TestingClients(): Promise<Client[]> {
 
   clients.push(alix, bo, caro)
   return clients
+}
+
+export async function createGroups(
+  client: Client,
+  peers: Client[],
+  numGroups: number
+): Promise<Group[]> {
+  const groups = []
+  const addresses: string[] = peers.map((client) => client.address)
+  for (let i = 0; i < numGroups; i++) {
+    const group = await client.conversations.newGroup(addresses, {
+      name: `group ${i}`,
+      imageUrlSquare: `www.group${i}.com`,
+      description: `group ${i}`,
+    })
+    groups.push(group)
+  }
+  return groups
 }
