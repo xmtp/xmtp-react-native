@@ -3,18 +3,18 @@ import { InboxId } from './Client'
 export class InboxState {
   inboxId: InboxId
   addresses: string[]
-  installationIds: string[]
+  installations: Installation[]
   recoveryAddress: string
 
   constructor(
     inboxId: InboxId,
     addresses: string[],
-    installationIds: string[],
+    installations: Installation[],
     recoveryAddress: string
   ) {
     this.inboxId = inboxId
     this.addresses = addresses
-    this.installationIds = installationIds
+    this.installations = installations
     this.recoveryAddress = recoveryAddress
   }
 
@@ -23,8 +23,25 @@ export class InboxState {
     return new InboxState(
       entry.inboxId,
       entry.addresses,
-      entry.installationIds,
+      entry.installations.map((inst: string) => {
+        return Installation.from(inst)
+      }),
       entry.recoveryAddress
     )
+  }
+}
+
+export class Installation {
+  id: string
+  createdAt: number | undefined // timestamp in milliseconds
+
+  constructor(id: string, createdAt: number) {
+    this.id = id
+    this.createdAt = createdAt
+  }
+
+  static from(json: string): Installation {
+    const installation = JSON.parse(json)
+    return new Installation(installation.id, installation.createdAt)
   }
 }
