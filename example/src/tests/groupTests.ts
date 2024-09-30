@@ -3,7 +3,13 @@ import { Platform } from 'expo-modules-core'
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, createClients, createGroups, delayToPropogate } from './test-utils'
+import {
+  Test,
+  assert,
+  createClients,
+  createGroups,
+  delayToPropogate,
+} from './test-utils'
 import {
   Client,
   Conversation,
@@ -374,7 +380,7 @@ test('can cancel streams', async () => {
 
   assert(
     messageCallbacks === 1,
-    `message stream should have received 1 message but recieved ${messageCallbacks}`
+    'message stream should have received 1 message'
   )
 
   await bo.conversations.cancelStreamAllMessages()
@@ -388,20 +394,21 @@ test('can cancel streams', async () => {
 
   assert(
     messageCallbacks === 1,
-    `message stream should still only received 1 message but recieved ${messageCallbacks}`
+    'message stream should still only received 1 message'
   )
 
   await bo.conversations.streamAllMessages(async () => {
     messageCallbacks++
   }, true)
-  
+
   await delayToPropogate()
+
   await group.send('hello')
   await delayToPropogate()
 
   assert(
     messageCallbacks === 2,
-    `message stream should have received 2 message but recieved ${messageCallbacks}`
+    'message stream should have received 2 message'
   )
 
   return true
@@ -2107,6 +2114,8 @@ test('can list groups does not fork', async () => {
     `should have 5 messages on second load received ${boMessages2.length}`
   )
 
+  await delayToPropogate(500)
+
   assert(groupCallbacks === 1, 'group stream should have received 1 group')
 
   return true
@@ -2273,6 +2282,38 @@ test('only streams groups that can be decrypted', async () => {
     caroGroups.length !== 1,
     `caro group length should be 0 but was ${caroGroups.length}`
   )
+
+  return true
+})
+
+test('can stream groups and messages', async () => {
+  for (let index = 0; index < 15; index++) {
+    console.log(`stream groups & messages: test ${index}`)
+    const [alixClient, boClient] = await createClients(2)
+
+    // Start streaming groups
+    const groups: Group<any>[] = []
+    await alixClient.conversations.streamGroups(async (group: Group<any>) => {
+      groups.push(group)
+    })
+    // Stream messages twice
+    await alixClient.conversations.streamAllMessages(
+      async (message) => {},
+      true
+    )
+    await alixClient.conversations.streamAllMessages(
+      async (message) => {},
+      true
+    )
+
+    // bo creates a group with alix so a stream callback is fired
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    await boClient.conversations.newGroup([alixClient.address])
+    await delayToPropogate(500)
+    if ((groups.length as number) !== 1) {
+      throw Error(`Unexpected num groups (should be 1): ${groups.length}`)
+    }
+  }
 
   return true
 })
