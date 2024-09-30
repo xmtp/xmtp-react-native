@@ -11,6 +11,15 @@ import XMTP
 // Wrapper around XMTP.Member to allow passing these objects back into react native.
 struct MemberWrapper {
 	static func encodeToObj(_ member: XMTP.Member) throws -> [String: Any] {
+		let consentString = switch member.consentState {
+		case .allowed:
+			"allowed"
+		case .denied:
+			"denied"
+		case .unknown:
+			"unknown"
+		}
+
 		let permissionString = switch member.permissionLevel {
 			case .Member:
 				"member"
@@ -23,6 +32,7 @@ struct MemberWrapper {
 			"inboxId": member.inboxId,
 			"addresses": member.addresses,
 			"permissionLevel": permissionString,
+			"consentString": consentString
 		]
 	}
 
