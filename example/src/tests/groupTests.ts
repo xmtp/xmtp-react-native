@@ -3,7 +3,13 @@ import { Platform } from 'expo-modules-core'
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, createClients, createGroups, delayToPropogate } from './test-utils'
+import {
+  Test,
+  assert,
+  createClients,
+  createGroups,
+  delayToPropogate,
+} from './test-utils'
 import {
   Client,
   Conversation,
@@ -2107,6 +2113,8 @@ test('can list groups does not fork', async () => {
     boMessages2.length === 5,
     `should have 5 messages on second load received ${boMessages2.length}`
   )
+
+  await delayToPropogate(500)
 
   assert(groupCallbacks === 1, 'group stream should have received 1 group')
 
