@@ -1,6 +1,7 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
+import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.libxmtp.Member
 import org.xmtp.android.library.libxmtp.PermissionLevel
 
@@ -12,10 +13,16 @@ class MemberWrapper {
                 PermissionLevel.ADMIN -> "admin"
                 PermissionLevel.SUPER_ADMIN -> "super_admin"
             }
+            val consentString = when (member.consentState) {
+                ConsentState.ALLOWED -> "allowed"
+                ConsentState.DENIED -> "denied"
+                ConsentState.UNKNOWN -> "unknown"
+            }
             return mapOf(
                 "inboxId" to member.inboxId,
                 "addresses" to member.addresses,
-                "permissionLevel" to permissionString
+                "permissionLevel" to permissionString,
+                "consentState" to consentString
             )
         }
 

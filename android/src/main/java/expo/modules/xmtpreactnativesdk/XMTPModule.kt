@@ -38,6 +38,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
+import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.Group
 import org.xmtp.android.library.PreEventCallback
@@ -372,7 +373,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createOrBuild") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String  ->
+        AsyncFunction("createOrBuild") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("createOrBuild")
                 val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
@@ -1029,7 +1030,10 @@ class XMTPModule : Module() {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 client.conversations.syncAllGroups()
                 // Expo Modules do not support UInt, so we need to convert to Int
-                val numGroupsSyncedInt: Int = client.conversations.syncAllGroups()?.toInt() ?: throw IllegalArgumentException("Value cannot be null")
+                val numGroupsSyncedInt: Int =
+                    client.conversations.syncAllGroups()?.toInt() ?: throw IllegalArgumentException(
+                        "Value cannot be null"
+                    )
                 numGroupsSyncedInt
             }
         }
@@ -1664,6 +1668,14 @@ class XMTPModule : Module() {
                 client.contacts.isGroupDenied(groupId)
             }
         }
+        AsyncFunction("updateGroupConsent") Coroutine { inboxId: String, groupId: String, state: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupConsent")
+                val group = findGroup(inboxId, groupId)
+
+                group?.updateConsentState(getConsentState(state))
+            }
+        }
 
         AsyncFunction("exportNativeLogs") Coroutine { ->
             withContext(Dispatchers.IO) {
@@ -1688,13 +1700,21 @@ class XMTPModule : Module() {
     // Helpers
     //
 
-    private suspend fun getPermissionOption(permissionString: String): PermissionOption {
+    private fun getPermissionOption(permissionString: String): PermissionOption {
         return when (permissionString) {
             "allow" -> PermissionOption.Allow
             "deny" -> PermissionOption.Deny
             "admin" -> PermissionOption.Admin
             "super_admin" -> PermissionOption.SuperAdmin
             else -> throw XMTPException("Invalid permission option: $permissionString")
+        }
+    }
+
+    private fun getConsentState(stateString: String): ConsentState {
+        return when (stateString) {
+            "allowed" -> ConsentState.ALLOWED
+            "denied" -> ConsentState.DENIED
+            else -> ConsentState.UNKNOWN
         }
     }
 
