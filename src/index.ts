@@ -1192,6 +1192,14 @@ export async function isGroupDenied(
   return XMTPModule.isGroupDenied(inboxId, groupId)
 }
 
+export async function updateGroupConsent(
+  inboxId: string,
+  groupId: string,
+  state: string
+): Promise<void> {
+  return XMTPModule.updateGroupConsent(inboxId, groupId, state)
+}
+
 export async function allowInboxes(
   inboxId: string,
   inboxIds: string[]
