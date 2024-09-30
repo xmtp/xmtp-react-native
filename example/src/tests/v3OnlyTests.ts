@@ -99,7 +99,7 @@ test('can group consent', async () => {
 
   const isAllowed = await boV3.contacts.isGroupAllowed(group.id)
   assert(isAllowed === true, `isAllowed should be true but was ${isAllowed}`)
-  let groupState = await group.consentState
+  let groupState = await group.state
   assert(
     groupState === 'allowed',
     `group state should be allowed but was ${groupState}`
@@ -109,7 +109,7 @@ test('can group consent', async () => {
 
   const isDenied = await boV3.contacts.isGroupDenied(group.id)
   assert(isDenied === true, `isDenied should be true but was ${isDenied}`)
-  groupState = await group.consentState
+  groupState = await group.consentState()
   assert(
     groupState === 'denied',
     `group state should be denied but was ${groupState}`
@@ -119,7 +119,7 @@ test('can group consent', async () => {
 
   const isAllowed2 = await boV3.contacts.isGroupAllowed(group.id)
   assert(isAllowed2 === true, `isAllowed2 should be true but was ${isAllowed2}`)
-  groupState = await group.consentState
+  groupState = await group.consentState()
   assert(
     groupState === 'allowed',
     `group state should be allowed but was ${groupState}`
@@ -145,7 +145,7 @@ test('can allow and deny inbox ids', async () => {
 
   await boV3.contacts.allowInboxes([caroV2V3.inboxId])
 
-  let caroMember = boGroup.members.find(
+  let caroMember = (await boGroup.membersList()).find(
     (member) => member.inboxId === caroV2V3.inboxId
   )
   assert(
@@ -157,11 +157,11 @@ test('can allow and deny inbox ids', async () => {
   isInboxDenied = await boV3.contacts.isInboxDenied(caroV2V3.inboxId)
   assert(
     isInboxAllowed === true,
-    `isInboxAllowed should be true but was ${isInboxAllowed}`
+    `isInboxAllowed2 should be true but was ${isInboxAllowed}`
   )
   assert(
-    isInboxDenied === true,
-    `isInboxDenied should be true but was ${isInboxDenied}`
+    isInboxDenied === false,
+    `isInboxDenied2 should be false but was ${isInboxDenied}`
   )
 
   let isAddressAllowed = await boV3.contacts.isAllowed(caroV2V3.address)
@@ -177,7 +177,7 @@ test('can allow and deny inbox ids', async () => {
 
   await boV3.contacts.denyInboxes([caroV2V3.inboxId])
 
-  caroMember = boGroup.members.find(
+  caroMember = (await boGroup.membersList()).find(
     (member) => member.inboxId === caroV2V3.inboxId
   )
   assert(
@@ -189,11 +189,11 @@ test('can allow and deny inbox ids', async () => {
   isInboxDenied = await boV3.contacts.isInboxDenied(caroV2V3.inboxId)
   assert(
     isInboxAllowed === false,
-    `isInboxAllowed should be false but was ${isInboxAllowed}`
+    `isInboxAllowed3 should be false but was ${isInboxAllowed}`
   )
   assert(
     isInboxDenied === true,
-    `isInboxDenied should be true but was ${isInboxDenied}`
+    `isInboxDenied3 should be true but was ${isInboxDenied}`
   )
 
   await boV3.contacts.allow([alixV2.address])
@@ -202,11 +202,11 @@ test('can allow and deny inbox ids', async () => {
   isAddressDenied = await boV3.contacts.isDenied(alixV2.address)
   assert(
     isAddressAllowed === true,
-    `isAddressAllowed should be true but was ${isAddressAllowed}`
+    `isAddressAllowed2 should be true but was ${isAddressAllowed}`
   )
   assert(
     isAddressDenied === false,
-    `isAddressDenied should be false but was ${isAddressDenied}`
+    `isAddressDenied2 should be false but was ${isAddressDenied}`
   )
 
   return true

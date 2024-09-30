@@ -46,7 +46,7 @@ export class Group<
   addedByInboxId: InboxId
   imageUrlSquare: string
   description: string
-  consentState: ConsentState
+  state: ConsentState
   // pinnedFrameUrl: string
 
   constructor(
@@ -65,7 +65,7 @@ export class Group<
     this.addedByInboxId = params.addedByInboxId
     this.imageUrlSquare = params.imageUrlSquare
     this.description = params.description
-    this.consentState = params.consentState
+    this.state = params.consentState
     // this.pinnedFrameUrl = params.pinnedFrameUrl
   }
 
@@ -611,6 +611,10 @@ export class Group<
       console.info('ERROR in processGroupMessage()', e)
       throw e
     }
+  }
+
+  async consentState(): Promise<ConsentState> {
+    return await XMTP.groupConsentState(this.client.inboxId, this.id)
   }
 
   async updateConsent(state: ConsentState): Promise<void> {

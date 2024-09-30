@@ -1525,7 +1525,7 @@ public class XMTPModule: Module {
 			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
 				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
-			return try ConsentWrapper.consentStateToString(state: await XMTP.Conversation.group(group).consentState())
+			return try ConsentWrapper.consentStateToString(state: await group.consentState())
 		}
 
 		AsyncFunction("consentList") { (inboxId: String) -> [String] in
@@ -1660,7 +1660,7 @@ public class XMTPModule: Module {
 		case "denied":
 			return .denied
 		default:
-			throw .unknown
+			return .unknown
 		}
 	}
 

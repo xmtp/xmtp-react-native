@@ -1614,7 +1614,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 val group = findGroup(inboxId, groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                consentStateToString(Conversation.Group(group).consentState())
+                consentStateToString(group.consentState())
             }
         }
 
