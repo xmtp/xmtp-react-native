@@ -1834,67 +1834,139 @@ test('creating a group should allow group', async () => {
   return true
 })
 
-test('can allow a group', async () => {
+test('can group consent', async () => {
   const [alix, bo] = await createClients(2)
-  const alixGroup = await alix.conversations.newGroup([bo.address])
-  const startConsent = await bo.contacts.isGroupAllowed(alixGroup.id)
-  if (startConsent) {
-    throw Error('Group should not be allowed')
-  }
-  await bo.contacts.allowGroups([alixGroup.id])
-  const isAllowed = await bo.contacts.isGroupAllowed(alixGroup.id)
-  if (!isAllowed) {
-    throw Error('Group should be allowed')
-  }
+  const group = await bo.conversations.newGroup([alix.address])
+  let isAllowed = await alix.contacts.isGroupAllowed(group.id)
+  assert(
+    isAllowed === false,
+    `alix group should NOT be allowed but was ${isAllowed}`
+  )
 
-  return true
-})
+  isAllowed = await bo.contacts.isGroupAllowed(group.id)
+  assert(
+    isAllowed === true,
+    `bo group should be allowed but was ${isAllowed}`
+  )
+  assert(
+    await group.state === 'allowed',
+    `the group should have a consent state of allowed but was ${await group.state}`
+  )
+  
+  await bo.contacts.denyGroups([group.id])
+  let isDenied = await bo.contacts.isGroupDenied(group.id)
+  assert(
+    isDenied === true,
+    `bo group should be denied but was ${isDenied}`
+  )
+  assert(
+    await group.consentState() === 'denied',
+    `the group should have a consent state of denied but was ${await group.consentState()}`
+  )
 
-test('can deny a group', async () => {
-  const [alix, bo] = await createClients(2)
-  const alixGroup = await alix.conversations.newGroup([bo.address])
-  const startConsent = await bo.contacts.isGroupDenied(alixGroup.id)
-  if (startConsent) {
-    throw Error('Group should be unknown')
-  }
-  await bo.contacts.denyGroups([alixGroup.id])
-  await bo.conversations.syncGroups()
-  const boGroups = await bo.conversations.listGroups()
-  const isDenied = await bo.contacts.isGroupDenied(alixGroup.id)
-  const isGroupDenied = await boGroups[0].isDenied()
-  if (!isDenied || !isGroupDenied) {
-    throw Error('Group should be denied')
-  }
-  await bo.contacts.allowGroups([alixGroup.id])
-  const isAllowed = await bo.contacts.isGroupAllowed(alixGroup.id)
-  if (!isAllowed) {
-    throw Error('Group should be allowed')
-  }
+  await group.updateConsent('allowed')
+  isAllowed = await bo.contacts.isGroupAllowed(group.id)
+  assert(
+    isAllowed === true,
+    `bo group should be allowed2 but was ${isAllowed}`
+  )
+  assert(
+    await group.consentState() === 'allowed',
+    `the group should have a consent state2 of allowed but was ${await group.consentState()}`
+  )
 
   return true
 })
 
 test('can allow and deny a inbox id', async () => {
   const [alix, bo] = await createClients(2)
-  const startConsent = await bo.contacts.isInboxAllowed(alix.inboxId)
-  if (startConsent) {
-    throw Error('inbox id should be unknown')
-  }
-  await bo.contacts.denyInboxes([alix.inboxId])
-  const isDenied = await bo.contacts.isInboxDenied(alix.inboxId)
-  if (!isDenied) {
-    throw Error('inbox id should be denied')
-  }
-  await bo.contacts.allowInboxes([alix.inboxId])
-  const isAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
-  if (!isAllowed) {
-    throw Error('inbox id should be allowed')
-  }
+  const boGroup = await bo.conversations.newGroup([alix.address])
 
-  const consentList = await bo.contacts.consentList()
+  let isInboxAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  let isInboxDenied = await bo.contacts.isInboxDenied(alix.inboxId)
   assert(
-    consentList[0].entryType === 'inbox_id',
-    `the message should have a type of inbox_id but was ${consentList[0].entryType}`
+    isInboxAllowed === false,
+    `isInboxAllowed should be false but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === false,
+    `isInboxDenied should be false but was ${isInboxDenied}`
+  )
+
+  await bo.contacts.allowInboxes([alix.inboxId])
+
+  let alixMember = (await boGroup.membersList()).find(
+    (member) => member.inboxId === alix.inboxId
+  )
+  assert(
+    alixMember?.consentState === 'allowed',
+    `alixMember should be allowed but was ${alixMember?.consentState}`
+  )
+
+  isInboxAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  isInboxDenied = await bo.contacts.isInboxDenied(alix.inboxId)
+  assert(
+    isInboxAllowed === true,
+    `isInboxAllowed2 should be true but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === false,
+    `isInboxDenied2 should be false but was ${isInboxDenied}`
+  )
+
+  let isAddressAllowed = await bo.contacts.isAllowed(alix.address)
+  let isAddressDenied = await bo.contacts.isDenied(alix.address)
+  assert(
+    isAddressAllowed === true,
+    `isAddressAllowed should be true but was ${isAddressAllowed}`
+  )
+  assert(
+    isAddressDenied === false,
+    `isAddressDenied should be false but was ${isAddressDenied}`
+  )
+
+  await bo.contacts.denyInboxes([alix.inboxId])
+
+  alixMember = (await boGroup.membersList()).find(
+    (member) => member.inboxId === alix.inboxId
+  )
+  assert(
+    alixMember?.consentState === 'denied',
+    `alixMember should be denied but was ${alixMember?.consentState}`
+  )
+
+  isInboxAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  isInboxDenied = await bo.contacts.isInboxDenied(alix.inboxId)
+  assert(
+    isInboxAllowed === false,
+    `isInboxAllowed3 should be false but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === true,
+    `isInboxDenied3 should be true but was ${isInboxDenied}`
+  )
+
+  await bo.contacts.allow([alix.address])
+
+  isAddressAllowed = await bo.contacts.isAllowed(alix.address)
+  isAddressDenied = await bo.contacts.isDenied(alix.address)
+  assert(
+    isAddressAllowed === true,
+    `isAddressAllowed2 should be true but was ${isAddressAllowed}`
+  )
+  assert(
+    isAddressDenied === false,
+    `isAddressDenied2 should be false but was ${isAddressDenied}`
+  )
+  isInboxAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  isInboxDenied = await bo.contacts.isInboxDenied(alix.inboxId)
+  assert(
+    isInboxAllowed === true,
+    `isInboxAllowed4 should be false but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === false,
+    `isInboxDenied4 should be true but was ${isInboxDenied}`
   )
 
   return true

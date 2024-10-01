@@ -1525,7 +1525,7 @@ public class XMTPModule: Module {
 			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
 				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
-			return try ConsentWrapper.consentStateToString(state: await XMTP.Conversation.group(group).consentState())
+			return try ConsentWrapper.consentStateToString(state: await group.consentState())
 		}
 
 		AsyncFunction("consentList") { (inboxId: String) -> [String] in
@@ -1583,9 +1583,17 @@ public class XMTPModule: Module {
 		
 		AsyncFunction("isGroupDenied") { (inboxId: String, groupId: String) -> Bool in
 		  guard let client = await clientsManager.getClient(key: inboxId) else {
-			throw Error.invalidString
+			throw Error.noClient
 		  }
 		  return try await client.contacts.isGroupDenied(groupId: groupId)
+		}
+		
+		AsyncFunction("updateGroupConsent") { (inboxId: String, groupId: String, state: String) in
+			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
+				throw Error.conversationNotFound(groupId)
+			}
+			
+			try await group.updateConsentState(state: getConsentState(state: state))
 		}
         
 		AsyncFunction("exportNativeLogs") { () -> String in
@@ -1630,7 +1638,7 @@ public class XMTPModule: Module {
 	// Helpers
 	//
     
-    private func getPermissionOption(permission: String) async throws -> PermissionOption {
+    private func getPermissionOption(permission: String) throws -> PermissionOption {
         switch permission {
         case "allow":
             return .allow
@@ -1644,6 +1652,17 @@ public class XMTPModule: Module {
             throw Error.invalidPermissionOption
         }
     }
+	
+	private func getConsentState(state: String) throws -> ConsentState {
+		switch state {
+		case "allowed":
+			return .allowed
+		case "denied":
+			return .denied
+		default:
+			return .unknown
+		}
+	}
 
 	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, preAuthenticateToInboxCallback: PreEventCallback? = nil, enableV3: Bool = false, dbEncryptionKey: Data? = nil, dbDirectory: String? = nil, historySyncUrl: String? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.

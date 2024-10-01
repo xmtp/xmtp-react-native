@@ -1,9 +1,9 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
+import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Group
-import org.xmtp.android.library.toHex
 
 class GroupWrapper {
 
@@ -21,7 +21,8 @@ class GroupWrapper {
                 "addedByInboxId" to group.addedByInboxId(),
                 "name" to group.name,
                 "imageUrlSquare" to group.imageUrlSquare,
-                "description" to group.description
+                "description" to group.description,
+                "consentState" to consentStateToString(group.consentState())
                 // "pinnedFrameUrl" to group.pinnedFrameUrl
             )
         }
