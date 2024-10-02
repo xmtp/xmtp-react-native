@@ -24,6 +24,7 @@ struct MemberWrapper {
 			"inboxId": member.inboxId,
 			"addresses": member.addresses,
 			"permissionLevel": permissionString,
+			"consentState": ConsentWrapper.consentStateToString(state: member.consentState)
 		]
 	}
 

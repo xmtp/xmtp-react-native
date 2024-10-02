@@ -23,7 +23,8 @@ struct GroupWrapper {
 			"addedByInboxId": try group.addedByInboxId(),
 			"name": try group.groupName(),
 			"imageUrlSquare": try group.groupImageUrlSquare(),
-			"description": try group.groupDescription()
+			"description": try group.groupDescription(),
+			"consentState": ConsentWrapper.consentStateToString(state: try group.consentState())
 			// "pinnedFrameUrl": try group.groupPinnedFrameUrl()
 		]
 	}

@@ -1,4 +1,5 @@
 import { InboxId } from './Client'
+import { ConsentState } from './ConsentListEntry'
 import {
   ConversationVersion,
   ConversationContainer,
@@ -26,6 +27,7 @@ export interface GroupParams {
   addedByInboxId: InboxId
   imageUrlSquare: string
   description: string
+  consentState: ConsentState
 }
 
 export class Group<
@@ -44,6 +46,7 @@ export class Group<
   addedByInboxId: InboxId
   imageUrlSquare: string
   description: string
+  state: ConsentState
   // pinnedFrameUrl: string
 
   constructor(
@@ -62,6 +65,7 @@ export class Group<
     this.addedByInboxId = params.addedByInboxId
     this.imageUrlSquare = params.imageUrlSquare
     this.description = params.description
+    this.state = params.consentState
     // this.pinnedFrameUrl = params.pinnedFrameUrl
   }
 
@@ -609,8 +613,12 @@ export class Group<
     }
   }
 
-  async consentState(): Promise<'allowed' | 'denied' | 'unknown'> {
+  async consentState(): Promise<ConsentState> {
     return await XMTP.groupConsentState(this.client.inboxId, this.id)
+  }
+
+  async updateConsent(state: ConsentState): Promise<void> {
+    return await XMTP.updateGroupConsent(this.client.inboxId, this.id, state)
   }
 
   /**

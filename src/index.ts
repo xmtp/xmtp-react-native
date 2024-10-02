@@ -117,8 +117,14 @@ export async function auth(
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
-  console.log("RECEIVE SIGNATURE")
   return await XMTPModule.receiveSignature(requestID, signature)
+}
+
+export async function receiveSCWSignature(
+  requestID: string,
+  signature: string
+) {
+  return await XMTPModule.receiveSCWSignature(requestID, signature)
 }
 
 export async function createRandom(
@@ -1198,6 +1204,14 @@ export async function isGroupDenied(
   groupId: string
 ): Promise<boolean> {
   return XMTPModule.isGroupDenied(inboxId, groupId)
+}
+
+export async function updateGroupConsent(
+  inboxId: string,
+  groupId: string,
+  state: string
+): Promise<void> {
+  return XMTPModule.updateGroupConsent(inboxId, groupId, state)
 }
 
 export async function allowInboxes(

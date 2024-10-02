@@ -18,7 +18,7 @@ struct AuthParamsWrapper {
 	let chainId: UInt64
 	let blockNumber: UInt64?
 	
-	init(environment: String, appVersion: String?, enableV3: Bool, dbDirectory: String?, historySyncUrl: String?, isSmartContractWallet: Bool, chainId: UInt64, blockNumber: UInt64?) {
+	init(environment: String, appVersion: String?, enableV3: Bool, dbDirectory: String?, historySyncUrl: String?, isSmartContractWallet: Bool, chainId: UInt64, blockNumber: UInt64) {
 		self.environment = environment
 		self.appVersion = appVersion
 		self.enableV3 = enableV3
