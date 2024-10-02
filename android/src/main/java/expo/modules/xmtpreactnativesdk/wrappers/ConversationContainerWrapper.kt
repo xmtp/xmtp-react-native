@@ -8,7 +8,7 @@ import org.xmtp.android.library.Conversation
 class ConversationContainerWrapper {
 
     companion object {
-        fun encodeToObj(client: Client, conversation: Conversation): Map<String, Any?> {
+        suspend fun encodeToObj(client: Client, conversation: Conversation): Map<String, Any?> {
             when (conversation.version) {
                 Conversation.Version.GROUP -> {
                     val group = (conversation as Conversation.Group).group
@@ -20,7 +20,7 @@ class ConversationContainerWrapper {
             }
         }
 
-        fun encode(client: Client, conversation: Conversation): String {
+        suspend fun encode(client: Client, conversation: Conversation): String {
             val gson = GsonBuilder().create()
             val obj = ConversationContainerWrapper.encodeToObj(client, conversation)
             return gson.toJson(obj)

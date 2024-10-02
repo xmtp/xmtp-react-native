@@ -3,7 +3,13 @@ import { Platform } from 'expo-modules-core'
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
-import { Test, assert, createClients, delayToPropogate } from './test-utils'
+import {
+  Test,
+  assert,
+  createClients,
+  createGroups,
+  delayToPropogate,
+} from './test-utils'
 import {
   Client,
   Conversation,
@@ -19,28 +25,6 @@ export const groupTests: Test[] = []
 let counter = 1
 function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name: String(counter++) + '. ' + name, run: perform })
-}
-
-async function createGroups(
-  client: Client,
-  peers: Client[],
-  numGroups: number,
-  numMessages: number
-): Promise<Group[]> {
-  const groups = []
-  const addresses: string[] = peers.map((client) => client.address)
-  for (let i = 0; i < numGroups; i++) {
-    const group = await client.conversations.newGroup(addresses, {
-      name: `group ${i}`,
-      imageUrlSquare: `www.group${i}.com`,
-      description: `group ${i}`,
-    })
-    groups.push(group)
-    for (let i = 0; i < numMessages; i++) {
-      await group.send({ text: `Message ${i}` })
-    }
-  }
-  return groups
 }
 
 test('can make a MLS V3 client', async () => {
@@ -91,16 +75,21 @@ test('can revoke all other installations', async () => {
 
   const inboxState = await alix2.inboxState(true)
   assert(
-    inboxState.installationIds.length === 2,
-    `installationIds length should be 2 but was ${inboxState.installationIds.length}`
+    inboxState.installations.length === 2,
+    `installations length should be 2 but was ${inboxState.installations.length}`
   )
 
   await alix2.revokeAllOtherInstallations(alixWallet)
 
   const inboxState2 = await alix2.inboxState(true)
   assert(
-    inboxState2.installationIds.length === 1,
-    `installationIds length should be 1 but was ${inboxState2.installationIds.length}`
+    inboxState2.installations.length === 1,
+    `installations length should be 1 but was ${inboxState2.installations.length}`
+  )
+
+  assert(
+    inboxState2.installations[0].createdAt !== undefined,
+    `installations createdAt should not be undefined`
   )
   return true
 })
@@ -240,34 +229,6 @@ test('can make a MLS V3 client with encryption key and database directory', asyn
   return true
 })
 
-test('testing large group listing with metadata performance', async () => {
-  const [alixClient, boClient] = await createClients(2)
-
-  await createGroups(alixClient, [boClient], 50, 10)
-
-  let start = Date.now()
-  let groups = await alixClient.conversations.listGroups()
-  let end = Date.now()
-  console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
-
-  start = Date.now()
-  await alixClient.conversations.syncGroups()
-  end = Date.now()
-  console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
-
-  start = Date.now()
-  await boClient.conversations.syncGroups()
-  end = Date.now()
-  console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
-
-  start = Date.now()
-  groups = await boClient.conversations.listGroups()
-  end = Date.now()
-  console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
-
-  return true
-})
-
 test('can drop a local database', async () => {
   const [client, anotherClient] = await createClients(2)
 
@@ -402,6 +363,54 @@ test('production MLS V3 client creation does not error', async () => {
   } catch (error) {
     throw error
   }
+  return true
+})
+
+test('can cancel streams', async () => {
+  const [alix, bo] = await createClients(2)
+  let messageCallbacks = 0
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  const group = await alix.conversations.newGroup([bo.address])
+  await group.send('hello')
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 1,
+    'message stream should have received 1 message'
+  )
+
+  await bo.conversations.cancelStreamAllMessages()
+  await delayToPropogate()
+
+  await group.send('hello')
+  await group.send('hello')
+  await group.send('hello')
+
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 1,
+    'message stream should still only received 1 message'
+  )
+
+  await bo.conversations.streamAllMessages(async () => {
+    messageCallbacks++
+  }, true)
+
+  await delayToPropogate()
+
+  await group.send('hello')
+  await delayToPropogate()
+
+  assert(
+    messageCallbacks === 2,
+    'message stream should have received 2 message'
+  )
+
   return true
 })
 
@@ -954,52 +963,6 @@ test('can remove and add members from a group by inbox id', async () => {
   if (alixGroupMembers2.length !== 3) {
     throw new Error('num group members should be 3')
   }
-
-  return true
-})
-
-test('can cancel streams', async () => {
-  const [alix, bo] = await createClients(2)
-  let messageCallbacks = 0
-
-  await bo.conversations.streamAllMessages(async () => {
-    messageCallbacks++
-  }, true)
-
-  const group = await alix.conversations.newGroup([bo.address])
-  await group.send('hello')
-  await delayToPropogate()
-
-  assert(
-    messageCallbacks === 1,
-    'message stream should have received 1 message'
-  )
-
-  await bo.conversations.cancelStreamAllMessages()
-  await delayToPropogate()
-
-  await group.send('hello')
-  await group.send('hello')
-  await group.send('hello')
-
-  await delayToPropogate()
-
-  assert(
-    messageCallbacks === 1,
-    'message stream should still only received 1 message'
-  )
-
-  await bo.conversations.streamAllMessages(async () => {
-    messageCallbacks++
-  }, true)
-
-  await group.send('hello')
-  await delayToPropogate()
-
-  assert(
-    messageCallbacks === 2,
-    'message stream should have received 2 message'
-  )
 
   return true
 })
@@ -1871,67 +1834,139 @@ test('creating a group should allow group', async () => {
   return true
 })
 
-test('can allow a group', async () => {
+test('can group consent', async () => {
   const [alix, bo] = await createClients(2)
-  const alixGroup = await alix.conversations.newGroup([bo.address])
-  const startConsent = await bo.contacts.isGroupAllowed(alixGroup.id)
-  if (startConsent) {
-    throw Error('Group should not be allowed')
-  }
-  await bo.contacts.allowGroups([alixGroup.id])
-  const isAllowed = await bo.contacts.isGroupAllowed(alixGroup.id)
-  if (!isAllowed) {
-    throw Error('Group should be allowed')
-  }
+  const group = await bo.conversations.newGroup([alix.address])
+  let isAllowed = await alix.contacts.isGroupAllowed(group.id)
+  assert(
+    isAllowed === false,
+    `alix group should NOT be allowed but was ${isAllowed}`
+  )
 
-  return true
-})
+  isAllowed = await bo.contacts.isGroupAllowed(group.id)
+  assert(
+    isAllowed === true,
+    `bo group should be allowed but was ${isAllowed}`
+  )
+  assert(
+    await group.state === 'allowed',
+    `the group should have a consent state of allowed but was ${await group.state}`
+  )
+  
+  await bo.contacts.denyGroups([group.id])
+  let isDenied = await bo.contacts.isGroupDenied(group.id)
+  assert(
+    isDenied === true,
+    `bo group should be denied but was ${isDenied}`
+  )
+  assert(
+    await group.consentState() === 'denied',
+    `the group should have a consent state of denied but was ${await group.consentState()}`
+  )
 
-test('can deny a group', async () => {
-  const [alix, bo] = await createClients(2)
-  const alixGroup = await alix.conversations.newGroup([bo.address])
-  const startConsent = await bo.contacts.isGroupDenied(alixGroup.id)
-  if (startConsent) {
-    throw Error('Group should be unknown')
-  }
-  await bo.contacts.denyGroups([alixGroup.id])
-  await bo.conversations.syncGroups()
-  const boGroups = await bo.conversations.listGroups()
-  const isDenied = await bo.contacts.isGroupDenied(alixGroup.id)
-  const isGroupDenied = await boGroups[0].isDenied()
-  if (!isDenied || !isGroupDenied) {
-    throw Error('Group should be denied')
-  }
-  await bo.contacts.allowGroups([alixGroup.id])
-  const isAllowed = await bo.contacts.isGroupAllowed(alixGroup.id)
-  if (!isAllowed) {
-    throw Error('Group should be allowed')
-  }
+  await group.updateConsent('allowed')
+  isAllowed = await bo.contacts.isGroupAllowed(group.id)
+  assert(
+    isAllowed === true,
+    `bo group should be allowed2 but was ${isAllowed}`
+  )
+  assert(
+    await group.consentState() === 'allowed',
+    `the group should have a consent state2 of allowed but was ${await group.consentState()}`
+  )
 
   return true
 })
 
 test('can allow and deny a inbox id', async () => {
   const [alix, bo] = await createClients(2)
-  const startConsent = await bo.contacts.isInboxAllowed(alix.inboxId)
-  if (startConsent) {
-    throw Error('inbox id should be unknown')
-  }
-  await bo.contacts.denyInboxes([alix.inboxId])
-  const isDenied = await bo.contacts.isInboxDenied(alix.inboxId)
-  if (!isDenied) {
-    throw Error('inbox id should be denied')
-  }
-  await bo.contacts.allowInboxes([alix.inboxId])
-  const isAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
-  if (!isAllowed) {
-    throw Error('inbox id should be allowed')
-  }
+  const boGroup = await bo.conversations.newGroup([alix.address])
 
-  const consentList = await bo.contacts.consentList()
+  let isInboxAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  let isInboxDenied = await bo.contacts.isInboxDenied(alix.inboxId)
   assert(
-    consentList[0].entryType === 'inbox_id',
-    `the message should have a type of inbox_id but was ${consentList[0].entryType}`
+    isInboxAllowed === false,
+    `isInboxAllowed should be false but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === false,
+    `isInboxDenied should be false but was ${isInboxDenied}`
+  )
+
+  await bo.contacts.allowInboxes([alix.inboxId])
+
+  let alixMember = (await boGroup.membersList()).find(
+    (member) => member.inboxId === alix.inboxId
+  )
+  assert(
+    alixMember?.consentState === 'allowed',
+    `alixMember should be allowed but was ${alixMember?.consentState}`
+  )
+
+  isInboxAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  isInboxDenied = await bo.contacts.isInboxDenied(alix.inboxId)
+  assert(
+    isInboxAllowed === true,
+    `isInboxAllowed2 should be true but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === false,
+    `isInboxDenied2 should be false but was ${isInboxDenied}`
+  )
+
+  let isAddressAllowed = await bo.contacts.isAllowed(alix.address)
+  let isAddressDenied = await bo.contacts.isDenied(alix.address)
+  assert(
+    isAddressAllowed === true,
+    `isAddressAllowed should be true but was ${isAddressAllowed}`
+  )
+  assert(
+    isAddressDenied === false,
+    `isAddressDenied should be false but was ${isAddressDenied}`
+  )
+
+  await bo.contacts.denyInboxes([alix.inboxId])
+
+  alixMember = (await boGroup.membersList()).find(
+    (member) => member.inboxId === alix.inboxId
+  )
+  assert(
+    alixMember?.consentState === 'denied',
+    `alixMember should be denied but was ${alixMember?.consentState}`
+  )
+
+  isInboxAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  isInboxDenied = await bo.contacts.isInboxDenied(alix.inboxId)
+  assert(
+    isInboxAllowed === false,
+    `isInboxAllowed3 should be false but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === true,
+    `isInboxDenied3 should be true but was ${isInboxDenied}`
+  )
+
+  await bo.contacts.allow([alix.address])
+
+  isAddressAllowed = await bo.contacts.isAllowed(alix.address)
+  isAddressDenied = await bo.contacts.isDenied(alix.address)
+  assert(
+    isAddressAllowed === true,
+    `isAddressAllowed2 should be true but was ${isAddressAllowed}`
+  )
+  assert(
+    isAddressDenied === false,
+    `isAddressDenied2 should be false but was ${isAddressDenied}`
+  )
+  isInboxAllowed = await bo.contacts.isInboxAllowed(alix.inboxId)
+  isInboxDenied = await bo.contacts.isInboxDenied(alix.inboxId)
+  assert(
+    isInboxAllowed === true,
+    `isInboxAllowed4 should be false but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === false,
+    `isInboxDenied4 should be true but was ${isInboxDenied}`
   )
 
   return true
@@ -2151,6 +2186,8 @@ test('can list groups does not fork', async () => {
     `should have 5 messages on second load received ${boMessages2.length}`
   )
 
+  await delayToPropogate(500)
+
   assert(groupCallbacks === 1, 'group stream should have received 1 group')
 
   return true
@@ -2216,7 +2253,7 @@ test('can create new installation without breaking group', async () => {
 
 test('can list many groups members in parallel', async () => {
   const [alix, bo] = await createClients(2)
-  const groups: Group[] = await createGroups(alix, [bo], 20, 0)
+  const groups: Group[] = await createGroups(alix, [bo], 20)
 
   try {
     await Promise.all(groups.slice(0, 10).map((g) => g.membersList()))
@@ -2235,7 +2272,7 @@ test('can list many groups members in parallel', async () => {
 
 test('can sync all groups', async () => {
   const [alix, bo] = await createClients(2)
-  const groups: Group[] = await createGroups(alix, [bo], 50, 0)
+  const groups: Group[] = await createGroups(alix, [bo], 50)
 
   const alixGroup = groups[0]
   await bo.conversations.syncGroups()
@@ -2317,6 +2354,38 @@ test('only streams groups that can be decrypted', async () => {
     caroGroups.length !== 1,
     `caro group length should be 0 but was ${caroGroups.length}`
   )
+
+  return true
+})
+
+test('can stream groups and messages', async () => {
+  for (let index = 0; index < 15; index++) {
+    console.log(`stream groups & messages: test ${index}`)
+    const [alixClient, boClient] = await createClients(2)
+
+    // Start streaming groups
+    const groups: Group<any>[] = []
+    await alixClient.conversations.streamGroups(async (group: Group<any>) => {
+      groups.push(group)
+    })
+    // Stream messages twice
+    await alixClient.conversations.streamAllMessages(
+      async (message) => {},
+      true
+    )
+    await alixClient.conversations.streamAllMessages(
+      async (message) => {},
+      true
+    )
+
+    // bo creates a group with alix so a stream callback is fired
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    await boClient.conversations.newGroup([alixClient.address])
+    await delayToPropogate(500)
+    if ((groups.length as number) !== 1) {
+      throw Error(`Unexpected num groups (should be 1): ${groups.length}`)
+    }
+  }
 
   return true
 })

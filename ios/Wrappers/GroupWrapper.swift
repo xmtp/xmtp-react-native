@@ -10,12 +10,12 @@ import XMTP
 
 // Wrapper around XMTP.Group to allow passing these objects back into react native.
 struct GroupWrapper {
-	static func encodeToObj(_ group: XMTP.Group, client: XMTP.Client) throws -> [String: Any] {
+	static func encodeToObj(_ group: XMTP.Group, client: XMTP.Client) async throws -> [String: Any] {
 		return [
 			"clientAddress": client.address,
 			"id": group.id,
 			"createdAt": UInt64(group.createdAt.timeIntervalSince1970 * 1000),
-			"members": try group.members.compactMap { member in return try MemberWrapper.encode(member) },
+			"members": try await group.members.compactMap { member in return try MemberWrapper.encode(member) },
 			"version": "GROUP",
 			"topic": group.topic,
 			"creatorInboxId": try group.creatorInboxId(),
@@ -23,13 +23,14 @@ struct GroupWrapper {
 			"addedByInboxId": try group.addedByInboxId(),
 			"name": try group.groupName(),
 			"imageUrlSquare": try group.groupImageUrlSquare(),
-			"description": try group.groupDescription()
+			"description": try group.groupDescription(),
+			"consentState": ConsentWrapper.consentStateToString(state: try group.consentState())
 			// "pinnedFrameUrl": try group.groupPinnedFrameUrl()
 		]
 	}
 
-	static func encode(_ group: XMTP.Group, client: XMTP.Client) throws -> String {
-		let obj = try encodeToObj(group, client: client)
+	static func encode(_ group: XMTP.Group, client: XMTP.Client) async throws -> String {
+		let obj = try await encodeToObj(group, client: client)
 		let data = try JSONSerialization.data(withJSONObject: obj)
 		guard let result = String(data: data, encoding: .utf8) else {
 			throw WrapperError.encodeError("could not encode group")
