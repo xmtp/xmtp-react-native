@@ -14,13 +14,27 @@ struct InboxStateWrapper {
 		return [
 			"inboxId": inboxState.inboxId,
 			"addresses": inboxState.addresses,
-			"installationIds": inboxState.installationIds,
+			"installations": try inboxState.installations.map { try Installation.encodeInstallation(installation: $0) },
 			"recoveryAddress": inboxState.recoveryAddress
 		]
 	}
 
 	static func encode(_ inboxState: XMTP.InboxState) throws -> String {
 		let obj = try encodeToObj(inboxState)
+		let data = try JSONSerialization.data(withJSONObject: obj)
+		guard let result = String(data: data, encoding: .utf8) else {
+			throw WrapperError.encodeError("could not encode inboxState")
+		}
+		return result
+	}
+}
+
+struct Installation {
+	static func encodeInstallation(installation: XMTP.Installation) throws -> String {
+		let obj: [String: Any] = [
+			"id": installation.id,
+			"createdAt": installation.createdAt?.timeIntervalSince1970 ?? NSNull()
+		]
 		let data = try JSONSerialization.data(withJSONObject: obj)
 		guard let result = String(data: data, encoding: .utf8) else {
 			throw WrapperError.encodeError("could not encode inboxState")

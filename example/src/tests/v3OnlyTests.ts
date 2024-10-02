@@ -93,6 +93,125 @@ test('can send message', async () => {
   return true
 })
 
+test('can group consent', async () => {
+  const [alixV2, boV3, caroV2V3] = await createV3TestingClients()
+  const group = await boV3.conversations.newGroup([caroV2V3.address])
+
+  const isAllowed = await boV3.contacts.isGroupAllowed(group.id)
+  assert(isAllowed === true, `isAllowed should be true but was ${isAllowed}`)
+  let groupState = await group.state
+  assert(
+    groupState === 'allowed',
+    `group state should be allowed but was ${groupState}`
+  )
+
+  await boV3.contacts.denyGroups([group.id])
+
+  const isDenied = await boV3.contacts.isGroupDenied(group.id)
+  assert(isDenied === true, `isDenied should be true but was ${isDenied}`)
+  groupState = await group.consentState()
+  assert(
+    groupState === 'denied',
+    `group state should be denied but was ${groupState}`
+  )
+
+  await group.updateConsent('allowed')
+
+  const isAllowed2 = await boV3.contacts.isGroupAllowed(group.id)
+  assert(isAllowed2 === true, `isAllowed2 should be true but was ${isAllowed2}`)
+  groupState = await group.consentState()
+  assert(
+    groupState === 'allowed',
+    `group state should be allowed but was ${groupState}`
+  )
+
+  return true
+})
+
+test('can allow and deny inbox ids', async () => {
+  const [alixV2, boV3, caroV2V3] = await createV3TestingClients()
+  const boGroup = await boV3.conversations.newGroup([caroV2V3.address])
+
+  let isInboxAllowed = await boV3.contacts.isInboxAllowed(caroV2V3.inboxId)
+  let isInboxDenied = await boV3.contacts.isInboxDenied(caroV2V3.inboxId)
+  assert(
+    isInboxAllowed === false,
+    `isInboxAllowed should be false but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === false,
+    `isInboxDenied should be false but was ${isInboxDenied}`
+  )
+
+  await boV3.contacts.allowInboxes([caroV2V3.inboxId])
+
+  let caroMember = (await boGroup.membersList()).find(
+    (member) => member.inboxId === caroV2V3.inboxId
+  )
+  assert(
+    caroMember?.consentState === 'allowed',
+    `caroMember should be allowed but was ${caroMember?.consentState}`
+  )
+
+  isInboxAllowed = await boV3.contacts.isInboxAllowed(caroV2V3.inboxId)
+  isInboxDenied = await boV3.contacts.isInboxDenied(caroV2V3.inboxId)
+  assert(
+    isInboxAllowed === true,
+    `isInboxAllowed2 should be true but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === false,
+    `isInboxDenied2 should be false but was ${isInboxDenied}`
+  )
+
+  let isAddressAllowed = await boV3.contacts.isAllowed(caroV2V3.address)
+  let isAddressDenied = await boV3.contacts.isDenied(caroV2V3.address)
+  assert(
+    isAddressAllowed === true,
+    `isAddressAllowed should be true but was ${isAddressAllowed}`
+  )
+  assert(
+    isAddressDenied === false,
+    `isAddressDenied should be false but was ${isAddressDenied}`
+  )
+
+  await boV3.contacts.denyInboxes([caroV2V3.inboxId])
+
+  caroMember = (await boGroup.membersList()).find(
+    (member) => member.inboxId === caroV2V3.inboxId
+  )
+  assert(
+    caroMember?.consentState === 'denied',
+    `caroMember should be denied but was ${caroMember?.consentState}`
+  )
+
+  isInboxAllowed = await boV3.contacts.isInboxAllowed(caroV2V3.inboxId)
+  isInboxDenied = await boV3.contacts.isInboxDenied(caroV2V3.inboxId)
+  assert(
+    isInboxAllowed === false,
+    `isInboxAllowed3 should be false but was ${isInboxAllowed}`
+  )
+  assert(
+    isInboxDenied === true,
+    `isInboxDenied3 should be true but was ${isInboxDenied}`
+  )
+
+  await boV3.contacts.allow([alixV2.address])
+
+  isAddressAllowed = await boV3.contacts.isAllowed(alixV2.address)
+  isAddressDenied = await boV3.contacts.isDenied(alixV2.address)
+  assert(
+    isAddressAllowed === true,
+    `isAddressAllowed2 should be true but was ${isAddressAllowed}`
+  )
+  assert(
+    isAddressDenied === false,
+    `isAddressDenied2 should be false but was ${isAddressDenied}`
+  )
+
+  return true
+})
+
 test('can stream all messages', async () => {
   const [alixV2, boV3, caroV2V3] = await createV3TestingClients()
   const conversation = await alixV2.conversations.newConversation(

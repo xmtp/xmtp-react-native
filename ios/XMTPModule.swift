@@ -541,7 +541,7 @@ public class XMTPModule: Module {
 			var results: [String] = []
 			for group in groupList {
 				await self.groupsManager.set(group.cacheKey(inboxId), group)
-				let encodedGroup = try GroupWrapper.encode(group, client: client)
+				let encodedGroup = try await GroupWrapper.encode(group, client: client)
 				results.append(encodedGroup)
 			}
 			
@@ -557,7 +557,7 @@ public class XMTPModule: Module {
 			var results: [String] = []
 			for conversation in conversationContainerList {
 				await self.conversationsManager.set(conversation.cacheKey(inboxId), conversation)
-				let encodedConversationContainer = try ConversationContainerWrapper.encode(conversation, client: client)
+				let encodedConversationContainer = try await ConversationContainerWrapper.encode(conversation, client: client)
 				results.append(encodedConversationContainer)
 			}
 
@@ -644,7 +644,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			if let group = try client.findGroup(groupId: groupId) {
-				return try GroupWrapper.encode(group, client: client)
+				return try await GroupWrapper.encode(group, client: client)
 			} else {
 				return nil
 			}
@@ -878,7 +878,7 @@ public class XMTPModule: Module {
 					description: createGroupParams.groupDescription, 
 					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
 				)
-				return try GroupWrapper.encode(group, client: client)
+				return try await GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
 				throw error
@@ -900,7 +900,7 @@ public class XMTPModule: Module {
 					description: createGroupParams.groupDescription, 
 					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
 				)
-				return try GroupWrapper.encode(group, client: client)
+				return try await GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
 				throw error
@@ -915,7 +915,7 @@ public class XMTPModule: Module {
 			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
 				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
-			return try group.members.map(\.inboxId)
+			return try await group.members.map(\.inboxId)
 		}
 		
 		AsyncFunction("listGroupMembers") { (inboxId: String, groupId: String) -> [String] in
@@ -926,7 +926,7 @@ public class XMTPModule: Module {
 			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
 				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
-			return try group.members.compactMap { member in
+			return try await group.members.compactMap { member in
 				return try MemberWrapper.encode(member)
 			}
 		}
@@ -1333,7 +1333,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound("no group found")
 			}
 
-			return try GroupWrapper.encode(group, client: client)
+			return try await GroupWrapper.encode(group, client: client)
 		}
 
 		AsyncFunction("subscribeToConversations") { (inboxId: String) in
@@ -1525,7 +1525,7 @@ public class XMTPModule: Module {
 			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
 				throw Error.conversationNotFound("no group found for \(groupId)")
 			}
-			return try ConsentWrapper.consentStateToString(state: await XMTP.Conversation.group(group).consentState())
+			return try ConsentWrapper.consentStateToString(state: await group.consentState())
 		}
 
 		AsyncFunction("consentList") { (inboxId: String) -> [String] in
@@ -1583,9 +1583,17 @@ public class XMTPModule: Module {
 		
 		AsyncFunction("isGroupDenied") { (inboxId: String, groupId: String) -> Bool in
 		  guard let client = await clientsManager.getClient(key: inboxId) else {
-			throw Error.invalidString
+			throw Error.noClient
 		  }
 		  return try await client.contacts.isGroupDenied(groupId: groupId)
+		}
+		
+		AsyncFunction("updateGroupConsent") { (inboxId: String, groupId: String, state: String) in
+			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
+				throw Error.conversationNotFound(groupId)
+			}
+			
+			try await group.updateConsentState(state: getConsentState(state: state))
 		}
         
 		AsyncFunction("exportNativeLogs") { () -> String in
@@ -1630,7 +1638,7 @@ public class XMTPModule: Module {
 	// Helpers
 	//
     
-    private func getPermissionOption(permission: String) async throws -> PermissionOption {
+    private func getPermissionOption(permission: String) throws -> PermissionOption {
         switch permission {
         case "allow":
             return .allow
@@ -1644,6 +1652,17 @@ public class XMTPModule: Module {
             throw Error.invalidPermissionOption
         }
     }
+	
+	private func getConsentState(state: String) throws -> ConsentState {
+		switch state {
+		case "allowed":
+			return .allowed
+		case "denied":
+			return .denied
+		default:
+			return .unknown
+		}
+	}
 
 	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, preAuthenticateToInboxCallback: PreEventCallback? = nil, enableV3: Bool = false, dbEncryptionKey: Data? = nil, dbDirectory: String? = nil, historySyncUrl: String? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
@@ -1811,7 +1830,7 @@ public class XMTPModule: Module {
 		await subscriptionsManager.set(getGroupsKey(inboxId: client.inboxID), Task {
 			do {
 				for try await group in try await client.conversations.streamGroups() {
-					try sendEvent("group", [
+					try await sendEvent("group", [
 						"inboxId": inboxId,
 						"group": GroupWrapper.encodeToObj(group, client: client),
 					])
@@ -1832,7 +1851,7 @@ public class XMTPModule: Module {
 		await subscriptionsManager.set(getConversationsKey(inboxId: inboxId), Task {
 			do {
 				for try await conversation in await client.conversations.streamAll() {
-					try sendEvent("conversationContainer", [
+					try await sendEvent("conversationContainer", [
 						"inboxId": inboxId,
 						"conversationContainer": ConversationContainerWrapper.encodeToObj(conversation, client: client),
 					])
