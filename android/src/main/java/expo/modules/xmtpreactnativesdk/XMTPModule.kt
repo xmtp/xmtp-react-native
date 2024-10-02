@@ -18,6 +18,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationOrder
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
@@ -625,13 +626,21 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listGroups") Coroutine { inboxId: String, groupParams: String ->
+        AsyncFunction("listGroups") Coroutine { inboxId: String, groupParams: String?, sortOrder: String? ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val groupList = client.conversations.listGroups()
-                val params = GroupParamsWrapper.groupParamsFromJson(groupParams)
-                groupList.map { group ->
+                val params = GroupParamsWrapper.groupParamsFromJson(groupParams ?: "")
+                val order = getConversationSortOrder(sortOrder ?: "")
+                val sortedGroupList = if (order == ConversationOrder.LAST_MESSAGE) {
+                     groupList.sortedByDescending { group ->
+                        group.decryptedMessages(limit = 1).firstOrNull()?.sentAt
+                    }
+                } else {
+                    groupList
+                }
+                sortedGroupList.map { group ->
                     groups[group.cacheKey(inboxId)] = group
                     GroupWrapper.encode(client, group, params)
                 }
@@ -1717,6 +1726,13 @@ class XMTPModule : Module() {
             "allowed" -> ConsentState.ALLOWED
             "denied" -> ConsentState.DENIED
             else -> ConsentState.UNKNOWN
+        }
+    }
+
+    private fun getConversationSortOrder(order: String): ConversationOrder {
+        return when (order) {
+            "lastMessage" -> ConversationOrder.LAST_MESSAGE
+            else -> ConversationOrder.DEFAULT
         }
     }
 
