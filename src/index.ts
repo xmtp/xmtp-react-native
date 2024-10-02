@@ -120,6 +120,10 @@ export async function receiveSignature(requestID: string, signature: string) {
   return await XMTPModule.receiveSignature(requestID, signature)
 }
 
+export async function receiveSCWSignature(requestID: string, signature: string) {
+  return await XMTPModule.receiveSCWSignature(requestID, signature)
+}
+
 export async function createRandom(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,

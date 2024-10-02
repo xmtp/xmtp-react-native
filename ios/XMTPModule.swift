@@ -223,6 +223,10 @@ public class XMTPModule: Module {
 		Function("receiveSignature") { (requestID: String, signature: String) in
 			try signer?.handle(id: requestID, signature: signature)
 		}
+		
+		Function("receiveSCWSignature") { (requestID: String, signature: String) in
+			try signer?.handleSCW(id: requestID, signature: signature)
+		}
 
 		// Generate a random wallet and set the client to that
 		AsyncFunction("createRandom") { (hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in

@@ -46,6 +46,18 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 		continuation.resume(returning: signature)
 		continuations.removeValue(forKey: id)
 	}
+	
+	func handleSCW(id: String, signature: String) throws {
+		guard let continuation = continuations[id] else {
+			return
+		}
+
+		let signature = XMTP.Signature.with {
+			$0.ecdsaCompact.bytes = signature.hexToData
+		}
+		continuation.resume(returning: signature)
+		continuations.removeValue(forKey: id)
+	}
 
 	func sign(_ data: Data) async throws -> XMTP.Signature {
 		let request = SignatureRequest(message: String(data: data, encoding: .utf8)!)

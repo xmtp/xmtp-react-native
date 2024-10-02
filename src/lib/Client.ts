@@ -332,7 +332,10 @@ export class Client<
             try {
               const signatureString = await signer.signMessage(request.message)
               if (signer.isSmartContractWallet()) {
-                
+                await XMTPModule.receiveSCWSignature(
+                  request.id,
+                  Buffer.from(signatureString).toString('base64')
+                )
               } else {
                 const eSig = splitSignature(signatureString)
                 const r = hexToBytes(eSig.r)

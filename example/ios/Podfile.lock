@@ -711,13 +711,7 @@ SPEC CHECKSUMS:
   GzipSwift: 893f3e48e597a1a4f62fafcb6514220fcf8287fa
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-<<<<<<< HEAD
-  LibXMTP: 5a38722a68a9469be2e711857a5e7d9dd3aa8a61
-||||||| parent of ef6c705a (add chainId and isSmartContractWallet fields)
-  LibXMTP: c7338cace222bed90f950579300725325a2c0bfd
-=======
   LibXMTP: ee1591fdb51bc6cc690c1a9ba10792ccc2104328
->>>>>>> ef6c705a (add chainId and isSmartContractWallet fields)
   Logging: 9ef4ecb546ad3169398d5a723bc9bea1c46bef26
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: 817ba1eea17421547e01e087285606eb270a8dcb
