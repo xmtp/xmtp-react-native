@@ -331,17 +331,21 @@ export class Client<
             const request: { id: string; message: string } = message
             try {
               const signatureString = await signer.signMessage(request.message)
-              const eSig = splitSignature(signatureString)
-              const r = hexToBytes(eSig.r)
-              const s = hexToBytes(eSig.s)
-              const sigBytes = new Uint8Array(65)
-              sigBytes.set(r)
-              sigBytes.set(s, r.length)
-              sigBytes[64] = eSig.recoveryParam
+              if (signer.isSmartContractWallet()) {
+                
+              } else {
+                const eSig = splitSignature(signatureString)
+                const r = hexToBytes(eSig.r)
+                const s = hexToBytes(eSig.s)
+                const sigBytes = new Uint8Array(65)
+                sigBytes.set(r)
+                sigBytes.set(s, r.length)
+                sigBytes[64] = eSig.recoveryParam
 
-              const signature = Buffer.from(sigBytes).toString('base64')
+                const signature = Buffer.from(sigBytes).toString('base64')
 
-              await XMTPModule.receiveSignature(request.id, signature)
+                await XMTPModule.receiveSignature(request.id, signature)
+              }
             } catch (e) {
               const errorMessage = 'ERROR in create. User rejected signature'
               console.info(errorMessage, e)
