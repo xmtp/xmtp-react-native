@@ -23,6 +23,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.GroupParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
@@ -624,14 +625,15 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listGroups") Coroutine { inboxId: String ->
+        AsyncFunction("listGroups") Coroutine { inboxId: String, groupParams: String ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val groupList = client.conversations.listGroups()
+                val params = GroupParamsWrapper.groupParamsFromJson(groupParams)
                 groupList.map { group ->
                     groups[group.cacheKey(inboxId)] = group
-                    GroupWrapper.encode(client, group)
+                    GroupWrapper.encode(client, group, params)
                 }
             }
         }
