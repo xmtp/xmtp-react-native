@@ -16,6 +16,7 @@ import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
 import { getAddress } from '../utils/address'
+import { GroupOptions } from './types/GroupOptions'
 
 export default class Conversations<
   ContentTypes extends ContentCodec<any>[] = [],
@@ -83,11 +84,14 @@ export default class Conversations<
   /**
    * This method returns a list of all groups that the client is a member of.
    * To get the latest list of groups from the network, call syncGroups() first.
+   * @param {GroupOptions} opts - The options to specify what fields you want returned for the groups in the list.
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
-  async listGroups(): Promise<Group<ContentTypes>[]> {
-    const result = await XMTPModule.listGroups(this.client)
+  async listGroups(
+    opts?: GroupOptions | undefined
+  ): Promise<Group<ContentTypes>[]> {
+    const result = await XMTPModule.listGroups(this.client, opts)
 
     for (const group of result) {
       this.known[group.id] = true

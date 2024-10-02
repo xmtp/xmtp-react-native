@@ -24,6 +24,7 @@ import { Member } from './lib/Member'
 import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
+import { ConversationOrder, GroupOptions } from './lib/types/GroupOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
 
@@ -311,8 +312,30 @@ export async function createGroupCustomPermissions<
 
 export async function listGroups<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(client: Client<ContentTypes>): Promise<Group<ContentTypes>[]> {
-  return (await XMTPModule.listGroups(client.inboxId)).map((json: string) => {
+>(
+  client: Client<ContentTypes>,
+  opts?: GroupOptions | undefined,
+  order?: ConversationOrder | undefined
+): Promise<Group<ContentTypes>[]> {
+  const groupParams: GroupParams = {
+    members: opts?.members,
+    creatorInboxId: opts?.creatorInboxId,
+    isActive: opts?.isActive,
+    addedByInboxId: opts?.addedByInboxId,
+    name: opts?.name,
+    imageUrlSquare: opts?.imageUrlSquare,
+    description: opts?.description,
+    consentState: opts?.consentState,
+    lastMessage: opts?.lastMessage,
+  }
+
+  return (
+    await XMTPModule.listGroups(
+      client.inboxId,
+      JSON.stringify(groupParams),
+      order
+    )
+  ).map((json: string) => {
     const group = JSON.parse(json)
     const members = group['members'].map((mem: string) => {
       return Member.from(mem)
@@ -1272,6 +1295,18 @@ interface AuthParams {
   enableV3?: boolean
   dbDirectory?: string
   historySyncUrl?: string
+}
+
+interface GroupParams {
+  members?: boolean
+  creatorInboxId?: boolean
+  isActive?: boolean
+  addedByInboxId?: boolean
+  name?: boolean
+  imageUrlSquare?: boolean
+  description?: boolean
+  consentState?: boolean
+  lastMessage?: boolean
 }
 
 interface CreateGroupParams {
