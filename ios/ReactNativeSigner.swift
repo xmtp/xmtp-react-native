@@ -28,18 +28,21 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 	}
 
 	func handle(id: String, signature: String) throws {
-		print("the id")
-		print(id)
 		guard let continuation = continuations[id] else {
-			print("not doing what I want I guess")
+			return
+		}
+
+		guard let signatureData = Data(base64Encoded: Data(signature.utf8)), signatureData.count == 65 else {
+			continuation.resume(throwing: Error.invalidSignature)
+			continuations.removeValue(forKey: id)
 			return
 		}
 
 		let signature = XMTP.Signature.with {
-			$0.ecdsaCompact.bytes = signature.hexToData
+			$0.ecdsaCompact.bytes = signatureData[0 ..< 64]
+			$0.ecdsaCompact.recovery = UInt32(signatureData[64])
 		}
 
-		print("resuming with the signature?")
 		continuation.resume(returning: signature)
 		continuations.removeValue(forKey: id)
 	}
@@ -58,23 +61,18 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 
 	func sign(_ data: Data) async throws -> XMTP.Signature {
 		let request = SignatureRequest(message: String(data: data, encoding: .utf8)!)
-		print("about to send sign event")
-		print(request.message)
-		module.sendEvent("signV3", [
+
+		module.sendEvent("sign", [
 			"id": request.id,
 			"message": request.message,
 		])
 
 		return try await withCheckedThrowingContinuation { continuation in
-			print("about to hit continuation")
-			print(request.id)
 			continuations[request.id] = continuation
 		}
 	}
 
 	func sign(message: String) async throws -> XMTP.Signature {
-		print("HOWDY")
-		print(message)
 		return try await sign(Data(message.utf8))
 	}
 }

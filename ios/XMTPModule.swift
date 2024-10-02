@@ -95,7 +95,6 @@ public class XMTPModule: Module {
 		Events(
             // Auth
             "sign",
-			"signV3",
             "authed",
 			"authedV3",
             "preCreateIdentityCallback",
@@ -354,8 +353,6 @@ public class XMTPModule: Module {
 			let client = try await XMTP.Client.createOrBuild(account: signer, options: options)
 			await self.clientsManager.updateClient(key: client.inboxID, client: client)
 			self.signer = nil
-			print("LOPI")
-			print(client.address)
 			self.sendEvent("authedV3", try ClientWrapper.encodeToObj(client))
 		}
         
@@ -1839,7 +1836,7 @@ public class XMTPModule: Module {
 				for try await group in try await client.conversations.streamGroups() {
 					try await sendEvent("group", [
 						"inboxId": inboxId,
-						"group": await GroupWrapper.encodeToObj(group, client: client),
+						"group": GroupWrapper.encodeToObj(group, client: client),
 					])
 				}
 			} catch {

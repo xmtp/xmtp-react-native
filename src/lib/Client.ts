@@ -325,13 +325,10 @@ export class Client<
     }
     return new Promise<Client<ContentCodecs>>((resolve, reject) => {
       ;(async () => {
-        console.log("YARK!")
         this.signSubscription = XMTPModule.emitter.addListener(
-          'signV3',
+          'sign',
           async (message: { id: string; message: string }) => {
-            console.log("incoming request LOPI LOPI")
             const request: { id: string; message: string } = message
-            console.log(request.id)
             try {
               const signatureString = await signer.signMessage(request.message)
               if (signer.isSmartContractWallet()) {
@@ -389,7 +386,6 @@ export class Client<
             )
           }
         )
-        console.log("the subscription is", !!this.signSubscription)
         await XMTPModule.createOrBuild(
           await signer.getAddress(),
           options.env,
@@ -413,7 +409,6 @@ export class Client<
         )
         console.error('ERROR in create: ', error)
       })
-      console.log("Submitted across bridge probably")
     })
   }
 
