@@ -120,6 +120,10 @@ export async function receiveSignature(requestID: string, signature: string) {
   return await XMTPModule.receiveSignature(requestID, signature)
 }
 
+export async function receiveSCWSignature(requestID: string, signature: string) {
+  return await XMTPModule.receiveSCWSignature(requestID, signature)
+}
+
 export async function createRandom(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
@@ -219,7 +223,10 @@ export async function createOrBuild(
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined
+  historySyncUrl?: string | undefined,
+  isSmartContractWallet?: boolean | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
 ) {
   const encryptionKey = dbEncryptionKey
     ? Array.from(dbEncryptionKey)
@@ -231,6 +238,9 @@ export async function createOrBuild(
     enableV3,
     dbDirectory,
     historySyncUrl,
+    isSmartContractWallet,
+    chainId,
+    blockNumber,
   }
   return await XMTPModule.createOrBuild(
     address,
@@ -1272,6 +1282,9 @@ interface AuthParams {
   enableV3?: boolean
   dbDirectory?: string
   historySyncUrl?: string
+  isSmartContractWallet?: boolean
+  chainId?: number
+  blockNumber?: number
 }
 
 interface CreateGroupParams {

@@ -8,7 +8,10 @@ class AuthParamsWrapper(
     val enableV3: Boolean = false,
     val dbDirectory: String?,
     val historySyncUrl: String?,
-) {
+    val isSmartContractWallet: Boolean = false,
+    val chainId: Long = 1,
+    val blockNumber: Long?,
+    ) {
     companion object {
         fun authParamsFromJson(authParams: String): AuthParamsWrapper {
             val jsonOptions = JsonParser.parseString(authParams).asJsonObject
@@ -17,8 +20,12 @@ class AuthParamsWrapper(
                 if (jsonOptions.has("appVersion")) jsonOptions.get("appVersion").asString else null,
                 if (jsonOptions.has("enableV3")) jsonOptions.get("enableV3").asBoolean else false,
                 if (jsonOptions.has("dbDirectory")) jsonOptions.get("dbDirectory").asString else null,
-                if (jsonOptions.has("historySyncUrl")) jsonOptions.get("historySyncUrl").asString else null
-            )
+                if (jsonOptions.has("historySyncUrl")) jsonOptions.get("historySyncUrl").asString else null,
+                if (jsonOptions.has("isSmartContractWallet")) jsonOptions.get("isSmartContractWallet").asBoolean else false,
+                if (jsonOptions.has("chainId")) jsonOptions.get("chainId").asLong else 1,
+                if (jsonOptions.has("blockNumber")) jsonOptions.get("blockNumber").asLong else null,
+
+                )
         }
     }
 }
