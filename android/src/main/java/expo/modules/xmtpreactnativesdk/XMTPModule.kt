@@ -85,7 +85,7 @@ class ReactNativeSigner(
     override var address: String,
     override var isSmartContractWallet: Boolean = false,
     override var chainId: Long = 1,
-    override var blockNumber: Long = 1,
+    override var blockNumber: Long? = null,
 ) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
 
@@ -407,7 +407,7 @@ class XMTPModule : Module() {
                     address = address,
                     isSmartContractWallet = authOptions.isSmartContractWallet,
                     chainId = authOptions.chainId,
-                    blockNumber = authOptions.blockNumber ?: 1
+                    blockNumber = authOptions.blockNumber
                 )
                 signer = reactSigner
                 val options = clientOptions(
