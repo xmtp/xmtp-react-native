@@ -273,7 +273,7 @@ export async function createGroup<
     )
   )
 
-  const members = group['members'].map((mem: string) => {
+  const members = group['members']?.map((mem: string) => {
     return Member.from(mem)
   })
   return new Group(client, group, members)
@@ -304,7 +304,7 @@ export async function createGroupCustomPermissions<
       JSON.stringify(options)
     )
   )
-  const members = group['members'].map((mem: string) => {
+  const members = group['members']?.map((mem: string) => {
     return Member.from(mem)
   })
   return new Group(client, group, members)
@@ -337,7 +337,7 @@ export async function listGroups<
     )
   ).map((json: string) => {
     const group = JSON.parse(json)
-    const members = group['members'].map((mem: string) => {
+    const members = group['members']?.map((mem: string) => {
       return Member.from(mem)
     })
     return new Group(client, group, members)
@@ -422,7 +422,7 @@ export async function findGroup<
 ): Promise<Group<ContentTypes> | undefined> {
   const json = await XMTPModule.findGroup(client.inboxId, groupId)
   const group = JSON.parse(json)
-  const members = group['members'].map((mem: string) => {
+  const members = group['members']?.map((mem: string) => {
     return Member.from(mem)
   })
   return new Group(client, group, members)
@@ -1277,7 +1277,7 @@ export async function processWelcomeMessage<
     encryptedMessage
   )
   const group = JSON.parse(json)
-  const members = group['members'].map((mem: string) => {
+  const members = group['members']?.map((mem: string) => {
     return Member.from(mem)
   })
   return new Group(client, group, members)
