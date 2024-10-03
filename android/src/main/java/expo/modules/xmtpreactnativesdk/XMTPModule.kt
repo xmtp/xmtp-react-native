@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import org.web3j.utils.Numeric
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.ConsentState
@@ -78,7 +79,14 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
+
+class ReactNativeSigner(
+    var module: XMTPModule,
+    override var address: String,
+    override var isSmartContractWallet: Boolean = false,
+    override var chainId: Long = 1,
+    override var blockNumber: Long = 1,
+) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
 
     fun handle(id: String, signature: String) {
@@ -93,6 +101,18 @@ class ReactNativeSigner(var module: XMTPModule, override var address: String) : 
             it.ecdsaCompact = it.ecdsaCompact.toBuilder().also { builder ->
                 builder.bytes = signatureData.take(64).toByteArray().toByteString()
                 builder.recovery = signatureData[64].toInt()
+            }.build()
+        }.build()
+        continuation.resume(sig)
+        continuations.remove(id)
+    }
+
+    fun handleSCW(id: String, signature: String) {
+        val continuation = continuations[id] ?: return
+
+        val sig = Signature.newBuilder().also {
+            it.ecdsaCompact = it.ecdsaCompact.toBuilder().also { builder ->
+                builder.bytes = Numeric.hexStringToByteArray(signature).toByteString()
             }.build()
         }.build()
         continuation.resume(sig)
@@ -328,6 +348,11 @@ class XMTPModule : Module() {
             signer?.handle(id = requestID, signature = signature)
         }
 
+        Function("receiveSCWSignature") { requestID: String, signature: String ->
+            logV("receiveSCWSignature")
+            signer?.handleSCW(id = requestID, signature = signature)
+        }
+
         // Generate a random wallet and set the client to that
         AsyncFunction("createRandom") Coroutine { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             withContext(Dispatchers.IO) {
@@ -376,7 +401,14 @@ class XMTPModule : Module() {
         AsyncFunction("createOrBuild") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("createOrBuild")
-                val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
+                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+                val reactSigner = ReactNativeSigner(
+                    module = this@XMTPModule,
+                    address = address,
+                    isSmartContractWallet = authOptions.isSmartContractWallet,
+                    chainId = authOptions.chainId,
+                    blockNumber = authOptions.blockNumber ?: 1
+                )
                 signer = reactSigner
                 val options = clientOptions(
                     dbEncryptionKey,
