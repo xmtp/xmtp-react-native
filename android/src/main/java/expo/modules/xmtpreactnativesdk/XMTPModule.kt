@@ -1735,7 +1735,7 @@ class XMTPModule : Module() {
     private fun getConversationSortOrder(order: String): ConversationOrder {
         return when (order) {
             "lastMessage" -> ConversationOrder.LAST_MESSAGE
-            else -> ConversationOrder.DEFAULT
+            else -> ConversationOrder.CREATED_AT
         }
     }
 

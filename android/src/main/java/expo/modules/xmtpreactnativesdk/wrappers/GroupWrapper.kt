@@ -7,7 +7,7 @@ import org.xmtp.android.library.Client
 import org.xmtp.android.library.Group
 
 enum class ConversationOrder {
-    LAST_MESSAGE, DEFAULT
+    LAST_MESSAGE, CREATED_AT
 }
 
 class GroupWrapper {

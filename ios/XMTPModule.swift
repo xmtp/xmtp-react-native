@@ -532,19 +532,45 @@ public class XMTPModule: Module {
 			return results
 		}
 		
-		AsyncFunction("listGroups") { (inboxId: String) -> [String] in
+		AsyncFunction("listGroups") { (inboxId: String, groupParams: String?, sortOrder: String?, limit: Int?) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			let groupList = try await client.conversations.groups()
-			
+
+			let params = GroupParamsWrapper.groupParamsFromJson(groupParams ?? "")
+			let order = getConversationSortOrder(order: sortOrder ?? "")
+
+			var groupList: [Group] = []
+
+			if order == .lastMessage {
+				let groups = try await client.conversations.groups()
+				var groupsWithMessages: [(Group, Date)] = []
+				for group in groups {
+					do {
+						let firstMessage = try await group.decryptedMessages(limit: 1).first
+						let sentAt = firstMessage?.sentAt ?? Date.distantPast
+						groupsWithMessages.append((group, sentAt))
+					} catch {
+						print("Failed to fetch messages for group: \(group.id)")
+					}
+				}
+				let sortedGroups = groupsWithMessages.sorted { $0.1 > $1.1 }.map { $0.0 }
+				
+				if let limit = limit, limit > 0 {
+					groupList = Array(sortedGroups.prefix(limit))
+				} else {
+					groupList = sortedGroups
+				}
+			} else {
+				groupList = try await client.conversations.groups(limit: limit)
+			}
+
 			var results: [String] = []
 			for group in groupList {
 				await self.groupsManager.set(group.cacheKey(inboxId), group)
 				let encodedGroup = try await GroupWrapper.encode(group, client: client)
 				results.append(encodedGroup)
 			}
-			
 			return results
 		}
 		
@@ -1661,6 +1687,15 @@ public class XMTPModule: Module {
 			return .denied
 		default:
 			return .unknown
+		}
+	}
+	
+	private func getConversationSortOrder(order: String) -> ConversationOrder {
+		switch order {
+		case "lastMessage":
+			return .lastMessage
+		default:
+			return .createdAt
 		}
 	}
 

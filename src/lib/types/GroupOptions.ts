@@ -12,4 +12,4 @@ export type GroupOptions = {
 
 export type ConversationOrder =
   | 'lastMessage' // Ordered by the last message that was sent
-  | 'default' // Ordered by the date the conversation was created
+  | 'createdAt' // DEFAULT: Ordered by the date the conversation was created
