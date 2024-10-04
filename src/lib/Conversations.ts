@@ -86,6 +86,7 @@ export default class Conversations<
    * To get the latest list of groups from the network, call syncGroups() first.
    * @param {GroupOptions} opts - The options to specify what fields you want returned for the groups in the list.
    * @param {ConversationOrder} order - The order to specify if you want groups listed by last message or by created at.
+   * @param {number} limit - Limit the number of groups returned in the list.
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
