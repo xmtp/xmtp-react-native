@@ -1082,6 +1082,11 @@ test('can list groups with params', async () => {
     { lastMessage: true },
     'lastMessage'
   )
+  const boGroupsLimit = await boClient.conversations.listGroups(
+    {},
+    undefined,
+    1
+  )
 
   assert(
     boGroupsOrderCreated.map((group: any) => group.id).toString() ===
@@ -1100,6 +1105,15 @@ test('can list groups with params', async () => {
     messages[0].content() === 'first message',
     `last message should be first message ${messages[0].content()}`
   )
+  assert(
+    boGroupsLimit.length === 1,
+    `List length should be 1 but was ${boGroupsLimit.length}`
+  )
+  assert(
+    boGroupsLimit[0].id === boGroup1.id,
+    `Group should be ${boGroup1.id} but was ${boGroupsLimit[0].i}`
+  )
+
   return true
 })
 
