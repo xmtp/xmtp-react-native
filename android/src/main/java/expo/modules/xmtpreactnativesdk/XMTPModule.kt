@@ -626,19 +626,22 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listGroups") Coroutine { inboxId: String, groupParams: String?, sortOrder: String? ->
+        AsyncFunction("listGroups") Coroutine { inboxId: String, groupParams: String?, sortOrder: String?, limit: Int? ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val groupList = client.conversations.listGroups()
                 val params = GroupParamsWrapper.groupParamsFromJson(groupParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
                 val sortedGroupList = if (order == ConversationOrder.LAST_MESSAGE) {
-                     groupList.sortedByDescending { group ->
-                        group.decryptedMessages(limit = 1).firstOrNull()?.sentAt
-                    }
+                    client.conversations.listGroups()
+                        .sortedByDescending { group ->
+                            group.decryptedMessages(limit = 1).firstOrNull()?.sentAt
+                        }
+                        .let { groups ->
+                            if (limit != null && limit > 0) groups.take(limit) else groups
+                        }
                 } else {
-                    groupList
+                    client.conversations.listGroups(limit = limit)
                 }
                 sortedGroupList.map { group ->
                     groups[group.cacheKey(inboxId)] = group

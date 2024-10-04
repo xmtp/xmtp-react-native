@@ -91,9 +91,10 @@ export default class Conversations<
    */
   async listGroups(
     opts?: GroupOptions | undefined,
-    order?: ConversationOrder | undefined
+    order?: ConversationOrder | undefined,
+    limit?: number | undefined
   ): Promise<Group<ContentTypes>[]> {
-    const result = await XMTPModule.listGroups(this.client, opts, order)
+    const result = await XMTPModule.listGroups(this.client, opts, order, limit)
 
     for (const group of result) {
       this.known[group.id] = true

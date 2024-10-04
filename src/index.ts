@@ -315,7 +315,8 @@ export async function listGroups<
 >(
   client: Client<ContentTypes>,
   opts?: GroupOptions | undefined,
-  order?: ConversationOrder | undefined
+  order?: ConversationOrder | undefined,
+  limit?: number | undefined
 ): Promise<Group<ContentTypes>[]> {
   const groupParams: GroupParams = {
     members: opts?.members,
@@ -333,7 +334,8 @@ export async function listGroups<
     await XMTPModule.listGroups(
       client.inboxId,
       JSON.stringify(groupParams),
-      order
+      order,
+      limit
     )
   ).map((json: string) => {
     const group = JSON.parse(json)
