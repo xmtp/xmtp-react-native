@@ -24,6 +24,7 @@ import { Member } from './lib/Member'
 import type { Query } from './lib/Query'
 import { ConversationSendPayload } from './lib/types'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
+import { ConversationOrder, GroupOptions } from './lib/types/GroupOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
 
@@ -272,7 +273,7 @@ export async function createGroup<
     )
   )
 
-  const members = group['members'].map((mem: string) => {
+  const members = group['members']?.map((mem: string) => {
     return Member.from(mem)
   })
   return new Group(client, group, members)
@@ -303,7 +304,7 @@ export async function createGroupCustomPermissions<
       JSON.stringify(options)
     )
   )
-  const members = group['members'].map((mem: string) => {
+  const members = group['members']?.map((mem: string) => {
     return Member.from(mem)
   })
   return new Group(client, group, members)
@@ -311,10 +312,22 @@ export async function createGroupCustomPermissions<
 
 export async function listGroups<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(client: Client<ContentTypes>): Promise<Group<ContentTypes>[]> {
-  return (await XMTPModule.listGroups(client.inboxId)).map((json: string) => {
+>(
+  client: Client<ContentTypes>,
+  opts?: GroupOptions | undefined,
+  order?: ConversationOrder | undefined,
+  limit?: number | undefined
+): Promise<Group<ContentTypes>[]> {
+  return (
+    await XMTPModule.listGroups(
+      client.inboxId,
+      JSON.stringify(opts),
+      order,
+      limit
+    )
+  ).map((json: string) => {
     const group = JSON.parse(json)
-    const members = group['members'].map((mem: string) => {
+    const members = group['members']?.map((mem: string) => {
       return Member.from(mem)
     })
     return new Group(client, group, members)
@@ -399,7 +412,7 @@ export async function findGroup<
 ): Promise<Group<ContentTypes> | undefined> {
   const json = await XMTPModule.findGroup(client.inboxId, groupId)
   const group = JSON.parse(json)
-  const members = group['members'].map((mem: string) => {
+  const members = group['members']?.map((mem: string) => {
     return Member.from(mem)
   })
   return new Group(client, group, members)
@@ -1254,7 +1267,7 @@ export async function processWelcomeMessage<
     encryptedMessage
   )
   const group = JSON.parse(json)
-  const members = group['members'].map((mem: string) => {
+  const members = group['members']?.map((mem: string) => {
     return Member.from(mem)
   })
   return new Group(client, group, members)
@@ -1295,3 +1308,4 @@ export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus }
 export { Group } from './lib/Group'
 export { Member } from './lib/Member'
 export { InboxId } from './lib/Client'
+export { GroupOptions, ConversationOrder } from './lib/types/GroupOptions'

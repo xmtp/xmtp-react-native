@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-extra-non-null-assertion */
 import { Client } from 'xmtp-react-native-sdk'
 

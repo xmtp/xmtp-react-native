@@ -1062,6 +1062,57 @@ test('can stream groups', async () => {
   return true
 })
 
+test('can list groups with params', async () => {
+  const [alixClient, boClient] = await createClients(2)
+
+  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
+  const boGroup2 = await boClient.conversations.newGroup([alixClient.address])
+
+  await boGroup1.send({ text: `first message` })
+  await boGroup1.send({ text: `second message` })
+  await boGroup1.send({ text: `third message` })
+  await boGroup2.send({ text: `first message` })
+
+  const boGroupsOrderCreated = await boClient.conversations.listGroups()
+  const boGroupsOrderLastMessage = await boClient.conversations.listGroups(
+    { lastMessage: true },
+    'lastMessage'
+  )
+  const boGroupsLimit = await boClient.conversations.listGroups(
+    {},
+    undefined,
+    1
+  )
+
+  assert(
+    boGroupsOrderCreated.map((group: any) => group.id).toString() ===
+      [boGroup1.id, boGroup2.id].toString(),
+    `Group order should be group1 then group2 but was ${boGroupsOrderCreated.map((group: any) => group.id).toString()}`
+  )
+
+  assert(
+    boGroupsOrderLastMessage.map((group: any) => group.id).toString() ===
+      [boGroup2.id, boGroup1.id].toString(),
+    `Group order should be group2 then group1 but was ${boGroupsOrderLastMessage.map((group: any) => group.id).toString()}`
+  )
+
+  const messages = await boGroupsOrderLastMessage[0].messages()
+  assert(
+    messages[0].content() === 'first message',
+    `last message should be first message ${messages[0].content()}`
+  )
+  assert(
+    boGroupsLimit.length === 1,
+    `List length should be 1 but was ${boGroupsLimit.length}`
+  )
+  assert(
+    boGroupsLimit[0].id === boGroup1.id,
+    `Group should be ${boGroup1.id} but was ${boGroupsLimit[0].id}`
+  )
+
+  return true
+})
+
 test('can list groups', async () => {
   const [alixClient, boClient] = await createClients(2)
 
@@ -1844,34 +1895,25 @@ test('can group consent', async () => {
   )
 
   isAllowed = await bo.contacts.isGroupAllowed(group.id)
+  assert(isAllowed === true, `bo group should be allowed but was ${isAllowed}`)
   assert(
-    isAllowed === true,
-    `bo group should be allowed but was ${isAllowed}`
-  )
-  assert(
-    await group.state === 'allowed',
+    (await group.state) === 'allowed',
     `the group should have a consent state of allowed but was ${await group.state}`
   )
-  
+
   await bo.contacts.denyGroups([group.id])
-  let isDenied = await bo.contacts.isGroupDenied(group.id)
+  const isDenied = await bo.contacts.isGroupDenied(group.id)
+  assert(isDenied === true, `bo group should be denied but was ${isDenied}`)
   assert(
-    isDenied === true,
-    `bo group should be denied but was ${isDenied}`
-  )
-  assert(
-    await group.consentState() === 'denied',
+    (await group.consentState()) === 'denied',
     `the group should have a consent state of denied but was ${await group.consentState()}`
   )
 
   await group.updateConsent('allowed')
   isAllowed = await bo.contacts.isGroupAllowed(group.id)
+  assert(isAllowed === true, `bo group should be allowed2 but was ${isAllowed}`)
   assert(
-    isAllowed === true,
-    `bo group should be allowed2 but was ${isAllowed}`
-  )
-  assert(
-    await group.consentState() === 'allowed',
+    (await group.consentState()) === 'allowed',
     `the group should have a consent state2 of allowed but was ${await group.consentState()}`
   )
 
