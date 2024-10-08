@@ -37,10 +37,10 @@ class GroupWrapper {
                     put("consentState", consentStateToString(group.consentState()))
                 }
                 if (groupParams.lastMessage) {
-                    put(
-                        "lastMessage",
-                        DecodedMessageWrapper.encode(group.decryptedMessages(limit = 1).first())
-                    )
+                    val lastMessage = group.decryptedMessages(limit = 1).firstOrNull()
+                    if (lastMessage != null) {
+                        put("lastMessage", DecodedMessageWrapper.encode(lastMessage))
+                    }
                 }
             }
         }
