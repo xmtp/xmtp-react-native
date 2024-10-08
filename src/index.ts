@@ -318,22 +318,10 @@ export async function listGroups<
   order?: ConversationOrder | undefined,
   limit?: number | undefined
 ): Promise<Group<ContentTypes>[]> {
-  const groupParams: GroupParams = {
-    members: opts?.members,
-    creatorInboxId: opts?.creatorInboxId,
-    isActive: opts?.isActive,
-    addedByInboxId: opts?.addedByInboxId,
-    name: opts?.name,
-    imageUrlSquare: opts?.imageUrlSquare,
-    description: opts?.description,
-    consentState: opts?.consentState,
-    lastMessage: opts?.lastMessage,
-  }
-
   return (
     await XMTPModule.listGroups(
       client.inboxId,
-      JSON.stringify(groupParams),
+      JSON.stringify(opts),
       order,
       limit
     )
@@ -1299,18 +1287,6 @@ interface AuthParams {
   historySyncUrl?: string
 }
 
-interface GroupParams {
-  members?: boolean
-  creatorInboxId?: boolean
-  isActive?: boolean
-  addedByInboxId?: boolean
-  name?: boolean
-  imageUrlSquare?: boolean
-  description?: boolean
-  consentState?: boolean
-  lastMessage?: boolean
-}
-
 interface CreateGroupParams {
   name: string
   imageUrlSquare: string
@@ -1332,3 +1308,4 @@ export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus }
 export { Group } from './lib/Group'
 export { Member } from './lib/Member'
 export { InboxId } from './lib/Client'
+export { GroupOptions, ConversationOrder } from './lib/types/GroupOptions'

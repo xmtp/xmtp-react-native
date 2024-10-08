@@ -2,10 +2,6 @@ import { Wallet } from 'ethers'
 import { Platform } from 'expo-modules-core'
 import RNFS from 'react-native-fs'
 import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
-import {
-  ConversationOrder,
-  GroupOptions,
-} from 'xmtp-react-native-sdk/lib/types/GroupOptions'
 
 import {
   Test,
@@ -1111,7 +1107,7 @@ test('can list groups with params', async () => {
   )
   assert(
     boGroupsLimit[0].id === boGroup1.id,
-    `Group should be ${boGroup1.id} but was ${boGroupsLimit[0].i}`
+    `Group should be ${boGroup1.id} but was ${boGroupsLimit[0].id}`
   )
 
   return true
