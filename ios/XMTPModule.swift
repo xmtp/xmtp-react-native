@@ -568,7 +568,7 @@ public class XMTPModule: Module {
 			var results: [String] = []
 			for group in groupList {
 				await self.groupsManager.set(group.cacheKey(inboxId), group)
-				let encodedGroup = try await GroupWrapper.encode(group, client: client)
+				let encodedGroup = try await GroupWrapper.encode(group, client: client, groupParams: params)
 				results.append(encodedGroup)
 			}
 			return results

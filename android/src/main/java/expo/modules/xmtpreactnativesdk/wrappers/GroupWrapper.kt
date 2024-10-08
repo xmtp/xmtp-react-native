@@ -70,6 +70,7 @@ class GroupParamsWrapper(
 ) {
     companion object {
         fun groupParamsFromJson(groupParams: String): GroupParamsWrapper {
+            if (groupParams.isEmpty()) return GroupParamsWrapper()
             val jsonOptions = JsonParser.parseString(groupParams).asJsonObject
             return GroupParamsWrapper(
                 if (jsonOptions.has("members")) jsonOptions.get("members").asBoolean else true,

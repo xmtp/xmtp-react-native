@@ -224,58 +224,20 @@ test('testing large member listings', async () => {
   return true
 })
 
-test('testing sending message in large group', async () => {
-  await beforeAll(1, 2000, 100)
-
-  const alixGroup = initialGroups[0]
-  let start = Date.now()
-  await alixGroup.send({ text: `Alix message` })
-  let end = Date.now()
-  console.log(`Alix sent a message in ${end - start}ms`)
-  assert(
-    end - start < 200,
-    'sending a message should take less than a .2 second'
-  )
-
-  await boClient.conversations.syncGroups()
-  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
-  start = Date.now()
-  await boGroup!.prepareMessage({ text: `Bo message` })
-  end = Date.now()
-  console.log(`Bo sent a message in ${end - start}ms`)
-  assert(
-    end - start < 100,
-    'preparing a message should take less than a .1 second'
-  )
-
-  start = Date.now()
-  await boGroup!.sync()
-  end = Date.now()
-  console.log(`Bo synced messages in ${end - start}ms`)
-  assert(
-    end - start < 9000,
-    'syncing 2000 messages should take less than a 9 second'
-  )
-
-  start = Date.now()
-  await boGroup!.send({ text: `Bo message 2` })
-  end = Date.now()
-  console.log(`Bo sent a message in ${end - start}ms`)
-  assert(
-    end - start < 100,
-    'sending a message should take less than a .1 second'
-  )
-
-  return true
-})
-
 test('testing large group listings with ordering', async () => {
-  await beforeAll(1000, 1, 20)
+  await beforeAll(1000, 10, 10)
 
   let start = Date.now()
   let groups = await alixClient.conversations.listGroups()
   let end = Date.now()
   console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
+
+  await groups[5].send({ text: `Alix message` })
+  await groups[50].send({ text: `Alix message` })
+  await groups[150].send({ text: `Alix message` })
+  await groups[500].send({ text: `Alix message` })
+  await groups[700].send({ text: `Alix message` })
+  await groups[900].send({ text: `Alix message` })
 
   let start2 = Date.now()
   let groups2 = await alixClient.conversations.listGroups(
@@ -334,6 +296,51 @@ test('testing large group listings with ordering', async () => {
   assert(
     end2 - start2 < end - start,
     'listing 1000 groups without certain fields should take less time'
+  )
+
+  return true
+})
+
+test('testing sending message in large group', async () => {
+  await beforeAll(1, 2000, 100)
+
+  const alixGroup = initialGroups[0]
+  let start = Date.now()
+  await alixGroup.send({ text: `Alix message` })
+  let end = Date.now()
+  console.log(`Alix sent a message in ${end - start}ms`)
+  assert(
+    end - start < 200,
+    'sending a message should take less than a .2 second'
+  )
+
+  await boClient.conversations.syncGroups()
+  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+  start = Date.now()
+  await boGroup!.prepareMessage({ text: `Bo message` })
+  end = Date.now()
+  console.log(`Bo sent a message in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'preparing a message should take less than a .1 second'
+  )
+
+  start = Date.now()
+  await boGroup!.sync()
+  end = Date.now()
+  console.log(`Bo synced messages in ${end - start}ms`)
+  assert(
+    end - start < 9000,
+    'syncing 2000 messages should take less than a 9 second'
+  )
+
+  start = Date.now()
+  await boGroup!.send({ text: `Bo message 2` })
+  end = Date.now()
+  console.log(`Bo sent a message in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'sending a message should take less than a .1 second'
   )
 
   return true
