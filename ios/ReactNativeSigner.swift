@@ -14,11 +14,17 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 
 	var module: XMTPModule
 	var address: String
+	var isSmartContractWallet: Bool
+	var chainId: UInt64
+	var blockNumber: UInt64?
 	var continuations: [String: CheckedContinuation<XMTP.Signature, Swift.Error>] = [:]
 
-	init(module: XMTPModule, address: String) {
+	init(module: XMTPModule, address: String, isSmartContractWallet: Bool = false, chainId: UInt64 = 1, blockNumber: UInt64? = nil) {
 		self.module = module
 		self.address = address
+		self.isSmartContractWallet = isSmartContractWallet
+		self.chainId = chainId
+		self.blockNumber = blockNumber
 	}
 
 	func handle(id: String, signature: String) throws {
@@ -37,6 +43,18 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 			$0.ecdsaCompact.recovery = UInt32(signatureData[64])
 		}
 
+		continuation.resume(returning: signature)
+		continuations.removeValue(forKey: id)
+	}
+	
+	func handleSCW(id: String, signature: String) throws {
+		guard let continuation = continuations[id] else {
+			return
+		}
+
+		let signature = XMTP.Signature.with {
+			$0.ecdsaCompact.bytes = signature.hexToData
+		}
 		continuation.resume(returning: signature)
 		continuations.removeValue(forKey: id)
 	}
