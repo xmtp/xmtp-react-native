@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import org.web3j.utils.Numeric
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.ConsentState
@@ -55,6 +56,7 @@ import org.xmtp.android.library.codecs.EncodedContent
 import org.xmtp.android.library.codecs.EncryptedEncodedContent
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
+import org.xmtp.android.library.hexToByteArray
 import org.xmtp.android.library.messages.EnvelopeBuilder
 import org.xmtp.android.library.messages.InvitationV1ContextBuilder
 import org.xmtp.android.library.messages.MessageDeliveryStatus
@@ -80,8 +82,16 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class ReactNativeSigner(var module: XMTPModule, override var address: String) : SigningKey {
+
+class ReactNativeSigner(
+    var module: XMTPModule,
+    override var address: String,
+    override var isSmartContractWallet: Boolean = false,
+    override var chainId: Long? = null,
+    override var blockNumber: Long? = null,
+) : SigningKey {
     private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
+    private val scwContinuations: MutableMap<String, Continuation<ByteArray>> = mutableMapOf()
 
     fun handle(id: String, signature: String) {
         val continuation = continuations[id] ?: return
@@ -99,6 +109,20 @@ class ReactNativeSigner(var module: XMTPModule, override var address: String) : 
         }.build()
         continuation.resume(sig)
         continuations.remove(id)
+    }
+
+    fun handleSCW(id: String, signature: String) {
+        val continuation = scwContinuations[id] ?: return
+        continuation.resume(signature.hexToByteArray())
+        scwContinuations.remove(id)
+    }
+
+    override suspend fun signSCW(message: String): ByteArray {
+        val request = SignatureRequest(message = message)
+        module.sendEvent("sign", mapOf("id" to request.id, "message" to request.message))
+        return suspendCancellableCoroutine { continuation ->
+            scwContinuations[request.id] = continuation
+        }
     }
 
     override suspend fun sign(data: ByteArray): Signature {
@@ -330,6 +354,11 @@ class XMTPModule : Module() {
             signer?.handle(id = requestID, signature = signature)
         }
 
+        Function("receiveSCWSignature") { requestID: String, signature: String ->
+            logV("receiveSCWSignature")
+            signer?.handleSCW(id = requestID, signature = signature)
+        }
+
         // Generate a random wallet and set the client to that
         AsyncFunction("createRandom") Coroutine { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             withContext(Dispatchers.IO) {
@@ -375,10 +404,17 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createOrBuild") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
+        AsyncFunction("createV3") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
             withContext(Dispatchers.IO) {
-                logV("createOrBuild")
-                val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
+                logV("createV3")
+                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+                val reactSigner = ReactNativeSigner(
+                    module = this@XMTPModule,
+                    address = address,
+                    isSmartContractWallet = authOptions.isSmartContractWallet,
+                    chainId = authOptions.chainId,
+                    blockNumber = authOptions.blockNumber
+                )
                 signer = reactSigner
                 val options = clientOptions(
                     dbEncryptionKey,
@@ -387,11 +423,26 @@ class XMTPModule : Module() {
                     hasEnableIdentityCallback,
                     hasAuthInboxCallback,
                 )
-                val client = Client().createOrBuild(account = reactSigner, options = options)
+                val client = Client().createV3(account = reactSigner, options = options)
                 clients[client.inboxId] = client
                 ContentJson.Companion
                 signer = null
                 sendEvent("authedV3", ClientWrapper.encodeToObj(client))
+            }
+        }
+
+        AsyncFunction("buildV3") Coroutine { address: String, dbEncryptionKey: List<Int>?, authParams: String ->
+            withContext(Dispatchers.IO) {
+                logV("buildV3")
+                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+                val options = clientOptions(
+                    dbEncryptionKey,
+                    authParams,
+                )
+                val client = Client().buildV3(address = address, chainId = authOptions.chainId, options = options)
+                ContentJson.Companion
+                clients[client.inboxId] = client
+                ClientWrapper.encodeToObj(client)
             }
         }
 
@@ -406,7 +457,7 @@ class XMTPModule : Module() {
                     hasEnableIdentityCallback,
                     hasPreAuthenticateToInboxCallback,
                 )
-                val randomClient = Client().createOrBuild(account = privateKey, options = options)
+                val randomClient = Client().createV3(account = privateKey, options = options)
 
                 ContentJson.Companion
                 clients[randomClient.inboxId] = randomClient
