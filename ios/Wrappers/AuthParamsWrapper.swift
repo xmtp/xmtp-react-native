@@ -15,10 +15,10 @@ struct AuthParamsWrapper {
 	let dbDirectory: String?
 	let historySyncUrl: String?
 	let isSmartContractWallet: Bool
-	let chainId: UInt64
+	let chainId: UInt64?
 	let blockNumber: UInt64?
 	
-	init(environment: String, appVersion: String?, enableV3: Bool, dbDirectory: String?, historySyncUrl: String?, isSmartContractWallet: Bool, chainId: UInt64, blockNumber: UInt64) {
+	init(environment: String, appVersion: String?, enableV3: Bool, dbDirectory: String?, historySyncUrl: String?, isSmartContractWallet: Bool, chainId: UInt64?, blockNumber: UInt64?) {
 		self.environment = environment
 		self.appVersion = appVersion
 		self.enableV3 = enableV3
@@ -32,7 +32,7 @@ struct AuthParamsWrapper {
 	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper {
 		guard let data = authParams.data(using: .utf8),
 			  let jsonOptions = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
-			return AuthParamsWrapper(environment: "dev", appVersion: nil, enableV3: false, dbDirectory: nil, historySyncUrl: nil, isSmartContractWallet: false, chainId: 1, blockNumber: 1)
+			return AuthParamsWrapper(environment: "dev", appVersion: nil, enableV3: false, dbDirectory: nil, historySyncUrl: nil, isSmartContractWallet: false, chainId: nil, blockNumber: nil)
 		}
 
 		let environment = jsonOptions["environment"] as? String ?? "dev"
@@ -41,7 +41,7 @@ struct AuthParamsWrapper {
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
 		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
 		let isSmartContractWallet = jsonOptions["isSmartContractWallet"] as? Bool ?? false
-		let chainId = jsonOptions["chainId"] as? Int ?? 1
+		let chainId = jsonOptions["chainId"] as? Int
 		let blockNumber = jsonOptions["blockNumber"] as? Int
 
 
@@ -52,7 +52,7 @@ struct AuthParamsWrapper {
 			dbDirectory: dbDirectory,
 			historySyncUrl: historySyncUrl,
 			isSmartContractWallet: isSmartContractWallet,
-			chainId: UInt64(chainId),
+			chainId: blockNumber != nil ? UInt64(chainId!) : nil,
 			blockNumber: blockNumber != nil ? UInt64(blockNumber!) : nil
 		)
 	}
