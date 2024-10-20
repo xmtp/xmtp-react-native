@@ -18,11 +18,13 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationOrder
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.GroupParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
@@ -675,14 +677,26 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listGroups") Coroutine { inboxId: String ->
+        AsyncFunction("listGroups") Coroutine { inboxId: String, groupParams: String?, sortOrder: String?, limit: Int? ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val groupList = client.conversations.listGroups()
-                groupList.map { group ->
+                val params = GroupParamsWrapper.groupParamsFromJson(groupParams ?: "")
+                val order = getConversationSortOrder(sortOrder ?: "")
+                val sortedGroupList = if (order == ConversationOrder.LAST_MESSAGE) {
+                    client.conversations.listGroups()
+                        .sortedByDescending { group ->
+                            group.decryptedMessages(limit = 1).firstOrNull()?.sentAt
+                        }
+                        .let { groups ->
+                            if (limit != null && limit > 0) groups.take(limit) else groups
+                        }
+                } else {
+                    client.conversations.listGroups(limit = limit)
+                }
+                sortedGroupList.map { group ->
                     groups[group.cacheKey(inboxId)] = group
-                    GroupWrapper.encode(client, group)
+                    GroupWrapper.encode(client, group, params)
                 }
             }
         }
@@ -1766,6 +1780,13 @@ class XMTPModule : Module() {
             "allowed" -> ConsentState.ALLOWED
             "denied" -> ConsentState.DENIED
             else -> ConsentState.UNKNOWN
+        }
+    }
+
+    private fun getConversationSortOrder(order: String): ConversationOrder {
+        return when (order) {
+            "lastMessage" -> ConversationOrder.LAST_MESSAGE
+            else -> ConversationOrder.CREATED_AT
         }
     }
 
