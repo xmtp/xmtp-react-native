@@ -213,7 +213,7 @@ export async function createRandomV3(
   )
 }
 
-export async function createOrBuild(
+export async function createV3(
   address: string,
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
@@ -242,11 +242,40 @@ export async function createOrBuild(
     chainId,
     blockNumber,
   }
-  return await XMTPModule.createOrBuild(
+  return await XMTPModule.createV3(
     address,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
     hasPreAuthenticateToInboxCallback,
+    encryptionKey,
+    JSON.stringify(authParams)
+  )
+}
+
+export async function buildV3(
+  address: string,
+  chainId?: number | undefined,
+  environment: 'local' | 'dev' | 'production',
+  appVersion?: string | undefined,
+  enableV3?: boolean | undefined,
+  dbEncryptionKey?: Uint8Array | undefined,
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined
+) {
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
+    environment,
+    appVersion,
+    enableV3,
+    dbDirectory,
+    historySyncUrl,
+    chainId,
+  }
+  return await XMTPModule.buildV3(
+    address,
     encryptionKey,
     JSON.stringify(authParams)
   )
