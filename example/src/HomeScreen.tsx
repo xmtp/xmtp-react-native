@@ -24,12 +24,12 @@ import { useConversationList, useGroupsList, useMessages } from './hooks'
 
 export default function HomeScreen() {
   const { client } = useXmtp()
-  const {
-    data: conversations,
-    refetch,
-    isFetching,
-    isRefetching,
-  } = useConversationList()
+  // const {
+  //   data: conversations,
+  //   refetch,
+  //   isFetching,
+  //   isRefetching,
+  // } = useConversationList()
   const {
     data: groups,
     refetch: refetchGroups,
@@ -38,38 +38,6 @@ export default function HomeScreen() {
   } = useGroupsList()
   return (
     <>
-      <View>
-        <Text style={{ fontSize: 24, fontWeight: 'bold', textAlign: 'center' }}>
-          DMs
-        </Text>
-        <FlatList
-          refreshing={isFetching || isRefetching}
-          onRefresh={refetch}
-          data={conversations || []}
-          keyExtractor={(item) => item.topic}
-          renderItem={({ item: conversation }) => (
-            <ConversationItem conversation={conversation} client={client} />
-          )}
-          ListHeaderComponent={
-            <View
-              style={{
-                paddingTop: 8,
-                paddingBottom: 8,
-                paddingLeft: 16,
-                paddingRight: 16,
-                backgroundColor: '#eee',
-                borderBottomColor: 'gray',
-                borderBottomWidth: StyleSheet.hairlineWidth,
-              }}
-            >
-              <Text style={{ fontSize: 14 }}>Connected as</Text>
-              <Text selectable style={{ fontSize: 14, fontWeight: 'bold' }}>
-                {client?.address}
-              </Text>
-            </View>
-          }
-        />
-      </View>
       <View>
         <Text style={{ fontSize: 24, fontWeight: 'bold', textAlign: 'center' }}>
           Groups
