@@ -547,7 +547,7 @@ public class XMTPModule: Module {
 				var groupsWithMessages: [(Group, Date)] = []
 				for group in groups {
 					do {
-						let firstMessage = try await group.decryptedMessages(limit: 1).first
+						let firstMessage = try await group.decryptedMessages().first
 						let sentAt = firstMessage?.sentAt ?? Date.distantPast
 						groupsWithMessages.append((group, sentAt))
 					} catch {

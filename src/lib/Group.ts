@@ -28,6 +28,7 @@ export interface GroupParams {
   imageUrlSquare: string
   description: string
   consentState: ConsentState
+  lastMessage?: DecodedMessage
 }
 
 export class Group<
@@ -47,12 +48,14 @@ export class Group<
   imageUrlSquare: string
   description: string
   state: ConsentState
+  lastMessage?: DecodedMessage<ContentTypes>
   // pinnedFrameUrl: string
 
   constructor(
     client: XMTP.Client<ContentTypes>,
     params: GroupParams,
-    members: Member[]
+    members: Member[],
+    lastMessage?: DecodedMessage<ContentTypes>
   ) {
     this.client = client
     this.id = params.id
@@ -66,6 +69,7 @@ export class Group<
     this.imageUrlSquare = params.imageUrlSquare
     this.description = params.description
     this.state = params.consentState
+    this.lastMessage = lastMessage
     // this.pinnedFrameUrl = params.pinnedFrameUrl
   }
 

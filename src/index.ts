@@ -330,7 +330,10 @@ export async function listGroups<
     const members = group['members']?.map((mem: string) => {
       return Member.from(mem)
     })
-    return new Group(client, group, members)
+    const lastMessage = group['lastMessage']
+      ? DecodedMessage.from(group['lastMessage'], client)
+      : undefined
+    return new Group(client, group, members, lastMessage)
   })
 }
 
