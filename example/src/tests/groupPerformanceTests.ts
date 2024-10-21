@@ -57,6 +57,83 @@ async function beforeAll(
   )
 }
 
+test('testing large group listings with ordering', async () => {
+  await beforeAll(1000, 10, 10)
+
+  let start = Date.now()
+  let groups = await alixClient.conversations.listGroups()
+  let end = Date.now()
+  console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
+
+  await groups[5].send({ text: `Alix message` })
+  await groups[50].send({ text: `Alix message` })
+  await groups[150].send({ text: `Alix message` })
+  await groups[500].send({ text: `Alix message` })
+  await groups[700].send({ text: `Alix message` })
+  await groups[900].send({ text: `Alix message` })
+
+  let start2 = Date.now()
+  let groups2 = await alixClient.conversations.listGroups(
+    {
+      members: false,
+      consentState: false,
+      description: false,
+      creatorInboxId: false,
+      addedByInboxId: false,
+      isActive: false,
+      lastMessage: true,
+    },
+    'lastMessage'
+  )
+  let end2 = Date.now()
+  console.log(`Alix loaded ${groups2.length} groups in ${end2 - start2}ms`)
+  assert(
+    end2 - start2 < end - start,
+    'listing 1000 groups without certain fields should take less time'
+  )
+
+  start = Date.now()
+  await alixClient.conversations.syncGroups()
+  end = Date.now()
+  console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'syncing 1000 cached groups should take less than a .1 second'
+  )
+
+  start = Date.now()
+  await boClient.conversations.syncGroups()
+  end = Date.now()
+  console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
+
+  start = Date.now()
+  groups = await boClient.conversations.listGroups()
+  end = Date.now()
+  console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
+
+  start2 = Date.now()
+  groups2 = await boClient.conversations.listGroups(
+    {
+      members: false,
+      consentState: false,
+      description: false,
+      creatorInboxId: false,
+      addedByInboxId: false,
+      isActive: false,
+      lastMessage: true,
+    },
+    'lastMessage'
+  )
+  end2 = Date.now()
+  console.log(`Bo loaded ${groups2.length} groups in ${end2 - start2}ms`)
+  assert(
+    end2 - start2 < end - start,
+    'listing 1000 groups without certain fields should take less time'
+  )
+
+  return true
+})
+
 test('testing large group listings', async () => {
   await beforeAll(1000)
 

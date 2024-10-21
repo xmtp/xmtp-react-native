@@ -9,7 +9,7 @@ class AuthParamsWrapper(
     val dbDirectory: String?,
     val historySyncUrl: String?,
     val isSmartContractWallet: Boolean = false,
-    val chainId: Long = 1,
+    val chainId: Long?,
     val blockNumber: Long?,
     ) {
     companion object {
@@ -22,7 +22,7 @@ class AuthParamsWrapper(
                 if (jsonOptions.has("dbDirectory")) jsonOptions.get("dbDirectory").asString else null,
                 if (jsonOptions.has("historySyncUrl")) jsonOptions.get("historySyncUrl").asString else null,
                 if (jsonOptions.has("isSmartContractWallet")) jsonOptions.get("isSmartContractWallet").asBoolean else false,
-                if (jsonOptions.has("chainId")) jsonOptions.get("chainId").asLong else 1,
+                if (jsonOptions.has("chainId")) jsonOptions.get("chainId").asLong else null,
                 if (jsonOptions.has("blockNumber")) jsonOptions.get("blockNumber").asLong else null,
 
                 )

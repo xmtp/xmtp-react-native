@@ -98,19 +98,19 @@ repositories {
 dependencies {
   implementation project(':expo-modules-core')
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${getKotlinVersion()}"
-//  implementation "org.xmtp:android:0.15.12"
+  implementation "org.xmtp:android:0.16.0"
   implementation 'com.google.code.gson:gson:2.10.1'
   implementation 'com.facebook.react:react-native:0.71.3'
   implementation "com.daveanthonythomas.moshipack:moshipack:1.0.1"
   // xmtp-android local testing setup below (comment org.xmtp:android above)
-   implementation files('<PATH_TO_LIBRARY>/xmtp-android/library/build/outputs/aar/library-debug.aar')
-   implementation 'com.google.crypto.tink:tink-android:1.8.0'
-   implementation 'io.grpc:grpc-kotlin-stub:1.4.1'
-     implementation 'io.grpc:grpc-okhttp:1.62.2'
-     implementation 'io.grpc:grpc-protobuf-lite:1.62.2'
-     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0'
-     implementation 'org.web3j:crypto:5.0.0'
-     implementation "net.java.dev.jna:jna:5.14.0@aar"
-     api 'com.google.protobuf:protobuf-kotlin-lite:3.22.3'
-     api 'org.xmtp:proto-kotlin:3.62.1'
+//   implementation files('<PATH_TO_LIBRARY>/xmtp-android/library/build/outputs/aar/library-debug.aar')
+//   implementation 'com.google.crypto.tink:tink-android:1.8.0'
+//   implementation 'io.grpc:grpc-kotlin-stub:1.4.1'
+//     implementation 'io.grpc:grpc-okhttp:1.62.2'
+//     implementation 'io.grpc:grpc-protobuf-lite:1.62.2'
+//     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0'
+//     implementation 'org.web3j:crypto:5.0.0'
+//     implementation "net.java.dev.jna:jna:5.14.0@aar"
+//     api 'com.google.protobuf:protobuf-kotlin-lite:3.22.3'
+//     api 'org.xmtp:proto-kotlin:3.62.1'
 }

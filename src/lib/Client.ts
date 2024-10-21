@@ -304,7 +304,7 @@ export class Client<
    *
    * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
    */
-  static async createOrBuild<
+  static async createV3<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
     wallet: Signer | WalletClient | null,
@@ -334,7 +334,7 @@ export class Client<
               if (signer.isSmartContractWallet()) {
                 await XMTPModule.receiveSCWSignature(
                   request.id,
-                  Buffer.from(signatureString).toString('base64')
+                  Buffer.from(signatureString)
                 )
               } else {
                 const eSig = splitSignature(signatureString)
@@ -386,7 +386,7 @@ export class Client<
             )
           }
         )
-        await XMTPModule.createOrBuild(
+        await XMTPModule.createV3(
           await signer.getAddress(),
           options.env,
           options.appVersion,
@@ -410,6 +410,50 @@ export class Client<
         console.error('ERROR in create: ', error)
       })
     })
+  }
+
+    /**
+   * Builds a V3 ONLY instance of the Client class using the provided address and chainId if SCW.
+   *
+   * @param {string} address - The address of the account to build
+   * @param {Optional<chainId>} chainId - The chainId of the smart contract wallet. Otherwise should be left undefined.
+   * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
+   * @returns {Promise<Client>} A Promise that resolves to a new V3 ONLY Client instance.
+   *
+   * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
+   */
+  static async buildV3<
+    ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
+  >(
+    address: string,
+    chainId: number | undefined,
+    options: ClientOptions & { codecs?: ContentCodecs }
+  ): Promise<Client<ContentCodecs>> {
+    options.enableV3 = true
+    if (
+      options.dbEncryptionKey === undefined ||
+      options.dbEncryptionKey.length !== 32
+    ) {
+      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
+    }
+    const client = await XMTPModule.buildV3(
+      address,
+      options.env,
+      chainId,
+      options.appVersion,
+      Boolean(options.enableV3),
+      options.dbEncryptionKey,
+      options.dbDirectory,
+      options.historySyncUrl
+    )
+
+    return new Client(
+      client['address'],
+      client['inboxId'],
+      client['installationId'],
+      client['dbPath'],
+      options.codecs || []
+    )
   }
 
   /**

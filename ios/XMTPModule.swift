@@ -315,13 +315,13 @@ public class XMTPModule: Module {
 				dbDirectory: authOptions.dbDirectory,
 				historySyncUrl: authOptions.historySyncUrl
 			)
-			let client = try await Client.createOrBuild(account: privateKey, options: options)
+			let client = try await Client.createV3(account: privateKey, options: options)
 
 			await clientsManager.updateClient(key: client.inboxID, client: client)
 			return try ClientWrapper.encodeToObj(client)
 		}
 		
-		AsyncFunction("createOrBuild") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
+		AsyncFunction("createV3") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let signer = ReactNativeSigner(module: self, address: address, isSmartContractWallet: authOptions.isSmartContractWallet, chainId: authOptions.chainId, blockNumber: authOptions.blockNumber)
 			self.signer = signer
@@ -350,10 +350,30 @@ public class XMTPModule: Module {
 				dbDirectory: authOptions.dbDirectory,
 				historySyncUrl: authOptions.historySyncUrl
 			)
-			let client = try await XMTP.Client.createOrBuild(account: signer, options: options)
+			let client = try await XMTP.Client.createV3(account: signer, options: options)
 			await self.clientsManager.updateClient(key: client.inboxID, client: client)
 			self.signer = nil
 			self.sendEvent("authedV3", try ClientWrapper.encodeToObj(client))
+		}
+		
+		AsyncFunction("buildV3") { (address: String, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+			
+			let options = self.createClientConfig(
+				env: authOptions.environment,
+				appVersion: authOptions.appVersion,
+				preEnableIdentityCallback: preEnableIdentityCallback,
+				preCreateIdentityCallback: preCreateIdentityCallback,
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+				enableV3: authOptions.enableV3,
+				dbEncryptionKey: encryptionKeyData,
+				dbDirectory: authOptions.dbDirectory,
+				historySyncUrl: authOptions.historySyncUrl
+			)
+			let client = try await XMTP.Client.buildV3(address: address, chainId: authOptions.chainId, options: options)
+			await clientsManager.updateClient(key: client.inboxID, client: client)
+			return try ClientWrapper.encodeToObj(client)
 		}
         
         // Remove a client from memory for a given inboxId
@@ -536,19 +556,45 @@ public class XMTPModule: Module {
 			return results
 		}
 		
-		AsyncFunction("listGroups") { (inboxId: String) -> [String] in
+		AsyncFunction("listGroups") { (inboxId: String, groupParams: String?, sortOrder: String?, limit: Int?) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			let groupList = try await client.conversations.groups()
-			
+
+			let params = GroupParamsWrapper.groupParamsFromJson(groupParams ?? "")
+			let order = getConversationSortOrder(order: sortOrder ?? "")
+
+			var groupList: [Group] = []
+
+			if order == .lastMessage {
+				let groups = try await client.conversations.groups()
+				var groupsWithMessages: [(Group, Date)] = []
+				for group in groups {
+					do {
+						let firstMessage = try await group.decryptedMessages(limit: 1).first
+						let sentAt = firstMessage?.sentAt ?? Date.distantPast
+						groupsWithMessages.append((group, sentAt))
+					} catch {
+						print("Failed to fetch messages for group: \(group.id)")
+					}
+				}
+				let sortedGroups = groupsWithMessages.sorted { $0.1 > $1.1 }.map { $0.0 }
+				
+				if let limit = limit, limit > 0 {
+					groupList = Array(sortedGroups.prefix(limit))
+				} else {
+					groupList = sortedGroups
+				}
+			} else {
+				groupList = try await client.conversations.groups(limit: limit)
+			}
+
 			var results: [String] = []
 			for group in groupList {
 				await self.groupsManager.set(group.cacheKey(inboxId), group)
-				let encodedGroup = try await GroupWrapper.encode(group, client: client)
+				let encodedGroup = try await GroupWrapper.encode(group, client: client, groupParams: params)
 				results.append(encodedGroup)
 			}
-			
 			return results
 		}
 		
@@ -1665,6 +1711,15 @@ public class XMTPModule: Module {
 			return .denied
 		default:
 			return .unknown
+		}
+	}
+	
+	private func getConversationSortOrder(order: String) -> ConversationOrder {
+		switch order {
+		case "lastMessage":
+			return .lastMessage
+		default:
+			return .createdAt
 		}
 	}
 
