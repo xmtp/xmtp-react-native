@@ -635,7 +635,7 @@ class XMTPModule : Module() {
                 val sortedGroupList = if (order == ConversationOrder.LAST_MESSAGE) {
                     client.conversations.listGroups()
                         .sortedByDescending { group ->
-                            group.decryptedMessages().firstOrNull()?.sentAt
+                            group.decryptedMessages(limit = 1).firstOrNull()?.sentAt
                         }
                         .let { groups ->
                             if (limit != null && limit > 0) groups.take(limit) else groups

@@ -48,7 +48,7 @@ struct GroupWrapper {
 			result["consentState"] = ConsentWrapper.consentStateToString(state: try group.consentState())
 		}
 		if groupParams.lastMessage {
-			if let lastMessage = try await group.decryptedMessages().first {
+			if let lastMessage = try await group.decryptedMessages(limit: 1).first {
 				result["lastMessage"] = try DecodedMessageWrapper.encode(lastMessage, client: client)
 			}
 		}
