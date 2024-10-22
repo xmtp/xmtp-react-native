@@ -52,7 +52,7 @@ struct AuthParamsWrapper {
 			dbDirectory: dbDirectory,
 			historySyncUrl: historySyncUrl,
 			isSmartContractWallet: isSmartContractWallet,
-			chainId: blockNumber != nil ? UInt64(chainId!) : nil,
+			chainId: chainId != nil ? UInt64(chainId!) : nil,
 			blockNumber: blockNumber != nil ? UInt64(blockNumber!) : nil
 		)
 	}

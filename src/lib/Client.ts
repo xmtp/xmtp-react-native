@@ -334,7 +334,7 @@ export class Client<
               if (signer.isSmartContractWallet()) {
                 await XMTPModule.receiveSCWSignature(
                   request.id,
-                  Buffer.from(signatureString)
+                  signatureString
                 )
               } else {
                 const eSig = splitSignature(signatureString)
@@ -438,8 +438,8 @@ export class Client<
     }
     const client = await XMTPModule.buildV3(
       address,
-      chainId,
       options.env,
+      chainId,
       options.appVersion,
       Boolean(options.enableV3),
       options.dbEncryptionKey,
