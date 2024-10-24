@@ -15,10 +15,10 @@ struct AuthParamsWrapper {
 	let dbDirectory: String?
 	let historySyncUrl: String?
 	let walletType: WalletType
-	let chainId: UInt64?
-	let blockNumber: UInt64?
+	let chainId: Int64?
+	let blockNumber: Int64?
 	
-	init(environment: String, appVersion: String?, enableV3: Bool, dbDirectory: String?, historySyncUrl: String?, walletType: WalletType, chainId: UInt64?, blockNumber: UInt64?) {
+	init(environment: String, appVersion: String?, enableV3: Bool, dbDirectory: String?, historySyncUrl: String?, walletType: WalletType, chainId: Int64?, blockNumber: Int64?) {
 		self.environment = environment
 		self.appVersion = appVersion
 		self.enableV3 = enableV3
