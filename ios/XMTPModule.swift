@@ -371,7 +371,7 @@ public class XMTPModule: Module {
 				dbDirectory: authOptions.dbDirectory,
 				historySyncUrl: authOptions.historySyncUrl
 			)
-			let client = try await XMTP.Client.buildV3(address: address, chainId: authOptions.chainId, options: options)
+			let client = try await XMTP.Client.buildV3(address: address, options: options)
 			await clientsManager.updateClient(key: client.inboxID, client: client)
 			return try ClientWrapper.encodeToObj(client)
 		}
