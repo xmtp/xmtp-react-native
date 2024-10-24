@@ -1,6 +1,5 @@
 import { FontAwesome } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import 'react-native-url-polyfill/auto'
 import { Buffer } from 'buffer'
 import * as DocumentPicker from 'expo-document-picker'
 import type { DocumentPickerAsset } from 'expo-document-picker'
