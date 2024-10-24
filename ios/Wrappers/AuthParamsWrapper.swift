@@ -41,13 +41,16 @@ struct AuthParamsWrapper {
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
 		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
 		let walletTypeString = jsonOptions["walletType"] as? String ?? "EOA"
-		let chainId = jsonOptions["chainId"] as? Int
-		let blockNumber = jsonOptions["blockNumber"] as? Int
+		let chainId = jsonOptions["chainId"] as? Int64
+		let blockNumber = jsonOptions["blockNumber"] as? Int64
 		
-		let walletType = switch walletTypeString {
-		case "SCW" -> return  WalletType.SCW
-		default: return WalletType.EOA
-		}
+		let walletType = { switch walletTypeString {
+			case "SCW":
+				return  WalletType.SCW
+			default:
+				return WalletType.EOA
+			}
+		}()
 
 
 		return AuthParamsWrapper(
@@ -57,8 +60,8 @@ struct AuthParamsWrapper {
 			dbDirectory: dbDirectory,
 			historySyncUrl: historySyncUrl,
 			walletType: walletType,
-			chainId: chainId != nil ? UInt64(chainId!) : nil,
-			blockNumber: blockNumber != nil ? UInt64(blockNumber!) : nil
+			chainId: chainId,
+			blockNumber: blockNumber
 		)
 	}
 }

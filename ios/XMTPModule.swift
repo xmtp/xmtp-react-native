@@ -323,7 +323,7 @@ public class XMTPModule: Module {
 		
 		AsyncFunction("createV3") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
-			let signer = ReactNativeSigner(module: self, address: address, isSmartContractWallet: authOptions.isSmartContractWallet, chainId: authOptions.chainId, blockNumber: authOptions.blockNumber)
+			let signer = ReactNativeSigner(module: self, address: address, walletType: authOptions.walletType, chainId: authOptions.chainId, blockNumber: authOptions.blockNumber)
 			self.signer = signer
 			if(hasCreateIdentityCallback ?? false) {
 				self.preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
