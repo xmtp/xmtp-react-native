@@ -437,7 +437,6 @@ export class Client<
     const client = await XMTPModule.buildV3(
       address,
       options.env,
-      chainId,
       options.appVersion,
       Boolean(options.enableV3),
       options.dbEncryptionKey,

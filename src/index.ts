@@ -257,7 +257,6 @@ export async function createV3(
 export async function buildV3(
   address: string,
   environment: 'local' | 'dev' | 'production',
-  chainId?: number | undefined,
   appVersion?: string | undefined,
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
