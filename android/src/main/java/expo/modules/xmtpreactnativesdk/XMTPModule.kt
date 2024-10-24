@@ -38,7 +38,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import org.web3j.utils.Numeric
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.ConsentState
@@ -48,6 +47,7 @@ import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreparedMessage
 import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
+import org.xmtp.android.library.WalletType
 import org.xmtp.android.library.XMTPEnvironment
 import org.xmtp.android.library.XMTPException
 import org.xmtp.android.library.codecs.Attachment
@@ -71,7 +71,6 @@ import org.xmtp.proto.message.api.v1.MessageApiOuterClass
 import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
 import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.InboxState
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
 import java.io.BufferedReader
 import java.io.File
@@ -86,7 +85,7 @@ import kotlin.coroutines.resumeWithException
 class ReactNativeSigner(
     var module: XMTPModule,
     override var address: String,
-    override var isSmartContractWallet: Boolean = false,
+    override var type: WalletType = WalletType.EOA,
     override var chainId: Long? = null,
     override var blockNumber: Long? = null,
 ) : SigningKey {
@@ -411,7 +410,7 @@ class XMTPModule : Module() {
                 val reactSigner = ReactNativeSigner(
                     module = this@XMTPModule,
                     address = address,
-                    isSmartContractWallet = authOptions.isSmartContractWallet,
+                    type = authOptions.walletType,
                     chainId = authOptions.chainId,
                     blockNumber = authOptions.blockNumber
                 )
@@ -439,7 +438,7 @@ class XMTPModule : Module() {
                     dbEncryptionKey,
                     authParams,
                 )
-                val client = Client().buildV3(address = address, chainId = authOptions.chainId, options = options)
+                val client = Client().buildV3(address = address, options = options)
                 ContentJson.Companion
                 clients[client.inboxId] = client
                 ClientWrapper.encodeToObj(client)

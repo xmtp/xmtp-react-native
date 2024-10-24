@@ -331,7 +331,7 @@ export class Client<
             const request: { id: string; message: string } = message
             try {
               const signatureString = await signer.signMessage(request.message)
-              if (signer.isSmartContractWallet()) {
+              if (signer.walletType() === 'SCW') {
                 await XMTPModule.receiveSCWSignature(
                   request.id,
                   Buffer.from(signatureString)
@@ -397,7 +397,7 @@ export class Client<
           options.dbEncryptionKey,
           options.dbDirectory,
           options.historySyncUrl,
-          signer.isSmartContractWallet(),
+          signer.walletType(),
           signer.getChainId(),
           signer.getBlockNumber()
         )
@@ -416,7 +416,6 @@ export class Client<
    * Builds a V3 ONLY instance of the Client class using the provided address and chainId if SCW.
    *
    * @param {string} address - The address of the account to build
-   * @param {Optional<chainId>} chainId - The chainId of the smart contract wallet. Otherwise should be left undefined.
    * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
    * @returns {Promise<Client>} A Promise that resolves to a new V3 ONLY Client instance.
    *
@@ -426,7 +425,6 @@ export class Client<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
     address: string,
-    chainId: number | undefined,
     options: ClientOptions & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
     options.enableV3 = true
@@ -438,7 +436,6 @@ export class Client<
     }
     const client = await XMTPModule.buildV3(
       address,
-      chainId,
       options.env,
       options.appVersion,
       Boolean(options.enableV3),
