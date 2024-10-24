@@ -37,7 +37,7 @@ class GroupWrapper {
                     put("consentState", consentStateToString(group.consentState()))
                 }
                 if (groupParams.lastMessage) {
-                    val lastMessage = group.decryptedMessages(limit = 1).firstOrNull()
+                    val lastMessage = group.decryptedMessages().firstOrNull()
                     if (lastMessage != null) {
                         put("lastMessage", DecodedMessageWrapper.encode(lastMessage))
                     }

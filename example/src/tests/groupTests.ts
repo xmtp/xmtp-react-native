@@ -1102,6 +1102,10 @@ test('can list groups with params', async () => {
     `last message should be first message ${messages[0].content()}`
   )
   assert(
+    boGroupsOrderLastMessage[0].lastMessage?.content() === 'first message',
+    `last message should be last message ${boGroupsOrderLastMessage[0].lastMessage?.content()}`
+  )
+  assert(
     boGroupsLimit.length === 1,
     `List length should be 1 but was ${boGroupsLimit.length}`
   )
