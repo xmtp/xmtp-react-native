@@ -14,7 +14,7 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 
 	var module: XMTPModule
 	var address: String
-	var walletType: WalletType
+	var type: WalletType
 	var chainId: Int64?
 	var blockNumber: Int64?
 	var continuations: [String: CheckedContinuation<XMTP.Signature, Swift.Error>] = [:]
@@ -23,7 +23,7 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 	init(module: XMTPModule, address: String, walletType: WalletType = WalletType.EOA, chainId: Int64? = nil, blockNumber: Int64? = nil) {
 		self.module = module
 		self.address = address
-		self.walletType = walletType
+		self.type = walletType
 		self.chainId = chainId
 		self.blockNumber = blockNumber
 	}
