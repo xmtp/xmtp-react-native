@@ -304,7 +304,7 @@ export class Client<
    *
    * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
    */
-  static async createOrBuild<
+  static async createV3<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
     wallet: Signer | WalletClient | null,
@@ -331,17 +331,24 @@ export class Client<
             const request: { id: string; message: string } = message
             try {
               const signatureString = await signer.signMessage(request.message)
-              const eSig = splitSignature(signatureString)
-              const r = hexToBytes(eSig.r)
-              const s = hexToBytes(eSig.s)
-              const sigBytes = new Uint8Array(65)
-              sigBytes.set(r)
-              sigBytes.set(s, r.length)
-              sigBytes[64] = eSig.recoveryParam
+              if (signer.walletType() === 'SCW') {
+                await XMTPModule.receiveSCWSignature(
+                  request.id,
+                  signatureString
+                )
+              } else {
+                const eSig = splitSignature(signatureString)
+                const r = hexToBytes(eSig.r)
+                const s = hexToBytes(eSig.s)
+                const sigBytes = new Uint8Array(65)
+                sigBytes.set(r)
+                sigBytes.set(s, r.length)
+                sigBytes[64] = eSig.recoveryParam
 
-              const signature = Buffer.from(sigBytes).toString('base64')
+                const signature = Buffer.from(sigBytes).toString('base64')
 
-              await XMTPModule.receiveSignature(request.id, signature)
+                await XMTPModule.receiveSignature(request.id, signature)
+              }
             } catch (e) {
               const errorMessage = 'ERROR in create. User rejected signature'
               console.info(errorMessage, e)
@@ -379,7 +386,7 @@ export class Client<
             )
           }
         )
-        await XMTPModule.createOrBuild(
+        await XMTPModule.createV3(
           await signer.getAddress(),
           options.env,
           options.appVersion,
@@ -389,7 +396,10 @@ export class Client<
           Boolean(options.enableV3),
           options.dbEncryptionKey,
           options.dbDirectory,
-          options.historySyncUrl
+          options.historySyncUrl,
+          signer.walletType(),
+          signer.getChainId(),
+          signer.getBlockNumber()
         )
       })().catch((error) => {
         this.removeAllSubscriptions(
@@ -400,6 +410,47 @@ export class Client<
         console.error('ERROR in create: ', error)
       })
     })
+  }
+
+    /**
+   * Builds a V3 ONLY instance of the Client class using the provided address and chainId if SCW.
+   *
+   * @param {string} address - The address of the account to build
+   * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
+   * @returns {Promise<Client>} A Promise that resolves to a new V3 ONLY Client instance.
+   *
+   * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
+   */
+  static async buildV3<
+    ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
+  >(
+    address: string,
+    options: ClientOptions & { codecs?: ContentCodecs }
+  ): Promise<Client<ContentCodecs>> {
+    options.enableV3 = true
+    if (
+      options.dbEncryptionKey === undefined ||
+      options.dbEncryptionKey.length !== 32
+    ) {
+      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
+    }
+    const client = await XMTPModule.buildV3(
+      address,
+      options.env,
+      options.appVersion,
+      Boolean(options.enableV3),
+      options.dbEncryptionKey,
+      options.dbDirectory,
+      options.historySyncUrl
+    )
+
+    return new Client(
+      client['address'],
+      client['inboxId'],
+      client['installationId'],
+      client['dbPath'],
+      options.codecs || []
+    )
   }
 
   /**

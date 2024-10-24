@@ -5,6 +5,7 @@ import { Client } from '.'
 import { ConversationContext } from './XMTP.types'
 import XMTPModule from './XMTPModule'
 import { InboxId } from './lib/Client'
+import { WalletType } from './lib/Signer'
 import { ConsentListEntry, ConsentState } from './lib/ConsentListEntry'
 import {
   ContentCodec,
@@ -121,6 +122,10 @@ export async function receiveSignature(requestID: string, signature: string) {
   return await XMTPModule.receiveSignature(requestID, signature)
 }
 
+export async function receiveSCWSignature(requestID: string, signature: string) {
+  return await XMTPModule.receiveSCWSignature(requestID, signature)
+}
+
 export async function createRandom(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
@@ -210,13 +215,49 @@ export async function createRandomV3(
   )
 }
 
-export async function createOrBuild(
+export async function createV3(
   address: string,
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
   hasPreAuthenticateToInboxCallback?: boolean | undefined,
+  enableV3?: boolean | undefined,
+  dbEncryptionKey?: Uint8Array | undefined,
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined,
+  walletType?: WalletType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+) {
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
+    environment,
+    appVersion,
+    enableV3,
+    dbDirectory,
+    historySyncUrl,
+    walletType,
+    chainId,
+    blockNumber,
+  }
+  return await XMTPModule.createV3(
+    address,
+    hasCreateIdentityCallback,
+    hasEnableIdentityCallback,
+    hasPreAuthenticateToInboxCallback,
+    encryptionKey,
+    JSON.stringify(authParams)
+  )
+}
+
+export async function buildV3(
+  address: string,
+  environment: 'local' | 'dev' | 'production',
+  appVersion?: string | undefined,
   enableV3?: boolean | undefined,
   dbEncryptionKey?: Uint8Array | undefined,
   dbDirectory?: string | undefined,
@@ -233,11 +274,8 @@ export async function createOrBuild(
     dbDirectory,
     historySyncUrl,
   }
-  return await XMTPModule.createOrBuild(
+  return await XMTPModule.buildV3(
     address,
-    hasCreateIdentityCallback,
-    hasEnableIdentityCallback,
-    hasPreAuthenticateToInboxCallback,
     encryptionKey,
     JSON.stringify(authParams)
   )
@@ -1288,6 +1326,9 @@ interface AuthParams {
   enableV3?: boolean
   dbDirectory?: string
   historySyncUrl?: string
+  walletType?: string
+  chainId?: number
+  blockNumber?: number
 }
 
 interface CreateGroupParams {

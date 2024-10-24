@@ -39,8 +39,20 @@ test('can make a V3 only client', async () => {
     client.inboxId === inboxId,
     `inboxIds should match but were ${client.inboxId} and ${inboxId}`
   )
-  const canMessageV3 = await client.canGroupMessage([client.address])
 
+  const client2 = await Client.buildV3(client.address, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  assert(
+    client.inboxId === client2.inboxId,
+    `inboxIds should match but were ${client.inboxId} and ${client2.inboxId}`
+  )
+
+  const canMessageV3 = await client.canGroupMessage([client.address])
   assert(
     canMessageV3[client.address.toLowerCase()] === true,
     `canMessageV3 should be true`
@@ -51,7 +63,6 @@ test('can make a V3 only client', async () => {
   } catch (error) {
     return true
   }
-
   throw new Error('should throw error when hitting V2 api')
 })
 
