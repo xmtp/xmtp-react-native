@@ -8,13 +8,9 @@
 import Foundation
 import XMTP
 
-enum ConversationOrder {
-	case lastMessage, createdAt
-}
-
 // Wrapper around XMTP.Group to allow passing these objects back into react native.
 struct GroupWrapper {
-	static func encodeToObj(_ group: XMTP.Group, client: XMTP.Client, groupParams: GroupParamsWrapper = GroupParamsWrapper()) async throws -> [String: Any] {
+	static func encodeToObj(_ group: XMTP.Group, client: XMTP.Client, conversationParams: ConversationParamsWrapper = ConversationParamsWrapper()) async throws -> [String: Any] {
 		var result: [String: Any] = [
 			"clientAddress": client.address,
 			"id": group.id,
@@ -23,31 +19,31 @@ struct GroupWrapper {
 			"topic": group.topic
 		]
 		
-		if groupParams.members {
+		if conversationParams.members {
 			result["members"] = try await group.members.compactMap { member in return try MemberWrapper.encode(member) }
 		}
-		if groupParams.creatorInboxId {
+		if conversationParams.creatorInboxId {
 			result["creatorInboxId"] = try group.creatorInboxId()
 		}
-		if groupParams.isActive {
+		if conversationParams.isActive {
 			result["isActive"] = try group.isActive()
 		}
-		if groupParams.addedByInboxId {
+		if conversationParams.addedByInboxId {
 			result["addedByInboxId"] = try group.addedByInboxId()
 		}
-		if groupParams.name {
+		if conversationParams.name {
 			result["name"] = try group.groupName()
 		}
-		if groupParams.imageUrlSquare {
+		if conversationParams.imageUrlSquare {
 			result["imageUrlSquare"] = try group.groupImageUrlSquare()
 		}
-		if groupParams.description {
+		if conversationParams.description {
 			result["description"] = try group.groupDescription()
 		}
-		if groupParams.consentState {
+		if conversationParams.consentState {
 			result["consentState"] = ConsentWrapper.consentStateToString(state: try group.consentState())
 		}
-		if groupParams.lastMessage {
+		if conversationParams.lastMessage {
 			if let lastMessage = try await group.decryptedMessages(limit: 1).first {
 				result["lastMessage"] = try DecodedMessageWrapper.encode(lastMessage, client: client)
 			}
@@ -56,8 +52,8 @@ struct GroupWrapper {
 		return result
 	}
 
-	static func encode(_ group: XMTP.Group, client: XMTP.Client, groupParams: GroupParamsWrapper = GroupParamsWrapper()) async throws -> String {
-		let obj = try await encodeToObj(group, client: client, groupParams: groupParams)
+	static func encode(_ group: XMTP.Group, client: XMTP.Client, conversationParams: ConversationParamsWrapper = ConversationParamsWrapper()) async throws -> String {
+		let obj = try await encodeToObj(group, client: client, conversationParams: conversationParams)
 		let data = try JSONSerialization.data(withJSONObject: obj)
 		guard let result = String(data: data, encoding: .utf8) else {
 			throw WrapperError.encodeError("could not encode group")
@@ -66,7 +62,7 @@ struct GroupWrapper {
 	}
 }
 
-struct GroupParamsWrapper {
+struct ConversationParamsWrapper {
 	let members: Bool
 	let creatorInboxId: Bool
 	let isActive: Bool
@@ -99,14 +95,14 @@ struct GroupParamsWrapper {
 		self.lastMessage = lastMessage
 	}
 	
-	static func groupParamsFromJson(_ groupParams: String) -> GroupParamsWrapper {
-		guard let jsonData = groupParams.data(using: .utf8),
+	static func conversationParamsFromJson(_ conversationParams: String) -> ConversationParamsWrapper {
+		guard let jsonData = conversationParams.data(using: .utf8),
 			  let jsonObject = try? JSONSerialization.jsonObject(with: jsonData, options: []),
 			  let jsonDict = jsonObject as? [String: Any] else {
-			return GroupParamsWrapper()
+			return ConversationParamsWrapper()
 		}
 		
-		return GroupParamsWrapper(
+		return ConversationParamsWrapper(
 			members: jsonDict["members"] as? Bool ?? true,
 			creatorInboxId: jsonDict["creatorInboxId"] as? Bool ?? true,
 			isActive: jsonDict["isActive"] as? Bool ?? true,

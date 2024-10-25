@@ -65,9 +65,9 @@ class ConversationParamsWrapper(
     val lastMessage: Boolean = false,
 ) {
     companion object {
-        fun groupParamsFromJson(groupParams: String): ConversationParamsWrapper {
-            if (groupParams.isEmpty()) return ConversationParamsWrapper()
-            val jsonOptions = JsonParser.parseString(groupParams).asJsonObject
+        fun conversationParamsFromJson(conversationParams: String): ConversationParamsWrapper {
+            if (conversationParams.isEmpty()) return ConversationParamsWrapper()
+            val jsonOptions = JsonParser.parseString(conversationParams).asJsonObject
             return ConversationParamsWrapper(
                 if (jsonOptions.has("members")) jsonOptions.get("members").asBoolean else true,
                 if (jsonOptions.has("creatorInboxId")) jsonOptions.get("creatorInboxId").asBoolean else true,

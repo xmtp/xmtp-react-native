@@ -43,7 +43,6 @@ import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.Conversations.ConversationOrder
-import org.xmtp.android.library.Dm
 import org.xmtp.android.library.Group
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreparedMessage
@@ -263,7 +262,7 @@ class XMTPModule : Module() {
             "groupMessage",
             "allGroupMessage",
             "group",
-            )
+        )
 
         Function("address") { inboxId: String ->
             logV("address")
@@ -697,7 +696,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val params = ConversationParamsWrapper.groupParamsFromJson(groupParams ?: "")
+                val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
                 val sortedGroupList = if (order == ConversationOrder.LAST_MESSAGE) {
                     client.conversations.listGroups()
@@ -717,11 +716,12 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listV3Conversations") Coroutine { inboxId: String, groupParams: String?, sortOrder: String?, limit: Int? ->
+        AsyncFunction("listV3Conversations") Coroutine { inboxId: String, conversationParams: String?, sortOrder: String?, limit: Int? ->
             withContext(Dispatchers.IO) {
                 logV("listV3Conversations")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val params = ConversationParamsWrapper.groupParamsFromJson(groupParams ?: "")
+                val params =
+                    ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
                 val conversations =
                     client.conversations.listConversations(order = order, limit = limit)
@@ -940,7 +940,7 @@ class XMTPModule : Module() {
                 val conversation = client.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 val sending = ContentJson.fromJson(contentJson)
-                conversation.prepareMessage(
+                conversation.prepareMessageV3(
                     content = sending.content,
                     options = SendOptions(contentType = sending.type)
                 )
@@ -1147,7 +1147,9 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("listPeerInboxId")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val dm = (findConversation(inboxId, dmId) as Conversation.Dm).dm
+                val conversation = client.findConversation(dmId)
+                    ?: throw XMTPException("no conversation found for $dmId")
+                val dm = (conversation as Conversation.Dm).dm
                 dm.peerInboxId()
             }
         }
@@ -1543,7 +1545,12 @@ class XMTPModule : Module() {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
 
                 val conversation =
-                    client.conversations.conversationFromWelcome(Base64.decode(encryptedMessage, NO_WRAP))
+                    client.conversations.conversationFromWelcome(
+                        Base64.decode(
+                            encryptedMessage,
+                            NO_WRAP
+                        )
+                    )
                 ConversationContainerWrapper.encode(client, conversation)
             }
         }
@@ -1829,12 +1836,14 @@ class XMTPModule : Module() {
                 client.contacts.isGroupDenied(groupId)
             }
         }
-        AsyncFunction("updateGroupConsent") Coroutine { inboxId: String, groupId: String, state: String ->
+        AsyncFunction("updateConversationConsent") Coroutine { inboxId: String, conversationId: String, state: String ->
             withContext(Dispatchers.IO) {
-                logV("updateGroupConsent")
-                val group = findGroup(inboxId, groupId)
+                logV("updateConversationConsent")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no group found for $conversationId")
 
-                group?.updateConsentState(getConsentState(state))
+                conversation.updateConsentState(getConsentState(state))
             }
         }
 
@@ -2023,22 +2032,26 @@ class XMTPModule : Module() {
         val client = clients[inboxId] ?: throw XMTPException("No client")
 
         subscriptions[getV3ConversationsKey(client.inboxId)]?.cancel()
-        subscriptions[getV3ConversationsKey(client.inboxId)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                client.conversations.streamConversations().collect { conversation ->
-                    sendEvent(
-                        "conversationV3",
-                        mapOf(
-                            "inboxId" to inboxId,
-                            "conversation" to ConversationContainerWrapper.encodeToObj(client, conversation)
+        subscriptions[getV3ConversationsKey(client.inboxId)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    client.conversations.streamConversations().collect { conversation ->
+                        sendEvent(
+                            "conversationV3",
+                            mapOf(
+                                "inboxId" to inboxId,
+                                "conversation" to ConversationContainerWrapper.encodeToObj(
+                                    client,
+                                    conversation
+                                )
+                            )
                         )
-                    )
+                    }
+                } catch (e: Exception) {
+                    Log.e("XMTPModule", "Error in group subscription: $e")
+                    subscriptions[getV3ConversationsKey(client.inboxId)]?.cancel()
                 }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in group subscription: $e")
-                subscriptions[getV3ConversationsKey(client.inboxId)]?.cancel()
             }
-        }
     }
 
     private fun subscribeToAll(inboxId: String) {
@@ -2117,7 +2130,7 @@ class XMTPModule : Module() {
         subscriptions[getConversationMessagesKey(inboxId)]?.cancel()
         subscriptions[getConversationMessagesKey(inboxId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.conversations.streamAllGroupDecryptedMessages().collect { message ->
+                client.conversations.streamAllConversationDecryptedMessages().collect { message ->
                     sendEvent(
                         "allConversationMessages",
                         mapOf(
