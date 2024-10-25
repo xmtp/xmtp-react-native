@@ -17,6 +17,7 @@ import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
 import { getAddress } from '../utils/address'
+import { Dm } from './Dm'
 
 export default class Conversations<
   ContentTypes extends ContentCodec<any>[] = [],
@@ -82,6 +83,18 @@ export default class Conversations<
   }
 
   /**
+   * Creates a new V3 conversation.
+   *
+   * This method creates a new conversation with the specified peer address.
+   *
+   * @param {string} peerAddress - The address of the peer to create a conversation with.
+   * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
+   */
+  async findOrCreateDm(peerAddress: string): Promise<Dm<ContentTypes>> {
+    return await XMTPModule.findOrCreateDm(this.client, peerAddress)
+  }
+
+  /**
    * This method returns a list of all groups that the client is a member of.
    * To get the latest list of groups from the network, call syncGroups() first.
    * @param {GroupOptions} opts - The options to specify what fields you want returned for the groups in the list.
@@ -115,6 +128,40 @@ export default class Conversations<
   }
 
   /**
+   * This method returns a Dm by the address if that dm exists in the local database.
+   * To get the latest list of groups from the network, call syncConversations() first.
+   *
+   * @returns {Promise<Dm>} A Promise that resolves to a Group or undefined if not found.
+   */
+  async findDm(address: string): Promise<Dm<ContentTypes> | undefined> {
+    return await XMTPModule.findDm(this.client, address)
+  }
+
+  /**
+   * This method returns a conversation by the topic if that conversation exists in the local database.
+   * To get the latest list of groups from the network, call syncConversations() first.
+   *
+   * @returns {Promise<ConversationContainer>} A Promise that resolves to a Group or undefined if not found.
+   */
+  async findConversationByTopic(
+    topic: string
+  ): Promise<ConversationContainer<ContentTypes> | undefined> {
+    return await XMTPModule.findConversationByTopic(this.client, topic)
+  }
+
+  /**
+   * This method returns a conversation by the conversation id if that conversation exists in the local database.
+   * To get the latest list of groups from the network, call syncConversations() first.
+   *
+   * @returns {Promise<ConversationContainer>} A Promise that resolves to a Group or undefined if not found.
+   */
+  async findConversation(
+    conversationId: string
+  ): Promise<ConversationContainer<ContentTypes> | undefined> {
+    return await XMTPModule.findConversation(this.client, conversationId)
+  }
+
+  /**
    * This method returns a message by the message id if that message exists in the local database.
    * To get the latest list of messages from the network, call syncGroups() first.
    *
@@ -143,6 +190,16 @@ export default class Conversations<
   }
 
   /**
+   * This method returns a list of all V3 conversations that the client is a member of.
+   * To include the latest groups from the network in the returned list, call syncGroups() first.
+   *
+   * @returns {Promise<ConversationContainer[]>} A Promise that resolves to an array of ConversationContainer objects.
+   */
+  async listConversations(): Promise<ConversationContainer<ContentTypes>[]> {
+    return await XMTPModule.listConversations(this.client)
+  }
+
+  /**
    * This method streams groups that the client is a member of.
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
@@ -168,6 +225,58 @@ export default class Conversations<
     return () => {
       groupsSubscription.remove()
       XMTPModule.unsubscribeFromGroups(this.client.inboxId)
+    }
+  }
+
+  /**
+   * This method streams V3 conversations that the client is a member of.
+   *
+   * @returns {Promise<ConversationContainer[]>} A Promise that resolves to an array of ConversationContainer objects.
+   */
+  async streamConversations(
+    callback: (
+      conversation: ConversationContainer<ContentTypes>
+    ) => Promise<void>
+  ): Promise<() => void> {
+    XMTPModule.subscribeToV3Conversations(this.client.inboxId)
+    const subscription = XMTPModule.emitter.addListener(
+      EventTypes.ConversationV3,
+      async ({
+        inboxId,
+        conversation,
+      }: {
+        inboxId: string
+        conversation: ConversationContainer<ContentTypes>
+      }) => {
+        if (inboxId !== this.client.inboxId) {
+          return
+        }
+
+        this.known[conversation.topic] = true
+        if (conversation.version === ConversationVersion.GROUP) {
+          const members = conversation['members'].map((mem: string) => {
+            return Member.from(mem)
+          })
+          return await callback(
+            new Group(
+              this.client,
+              conversation as unknown as GroupParams,
+              members
+            )
+          )
+        } else if (conversation.version === ConversationVersion.DM) {
+          const members = conversation['members'].map((mem: string) => {
+            return Member.from(mem)
+          })
+          return await callback(
+            new Dm(this.client, conversation as unknown as GroupParams, members)
+          )
+        }
+      }
+    )
+    return () => {
+      subscription.remove()
+      XMTPModule.unsubscribeFromV3Conversations(this.client.inboxId)
     }
   }
 
@@ -413,9 +522,57 @@ export default class Conversations<
     this.subscriptions[EventTypes.AllGroupMessage] = subscription
   }
 
+  /**
+   * Listen for new messages in all v3 conversations.
+   *
+   * This method subscribes to all groups in real-time and listens for incoming and outgoing messages.
+   * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
+   * @returns {Promise<void>} A Promise that resolves when the stream is set up.
+   */
+  async streamAllConversationMessages(
+    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
+  ): Promise<void> {
+    XMTPModule.subscribeToAllConversationMessages(this.client.inboxId)
+    const subscription = XMTPModule.emitter.addListener(
+      EventTypes.AllConversationMessage,
+      async ({
+        inboxId,
+        message,
+      }: {
+        inboxId: string
+        message: DecodedMessage
+      }) => {
+        if (inboxId !== this.client.inboxId) {
+          return
+        }
+        if (this.known[message.id]) {
+          return
+        }
+
+        this.known[message.id] = true
+        await callback(DecodedMessage.fromObject(message, this.client))
+      }
+    )
+    this.subscriptions[EventTypes.AllConversationMessage] = subscription
+  }
+
   async fromWelcome(encryptedMessage: string): Promise<Group<ContentTypes>> {
     try {
       return await XMTPModule.processWelcomeMessage(
+        this.client,
+        encryptedMessage
+      )
+    } catch (e) {
+      console.info('ERROR in processWelcomeMessage()', e)
+      throw e
+    }
+  }
+
+  async conversationFromWelcome(
+    encryptedMessage: string
+  ): Promise<ConversationContainer<ContentTypes>> {
+    try {
+      return await XMTPModule.processConversationWelcomeMessage(
         this.client,
         encryptedMessage
       )
@@ -447,6 +604,14 @@ export default class Conversations<
     XMTPModule.unsubscribeFromGroups(this.client.inboxId)
   }
 
+  cancelStreamConversations() {
+    if (this.subscriptions[EventTypes.ConversationV3]) {
+      this.subscriptions[EventTypes.ConversationV3].remove()
+      delete this.subscriptions[EventTypes.ConversationV3]
+    }
+    XMTPModule.unsubscribeFromV3Conversations(this.client.inboxId)
+  }
+
   /**
    * Cancels the stream for new messages in all conversations.
    */
@@ -467,5 +632,13 @@ export default class Conversations<
       delete this.subscriptions[EventTypes.AllGroupMessage]
     }
     XMTPModule.unsubscribeFromAllGroupMessages(this.client.inboxId)
+  }
+
+  cancelStreamAllConversations() {
+    if (this.subscriptions[EventTypes.AllConversationMessage]) {
+      this.subscriptions[EventTypes.AllConversationMessage].remove()
+      delete this.subscriptions[EventTypes.AllConversationMessage]
+    }
+    XMTPModule.unsubscribeFromAllConversationMessages(this.client.inboxId)
   }
 }

@@ -1048,12 +1048,12 @@ export async function unsubscribeFromMessages(inboxId: string, topic: string) {
   return await XMTPModule.unsubscribeFromMessages(inboxId, topic)
 }
 
-export async function subscribeToV3Conversations(inboxId: string) {
-  return await XMTPModule.subscribeToV3Conversations(inboxId)
+export function subscribeToV3Conversations(inboxId: string) {
+  return XMTPModule.subscribeToV3Conversations(inboxId)
 }
 
-export async function subscribeToAllConversationMessages(inboxId: string) {
-  return await XMTPModule.subscribeToAllConversationMessages(inboxId)
+export function subscribeToAllConversationMessages(inboxId: string) {
+  return XMTPModule.subscribeToAllConversationMessages(inboxId)
 }
 
 export async function subscribeToConversationMessages(
@@ -1063,12 +1063,12 @@ export async function subscribeToConversationMessages(
   return await XMTPModule.subscribeToConversationMessages(inboxId, id)
 }
 
-export async function unsubscribeFromAllConversationMessages(inboxId: string) {
-  return await XMTPModule.unsubscribeFromAllConversationMessages(inboxId)
+export function unsubscribeFromAllConversationMessages(inboxId: string) {
+  return XMTPModule.unsubscribeFromAllConversationMessages(inboxId)
 }
 
-export async function unsubscribeFromV3Conversations(inboxId: string) {
-  return await XMTPModule.unsubscribeFromV3Conversations(inboxId)
+export function unsubscribeFromV3Conversations(inboxId: string) {
+  return XMTPModule.unsubscribeFromV3Conversations(inboxId)
 }
 
 export async function unsubscribeFromConversationMessages(
