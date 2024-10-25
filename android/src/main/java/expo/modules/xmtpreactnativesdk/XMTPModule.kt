@@ -1092,7 +1092,6 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("syncAllGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.conversations.syncAllGroups()
                 // Expo Modules do not support UInt, so we need to convert to Int
                 val numGroupsSyncedInt: Int =
                     client.conversations.syncAllGroups()?.toInt() ?: throw IllegalArgumentException(
