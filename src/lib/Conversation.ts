@@ -1,6 +1,7 @@
 import { invitation } from '@xmtp/proto'
 import { Buffer } from 'buffer'
 
+import { ConsentState } from './ConsentListEntry'
 import {
   ConversationVersion,
   ConversationContainer,
@@ -34,6 +35,9 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
   peerAddress: string
   version = ConversationVersion.DIRECT
   conversationID?: string | undefined
+  id: string
+  state: ConsentState
+  
   /**
    * Base64 encoded key material for the conversation.
    */
@@ -51,6 +55,8 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
     this.peerAddress = params.peerAddress ?? ''
     this.conversationID = params.conversationID
     this.keyMaterial = params.keyMaterial
+    this.id = params.topic
+    this.state = 'unknown'
     try {
       if (params?.consentProof) {
         this.consentProof = invitation.ConsentProofPayload.decode(

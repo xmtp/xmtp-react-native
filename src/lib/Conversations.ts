@@ -226,7 +226,11 @@ export default class Conversations<
    * and save them to the local state.
    */
   async syncGroups() {
-    await XMTPModule.syncGroups(this.client.inboxId)
+    await XMTPModule.syncConversations(this.client.inboxId)
+  }
+
+  async syncConversations() {
+    await XMTPModule.syncConversations(this.client.inboxId)
   }
 
   /**
@@ -235,7 +239,11 @@ export default class Conversations<
    * @returns {Promise<number>} A Promise that resolves to the number of groups synced.
    */
   async syncAllGroups(): Promise<number> {
-    return await XMTPModule.syncAllGroups(this.client.inboxId)
+    return await XMTPModule.syncAllConversations(this.client.inboxId)
+  }
+
+  async syncAllConversations(): Promise<number> {
+    return await XMTPModule.syncAllConversations(this.client.inboxId)
   }
 
   /**

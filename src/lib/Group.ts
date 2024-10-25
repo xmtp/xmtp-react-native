@@ -4,14 +4,13 @@ import {
   ConversationVersion,
   ConversationContainer,
 } from './ConversationContainer'
-import { DecodedMessage, MessageDeliveryStatus } from './DecodedMessage'
+import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { MessagesOptions } from './types/MessagesOptions'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
-import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 
 export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
@@ -90,8 +89,7 @@ export class Group<
    * @throws {Error} Throws an error if there is an issue with sending the message.
    */
   async send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
-    content: ConversationSendPayload<SendContentTypes>,
-    opts?: SendOptions
+    content: ConversationSendPayload<SendContentTypes>
   ): Promise<string> {
     // TODO: Enable other content types
     // if (opts && opts.contentType) {
@@ -103,7 +101,7 @@ export class Group<
         content = { text: content }
       }
 
-      return await XMTP.sendMessageToGroup(
+      return await XMTP.sendMessageToConversation(
         this.client.inboxId,
         this.id,
         content
@@ -123,10 +121,7 @@ export class Group<
    */
   async prepareMessage<
     SendContentTypes extends DefaultContentTypes = ContentTypes,
-  >(
-    content: ConversationSendPayload<SendContentTypes>,
-    opts?: SendOptions
-  ): Promise<string> {
+  >(content: ConversationSendPayload<SendContentTypes>): Promise<string> {
     // TODO: Enable other content types
     // if (opts && opts.contentType) {
     // return await this._sendWithJSCodec(content, opts.contentType)
@@ -137,7 +132,7 @@ export class Group<
         content = { text: content }
       }
 
-      return await XMTP.prepareGroupMessage(
+      return await XMTP.prepareConversationMessage(
         this.client.inboxId,
         this.id,
         content
@@ -178,14 +173,13 @@ export class Group<
   async messages(
     opts?: MessagesOptions
   ): Promise<DecodedMessage<ContentTypes>[]> {
-    return await XMTP.groupMessages(
+    return await XMTP.conversationMessages(
       this.client,
       this.id,
       opts?.limit,
       opts?.before,
       opts?.after,
-      opts?.direction,
-      opts?.deliveryStatus ?? MessageDeliveryStatus.ALL
+      opts?.direction
     )
   }
 
@@ -194,7 +188,7 @@ export class Group<
    * associated with the group and saves them to the local state.
    */
   async sync() {
-    await XMTP.syncGroup(this.client.inboxId, this.id)
+    await XMTP.syncConversation(this.client.inboxId, this.id)
   }
 
   /**
@@ -207,7 +201,7 @@ export class Group<
    * @param {Function} callback - A callback function that will be invoked with the new DecodedMessage when a message is received.
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
-  async streamGroupMessages(
+  async streamMessages(
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<() => void> {
     await XMTP.subscribeToGroupMessages(this.client.inboxId, this.id)
@@ -606,7 +600,7 @@ export class Group<
     encryptedMessage: string
   ): Promise<DecodedMessage<ContentTypes>> {
     try {
-      return await XMTP.processGroupMessage(
+      return await XMTP.processConversationMessage(
         this.client,
         this.id,
         encryptedMessage
@@ -618,11 +612,15 @@ export class Group<
   }
 
   async consentState(): Promise<ConsentState> {
-    return await XMTP.groupConsentState(this.client.inboxId, this.id)
+    return await XMTP.conversationConsentState(this.client.inboxId, this.id)
   }
 
   async updateConsent(state: ConsentState): Promise<void> {
-    return await XMTP.updateGroupConsent(this.client.inboxId, this.id, state)
+    return await XMTP.updateConversationConsent(
+      this.client.inboxId,
+      this.id,
+      state
+    )
   }
 
   /**
@@ -645,6 +643,6 @@ export class Group<
    * To get the latest member list from the network, call sync() first.
    */
   async membersList(): Promise<Member[]> {
-    return await XMTP.listGroupMembers(this.client.inboxId, this.id)
+    return await XMTP.listConversationMembers(this.client.inboxId, this.id)
   }
 }

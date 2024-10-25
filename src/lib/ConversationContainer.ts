@@ -1,4 +1,5 @@
 import { ConsentState } from './ConsentListEntry'
+import { ConversationSendPayload, MessagesOptions } from './types'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
 import { DecodedMessage } from '../index'
@@ -24,7 +25,20 @@ export interface ConversationContainer<
 export interface ConversationFunctions<
   ContentTypes extends DefaultContentTypes,
 > {
-  sendMessage(content: string): Promise<void>;
-  loadMessages(limit?: number): Promise<DecodedMessage<ContentTypes>[]>;
-  updateState(state: ConsentState): void;
+  send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
+    content: ConversationSendPayload<SendContentTypes>
+  ): Promise<string>
+  prepareMessage<SendContentTypes extends DefaultContentTypes = ContentTypes>(
+    content: ConversationSendPayload<SendContentTypes>
+  ): Promise<string>
+  sync()
+  messages(opts?: MessagesOptions): Promise<DecodedMessage<ContentTypes>[]>
+  streamMessages(
+    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
+  ): Promise<() => void>
+  consentState(): Promise<ConsentState>
+  updateConsent(state: ConsentState): Promise<void>
+  processMessage(
+    encryptedMessage: string
+  ): Promise<DecodedMessage<ContentTypes>>
 }
