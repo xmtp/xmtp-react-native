@@ -1,6 +1,5 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
-import android.util.Base64
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Conversation
@@ -8,21 +7,36 @@ import org.xmtp.android.library.Conversation
 class ConversationContainerWrapper {
 
     companion object {
-        suspend fun encodeToObj(client: Client, conversation: Conversation): Map<String, Any?> {
-            when (conversation.version) {
+        suspend fun encodeToObj(
+            client: Client,
+            conversation: Conversation,
+            conversationParams: ConversationParamsWrapper = ConversationParamsWrapper(),
+        ): Map<String, Any?> {
+            return when (conversation.version) {
                 Conversation.Version.GROUP -> {
                     val group = (conversation as Conversation.Group).group
-                    return GroupWrapper.encodeToObj(client, group)
+                    GroupWrapper.encodeToObj(client, group, conversationParams)
                 }
+
+                Conversation.Version.DM -> {
+                    val dm = (conversation as Conversation.Dm).dm
+                    DmWrapper.encodeToObj(client, dm, conversationParams)
+                }
+
                 else -> {
-                    return ConversationWrapper.encodeToObj(client, conversation)
+                    ConversationWrapper.encodeToObj(client, conversation)
                 }
             }
         }
 
-        suspend fun encode(client: Client, conversation: Conversation): String {
+        suspend fun encode(
+            client: Client,
+            conversation: Conversation,
+            conversationParams: ConversationParamsWrapper = ConversationParamsWrapper(),
+        ): String {
             val gson = GsonBuilder().create()
-            val obj = ConversationContainerWrapper.encodeToObj(client, conversation)
+            val obj =
+                ConversationContainerWrapper.encodeToObj(client, conversation, conversationParams)
             return gson.toJson(obj)
         }
     }
