@@ -9,6 +9,7 @@ import { restartStreamTests } from './tests/restartStreamsTests'
 import { Test } from './tests/test-utils'
 import { tests } from './tests/tests'
 import { v3OnlyTests } from './tests/v3OnlyTests'
+import { dmTests } from './tests/dmTests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
@@ -107,6 +108,7 @@ function TestView({
 export enum TestCategory {
   all = 'all',
   tests = 'tests',
+  dm = 'dm',
   group = 'group',
   v3Only = 'v3Only',
   restartStreans = 'restartStreams',
@@ -123,6 +125,7 @@ export default function TestScreen(): JSX.Element {
   const allTests = [
     ...tests,
     ...groupTests,
+    ...dmTests,
     ...v3OnlyTests,
     ...restartStreamTests,
     ...groupPermissionsTests,
@@ -141,6 +144,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.group:
       activeTests = groupTests
       title = 'Group Unit Tests'
+      break
+    case TestCategory.dm:
+      activeTests = dmTests
+      title = 'Dm Unit Tests'
       break
     case TestCategory.v3Only:
       activeTests = v3OnlyTests
