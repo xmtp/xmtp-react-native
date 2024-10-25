@@ -107,6 +107,15 @@ test('testing large group listings with ordering', async () => {
   console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
 
   start = Date.now()
+  await boClient.conversations.syncAllGroups()
+  end = Date.now()
+  console.log(`Bo synced all ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 30000,
+    'Syncing all 1000 groups should take less than a 30 second'
+  )
+
+  start = Date.now()
   groups = await boClient.conversations.listGroups()
   end = Date.now()
   console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
