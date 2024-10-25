@@ -20,3 +20,11 @@ export interface ConversationContainer<
   state: ConsentState
   lastMessage?: DecodedMessage<ContentTypes>
 }
+
+export interface ConversationFunctions<
+  ContentTypes extends DefaultContentTypes,
+> {
+  sendMessage(content: string): Promise<void>;
+  loadMessages(limit?: number): Promise<DecodedMessage<ContentTypes>[]>;
+  updateState(state: ConsentState): void;
+}

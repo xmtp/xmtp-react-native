@@ -1531,16 +1531,27 @@ class XMTPModule : Module() {
                 logV("processWelcomeMessage")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
 
+                val group =
+                    client.conversations.fromWelcome(Base64.decode(encryptedMessage, NO_WRAP))
+                GroupWrapper.encode(client, group)
+            }
+        }
+
+        AsyncFunction("processConversationWelcomeMessage") Coroutine { inboxId: String, encryptedMessage: String ->
+            withContext(Dispatchers.IO) {
+                logV("processConversationWelcomeMessage")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+
                 val conversation =
                     client.conversations.conversationFromWelcome(Base64.decode(encryptedMessage, NO_WRAP))
                 ConversationContainerWrapper.encode(client, conversation)
             }
         }
 
-        Function("subscribeToV2Conversations") { inboxId: String ->
+        Function("subscribeToConversations") { inboxId: String ->
             // V2 ONLY
             logV("subscribeToConversations")
-            subscribeToV2Conversations(inboxId = inboxId)
+            subscribeToConversations(inboxId = inboxId)
         }
 
         Function("subscribeToGroups") { inboxId: String ->
@@ -1751,7 +1762,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("v2ConversationConsentState") Coroutine { inboxId: String, conversationTopic: String ->
+        AsyncFunction("conversationConsentState") Coroutine { inboxId: String, conversationTopic: String ->
             withContext(Dispatchers.IO) {
                 val conversation = findConversation(inboxId, conversationTopic)
                     ?: throw XMTPException("no conversation found for $conversationTopic")
@@ -1759,7 +1770,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("conversationConsentState") Coroutine { inboxId: String, groupId: String ->
+        AsyncFunction("conversationV3ConsentState") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 val group = findGroup(inboxId, groupId)
                     ?: throw XMTPException("no group found for $groupId")
@@ -1844,20 +1855,20 @@ class XMTPModule : Module() {
             }
         }
 
-        Function("subscribeToConversations") { inboxId: String ->
-            logV("subscribeToConversations")
-            subscribeToGroups(inboxId = inboxId)
+        Function("subscribeToV3Conversations") { inboxId: String ->
+            logV("subscribeToV3Conversations")
+            subscribeToV3Conversations(inboxId = inboxId)
         }
 
-        Function("subscribeToAllConversationMessages") { inboxId: String, includeGroups: Boolean ->
+        Function("subscribeToAllConversationMessages") { inboxId: String ->
             logV("subscribeToAllConversationMessages")
-            subscribeToAllMessages(inboxId = inboxId, includeGroups = includeGroups)
+            subscribeToAllConversationMessages(inboxId = inboxId)
         }
 
-        AsyncFunction("subscribeToDmMessages") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("subscribeToConversationMessages") Coroutine { inboxId: String, id: String ->
             withContext(Dispatchers.IO) {
-                logV("subscribeToDmMessages")
-                subscribeToGroupMessages(
+                logV("subscribeToConversationMessages")
+                subscribeToConversationMessages(
                     inboxId = inboxId,
                     id = id
                 )
@@ -1866,20 +1877,20 @@ class XMTPModule : Module() {
 
         Function("unsubscribeFromAllConversationMessages") { inboxId: String ->
             logV("unsubscribeFromAllConversationMessages")
-            subscriptions[getGroupMessagesKey(inboxId)]?.cancel()
+            subscriptions[getConversationMessagesKey(inboxId)]?.cancel()
         }
 
-        Function("unsubscribeFromConversations") { inboxId: String ->
-            logV("unsubscribeFromConversations")
-            subscriptions[getGroupMessagesKey(inboxId)]?.cancel()
+        Function("unsubscribeFromV3Conversations") { inboxId: String ->
+            logV("unsubscribeFromV3Conversations")
+            subscriptions[getV3ConversationsKey(inboxId)]?.cancel()
         }
 
-        AsyncFunction("unsubscribeFromDmMessages") Coroutine { inboxId: String, topic: String ->
+        AsyncFunction("unsubscribeFromConversationMessages") Coroutine { inboxId: String, id: String ->
             withContext(Dispatchers.IO) {
-                logV("unsubscribeFromDmMessages")
-                unsubscribeFromMessages(
+                logV("unsubscribeFromConversationMessages")
+                unsubscribeFromConversationMessages(
                     inboxId = inboxId,
-                    topic = topic
+                    id = id
                 )
             }
         }
@@ -1955,11 +1966,11 @@ class XMTPModule : Module() {
         return null
     }
 
-    private fun subscribeToV2Conversations(inboxId: String) {
+    private fun subscribeToConversations(inboxId: String) {
         val client = clients[inboxId] ?: throw XMTPException("No client")
 
-        subscriptions[getV2ConversationsKey(inboxId)]?.cancel()
-        subscriptions[getV2ConversationsKey(inboxId)] = CoroutineScope(Dispatchers.IO).launch {
+        subscriptions[getConversationsKey(inboxId)]?.cancel()
+        subscriptions[getConversationsKey(inboxId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.conversations.stream().collect { conversation ->
                     run {
@@ -1980,7 +1991,7 @@ class XMTPModule : Module() {
                 }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in conversations subscription: $e")
-                subscriptions[getV2ConversationsKey(inboxId)]?.cancel()
+                subscriptions[getConversationsKey(inboxId)]?.cancel()
             }
         }
     }
@@ -2007,11 +2018,11 @@ class XMTPModule : Module() {
         }
     }
 
-    private fun subscribeToConversations(inboxId: String) {
+    private fun subscribeToV3Conversations(inboxId: String) {
         val client = clients[inboxId] ?: throw XMTPException("No client")
 
-        subscriptions[getConversationsKey(client.inboxId)]?.cancel()
-        subscriptions[getConversationsKey(client.inboxId)] = CoroutineScope(Dispatchers.IO).launch {
+        subscriptions[getV3ConversationsKey(client.inboxId)]?.cancel()
+        subscriptions[getV3ConversationsKey(client.inboxId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
                 client.conversations.streamConversations().collect { conversation ->
                     sendEvent(
@@ -2024,7 +2035,7 @@ class XMTPModule : Module() {
                 }
             } catch (e: Exception) {
                 Log.e("XMTPModule", "Error in group subscription: $e")
-                subscriptions[getConversationsKey(client.inboxId)]?.cancel()
+                subscriptions[getV3ConversationsKey(client.inboxId)]?.cancel()
             }
         }
     }
@@ -2176,7 +2187,7 @@ class XMTPModule : Module() {
             }
     }
 
-    private suspend fun subscribeToDmMessages(inboxId: String, id: String) {
+    private suspend fun subscribeToConversationMessages(inboxId: String, id: String) {
         val client = clients[inboxId] ?: throw XMTPException("No client")
         val conversation = client.findConversation(id)
             ?: throw XMTPException("no conversation found for $id")
@@ -2214,11 +2225,11 @@ class XMTPModule : Module() {
     }
 
     private fun getConversationsKey(inboxId: String): String {
-        return "conversationsV3:$inboxId"
+        return "conversations:$inboxId"
     }
 
-    private fun getV2ConversationsKey(inboxId: String): String {
-        return "conversations:$inboxId"
+    private fun getV3ConversationsKey(inboxId: String): String {
+        return "conversationsV3:$inboxId"
     }
 
     private fun getGroupsKey(inboxId: String): String {
@@ -2237,7 +2248,7 @@ class XMTPModule : Module() {
         subscriptions[conversation.cacheKey(inboxId)]?.cancel()
     }
 
-    private suspend fun unsubscribeFromGroupMessages(
+    private fun unsubscribeFromGroupMessages(
         inboxId: String,
         id: String,
     ) {
@@ -2249,6 +2260,15 @@ class XMTPModule : Module() {
                 id = id
             ) ?: return
         subscriptions[group.cacheKey(inboxId)]?.cancel()
+    }
+
+    private fun unsubscribeFromConversationMessages(
+        inboxId: String,
+        id: String,
+    ) {
+        val client = clients[inboxId] ?: throw XMTPException("No client")
+        val convo = client.findConversation(id) ?: return
+        subscriptions[convo.cacheKey(inboxId)]?.cancel()
     }
 
     private fun logV(msg: String) {
