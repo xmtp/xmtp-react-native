@@ -1770,11 +1770,12 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("conversationV3ConsentState") Coroutine { inboxId: String, groupId: String ->
+        AsyncFunction("conversationV3ConsentState") Coroutine { inboxId: String, conversationId: String ->
             withContext(Dispatchers.IO) {
-                val group = findGroup(inboxId, groupId)
-                    ?: throw XMTPException("no group found for $groupId")
-                consentStateToString(group.consentState())
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no group found for $conversationId")
+                consentStateToString(conversation.consentState())
             }
         }
 

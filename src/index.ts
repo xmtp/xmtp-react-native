@@ -293,7 +293,7 @@ export async function findOrCreateDm<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerAddress: string,
+  peerAddress: string
 ): Promise<Dm<ContentTypes>> {
   const dm = JSON.parse(
     await XMTPModule.findOrCreateDm(client.inboxId, peerAddress)
@@ -451,7 +451,11 @@ export async function prepareConversationMessage(
   content: any
 ): Promise<string> {
   const contentJson = JSON.stringify(content)
-  return await XMTPModule.prepareConversationMessage(inboxId, conversationId, contentJson)
+  return await XMTPModule.prepareConversationMessage(
+    inboxId,
+    conversationId,
+    contentJson
+  )
 }
 
 export async function sendMessageToConversation(
@@ -1044,6 +1048,36 @@ export async function unsubscribeFromMessages(inboxId: string, topic: string) {
   return await XMTPModule.unsubscribeFromMessages(inboxId, topic)
 }
 
+export async function subscribeToV3Conversations(inboxId: string) {
+  return await XMTPModule.subscribeToV3Conversations(inboxId)
+}
+
+export async function subscribeToAllConversationMessages(inboxId: string) {
+  return await XMTPModule.subscribeToAllConversationMessages(inboxId)
+}
+
+export async function subscribeToConversationMessages(
+  inboxId: string,
+  id: string
+) {
+  return await XMTPModule.subscribeToConversationMessages(inboxId, id)
+}
+
+export async function unsubscribeFromAllConversationMessages(inboxId: string) {
+  return await XMTPModule.unsubscribeFromAllConversationMessages(inboxId)
+}
+
+export async function unsubscribeFromV3Conversations(inboxId: string) {
+  return await XMTPModule.unsubscribeFromV3Conversations(inboxId)
+}
+
+export async function unsubscribeFromConversationMessages(
+  inboxId: string,
+  id: string
+) {
+  return await XMTPModule.unsubscribeFromConversationMessages(inboxId, id)
+}
+
 export function registerPushToken(pushServer: string, token: string) {
   return XMTPModule.registerPushToken(pushServer, token)
 }
@@ -1071,11 +1105,11 @@ export async function conversationConsentState(
   return await XMTPModule.conversationConsentState(inboxId, conversationTopic)
 }
 
-export async function groupConsentState(
+export async function conversationV3ConsentState(
   inboxId: string,
-  groupId: string
+  conversationId: string
 ): Promise<ConsentState> {
-  return await XMTPModule.groupConsentState(inboxId, groupId)
+  return await XMTPModule.conversationV3ConsentState(inboxId, conversationId)
 }
 
 export async function isAllowed(
