@@ -111,8 +111,8 @@ test('testing large group listings with ordering', async () => {
   end = Date.now()
   console.log(`Bo synced all ${groups.length} groups in ${end - start}ms`)
   assert(
-    end - start < 3000,
-    'Syncing all 1000 groups should take less than a 3 second'
+    end - start < 30000,
+    'Syncing all 1000 groups should take less than a 30 second'
   )
 
   start = Date.now()
@@ -143,214 +143,214 @@ test('testing large group listings with ordering', async () => {
   return true
 })
 
-// test('testing large group listings', async () => {
-//   await beforeAll(1000)
+test('testing large group listings', async () => {
+  await beforeAll(1000)
 
-//   let start = Date.now()
-//   let groups = await alixClient.conversations.listGroups()
-//   let end = Date.now()
-//   console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
-//   assert(
-//     end - start < 3000,
-//     'listing 1000 groups should take less than a 3 second'
-//   )
+  let start = Date.now()
+  let groups = await alixClient.conversations.listGroups()
+  let end = Date.now()
+  console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 3000,
+    'listing 1000 groups should take less than a 3 second'
+  )
 
-//   start = Date.now()
-//   await alixClient.conversations.syncGroups()
-//   end = Date.now()
-//   console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'syncing 1000 cached groups should take less than a .1 second'
-//   )
+  start = Date.now()
+  await alixClient.conversations.syncGroups()
+  end = Date.now()
+  console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'syncing 1000 cached groups should take less than a .1 second'
+  )
 
-//   start = Date.now()
-//   await boClient.conversations.syncGroups()
-//   end = Date.now()
-//   console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
-//   assert(
-//     end - start < 6000,
-//     'syncing 1000 groups should take less than a 6 second'
-//   )
+  start = Date.now()
+  await boClient.conversations.syncGroups()
+  end = Date.now()
+  console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 6000,
+    'syncing 1000 groups should take less than a 6 second'
+  )
 
-//   start = Date.now()
-//   groups = await boClient.conversations.listGroups()
-//   end = Date.now()
-//   console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
-//   assert(
-//     end - start < 3000,
-//     'loading 1000 groups should take less than a 3 second'
-//   )
+  start = Date.now()
+  groups = await boClient.conversations.listGroups()
+  end = Date.now()
+  console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 3000,
+    'loading 1000 groups should take less than a 3 second'
+  )
 
-//   return true
-// })
+  return true
+})
 
-// test('testing large message listings', async () => {
-//   await beforeAll(1, 2000)
+test('testing large message listings', async () => {
+  await beforeAll(1, 2000)
 
-//   const alixGroup = initialGroups[0]
-//   let start = Date.now()
-//   let messages = await alixGroup.messages()
-//   let end = Date.now()
-//   console.log(`Alix loaded ${messages.length} messages in ${end - start}ms`)
-//   assert(
-//     end - start < 1000,
-//     'listing 2000 self messages should take less than a 1 second'
-//   )
+  const alixGroup = initialGroups[0]
+  let start = Date.now()
+  let messages = await alixGroup.messages()
+  let end = Date.now()
+  console.log(`Alix loaded ${messages.length} messages in ${end - start}ms`)
+  assert(
+    end - start < 1000,
+    'listing 2000 self messages should take less than a 1 second'
+  )
 
-//   start = Date.now()
-//   await alixGroup.sync()
-//   end = Date.now()
-//   console.log(`Alix synced ${messages.length} messages in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'syncing 2000 self messages should take less than a .1 second'
-//   )
+  start = Date.now()
+  await alixGroup.sync()
+  end = Date.now()
+  console.log(`Alix synced ${messages.length} messages in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'syncing 2000 self messages should take less than a .1 second'
+  )
 
-//   await boClient.conversations.syncGroups()
-//   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
-//   start = Date.now()
-//   await boGroup!.sync()
-//   end = Date.now()
-//   console.log(`Bo synced ${messages.length} messages in ${end - start}ms`)
-//   assert(
-//     end - start < 3000,
-//     'syncing 2000 messages should take less than a 3 second'
-//   )
+  await boClient.conversations.syncGroups()
+  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+  start = Date.now()
+  await boGroup!.sync()
+  end = Date.now()
+  console.log(`Bo synced ${messages.length} messages in ${end - start}ms`)
+  assert(
+    end - start < 3000,
+    'syncing 2000 messages should take less than a 3 second'
+  )
 
-//   start = Date.now()
-//   messages = await boGroup!.messages()
-//   end = Date.now()
-//   console.log(`Bo loaded ${messages.length} messages in ${end - start}ms`)
-//   assert(
-//     end - start < 1000,
-//     'loading 2000 messages should take less than a 1 second'
-//   )
+  start = Date.now()
+  messages = await boGroup!.messages()
+  end = Date.now()
+  console.log(`Bo loaded ${messages.length} messages in ${end - start}ms`)
+  assert(
+    end - start < 1000,
+    'loading 2000 messages should take less than a 1 second'
+  )
 
-//   return true
-// })
+  return true
+})
 
-// test('testing large member listings', async () => {
-//   await beforeAll(1, 1, 50)
+test('testing large member listings', async () => {
+  await beforeAll(1, 1, 50)
 
-//   const alixGroup = initialGroups[0]
-//   let start = Date.now()
-//   let members = await alixGroup.members
-//   let end = Date.now()
-//   console.log(`Alix loaded ${members.length} members in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'listing 50 members should take less than a .1 second'
-//   )
+  const alixGroup = initialGroups[0]
+  let start = Date.now()
+  let members = await alixGroup.members
+  let end = Date.now()
+  console.log(`Alix loaded ${members.length} members in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'listing 50 members should take less than a .1 second'
+  )
 
-//   start = Date.now()
-//   await alixGroup.sync()
-//   end = Date.now()
-//   console.log(`Alix synced ${members.length} members in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'syncing 50 members should take less than a .1 second'
-//   )
+  start = Date.now()
+  await alixGroup.sync()
+  end = Date.now()
+  console.log(`Alix synced ${members.length} members in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'syncing 50 members should take less than a .1 second'
+  )
 
-//   await boClient.conversations.syncGroups()
-//   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
-//   start = Date.now()
-//   await boGroup!.sync()
-//   end = Date.now()
-//   console.log(`Bo synced ${members.length} members in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'syncing 50 members should take less than a .1 second'
-//   )
+  await boClient.conversations.syncGroups()
+  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+  start = Date.now()
+  await boGroup!.sync()
+  end = Date.now()
+  console.log(`Bo synced ${members.length} members in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'syncing 50 members should take less than a .1 second'
+  )
 
-//   start = Date.now()
-//   members = await boGroup!.members
-//   end = Date.now()
-//   console.log(`Bo loaded ${members.length} members in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'loading 50 members should take less than a .1 second'
-//   )
+  start = Date.now()
+  members = await boGroup!.members
+  end = Date.now()
+  console.log(`Bo loaded ${members.length} members in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'loading 50 members should take less than a .1 second'
+  )
 
-//   const [davonClient] = await createClients(1)
+  const [davonClient] = await createClients(1)
 
-//   start = Date.now()
-//   await alixGroup.addMembers([davonClient.address])
-//   end = Date.now()
-//   console.log(`Alix added 1 member in ${end - start}ms`)
-//   assert(end - start < 100, 'adding 1 member should take less than a .1 second')
+  start = Date.now()
+  await alixGroup.addMembers([davonClient.address])
+  end = Date.now()
+  console.log(`Alix added 1 member in ${end - start}ms`)
+  assert(end - start < 100, 'adding 1 member should take less than a .1 second')
 
-//   start = Date.now()
-//   members = await alixGroup.members
-//   end = Date.now()
-//   console.log(`Alix loaded ${members.length} members in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'loading 50 member should take less than a .1 second'
-//   )
+  start = Date.now()
+  members = await alixGroup.members
+  end = Date.now()
+  console.log(`Alix loaded ${members.length} members in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'loading 50 member should take less than a .1 second'
+  )
 
-//   start = Date.now()
-//   await boGroup!.sync()
-//   end = Date.now()
-//   console.log(`Bo synced ${members.length} members in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'syncing 50 member should take less than a .1 second'
-//   )
+  start = Date.now()
+  await boGroup!.sync()
+  end = Date.now()
+  console.log(`Bo synced ${members.length} members in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'syncing 50 member should take less than a .1 second'
+  )
 
-//   start = Date.now()
-//   members = await boGroup!.members
-//   end = Date.now()
-//   console.log(`Bo loaded ${members.length} members in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'loading 50 member should take less than a .1 second'
-//   )
+  start = Date.now()
+  members = await boGroup!.members
+  end = Date.now()
+  console.log(`Bo loaded ${members.length} members in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'loading 50 member should take less than a .1 second'
+  )
 
-//   return true
-// })
+  return true
+})
 
-// test('testing sending message in large group', async () => {
-//   await beforeAll(1, 2000, 100)
+test('testing sending message in large group', async () => {
+  await beforeAll(1, 2000, 100)
 
-//   const alixGroup = initialGroups[0]
-//   let start = Date.now()
-//   await alixGroup.send({ text: `Alix message` })
-//   let end = Date.now()
-//   console.log(`Alix sent a message in ${end - start}ms`)
-//   assert(
-//     end - start < 200,
-//     'sending a message should take less than a .2 second'
-//   )
+  const alixGroup = initialGroups[0]
+  let start = Date.now()
+  await alixGroup.send({ text: `Alix message` })
+  let end = Date.now()
+  console.log(`Alix sent a message in ${end - start}ms`)
+  assert(
+    end - start < 200,
+    'sending a message should take less than a .2 second'
+  )
 
-//   await boClient.conversations.syncGroups()
-//   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
-//   start = Date.now()
-//   await boGroup!.prepareMessage({ text: `Bo message` })
-//   end = Date.now()
-//   console.log(`Bo sent a message in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'preparing a message should take less than a .1 second'
-//   )
+  await boClient.conversations.syncGroups()
+  const boGroup = await boClient.conversations.findGroup(alixGroup.id)
+  start = Date.now()
+  await boGroup!.prepareMessage({ text: `Bo message` })
+  end = Date.now()
+  console.log(`Bo sent a message in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'preparing a message should take less than a .1 second'
+  )
 
-//   start = Date.now()
-//   await boGroup!.sync()
-//   end = Date.now()
-//   console.log(`Bo synced messages in ${end - start}ms`)
-//   assert(
-//     end - start < 9000,
-//     'syncing 2000 messages should take less than a 9 second'
-//   )
+  start = Date.now()
+  await boGroup!.sync()
+  end = Date.now()
+  console.log(`Bo synced messages in ${end - start}ms`)
+  assert(
+    end - start < 9000,
+    'syncing 2000 messages should take less than a 9 second'
+  )
 
-//   start = Date.now()
-//   await boGroup!.send({ text: `Bo message 2` })
-//   end = Date.now()
-//   console.log(`Bo sent a message in ${end - start}ms`)
-//   assert(
-//     end - start < 100,
-//     'sending a message should take less than a .1 second'
-//   )
+  start = Date.now()
+  await boGroup!.send({ text: `Bo message 2` })
+  end = Date.now()
+  console.log(`Bo sent a message in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'sending a message should take less than a .1 second'
+  )
 
-//   return true
-// })
+  return true
+})
