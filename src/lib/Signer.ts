@@ -1,7 +1,12 @@
 import type { WalletClient } from 'viem'
 
+export type WalletType = 'EOA' | 'SCW'
+
 export interface Signer {
   getAddress: () => Promise<string>
+  getChainId: () => number | undefined
+  getBlockNumber: () => number | undefined
+  walletType: () => WalletType | undefined
   signMessage: (message: string) => Promise<string>
 }
 
@@ -37,5 +42,8 @@ export function convertWalletClientToSigner(
         message: typeof message === 'string' ? message : { raw: message },
         account,
       }),
+    getChainId: () => undefined,
+    getBlockNumber: () => undefined,
+    walletType: () => undefined,
   }
 }
