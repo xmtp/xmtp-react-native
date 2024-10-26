@@ -512,9 +512,13 @@ export async function findGroup<
 ): Promise<Group<ContentTypes> | undefined> {
   const json = await XMTPModule.findGroup(client.inboxId, groupId)
   const group = JSON.parse(json)
-  const members = group['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
+  if (!group || Object.keys(group).length === 0) {
+    return undefined
+  }
+  const members =
+    group['members']?.map((mem: string) => {
+      return Member.from(mem)
+    }) || []
   return new Group(client, group, members)
 }
 
@@ -526,9 +530,13 @@ export async function findConversation<
 ): Promise<ConversationContainer<ContentTypes> | undefined> {
   const json = await XMTPModule.findConversation(client.inboxId, conversationId)
   const conversation = JSON.parse(json)
-  const members = conversation['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
+  if (!conversation || Object.keys(conversation).length === 0) {
+    return undefined
+  }
+  const members =
+    conversation['members']?.map((mem: string) => {
+      return Member.from(mem)
+    }) || []
 
   if (conversation.version === ConversationVersion.GROUP) {
     return new Group(client, conversation, members)
@@ -545,9 +553,13 @@ export async function findConversationByTopic<
 ): Promise<ConversationContainer<ContentTypes> | undefined> {
   const json = await XMTPModule.findConversationByTopic(client.inboxId, topic)
   const conversation = JSON.parse(json)
-  const members = conversation['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
+  if (!conversation || Object.keys(conversation).length === 0) {
+    return undefined
+  }
+  const members =
+    conversation['members']?.map((mem: string) => {
+      return Member.from(mem)
+    }) || []
 
   if (conversation.version === ConversationVersion.GROUP) {
     return new Group(client, conversation, members)
@@ -564,9 +576,13 @@ export async function findDm<
 ): Promise<Dm<ContentTypes> | undefined> {
   const json = await XMTPModule.findDm(client.inboxId, address)
   const dm = JSON.parse(json)
-  const members = dm['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
+  if (!dm || Object.keys(dm).length === 0) {
+    return undefined
+  }
+  const members =
+    dm['members']?.map((mem: string) => {
+      return Member.from(mem)
+    }) || []
   return new Dm(client, dm, members)
 }
 

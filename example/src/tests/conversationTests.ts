@@ -1,22 +1,5 @@
-import { Wallet } from 'ethers'
-import { Platform } from 'expo-modules-core'
-import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
-
-import {
-  Test,
-  assert,
-  createClients,
-  createV3Clients,
-  delayToPropogate,
-} from './test-utils'
-import {
-  Client,
-  Conversation,
-  Dm,
-  Group,
-  ConversationContainer,
-  ConversationVersion,
-} from '../../../src/index'
+import { Test, assert, createV3Clients, delayToPropogate } from './test-utils'
+import { ConversationContainer, ConversationVersion } from '../../../src/index'
 
 export const conversationTests: Test[] = []
 let counter = 1
@@ -35,6 +18,9 @@ test('can find a conversations by id', async () => {
   await boClient.conversations.syncConversations()
   const boGroup = await boClient.conversations.findConversation(alixGroup.id)
   const boDm = await boClient.conversations.findConversation(alixDm.id)
+  const boDm2 = await boClient.conversations.findConversation('GARBAGE')
+
+  assert(boDm2 === undefined, `bodm2 should be undefined`)
 
   assert(
     boGroup?.id === alixGroup.id,
@@ -103,7 +89,7 @@ test('can list conversations with params', async () => {
   await boGroup1.send({ text: `third message` })
   await boDm2.send({ text: `third message` })
   await boGroup2.send({ text: `first message` })
-  await boDm1.send({ text: `first message` })
+  await boDm1.send({ text: `dm message` })
   // Order should be [Dm1, Group2, Dm2, Group1]
 
   await boClient.conversations.syncAllConversations()
@@ -133,13 +119,12 @@ test('can list conversations with params', async () => {
 
   const messages = await boConvosOrderLastMessage[0].messages()
   assert(
-    messages[0].content() === 'first message',
-    `last message should be first message ${messages[0].content()}`
+    messages[0].content() === 'dm message',
+    `last message 1 should be dm message ${messages[0].content()}`
   )
-  // TODO FIX ME
   // assert(
-  //   boConvosOrderLastMessage[0].lastMessage?.content() === 'first message',
-  //   `last message should be last message ${boConvosOrderLastMessage[0].lastMessage?.content()}`
+  //   boConvosOrderLastMessage[0].lastMessage?.content() === 'dm message',
+  //   `last message 2 should be dm message ${boConvosOrderLastMessage[0].lastMessage?.content()}`
   // )
   assert(
     boGroupsLimit.length === 1,

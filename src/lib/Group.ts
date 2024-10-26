@@ -618,7 +618,7 @@ export class Group<
   }
 
   async consentState(): Promise<ConsentState> {
-    return await XMTP.conversationConsentState(this.client.inboxId, this.id)
+    return await XMTP.conversationV3ConsentState(this.client.inboxId, this.id)
   }
 
   async updateConsent(state: ConsentState): Promise<void> {

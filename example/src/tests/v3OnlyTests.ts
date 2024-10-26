@@ -82,6 +82,22 @@ test('can create group', async () => {
   )
 })
 
+test('can create dm', async () => {
+  const [alixV2, boV3, caroV2V3] = await createV3TestingClients()
+  const dm = await boV3.conversations.findOrCreateDm(caroV2V3.address)
+  assert(dm?.members?.length === 2, `dm should have 2 members`)
+
+  try {
+    await boV3.conversations.findOrCreateDm(alixV2.address)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    return true
+  }
+  throw new Error(
+    'should throw error when trying to add a V2 only client to a dm'
+  )
+})
+
 test('can send message', async () => {
   const [alixV2, boV3, caroV2V3] = await createV3TestingClients()
   const group = await boV3.conversations.newGroup([caroV2V3.address])
@@ -101,6 +117,29 @@ test('can send message', async () => {
   assert(
     sameGroupMessages[0].content() === 'gm',
     `second should be gm but was ${sameGroupMessages[0].content()}`
+  )
+  return true
+})
+
+test('can send messages to dm', async () => {
+  const [alixV2, boV3, caroV2V3] = await createV3TestingClients()
+  const dm = await boV3.conversations.findOrCreateDm(caroV2V3.address)
+  await dm.send('gm')
+  await dm.sync()
+  const dmMessages = await dm.messages()
+  assert(
+    dmMessages[0].content() === 'gm',
+    `first should be gm but was ${dmMessages[0].content()}`
+  )
+
+  await caroV2V3.conversations.syncConversations()
+  const sameDm = await caroV2V3.conversations.findConversation(dm.id)
+  await sameDm?.sync()
+
+  const sameDmMessages = await sameDm!!.messages()
+  assert(
+    sameDmMessages[0].content() === 'gm',
+    `second should be gm but was ${sameDmMessages[0].content()}`
   )
   return true
 })
