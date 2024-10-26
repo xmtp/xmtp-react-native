@@ -240,6 +240,12 @@ export class Group<
     }
   }
 
+  async streamGroupMessages(
+    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
+  ): Promise<() => void> {
+    return this.streamMessages(callback)
+  }
+
   /**
    *
    * @param addresses addresses to add to the group

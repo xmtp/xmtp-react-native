@@ -2,6 +2,7 @@ import { useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
 
+import { conversationTests } from './tests/conversationTests'
 import { groupPerformanceTests } from './tests/groupPerformanceTests'
 import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
@@ -9,7 +10,6 @@ import { restartStreamTests } from './tests/restartStreamsTests'
 import { Test } from './tests/test-utils'
 import { tests } from './tests/tests'
 import { v3OnlyTests } from './tests/v3OnlyTests'
-import { dmTests } from './tests/dmTests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
@@ -108,7 +108,7 @@ function TestView({
 export enum TestCategory {
   all = 'all',
   tests = 'tests',
-  dm = 'dm',
+  conversation = 'conversation',
   group = 'group',
   v3Only = 'v3Only',
   restartStreans = 'restartStreams',
@@ -125,7 +125,7 @@ export default function TestScreen(): JSX.Element {
   const allTests = [
     ...tests,
     ...groupTests,
-    ...dmTests,
+    ...conversationTests,
     ...v3OnlyTests,
     ...restartStreamTests,
     ...groupPermissionsTests,
@@ -145,9 +145,9 @@ export default function TestScreen(): JSX.Element {
       activeTests = groupTests
       title = 'Group Unit Tests'
       break
-    case TestCategory.dm:
-      activeTests = dmTests
-      title = 'Dm Unit Tests'
+    case TestCategory.conversation:
+      activeTests = conversationTests
+      title = 'Conversation Unit Tests'
       break
     case TestCategory.v3Only:
       activeTests = v3OnlyTests

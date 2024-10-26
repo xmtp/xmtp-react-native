@@ -1725,10 +1725,10 @@ test('can stream all group Messages from multiple clients', async () => {
   const alixGroup = await caro.conversations.newGroup([alix.address])
   const boGroup = await caro.conversations.newGroup([bo.address])
 
-  await alixGroup.streamMessages(async (message) => {
+  await alixGroup.streamGroupMessages(async (message) => {
     allAlixMessages.push(message)
   })
-  await boGroup.streamMessages(async (message) => {
+  await boGroup.streamGroupMessages(async (message) => {
     allBoMessages.push(message)
   })
 

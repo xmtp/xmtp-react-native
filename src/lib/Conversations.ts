@@ -7,6 +7,7 @@ import {
   ConversationContainer,
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
+import { Dm } from './Dm'
 import { Group, GroupParams } from './Group'
 import { Member } from './Member'
 import { CreateGroupOptions } from './types/CreateGroupOptions'
@@ -17,7 +18,6 @@ import { ConversationContext } from '../XMTP.types'
 import * as XMTPModule from '../index'
 import { ContentCodec } from '../index'
 import { getAddress } from '../utils/address'
-import { Dm } from './Dm'
 
 export default class Conversations<
   ContentTypes extends ContentCodec<any>[] = [],
@@ -195,8 +195,12 @@ export default class Conversations<
    *
    * @returns {Promise<ConversationContainer[]>} A Promise that resolves to an array of ConversationContainer objects.
    */
-  async listConversations(): Promise<ConversationContainer<ContentTypes>[]> {
-    return await XMTPModule.listV3Conversations(this.client)
+  async listConversations(
+    opts?: GroupOptions | undefined,
+    order?: ConversationOrder | undefined,
+    limit?: number | undefined
+  ): Promise<ConversationContainer<ContentTypes>[]> {
+    return await XMTPModule.listV3Conversations(this.client, opts, order, limit)
   }
 
   /**

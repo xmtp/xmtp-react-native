@@ -20,11 +20,7 @@ export interface ConversationContainer<
   id: string
   state: ConsentState
   lastMessage?: DecodedMessage<ContentTypes>
-}
 
-export interface ConversationFunctions<
-  ContentTypes extends DefaultContentTypes,
-> {
   send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
     content: ConversationSendPayload<SendContentTypes>
   ): Promise<string>
