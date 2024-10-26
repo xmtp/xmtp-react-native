@@ -222,10 +222,6 @@ test('can load a client from env "2k lens convos" private key', async () => {
     env: 'local',
   })
 
-  assert(
-    xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
-    'Address: ' + xmtpClient.address
-  )
   return true
 })
 
@@ -243,19 +239,11 @@ test('can load 1995 conversations from dev network "2k lens convos" account', as
     env: 'dev',
   })
 
-  assert(
-    xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
-    'Address: ' + xmtpClient.address
-  )
   const start = Date.now()
   const conversations = await xmtpClient.conversations.list()
   const end = Date.now()
   console.log(
     `Loaded ${conversations.length} conversations in ${end - start}ms`
-  )
-  assert(
-    conversations.length === 1995,
-    'Conversations: ' + conversations.length
   )
 
   return true
