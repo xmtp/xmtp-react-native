@@ -196,7 +196,7 @@ export default class Conversations<
    * @returns {Promise<ConversationContainer[]>} A Promise that resolves to an array of ConversationContainer objects.
    */
   async listConversations(): Promise<ConversationContainer<ContentTypes>[]> {
-    return await XMTPModule.listConversations(this.client)
+    return await XMTPModule.listV3Conversations(this.client)
   }
 
   /**

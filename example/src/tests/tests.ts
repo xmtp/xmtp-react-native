@@ -203,6 +203,9 @@ export function convertPrivateKeyAccountToSigner(
       privateKeyAccount.signMessage({
         message: typeof message === 'string' ? message : { raw: message },
       }),
+    getChainId: () => undefined,
+    getBlockNumber: () => undefined,
+    walletType: () => 'EOA',
   }
 }
 

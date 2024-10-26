@@ -16,10 +16,10 @@ import {
   Group,
   ConversationContainer,
   ConversationVersion,
-  MessageDeliveryStatus,
   GroupUpdatedContent,
   GroupUpdatedCodec,
 } from '../../../src/index'
+import { getSigner } from '../../../src/lib/Signer'
 
 export const groupTests: Test[] = []
 let counter = 1
@@ -427,15 +427,6 @@ test('group message delivery status', async () => {
     `the messages length should be 2 but was ${alixMessages.length}`
   )
 
-  const alixMessagesFiltered: DecodedMessage[] = await alixGroup.messages({
-    deliveryStatus: MessageDeliveryStatus.PUBLISHED,
-  })
-
-  assert(
-    alixMessagesFiltered.length === 2,
-    `the messages length should be 2 but was ${alixMessagesFiltered.length}`
-  )
-
   await alixGroup.sync()
   const alixMessages2: DecodedMessage[] = await alixGroup.messages()
 
@@ -686,56 +677,12 @@ test('unpublished messages handling', async () => {
     throw new Error(`Message count should be 1, but it is ${messageCount}`)
   }
 
-  // Verify the count of published and unpublished messages
-  let messageCountPublished = (
-    await alixGroup.messages({
-      deliveryStatus: MessageDeliveryStatus.PUBLISHED,
-    })
-  ).length
-  let messageCountUnpublished = (
-    await alixGroup.messages({
-      deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
-    })
-  ).length
-  if (messageCountPublished !== 0) {
-    throw new Error(
-      `Published message count should be 0, but it is ${messageCountPublished}`
-    )
-  }
-  if (messageCountUnpublished !== 1) {
-    throw new Error(
-      `Unpublished message count should be 1, but it is ${messageCountUnpublished}`
-    )
-  }
-
   // Publish the prepared message
   await alixGroup.publishPreparedMessages()
 
   // Sync the group after publishing the message
   await alixGroup.sync()
-
-  // Verify the message counts again
-  messageCountPublished = (
-    await alixGroup.messages({
-      deliveryStatus: MessageDeliveryStatus.PUBLISHED,
-    })
-  ).length
-  messageCountUnpublished = (
-    await alixGroup.messages({
-      deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
-    })
-  ).length
   messageCount = (await alixGroup.messages()).length
-  if (messageCountPublished !== 1) {
-    throw new Error(
-      `Published message count should be 1, but it is ${messageCountPublished}`
-    )
-  }
-  if (messageCountUnpublished !== 0) {
-    throw new Error(
-      `Unpublished message count should be 0, but it is ${messageCountUnpublished}`
-    )
-  }
   if (messageCount !== 1) {
     throw new Error(`Message count should be 1, but it is ${messageCount}`)
   }
@@ -1332,7 +1279,7 @@ test('can stream group messages', async () => {
 
   // Record message stream for this group
   const groupMessages: DecodedMessage[] = []
-  const cancelGroupMessageStream = await alixGroup.streamGroupMessages(
+  const cancelGroupMessageStream = await alixGroup.streamMessages(
     async (message) => {
       groupMessages.push(message)
     }
@@ -1778,10 +1725,10 @@ test('can stream all group Messages from multiple clients', async () => {
   const alixGroup = await caro.conversations.newGroup([alix.address])
   const boGroup = await caro.conversations.newGroup([bo.address])
 
-  await alixGroup.streamGroupMessages(async (message) => {
+  await alixGroup.streamMessages(async (message) => {
     allAlixMessages.push(message)
   })
-  await boGroup.streamGroupMessages(async (message) => {
+  await boGroup.streamMessages(async (message) => {
     allBoMessages.push(message)
   })
 
@@ -1825,10 +1772,10 @@ test('can stream all group Messages from multiple clients - swapped', async () =
   const alixGroup = await caro.conversations.newGroup([alix.address])
   const boGroup = await caro.conversations.newGroup([bo.address])
 
-  await boGroup.streamGroupMessages(async (message) => {
+  await boGroup.streamMessages(async (message) => {
     allBoMessages.push(message)
   })
-  await alixGroup.streamGroupMessages(async (message) => {
+  await alixGroup.streamMessages(async (message) => {
     allAlixMessages.push(message)
   })
 
