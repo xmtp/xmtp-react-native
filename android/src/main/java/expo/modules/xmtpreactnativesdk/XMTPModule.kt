@@ -256,7 +256,7 @@ class XMTPModule : Module() {
             "conversationMessage",
             // ConversationV3
             "conversationV3",
-            "allConversationMessage",
+            "allConversationMessages",
             "conversationV3Message",
             // Group
             "groupMessage",

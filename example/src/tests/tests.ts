@@ -205,7 +205,7 @@ export function convertPrivateKeyAccountToSigner(
       }),
     getChainId: () => undefined,
     getBlockNumber: () => undefined,
-    walletType: () => 'EOA',
+    walletType: () => undefined,
   }
 }
 
@@ -286,16 +286,14 @@ test('can pass a custom filter date and receive message objects with expected da
     const finalQueryDate = new Date('2025-01-01')
 
     // Show all messages before date in the past
-    const messages1: DecodedMessage<any>[] = await aliceConversation.messages(
-      undefined,
-      initialQueryDate
-    )
+    const messages1: DecodedMessage<any>[] = await aliceConversation.messages({
+      before: initialQueryDate,
+    })
 
     // Show all messages before date in the future
-    const messages2: DecodedMessage<any>[] = await aliceConversation.messages(
-      undefined,
-      finalQueryDate
-    )
+    const messages2: DecodedMessage<any>[] = await aliceConversation.messages({
+      before: finalQueryDate,
+    })
 
     const isAboutRightSendTime = Math.abs(messages2[0].sent - sentAt) < 1000
     if (!isAboutRightSendTime) return false
@@ -308,16 +306,14 @@ test('can pass a custom filter date and receive message objects with expected da
     // repeat the above test with a numeric date value
 
     // Show all messages before date in the past
-    const messages3: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      initialQueryDate.getTime()
-    )
+    const messages3: DecodedMessage[] = await aliceConversation.messages({
+      before: initialQueryDate.getTime(),
+    })
 
     // Show all messages before date in the future
-    const messages4: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      finalQueryDate.getTime()
-    )
+    const messages4: DecodedMessage[] = await aliceConversation.messages({
+      before: finalQueryDate.getTime(),
+    })
 
     const passingTimestampFieldSuccessful =
       !messages3.length && messages4.length === 1

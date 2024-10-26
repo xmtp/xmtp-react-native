@@ -47,7 +47,7 @@ export enum EventTypes {
   /**
    * A new message is sent to any V3 conversation
    */
-  AllConversationMessage = 'allConversationMessage',
+  AllConversationMessages = 'allConversationMessages',
   // Conversation Events
   /**
    * A new V3 conversation is created

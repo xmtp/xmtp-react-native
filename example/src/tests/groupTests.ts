@@ -19,7 +19,6 @@ import {
   GroupUpdatedContent,
   GroupUpdatedCodec,
 } from '../../../src/index'
-import { getSigner } from '../../../src/lib/Signer'
 
 export const groupTests: Test[] = []
 let counter = 1

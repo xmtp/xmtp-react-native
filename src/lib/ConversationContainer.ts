@@ -24,9 +24,6 @@ export interface ConversationContainer<
   send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
     content: ConversationSendPayload<SendContentTypes>
   ): Promise<string>
-  prepareMessage<SendContentTypes extends DefaultContentTypes = ContentTypes>(
-    content: ConversationSendPayload<SendContentTypes>
-  ): Promise<string>
   sync()
   messages(opts?: MessagesOptions): Promise<DecodedMessage<ContentTypes>[]>
   streamMessages(

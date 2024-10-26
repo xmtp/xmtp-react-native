@@ -538,7 +538,7 @@ export default class Conversations<
   ): Promise<void> {
     XMTPModule.subscribeToAllConversationMessages(this.client.inboxId)
     const subscription = XMTPModule.emitter.addListener(
-      EventTypes.AllConversationMessage,
+      EventTypes.AllConversationMessages,
       async ({
         inboxId,
         message,
@@ -557,7 +557,7 @@ export default class Conversations<
         await callback(DecodedMessage.fromObject(message, this.client))
       }
     )
-    this.subscriptions[EventTypes.AllConversationMessage] = subscription
+    this.subscriptions[EventTypes.AllConversationMessages] = subscription
   }
 
   async fromWelcome(encryptedMessage: string): Promise<Group<ContentTypes>> {
@@ -639,9 +639,9 @@ export default class Conversations<
   }
 
   cancelStreamAllConversations() {
-    if (this.subscriptions[EventTypes.AllConversationMessage]) {
-      this.subscriptions[EventTypes.AllConversationMessage].remove()
-      delete this.subscriptions[EventTypes.AllConversationMessage]
+    if (this.subscriptions[EventTypes.AllConversationMessages]) {
+      this.subscriptions[EventTypes.AllConversationMessages].remove()
+      delete this.subscriptions[EventTypes.AllConversationMessages]
     }
     XMTPModule.unsubscribeFromAllConversationMessages(this.client.inboxId)
   }
