@@ -6,17 +6,13 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consent
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Group
 
-enum class ConversationOrder {
-    LAST_MESSAGE, CREATED_AT
-}
-
 class GroupWrapper {
 
     companion object {
         suspend fun encodeToObj(
             client: Client,
             group: Group,
-            groupParams: GroupParamsWrapper = GroupParamsWrapper(),
+            groupParams: ConversationParamsWrapper = ConversationParamsWrapper(),
         ): Map<String, Any> {
             return buildMap {
                 put("clientAddress", client.address)
@@ -48,7 +44,7 @@ class GroupWrapper {
         suspend fun encode(
             client: Client,
             group: Group,
-            groupParams: GroupParamsWrapper = GroupParamsWrapper(),
+            groupParams: ConversationParamsWrapper = ConversationParamsWrapper(),
         ): String {
             val gson = GsonBuilder().create()
             val obj = encodeToObj(client, group, groupParams)
@@ -57,7 +53,7 @@ class GroupWrapper {
     }
 }
 
-class GroupParamsWrapper(
+class ConversationParamsWrapper(
     val members: Boolean = true,
     val creatorInboxId: Boolean = true,
     val isActive: Boolean = true,
@@ -69,10 +65,10 @@ class GroupParamsWrapper(
     val lastMessage: Boolean = false,
 ) {
     companion object {
-        fun groupParamsFromJson(groupParams: String): GroupParamsWrapper {
-            if (groupParams.isEmpty()) return GroupParamsWrapper()
-            val jsonOptions = JsonParser.parseString(groupParams).asJsonObject
-            return GroupParamsWrapper(
+        fun conversationParamsFromJson(conversationParams: String): ConversationParamsWrapper {
+            if (conversationParams.isEmpty()) return ConversationParamsWrapper()
+            val jsonOptions = JsonParser.parseString(conversationParams).asJsonObject
+            return ConversationParamsWrapper(
                 if (jsonOptions.has("members")) jsonOptions.get("members").asBoolean else true,
                 if (jsonOptions.has("creatorInboxId")) jsonOptions.get("creatorInboxId").asBoolean else true,
                 if (jsonOptions.has("isActive")) jsonOptions.get("isActive").asBoolean else true,

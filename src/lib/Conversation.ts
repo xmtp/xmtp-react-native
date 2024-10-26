@@ -1,6 +1,7 @@
 import { invitation } from '@xmtp/proto'
 import { Buffer } from 'buffer'
 
+import { ConsentState } from './ConsentListEntry'
 import {
   ConversationVersion,
   ConversationContainer,
@@ -12,6 +13,7 @@ import { EventTypes } from './types/EventTypes'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 import { ConversationContext, PreparedLocalMessage } from '../index'
+import { MessagesOptions } from './types'
 
 export interface ConversationParams {
   createdAt: number
@@ -34,6 +36,9 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
   peerAddress: string
   version = ConversationVersion.DIRECT
   conversationID?: string | undefined
+  id: string
+  state: ConsentState
+  
   /**
    * Base64 encoded key material for the conversation.
    */
@@ -51,6 +56,8 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
     this.peerAddress = params.peerAddress ?? ''
     this.conversationID = params.conversationID
     this.keyMaterial = params.keyMaterial
+    this.id = params.topic
+    this.state = 'unknown'
     try {
       if (params?.consentProof) {
         this.consentProof = invitation.ConsentProofPayload.decode(
@@ -59,6 +66,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       }
     } catch {}
   }
+  lastMessage?: DecodedMessage<ContentTypes> | undefined
 
   async exportTopicData(): Promise<string> {
     return await XMTP.exportConversationTopicData(
@@ -80,22 +88,16 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
    * @todo Support pagination and conversation ID in future implementations.
    */
   async messages(
-    limit?: number | undefined,
-    before?: number | Date | undefined,
-    after?: number | Date | undefined,
-    direction?:
-      | 'SORT_DIRECTION_ASCENDING'
-      | 'SORT_DIRECTION_DESCENDING'
-      | undefined
+    opts?: MessagesOptions
   ): Promise<DecodedMessage<ContentTypes>[]> {
     try {
       const messages = await XMTP.listMessages<ContentTypes>(
         this.client,
         this.topic,
-        limit,
-        before,
-        after,
-        direction
+        opts?.limit,
+        opts?.before,
+        opts?.after,
+        opts?.direction
       )
 
       return messages
@@ -315,5 +317,15 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
       messageSubscription.remove()
       await XMTP.unsubscribeFromMessages(this.client.inboxId, this.topic)
     }
+  }
+
+  sync() {
+    throw new Error('V3 only')
+  }
+  updateConsent(state: ConsentState): Promise<void> {
+    throw new Error('V3 only')
+  }
+  processMessage(encryptedMessage: string): Promise<DecodedMessage<ContentTypes>> {
+    throw new Error('V3 only')
   }
 }

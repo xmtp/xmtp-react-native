@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-extra-non-null-assertion */
-import { Client, Group } from 'xmtp-react-native-sdk'
+import { Client, Conversation, Dm, Group } from 'xmtp-react-native-sdk'
+import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
-import { Test, assert, createClients } from './test-utils'
+import { Test, assert, createClients, createV3Clients } from './test-utils'
 
 export const groupPerformanceTests: Test[] = []
 let counter = 1
@@ -34,28 +35,100 @@ async function createGroups(
   return groups
 }
 
+async function createDms(
+  client: Client,
+  peers: Client[],
+  numMessages: number
+): Promise<Dm[]> {
+  const dms = []
+  for (let i = 0; i < peers.length; i++) {
+    const dm = await peers[i].conversations.findOrCreateDm(client.address)
+    dms.push(dm)
+    for (let i = 0; i < numMessages; i++) {
+      await dm.send({ text: `Alix message ${i}` })
+    }
+  }
+  return dms
+}
+
+async function createV2Convos(
+  client: Client,
+  peers: Client[],
+  numMessages: number
+): Promise<Conversation<DefaultContentTypes>[]> {
+  const convos = []
+  for (let i = 0; i < peers.length; i++) {
+    const convo = await peers[i].conversations.newConversation(client.address)
+    convos.push(convo)
+    for (let i = 0; i < numMessages; i++) {
+      await convo.send({ text: `Alix message ${i}` })
+    }
+  }
+  return convos
+}
+
 let alixClient: Client
 let boClient: Client
+let davonV3Client: Client
 let initialPeers: Client[]
 let initialGroups: Group[]
+// let initialDms: Dm[]
+// let initialV2Convos: Conversation<DefaultContentTypes>[]
 
 async function beforeAll(
   groupSize: number = 1,
-  groupMessages: number = 1,
-  peersSize: number = 1
+  messages: number = 1,
+  peersSize: number = 1,
+  includeDms: boolean = false,
+  includeV2Convos: boolean = false
 ) {
   ;[alixClient] = await createClients(1)
+  ;[davonV3Client] = await createV3Clients(1)
 
   initialPeers = await createClients(peersSize)
+  const initialV3Peers = await createV3Clients(peersSize)
   boClient = initialPeers[0]
 
   initialGroups = await createGroups(
     alixClient,
     initialPeers,
     groupSize,
-    groupMessages
+    messages
   )
+
+  if (includeDms) {
+    await createDms(davonV3Client, initialV3Peers, messages)
+  }
+
+  if (includeV2Convos) {
+    await createV2Convos(alixClient, initialPeers, messages)
+  }
 }
+
+test('test compare V2 and V3 dms', async () => {
+  await beforeAll(0, 0, 50, true, true)
+  let start = Date.now()
+  let v2Convos = await alixClient.conversations.list()
+  let end = Date.now()
+  console.log(`Alix loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+
+  start = Date.now()
+  v2Convos = await alixClient.conversations.list()
+  end = Date.now()
+  console.log(`Alix 2nd loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+
+  start = Date.now()
+  await davonV3Client.conversations.syncConversations()
+  end = Date.now()
+  console.log(`Davon synced ${v2Convos.length} Dms in ${end - start}ms`)
+
+  start = Date.now()
+  const dms = await davonV3Client.conversations.listConversations()
+  end = Date.now()
+  console.log(`Davon loaded ${dms.length} Dms in ${end - start}ms`)
+
+  return true
+})
 
 test('testing large group listings with ordering', async () => {
   await beforeAll(1000, 10, 10)

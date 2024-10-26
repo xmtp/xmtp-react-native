@@ -14,6 +14,8 @@ struct ConversationContainerWrapper {
 		switch conversation {
 		case .group(let group):
 			return try await GroupWrapper.encodeToObj(group, client: client)
+		case .dm(let dm):
+			return try await DmWrapper.encodeToObj(dm, client: client)
 		default:
 			return try ConversationWrapper.encodeToObj(conversation, client: client)
 		}

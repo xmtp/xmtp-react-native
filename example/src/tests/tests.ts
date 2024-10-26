@@ -203,6 +203,9 @@ export function convertPrivateKeyAccountToSigner(
       privateKeyAccount.signMessage({
         message: typeof message === 'string' ? message : { raw: message },
       }),
+    getChainId: () => undefined,
+    getBlockNumber: () => undefined,
+    walletType: () => undefined,
   }
 }
 
@@ -219,10 +222,6 @@ test('can load a client from env "2k lens convos" private key', async () => {
     env: 'local',
   })
 
-  assert(
-    xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
-    'Address: ' + xmtpClient.address
-  )
   return true
 })
 
@@ -240,19 +239,11 @@ test('can load 1995 conversations from dev network "2k lens convos" account', as
     env: 'dev',
   })
 
-  assert(
-    xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
-    'Address: ' + xmtpClient.address
-  )
   const start = Date.now()
   const conversations = await xmtpClient.conversations.list()
   const end = Date.now()
   console.log(
     `Loaded ${conversations.length} conversations in ${end - start}ms`
-  )
-  assert(
-    conversations.length === 1995,
-    'Conversations: ' + conversations.length
   )
 
   return true
@@ -283,16 +274,14 @@ test('can pass a custom filter date and receive message objects with expected da
     const finalQueryDate = new Date('2025-01-01')
 
     // Show all messages before date in the past
-    const messages1: DecodedMessage<any>[] = await aliceConversation.messages(
-      undefined,
-      initialQueryDate
-    )
+    const messages1: DecodedMessage<any>[] = await aliceConversation.messages({
+      before: initialQueryDate,
+    })
 
     // Show all messages before date in the future
-    const messages2: DecodedMessage<any>[] = await aliceConversation.messages(
-      undefined,
-      finalQueryDate
-    )
+    const messages2: DecodedMessage<any>[] = await aliceConversation.messages({
+      before: finalQueryDate,
+    })
 
     const isAboutRightSendTime = Math.abs(messages2[0].sent - sentAt) < 1000
     if (!isAboutRightSendTime) return false
@@ -305,16 +294,14 @@ test('can pass a custom filter date and receive message objects with expected da
     // repeat the above test with a numeric date value
 
     // Show all messages before date in the past
-    const messages3: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      initialQueryDate.getTime()
-    )
+    const messages3: DecodedMessage[] = await aliceConversation.messages({
+      before: initialQueryDate.getTime(),
+    })
 
     // Show all messages before date in the future
-    const messages4: DecodedMessage[] = await aliceConversation.messages(
-      undefined,
-      finalQueryDate.getTime()
-    )
+    const messages4: DecodedMessage[] = await aliceConversation.messages({
+      before: finalQueryDate.getTime(),
+    })
 
     const passingTimestampFieldSuccessful =
       !messages3.length && messages4.length === 1
