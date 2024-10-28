@@ -298,9 +298,10 @@ export async function findOrCreateDm<
   const dm = JSON.parse(
     await XMTPModule.findOrCreateDm(client.inboxId, peerAddress)
   )
-  const members = dm['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
+  const members =
+    dm['members']?.map((mem: string) => {
+      return Member.from(mem)
+    }) || []
   return new Dm(client, dm, members)
 }
 
@@ -330,9 +331,10 @@ export async function createGroup<
     )
   )
 
-  const members = group['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
+  const members =
+    group['members']?.map((mem: string) => {
+      return Member.from(mem)
+    }) || []
   return new Group(client, group, members)
 }
 
@@ -361,9 +363,10 @@ export async function createGroupCustomPermissions<
       JSON.stringify(options)
     )
   )
-  const members = group['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
+  const members =
+    group['members']?.map((mem: string) => {
+      return Member.from(mem)
+    }) || []
   return new Group(client, group, members)
 }
 
@@ -384,9 +387,10 @@ export async function listGroups<
     )
   ).map((json: string) => {
     const group = JSON.parse(json)
-    const members = group['members']?.map((mem: string) => {
-      return Member.from(mem)
-    })
+    const members =
+      group['members']?.map((mem: string) => {
+        return Member.from(mem)
+      }) || []
     const lastMessage = group['lastMessage']
       ? DecodedMessage.from(group['lastMessage'], client)
       : undefined
@@ -411,9 +415,10 @@ export async function listV3Conversations<
     )
   ).map((json: string) => {
     const jsonObj = JSON.parse(json)
-    const members = jsonObj.members.map((mem: string) => {
-      return Member.from(mem)
-    })
+    const members =
+      jsonObj.members?.map((mem: string) => {
+        return Member.from(mem)
+      }) || []
     if (jsonObj.version === ConversationVersion.GROUP) {
       return new Group(client, jsonObj, members)
     } else {
@@ -844,9 +849,10 @@ export async function listAll<
   return list.map((json: string) => {
     const jsonObj = JSON.parse(json)
     if (jsonObj.version === ConversationVersion.GROUP) {
-      const members = jsonObj.members.map((mem: string) => {
-        return Member.from(mem)
-      })
+      const members =
+        jsonObj.members?.map((mem: string) => {
+          return Member.from(mem)
+        }) || []
       return new Group(client, jsonObj, members)
     } else {
       return new Conversation(client, jsonObj)
@@ -1465,9 +1471,10 @@ export async function processWelcomeMessage<
     encryptedMessage
   )
   const group = JSON.parse(json)
-  const members = group['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
+  const members =
+    group['members']?.map((mem: string) => {
+      return Member.from(mem)
+    }) || []
   return new Group(client, group, members)
 }
 
@@ -1482,9 +1489,10 @@ export async function processConversationWelcomeMessage<
     encryptedMessage
   )
   const conversation = JSON.parse(json)
-  const members = conversation['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
+  const members =
+    conversation['members']?.map((mem: string) => {
+      return Member.from(mem)
+    }) || []
 
   if (conversation.version === ConversationVersion.GROUP) {
     return new Group(client, conversation, members)
