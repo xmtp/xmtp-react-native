@@ -21,9 +21,6 @@ class DmWrapper {
                 put("version", "DM")
                 put("topic", dm.topic)
                 put("peerInboxId", dm.peerInboxId())
-                if (dmParams.members) {
-                    put("members", dm.members().map { MemberWrapper.encode(it) })
-                }
                 if (dmParams.creatorInboxId) put("creatorInboxId", dm.creatorInboxId())
                 if (dmParams.consentState) {
                     put("consentState", consentStateToString(dm.consentState()))

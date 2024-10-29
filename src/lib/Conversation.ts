@@ -7,13 +7,13 @@ import {
   ConversationContainer,
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
+import { MessagesOptions } from './types'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 import { ConversationContext, PreparedLocalMessage } from '../index'
-import { MessagesOptions } from './types'
 
 export interface ConversationParams {
   createdAt: number
@@ -38,7 +38,7 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
   conversationID?: string | undefined
   id: string
   state: ConsentState
-  
+
   /**
    * Base64 encoded key material for the conversation.
    */
@@ -325,7 +325,12 @@ export class Conversation<ContentTypes extends DefaultContentTypes>
   updateConsent(state: ConsentState): Promise<void> {
     throw new Error('V3 only')
   }
-  processMessage(encryptedMessage: string): Promise<DecodedMessage<ContentTypes>> {
+  processMessage(
+    encryptedMessage: string
+  ): Promise<DecodedMessage<ContentTypes>> {
+    throw new Error('V3 only')
+  }
+  members(): Promise<XMTP.Member[]> {
     throw new Error('V3 only')
   }
 }
