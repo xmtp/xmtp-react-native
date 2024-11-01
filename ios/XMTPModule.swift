@@ -297,6 +297,31 @@ public class XMTPModule: Module {
 			}
 		}
 		
+		AsyncFunction("createFromKeyBundleWithSigner") { (address: String, keyBundle: String, dbEncryptionKey: [UInt8]?, authParams: String) in
+			// V2 ONLY
+			do {
+				guard let keyBundleData = Data(base64Encoded: keyBundle),
+					  let bundle = try? PrivateKeyBundle(serializedData: keyBundleData)
+				else {
+					throw Error.invalidKeyBundle
+				}
+				let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+				let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+
+				let signer = ReactNativeSigner(module: self, address: address)
+				self.signer = signer
+
+				let options = createClientConfig(env: authOptions.environment, appVersion: authOptions.appVersion, enableV3: authOptions.enableV3, dbEncryptionKey: encryptionKeyData, dbDirectory: authOptions.dbDirectory, historySyncUrl: authOptions.historySyncUrl)
+				let client = try await Client.from(v1Bundle: bundle.v1, options: options, signingKey: signer)
+				await clientsManager.updateClient(key: client.inboxID, client: client)
+				self.signer = nil
+				self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
+			} catch {
+				print("ERROR! Failed to create client: \(error)")
+				throw error
+			}
+		}
+		
 		AsyncFunction("createRandomV3") { (hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
 
 			let privateKey = try PrivateKey.generate()
