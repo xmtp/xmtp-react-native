@@ -2339,19 +2339,11 @@ test('can sync all groups', async () => {
   }
 
   // First syncAllGroups after removal will still sync each group to set group inactive
-  // For some reason on Android (RN only), first syncAllGroups already returns 0
   const numGroupsSynced2 = await bo.conversations.syncAllGroups()
-  if (Platform.OS === 'ios') {
-    assert(
-      numGroupsSynced2 === 50,
-      `should have synced 50 groups but synced ${numGroupsSynced2}`
-    )
-  } else {
-    assert(
-      numGroupsSynced2 === 0,
-      `should have synced 0 groups but synced ${numGroupsSynced2}`
-    )
-  }
+  assert(
+    numGroupsSynced2 === 50,
+    `should have synced 50 groups but synced ${numGroupsSynced2}`
+  )
 
   // Next syncAllGroups will not sync inactive groups
   const numGroupsSynced3 = await bo.conversations.syncAllGroups()
