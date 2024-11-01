@@ -281,6 +281,7 @@ export class Client<
 
                 await XMTPModule.receiveSignature(request.id, signature)
               } catch (e) {
+                this.removeAllSubscriptions()
                 const errorMessage = 'ERROR in create. User rejected signature'
                 console.info(errorMessage, e)
                 reject(errorMessage)
@@ -296,6 +297,7 @@ export class Client<
               installationId: string
               dbPath: string
             }) => {
+              this.removeAllSubscriptions()
               resolve(
                 new Client(
                   message.address,
@@ -318,6 +320,7 @@ export class Client<
             options.historySyncUrl
           )
         })().catch((error) => {
+          this.removeAllSubscriptions()
           console.error('ERROR in create: ', error)
         })
       })
