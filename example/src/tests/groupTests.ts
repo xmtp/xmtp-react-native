@@ -50,6 +50,51 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
+test('can create from key bundle with signer', async () => {
+    const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const alixWallet = Wallet.createRandom()
+
+  // create a v3 client
+  const alix = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  await alix.deleteLocalDatabase()
+
+  // create a v2 client
+  const alix2 = await Client.create(alixWallet, {
+    env: 'local',
+  })
+
+  const keyBundle = await alix2.exportKeyBundle()
+
+  // create from keybundle a v3 client
+  const alix3 = await Client.createFromKeyBundle(
+    keyBundle,
+    {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      enableV3: true,
+      dbEncryptionKey: keyBytes,
+    },
+    alixWallet
+  )
+
+  const inboxState = await alix3.inboxState(true)
+  assert(
+    inboxState.installations.length === 2,
+    `installations length should be 2 but was ${inboxState.installations.length}`
+  )
+
+  return true
+})
+
 test('can revoke all other installations', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
