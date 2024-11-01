@@ -246,6 +246,7 @@ class XMTPModule : Module() {
             "sign",
             "authed",
             "authedV3",
+            "bundleAuthed",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
             "preAuthenticateToInboxCallback",
@@ -404,6 +405,34 @@ class XMTPModule : Module() {
                     ContentJson.Companion
                     clients[client.inboxId] = client
                     ClientWrapper.encodeToObj(client)
+                } catch (e: Exception) {
+                    throw XMTPException("Failed to create client: $e")
+                }
+            }
+        }
+
+        AsyncFunction("createFromKeyBundleWithSigner") Coroutine { address: String, keyBundle: String, dbEncryptionKey: List<Int>?, authParams: String ->
+            withContext(Dispatchers.IO) {
+                logV("createFromKeyBundleWithSigner")
+                try {
+                    val options = clientOptions(
+                        dbEncryptionKey,
+                        authParams
+                    )
+                    val bundle =
+                        PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
+                            Base64.decode(
+                                keyBundle,
+                                NO_WRAP
+                            )
+                        )
+                    val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
+                    signer = reactSigner
+                    val client = Client().buildFromBundle(bundle = bundle, options = options, account = reactSigner)
+                    clients[client.inboxId] = client
+                    ContentJson.Companion
+                    signer = null
+                    sendEvent("bundleAuthed", ClientWrapper.encodeToObj(client))
                 } catch (e: Exception) {
                     throw XMTPException("Failed to create client: $e")
                 }

@@ -188,6 +188,35 @@ export async function createFromKeyBundle(
   )
 }
 
+export async function createFromKeyBundleWithSigner(
+  address: string,
+  keyBundle: string,
+  environment: 'local' | 'dev' | 'production',
+  appVersion?: string | undefined,
+  enableV3?: boolean | undefined,
+  dbEncryptionKey?: Uint8Array | undefined,
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined
+): Promise<string> {
+  const encryptionKey = dbEncryptionKey
+    ? Array.from(dbEncryptionKey)
+    : undefined
+
+  const authParams: AuthParams = {
+    environment,
+    appVersion,
+    enableV3,
+    dbDirectory,
+    historySyncUrl,
+  }
+  return await XMTPModule.createFromKeyBundleWithSigner(
+    address,
+    keyBundle,
+    encryptionKey,
+    JSON.stringify(authParams)
+  )
+}
+
 export async function createRandomV3(
   environment: 'local' | 'dev' | 'production',
   appVersion?: string | undefined,

@@ -57,37 +57,86 @@ test('can revoke all other installations', async () => {
   ])
   const alixWallet = Wallet.createRandom()
 
+  // create a v3 client
   const alix = await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
+
   await alix.deleteLocalDatabase()
 
+  // create a v2 client
   const alix2 = await Client.create(alixWallet, {
+    env: 'local',
+  })
+
+  const keyBundle = await alix2.exportKeyBundle()
+
+  // create from keybundle a v3 client
+  const alixKeyBundle = await Client.createFromKeyBundle(
+    keyBundle,
+    {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      enableV3: true,
+      dbEncryptionKey: keyBytes,
+    },
+    alixWallet
+  )
+
+  const inboxState = await alixKeyBundle.inboxState(true)
+  assert(
+    inboxState.installations.length === 2,
+    `installations length should be 2 but was ${inboxState.installations.length}`
+  )
+
+  const alix3 = await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 
-  const inboxState = await alix2.inboxState(true)
-  assert(
-    inboxState.installations.length === 2,
-    `installations length should be 2 but was ${inboxState.installations.length}`
+  const keyBundle2 = await alix3.exportKeyBundle()
+
+  const alixKeyBundle2 = await Client.createFromKeyBundle(
+    keyBundle2,
+    {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      enableV3: true,
+      dbEncryptionKey: keyBytes,
+    },
+    alixWallet
   )
 
-  await alix2.revokeAllOtherInstallations(alixWallet)
+  await alix3.deleteLocalDatabase()
 
-  const inboxState2 = await alix2.inboxState(true)
+  const alix4 = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  const inboxState2 = await alix4.inboxState(true)
   assert(
-    inboxState2.installations.length === 1,
-    `installations length should be 1 but was ${inboxState2.installations.length}`
+    inboxState2.installations.length === 3,
+    `installations length should be 3 but was ${inboxState2.installations.length}`
+  )
+
+  await alix4.revokeAllOtherInstallations(alixWallet)
+
+  const inboxState3 = await alix4.inboxState(true)
+  assert(
+    inboxState3.installations.length === 1,
+    `installations length should be 1 but was ${inboxState3.installations.length}`
   )
 
   assert(
-    inboxState2.installations[0].createdAt !== undefined,
+    inboxState3.installations[0].createdAt !== undefined,
     `installations createdAt should not be undefined`
   )
   return true
@@ -2290,19 +2339,11 @@ test('can sync all groups', async () => {
   }
 
   // First syncAllGroups after removal will still sync each group to set group inactive
-  // For some reason on Android (RN only), first syncAllGroups already returns 0
   const numGroupsSynced2 = await bo.conversations.syncAllGroups()
-  if (Platform.OS === 'ios') {
-    assert(
-      numGroupsSynced2 === 50,
-      `should have synced 50 groups but synced ${numGroupsSynced2}`
-    )
-  } else {
-    assert(
-      numGroupsSynced2 === 0,
-      `should have synced 0 groups but synced ${numGroupsSynced2}`
-    )
-  }
+  assert(
+    numGroupsSynced2 === 50,
+    `should have synced 50 groups but synced ${numGroupsSynced2}`
+  )
 
   // Next syncAllGroups will not sync inactive groups
   const numGroupsSynced3 = await bo.conversations.syncAllGroups()
