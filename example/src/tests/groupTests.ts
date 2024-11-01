@@ -63,6 +63,20 @@ test('can revoke all other installations', async () => {
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
+
+  const keyBundle = await alix.exportKeyBundle()
+
+  await Client.createFromKeyBundle(
+    keyBundle,
+    {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      enableV3: true,
+      dbEncryptionKey: keyBytes,
+    },
+    alixWallet
+  )
+
   await alix.deleteLocalDatabase()
 
   const alix2 = await Client.create(alixWallet, {

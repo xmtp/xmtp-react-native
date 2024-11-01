@@ -222,6 +222,16 @@ test('can load a client from env "2k lens convos" private key', async () => {
     env: 'local',
   })
 
+  const keyBundle = await xmtpClient.exportKeyBundle()
+
+  await Client.createFromKeyBundle(
+    keyBundle,
+    {
+      env: 'local',
+    },
+    signer
+  )
+
   return true
 })
 
