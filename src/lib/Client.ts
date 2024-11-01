@@ -225,7 +225,8 @@ export class Client<
     ContentCodecs extends DefaultContentTypes = [],
   >(
     keyBundle: string,
-    options: ClientOptions & { codecs?: ContentCodecs }
+    options: ClientOptions & { codecs?: ContentCodecs },
+    wallet?: Signer | WalletClient | undefined
   ): Promise<Client<ContentCodecs>> {
     if (
       options.enableV3 === true &&
@@ -234,23 +235,93 @@ export class Client<
     ) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
-    const client = await XMTPModule.createFromKeyBundle(
-      keyBundle,
-      options.env,
-      options.appVersion,
-      Boolean(options.enableV3),
-      options.dbEncryptionKey,
-      options.dbDirectory,
-      options.historySyncUrl
-    )
 
-    return new Client(
-      client['address'],
-      client['inboxId'],
-      client['installationId'],
-      client['dbPath'],
-      options.codecs || []
-    )
+    if (!wallet) {
+      const client = await XMTPModule.createFromKeyBundle(
+        keyBundle,
+        options.env,
+        options.appVersion,
+        Boolean(options.enableV3),
+        options.dbEncryptionKey,
+        options.dbDirectory,
+        options.historySyncUrl
+      )
+
+      return new Client(
+        client['address'],
+        client['inboxId'],
+        client['installationId'],
+        client['dbPath'],
+        options.codecs || []
+      )
+    } else {
+      const signer = getSigner(wallet)
+      if (!signer) {
+        throw new Error('Signer is not configured')
+      }
+      return new Promise<Client<ContentCodecs>>((resolve, reject) => {
+        ;(async () => {
+          this.signSubscription = XMTPModule.emitter.addListener(
+            'sign',
+            async (message: { id: string; message: string }) => {
+              const request: { id: string; message: string } = message
+              try {
+                const signatureString = await signer.signMessage(
+                  request.message
+                )
+                const eSig = splitSignature(signatureString)
+                const r = hexToBytes(eSig.r)
+                const s = hexToBytes(eSig.s)
+                const sigBytes = new Uint8Array(65)
+                sigBytes.set(r)
+                sigBytes.set(s, r.length)
+                sigBytes[64] = eSig.recoveryParam
+
+                const signature = Buffer.from(sigBytes).toString('base64')
+
+                await XMTPModule.receiveSignature(request.id, signature)
+              } catch (e) {
+                const errorMessage = 'ERROR in create. User rejected signature'
+                console.info(errorMessage, e)
+                reject(errorMessage)
+              }
+            }
+          )
+
+          this.authSubscription = XMTPModule.emitter.addListener(
+            'authed',
+            async (message: {
+              inboxId: string
+              address: string
+              installationId: string
+              dbPath: string
+            }) => {
+              resolve(
+                new Client(
+                  message.address,
+                  message.inboxId as InboxId,
+                  message.installationId,
+                  message.dbPath,
+                  options.codecs || []
+                )
+              )
+            }
+          )
+          await XMTPModule.createFromKeyBundleWithSigner(
+            await signer.getAddress(),
+            keyBundle,
+            options.env,
+            options.appVersion,
+            Boolean(options.enableV3),
+            options.dbEncryptionKey,
+            options.dbDirectory,
+            options.historySyncUrl
+          )
+        })().catch((error) => {
+          console.error('ERROR in create: ', error)
+        })
+      })
+    }
   }
 
   /**
@@ -412,7 +483,7 @@ export class Client<
     })
   }
 
-    /**
+  /**
    * Builds a V3 ONLY instance of the Client class using the provided address and chainId if SCW.
    *
    * @param {string} address - The address of the account to build
