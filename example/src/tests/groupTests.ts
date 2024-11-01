@@ -50,8 +50,8 @@ test('can make a MLS V3 client', async () => {
   return true
 })
 
-test('can create from key bundle with signer', async () => {
-    const keyBytes = new Uint8Array([
+test('can revoke all other installations', async () => {
+  const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
@@ -75,7 +75,7 @@ test('can create from key bundle with signer', async () => {
   const keyBundle = await alix2.exportKeyBundle()
 
   // create from keybundle a v3 client
-  const alix3 = await Client.createFromKeyBundle(
+  const alixKeyBundle = await Client.createFromKeyBundle(
     keyBundle,
     {
       env: 'local',
@@ -86,33 +86,23 @@ test('can create from key bundle with signer', async () => {
     alixWallet
   )
 
-  const inboxState = await alix3.inboxState(true)
+  const inboxState = await alixKeyBundle.inboxState(true)
   assert(
     inboxState.installations.length === 2,
     `installations length should be 2 but was ${inboxState.installations.length}`
   )
 
-  return true
-})
-
-test('can revoke all other installations', async () => {
-  const keyBytes = new Uint8Array([
-    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
-  ])
-  const alixWallet = Wallet.createRandom()
-
-  const alix = await Client.create(alixWallet, {
+  const alix3 = await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 
-  const keyBundle = await alix.exportKeyBundle()
+  const keyBundle2 = await alix3.exportKeyBundle()
 
-  await Client.createFromKeyBundle(
-    keyBundle,
+  const alixKeyBundle2 = await Client.createFromKeyBundle(
+    keyBundle2,
     {
       env: 'local',
       appVersion: 'Testing/0.0.0',
@@ -122,31 +112,31 @@ test('can revoke all other installations', async () => {
     alixWallet
   )
 
-  await alix.deleteLocalDatabase()
+  await alix3.deleteLocalDatabase()
 
-  const alix2 = await Client.create(alixWallet, {
+  const alix4 = await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 
-  const inboxState = await alix2.inboxState(true)
+  const inboxState2 = await alix4.inboxState(true)
   assert(
-    inboxState.installations.length === 2,
-    `installations length should be 2 but was ${inboxState.installations.length}`
+    inboxState2.installations.length === 3,
+    `installations length should be 3 but was ${inboxState2.installations.length}`
   )
 
-  await alix2.revokeAllOtherInstallations(alixWallet)
+  await alix4.revokeAllOtherInstallations(alixWallet)
 
-  const inboxState2 = await alix2.inboxState(true)
+  const inboxState3 = await alix4.inboxState(true)
   assert(
-    inboxState2.installations.length === 1,
-    `installations length should be 1 but was ${inboxState2.installations.length}`
+    inboxState3.installations.length === 1,
+    `installations length should be 1 but was ${inboxState3.installations.length}`
   )
 
   assert(
-    inboxState2.installations[0].createdAt !== undefined,
+    inboxState3.installations[0].createdAt !== undefined,
     `installations createdAt should not be undefined`
   )
   return true

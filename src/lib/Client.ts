@@ -289,7 +289,7 @@ export class Client<
           )
 
           this.authSubscription = XMTPModule.emitter.addListener(
-            'authed',
+            'bundleAuthed',
             async (message: {
               inboxId: string
               address: string

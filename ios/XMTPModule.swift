@@ -105,6 +105,7 @@ public class XMTPModule: Module {
             "sign",
             "authed",
 			"authedV3",
+			"bundleAuthed",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
 			"preAuthenticateToInboxCallback",
@@ -315,7 +316,7 @@ public class XMTPModule: Module {
 				let client = try await Client.from(v1Bundle: bundle.v1, options: options, signingKey: signer)
 				await clientsManager.updateClient(key: client.inboxID, client: client)
 				self.signer = nil
-				self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
+				self.sendEvent("bundleAuthed", try ClientWrapper.encodeToObj(client))
 			} catch {
 				print("ERROR! Failed to create client: \(error)")
 				throw error

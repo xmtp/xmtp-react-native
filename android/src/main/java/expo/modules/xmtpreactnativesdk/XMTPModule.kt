@@ -246,6 +246,7 @@ class XMTPModule : Module() {
             "sign",
             "authed",
             "authedV3",
+            "bundleAuthed",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
             "preAuthenticateToInboxCallback",
@@ -431,7 +432,7 @@ class XMTPModule : Module() {
                     clients[client.inboxId] = client
                     ContentJson.Companion
                     signer = null
-                    sendEvent("authed", ClientWrapper.encodeToObj(client))
+                    sendEvent("bundleAuthed", ClientWrapper.encodeToObj(client))
                 } catch (e: Exception) {
                     throw XMTPException("Failed to create client: $e")
                 }

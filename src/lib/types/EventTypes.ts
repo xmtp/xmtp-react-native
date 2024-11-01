@@ -3,6 +3,7 @@ export enum EventTypes {
   Sign = 'sign',
   Authed = 'authed',
   AuthedV3 = 'authedV3',
+  BundleAuthed = 'bundleAuthed',
   PreCreateIdentityCallback = 'preCreateIdentityCallback',
   PreEnableIdentityCallback = 'preEnableIdentityCallback',
   // Conversations Events
