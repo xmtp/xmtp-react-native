@@ -19,9 +19,6 @@ struct GroupWrapper {
 			"topic": group.topic
 		]
 
-		if conversationParams.creatorInboxId {
-			result["creatorInboxId"] = try group.creatorInboxId()
-		}
 		if conversationParams.isActive {
 			result["isActive"] = try group.isActive()
 		}
@@ -60,7 +57,6 @@ struct GroupWrapper {
 }
 
 struct ConversationParamsWrapper {
-	let creatorInboxId: Bool
 	let isActive: Bool
 	let addedByInboxId: Bool
 	let name: Bool
@@ -70,7 +66,6 @@ struct ConversationParamsWrapper {
 	let lastMessage: Bool
 	
 	init(
-		creatorInboxId: Bool = true,
 		isActive: Bool = true,
 		addedByInboxId: Bool = true,
 		name: Bool = true,
@@ -79,7 +74,6 @@ struct ConversationParamsWrapper {
 		consentState: Bool = true,
 		lastMessage: Bool = false
 	) {
-		self.creatorInboxId = creatorInboxId
 		self.isActive = isActive
 		self.addedByInboxId = addedByInboxId
 		self.name = name
@@ -97,7 +91,6 @@ struct ConversationParamsWrapper {
 		}
 		
 		return ConversationParamsWrapper(
-			creatorInboxId: jsonDict["creatorInboxId"] as? Bool ?? true,
 			isActive: jsonDict["isActive"] as? Bool ?? true,
 			addedByInboxId: jsonDict["addedByInboxId"] as? Bool ?? true,
 			name: jsonDict["name"] as? Bool ?? true,

@@ -20,9 +20,6 @@ struct DmWrapper {
 			"peerInboxId": try await dm.peerInboxId
 		]
 
-		if conversationParams.creatorInboxId {
-			result["creatorInboxId"] = try dm.creatorInboxId()
-		}
 		if conversationParams.consentState {
 			result["consentState"] = ConsentWrapper.consentStateToString(state: try dm.consentState())
 		}

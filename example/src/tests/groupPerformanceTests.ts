@@ -128,6 +128,7 @@ test('test compare V2 and V3 dms', async () => {
   let dms = await davonV3Client.conversations.listConversations()
   end = Date.now()
   console.log(`Davon loaded ${dms.length} Dms in ${end - start}ms`)
+  const v3Load = end - start
 
   await createDms(davonV3Client, await createV3Clients(5), 1)
 
@@ -152,7 +153,6 @@ test('test compare V2 and V3 dms', async () => {
   dms = await davonV3Client.conversations.listConversations()
   end = Date.now()
   console.log(`Davon loaded ${dms.length} Dms in ${end - start}ms`)
-  const v3Load = end - start
 
   assert(
     v3Load < v2Load,
