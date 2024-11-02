@@ -2,7 +2,7 @@ import { ConsentState } from './ConsentListEntry'
 import { ConversationSendPayload, MessagesOptions } from './types'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
-import { DecodedMessage } from '../index'
+import { DecodedMessage, Member } from '../index'
 
 export enum ConversationVersion {
   DIRECT = 'DIRECT',
@@ -34,4 +34,5 @@ export interface ConversationContainer<
   processMessage(
     encryptedMessage: string
   ): Promise<DecodedMessage<ContentTypes>>
+  members(): Promise<Member[]>
 }

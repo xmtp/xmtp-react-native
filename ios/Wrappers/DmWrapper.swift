@@ -19,10 +19,7 @@ struct DmWrapper {
 			"topic": dm.topic,
 			"peerInboxId": try await dm.peerInboxId
 		]
-		
-		if conversationParams.members {
-			result["members"] = try await dm.members.compactMap { member in return try MemberWrapper.encode(member) }
-		}
+
 		if conversationParams.creatorInboxId {
 			result["creatorInboxId"] = try dm.creatorInboxId()
 		}

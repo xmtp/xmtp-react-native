@@ -37,7 +37,6 @@ export class Group<
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
-  members: Member[]
   version = ConversationVersion.GROUP
   topic: string
   creatorInboxId: InboxId
@@ -53,13 +52,11 @@ export class Group<
   constructor(
     client: XMTP.Client<ContentTypes>,
     params: GroupParams,
-    members: Member[],
     lastMessage?: DecodedMessage<ContentTypes>
   ) {
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
-    this.members = members
     this.topic = params.topic
     this.creatorInboxId = params.creatorInboxId
     this.name = params.name
@@ -648,7 +645,7 @@ export class Group<
    * @returns {Promise<Member[]>} A Promise that resolves to an array of Member objects.
    * To get the latest member list from the network, call sync() first.
    */
-  async membersList(): Promise<Member[]> {
+  async members(): Promise<Member[]> {
     return await XMTP.listConversationMembers(this.client.inboxId, this.id)
   }
 }

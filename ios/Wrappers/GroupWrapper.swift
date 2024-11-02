@@ -18,10 +18,7 @@ struct GroupWrapper {
 			"version": "GROUP",
 			"topic": group.topic
 		]
-		
-		if conversationParams.members {
-			result["members"] = try await group.members.compactMap { member in return try MemberWrapper.encode(member) }
-		}
+
 		if conversationParams.creatorInboxId {
 			result["creatorInboxId"] = try group.creatorInboxId()
 		}
@@ -63,7 +60,6 @@ struct GroupWrapper {
 }
 
 struct ConversationParamsWrapper {
-	let members: Bool
 	let creatorInboxId: Bool
 	let isActive: Bool
 	let addedByInboxId: Bool
@@ -74,7 +70,6 @@ struct ConversationParamsWrapper {
 	let lastMessage: Bool
 	
 	init(
-		members: Bool = true,
 		creatorInboxId: Bool = true,
 		isActive: Bool = true,
 		addedByInboxId: Bool = true,
@@ -84,7 +79,6 @@ struct ConversationParamsWrapper {
 		consentState: Bool = true,
 		lastMessage: Bool = false
 	) {
-		self.members = members
 		self.creatorInboxId = creatorInboxId
 		self.isActive = isActive
 		self.addedByInboxId = addedByInboxId
@@ -103,7 +97,6 @@ struct ConversationParamsWrapper {
 		}
 		
 		return ConversationParamsWrapper(
-			members: jsonDict["members"] as? Bool ?? true,
 			creatorInboxId: jsonDict["creatorInboxId"] as? Bool ?? true,
 			isActive: jsonDict["isActive"] as? Bool ?? true,
 			addedByInboxId: jsonDict["addedByInboxId"] as? Bool ?? true,
