@@ -20,7 +20,7 @@ class DmWrapper {
                 put("createdAt", dm.createdAt.time)
                 put("version", "DM")
                 put("topic", dm.topic)
-                put("peerInboxId", dm.peerInboxId())
+                put("peerInboxId", dm.peerInboxId)
                 if (dmParams.members) {
                     put("members", dm.members().map { MemberWrapper.encode(it) })
                 }
