@@ -116,6 +116,7 @@ test('test compare V2 and V3 dms', async () => {
   v2Convos = await alixClient.conversations.list()
   end = Date.now()
   console.log(`Alix 2nd loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+  const v2Load = end - start
 
   start = Date.now()
   await davonV3Client.conversations.syncConversations()
@@ -126,6 +127,12 @@ test('test compare V2 and V3 dms', async () => {
   const dms = await davonV3Client.conversations.listConversations()
   end = Date.now()
   console.log(`Davon loaded ${dms.length} Dms in ${end - start}ms`)
+  const v3Load = end - start
+
+  assert(
+    v3Load < v2Load,
+    'v3 conversations should load faster than v2 conversations'
+  )
 
   return true
 })
