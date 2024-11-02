@@ -651,20 +651,13 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
-			var start = Date()
 			let conversations = try await client.conversations.listConversations(limit: limit, order: order)
-			var end = Date()
-			print("Loaded \(conversations.count) conversations in \(end.timeIntervalSince(start) * 1000)ms from iOS")
 			
 			var results: [String] = []
-			start = Date()
 			for conversation in conversations {
 				let encodedConversationContainer = try await ConversationContainerWrapper.encode(conversation, client: client)
 				results.append(encodedConversationContainer)
 			}
-			end = Date()
-			print("Loaded \(results.count) conversationContainers in \(end.timeIntervalSince(start) * 1000)ms from iOS")
-
 			return results
 		}
 		

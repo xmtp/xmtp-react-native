@@ -752,20 +752,11 @@ class XMTPModule : Module() {
                 val params =
                     ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
-                val start = Date()
                 val conversations =
                     client.conversations.listConversations(order = order, limit = limit)
-                val end = Date()
-                logV("LOPI Loaded ${conversations.size} DMs in ${end.time - start.time}ms")
-
-                val start2 = Date()
-                val convos = conversations.map { conversation ->
+                conversations.map { conversation ->
                     ConversationContainerWrapper.encode(client, conversation, params)
                 }
-                val end2 = Date()
-                logV("LOPI Encoded ${convos.size} DMs in ${end2.time - start2.time}ms")
-
-                convos
             }
         }
 
