@@ -15,7 +15,6 @@ import * as XMTP from '../index'
 export interface DmParams {
   id: string
   createdAt: number
-  creatorInboxId: InboxId
   topic: string
   consentState: ConsentState
   lastMessage?: DecodedMessage

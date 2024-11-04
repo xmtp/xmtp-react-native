@@ -1,5 +1,4 @@
 export type GroupOptions = {
-  creatorInboxId?: boolean
   isActive?: boolean
   addedByInboxId?: boolean
   name?: boolean

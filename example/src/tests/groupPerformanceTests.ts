@@ -180,10 +180,8 @@ test('testing large group listings with ordering', async () => {
   let start2 = Date.now()
   let groups2 = await alixClient.conversations.listGroups(
     {
-      members: false,
       consentState: false,
       description: false,
-      creatorInboxId: false,
       addedByInboxId: false,
       isActive: false,
       lastMessage: true,
@@ -228,10 +226,8 @@ test('testing large group listings with ordering', async () => {
   start2 = Date.now()
   groups2 = await boClient.conversations.listGroups(
     {
-      members: false,
       consentState: false,
       description: false,
-      creatorInboxId: false,
       addedByInboxId: false,
       isActive: false,
       lastMessage: true,
