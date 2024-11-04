@@ -7,7 +7,7 @@ import {
   ConversationContainer,
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
-import { Dm } from './Dm'
+import { Dm, DmParams } from './Dm'
 import { Group, GroupParams } from './Group'
 import { Member } from './Member'
 import { CreateGroupOptions } from './types/CreateGroupOptions'
@@ -219,10 +219,7 @@ export default class Conversations<
           return
         }
         this.known[group.id] = true
-        const members = group['members'].map((mem: string) => {
-          return Member.from(mem)
-        })
-        await callback(new Group(this.client, group, members))
+        await callback(new Group(this.client, group))
       }
     )
     this.subscriptions[EventTypes.Group] = groupsSubscription
@@ -258,22 +255,12 @@ export default class Conversations<
 
         this.known[conversation.topic] = true
         if (conversation.version === ConversationVersion.GROUP) {
-          const members = conversation['members'].map((mem: string) => {
-            return Member.from(mem)
-          })
           return await callback(
-            new Group(
-              this.client,
-              conversation as unknown as GroupParams,
-              members
-            )
+            new Group(this.client, conversation as unknown as GroupParams)
           )
         } else if (conversation.version === ConversationVersion.DM) {
-          const members = conversation['members'].map((mem: string) => {
-            return Member.from(mem)
-          })
           return await callback(
-            new Dm(this.client, conversation as unknown as GroupParams, members)
+            new Dm(this.client, conversation as unknown as DmParams)
           )
         }
       }
@@ -428,16 +415,10 @@ export default class Conversations<
 
         this.known[conversationContainer.topic] = true
         if (conversationContainer.version === ConversationVersion.GROUP) {
-          const members = conversationContainer['members'].map(
-            (mem: string) => {
-              return Member.from(mem)
-            }
-          )
           return await callback(
             new Group(
               this.client,
               conversationContainer as unknown as GroupParams,
-              members
             )
           )
         } else {

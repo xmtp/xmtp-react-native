@@ -19,7 +19,6 @@ export interface GroupParams {
   id: string
   createdAt: number
   members: string[]
-  creatorInboxId: InboxId
   topic: string
   name: string
   isActive: boolean
@@ -37,10 +36,8 @@ export class Group<
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
-  members: Member[]
   version = ConversationVersion.GROUP
   topic: string
-  creatorInboxId: InboxId
   name: string
   isGroupActive: boolean
   addedByInboxId: InboxId
@@ -48,20 +45,16 @@ export class Group<
   description: string
   state: ConsentState
   lastMessage?: DecodedMessage<ContentTypes>
-  // pinnedFrameUrl: string
 
   constructor(
     client: XMTP.Client<ContentTypes>,
     params: GroupParams,
-    members: Member[],
     lastMessage?: DecodedMessage<ContentTypes>
   ) {
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
-    this.members = members
     this.topic = params.topic
-    this.creatorInboxId = params.creatorInboxId
     this.name = params.name
     this.isGroupActive = params.isActive
     this.addedByInboxId = params.addedByInboxId
@@ -69,16 +62,23 @@ export class Group<
     this.description = params.description
     this.state = params.consentState
     this.lastMessage = lastMessage
-    // this.pinnedFrameUrl = params.pinnedFrameUrl
   }
 
   /**
    * This method returns an array of inbox ids associated with the group.
    * To get the latest member inbox ids from the network, call sync() first.
-   * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
+   * @returns {Promise<InboxId[]>} A Promise that resolves to an array of InboxId objects.
    */
   async memberInboxIds(): Promise<InboxId[]> {
     return XMTP.listMemberInboxIds(this.client, this.id)
+  }
+
+  /**
+   * This method returns a inbox id associated with the creator of the group.
+   * @returns {Promise<InboxId>} A Promise that resolves to a InboxId.
+   */
+  async creatorInboxId(): Promise<InboxId> {
+    return XMTP.creatorInboxId(this.client.inboxId, this.id)
   }
 
   /**
@@ -648,7 +648,7 @@ export class Group<
    * @returns {Promise<Member[]>} A Promise that resolves to an array of Member objects.
    * To get the latest member list from the network, call sync() first.
    */
-  async membersList(): Promise<Member[]> {
+  async members(): Promise<Member[]> {
     return await XMTP.listConversationMembers(this.client.inboxId, this.id)
   }
 }

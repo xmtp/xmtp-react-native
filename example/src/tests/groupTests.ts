@@ -556,7 +556,7 @@ test('can get members of a group', async () => {
   const [alixClient, boClient] = await createClients(2)
   const group = await alixClient.conversations.newGroup([boClient.address])
 
-  const members = group.members
+  const members = await group.members()
 
   assert(members.length === 2, `Should be 2 members but was ${members.length}`)
 
@@ -1009,7 +1009,7 @@ test('can stream groups', async () => {
     throw Error('Unexpected num groups (should be 1): ' + groups.length)
   }
 
-  assert(groups[0].members.length === 2, 'should be 2')
+  assert((await groups[0].members()).length === 2, 'should be 2')
 
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1936,7 +1936,7 @@ test('can allow and deny a inbox id', async () => {
 
   await bo.contacts.allowInboxes([alix.inboxId])
 
-  let alixMember = (await boGroup.membersList()).find(
+  let alixMember = (await boGroup.members()).find(
     (member) => member.inboxId === alix.inboxId
   )
   assert(
@@ -1968,7 +1968,7 @@ test('can allow and deny a inbox id', async () => {
 
   await bo.contacts.denyInboxes([alix.inboxId])
 
-  alixMember = (await boGroup.membersList()).find(
+  alixMember = (await boGroup.members()).find(
     (member) => member.inboxId === alix.inboxId
   )
   assert(
@@ -2266,11 +2266,16 @@ test('can create new installation without breaking group', async () => {
   await client1Group?.sync()
   await client2Group?.sync()
 
-  assert(client1Group?.members?.length === 2, `client 1 should see 2 members`)
-
+  const members1 = await client1Group?.members()
   assert(
-    (await client2Group?.membersList())?.length === 2,
-    `client 2 should see 2 members`
+    members1?.length === 2,
+    `client 1 should see 2 members but was ${members1?.length}`
+  )
+
+  const members2 = await client2Group?.members()
+  assert(
+    members2?.length === 2,
+    `client 2 should see 2 members but was ${members2?.length}`
   )
 
   await client2.deleteLocalDatabase()
@@ -2284,9 +2289,10 @@ test('can create new installation without breaking group', async () => {
   })
 
   await client1Group?.send('This message will break the group')
+  const members3 = await client1Group?.members()
   assert(
-    client1Group?.members?.length === 2,
-    `client 1 should still see the 2 members`
+    members3?.length === 2,
+    `client 1 should still see the 2 members but was ${members3?.length}`
   )
 
   return true
@@ -2297,13 +2303,13 @@ test('can list many groups members in parallel', async () => {
   const groups: Group[] = await createGroups(alix, [bo], 20)
 
   try {
-    await Promise.all(groups.slice(0, 10).map((g) => g.membersList()))
+    await Promise.all(groups.slice(0, 10).map((g) => g.members()))
   } catch (e) {
     throw new Error(`Failed listing 10 groups members with ${e}`)
   }
 
   try {
-    await Promise.all(groups.slice(0, 20).map((g) => g.membersList()))
+    await Promise.all(groups.slice(0, 20).map((g) => g.members()))
   } catch (e) {
     throw new Error(`Failed listing 20 groups members with ${e}`)
   }

@@ -20,10 +20,6 @@ class GroupWrapper {
                 put("createdAt", group.createdAt.time)
                 put("version", "GROUP")
                 put("topic", group.topic)
-                if (groupParams.members) {
-                    put("members", group.members().map { MemberWrapper.encode(it) })
-                }
-                if (groupParams.creatorInboxId) put("creatorInboxId", group.creatorInboxId())
                 if (groupParams.isActive) put("isActive", group.isActive())
                 if (groupParams.addedByInboxId) put("addedByInboxId", group.addedByInboxId())
                 if (groupParams.name) put("name", group.name)
@@ -54,8 +50,6 @@ class GroupWrapper {
 }
 
 class ConversationParamsWrapper(
-    val members: Boolean = true,
-    val creatorInboxId: Boolean = true,
     val isActive: Boolean = true,
     val addedByInboxId: Boolean = true,
     val name: Boolean = true,
@@ -69,8 +63,6 @@ class ConversationParamsWrapper(
             if (conversationParams.isEmpty()) return ConversationParamsWrapper()
             val jsonOptions = JsonParser.parseString(conversationParams).asJsonObject
             return ConversationParamsWrapper(
-                if (jsonOptions.has("members")) jsonOptions.get("members").asBoolean else true,
-                if (jsonOptions.has("creatorInboxId")) jsonOptions.get("creatorInboxId").asBoolean else true,
                 if (jsonOptions.has("isActive")) jsonOptions.get("isActive").asBoolean else true,
                 if (jsonOptions.has("addedByInboxId")) jsonOptions.get("addedByInboxId").asBoolean else true,
                 if (jsonOptions.has("name")) jsonOptions.get("name").asBoolean else true,

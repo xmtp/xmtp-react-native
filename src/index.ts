@@ -327,10 +327,7 @@ export async function findOrCreateDm<
   const dm = JSON.parse(
     await XMTPModule.findOrCreateDm(client.inboxId, peerAddress)
   )
-  const members = dm['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
-  return new Dm(client, dm, members)
+  return new Dm(client, dm)
 }
 
 export async function createGroup<
@@ -359,10 +356,7 @@ export async function createGroup<
     )
   )
 
-  const members = group['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
-  return new Group(client, group, members)
+  return new Group(client, group)
 }
 
 export async function createGroupCustomPermissions<
@@ -390,10 +384,8 @@ export async function createGroupCustomPermissions<
       JSON.stringify(options)
     )
   )
-  const members = group['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
-  return new Group(client, group, members)
+
+  return new Group(client, group)
 }
 
 export async function listGroups<
@@ -413,13 +405,11 @@ export async function listGroups<
     )
   ).map((json: string) => {
     const group = JSON.parse(json)
-    const members = group['members']?.map((mem: string) => {
-      return Member.from(mem)
-    })
+
     const lastMessage = group['lastMessage']
       ? DecodedMessage.from(group['lastMessage'], client)
       : undefined
-    return new Group(client, group, members, lastMessage)
+    return new Group(client, group, lastMessage)
   })
 }
 
@@ -440,13 +430,15 @@ export async function listV3Conversations<
     )
   ).map((json: string) => {
     const jsonObj = JSON.parse(json)
-    const members = jsonObj.members.map((mem: string) => {
-      return Member.from(mem)
-    })
+
+    const lastMessage = jsonObj['lastMessage']
+      ? DecodedMessage.from(jsonObj['lastMessage'], client)
+      : undefined
+
     if (jsonObj.version === ConversationVersion.GROUP) {
-      return new Group(client, jsonObj, members)
+      return new Group(client, jsonObj, lastMessage)
     } else {
-      return new Dm(client, jsonObj, members)
+      return new Dm(client, jsonObj, lastMessage)
     }
   })
 }
@@ -544,11 +536,8 @@ export async function findGroup<
   if (!group || Object.keys(group).length === 0) {
     return undefined
   }
-  const members =
-    group['members']?.map((mem: string) => {
-      return Member.from(mem)
-    }) || []
-  return new Group(client, group, members)
+
+  return new Group(client, group)
 }
 
 export async function findConversation<
@@ -562,15 +551,11 @@ export async function findConversation<
   if (!conversation || Object.keys(conversation).length === 0) {
     return undefined
   }
-  const members =
-    conversation['members']?.map((mem: string) => {
-      return Member.from(mem)
-    }) || []
 
   if (conversation.version === ConversationVersion.GROUP) {
-    return new Group(client, conversation, members)
+    return new Group(client, conversation)
   } else {
-    return new Dm(client, conversation, members)
+    return new Dm(client, conversation)
   }
 }
 
@@ -585,15 +570,11 @@ export async function findConversationByTopic<
   if (!conversation || Object.keys(conversation).length === 0) {
     return undefined
   }
-  const members =
-    conversation['members']?.map((mem: string) => {
-      return Member.from(mem)
-    }) || []
 
   if (conversation.version === ConversationVersion.GROUP) {
-    return new Group(client, conversation, members)
+    return new Group(client, conversation)
   } else {
-    return new Dm(client, conversation, members)
+    return new Dm(client, conversation)
   }
 }
 
@@ -608,11 +589,8 @@ export async function findDm<
   if (!dm || Object.keys(dm).length === 0) {
     return undefined
   }
-  const members =
-    dm['members']?.map((mem: string) => {
-      return Member.from(mem)
-    }) || []
-  return new Dm(client, dm, members)
+
+  return new Dm(client, dm)
 }
 
 export async function findV3Message<
@@ -873,10 +851,7 @@ export async function listAll<
   return list.map((json: string) => {
     const jsonObj = JSON.parse(json)
     if (jsonObj.version === ConversationVersion.GROUP) {
-      const members = jsonObj.members.map((mem: string) => {
-        return Member.from(mem)
-      })
-      return new Group(client, jsonObj, members)
+      return new Group(client, jsonObj)
     } else {
       return new Conversation(client, jsonObj)
     }
@@ -1494,10 +1469,7 @@ export async function processWelcomeMessage<
     encryptedMessage
   )
   const group = JSON.parse(json)
-  const members = group['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
-  return new Group(client, group, members)
+  return new Group(client, group)
 }
 
 export async function processConversationWelcomeMessage<
@@ -1511,14 +1483,11 @@ export async function processConversationWelcomeMessage<
     encryptedMessage
   )
   const conversation = JSON.parse(json)
-  const members = conversation['members']?.map((mem: string) => {
-    return Member.from(mem)
-  })
 
   if (conversation.version === ConversationVersion.GROUP) {
-    return new Group(client, conversation, members)
+    return new Group(client, conversation)
   } else {
-    return new Dm(client, conversation, members)
+    return new Dm(client, conversation)
   }
 }
 

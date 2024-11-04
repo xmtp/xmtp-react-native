@@ -15,8 +15,6 @@ import * as XMTP from '../index'
 export interface DmParams {
   id: string
   createdAt: number
-  members: string[]
-  creatorInboxId: InboxId
   topic: string
   consentState: ConsentState
   lastMessage?: DecodedMessage
@@ -28,7 +26,6 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
-  members: Member[]
   version = ConversationVersion.DM
   topic: string
   state: ConsentState
@@ -37,13 +34,11 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   constructor(
     client: XMTP.Client<ContentTypes>,
     params: DmParams,
-    members: Member[],
     lastMessage?: DecodedMessage<ContentTypes>
   ) {
     this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
-    this.members = members
     this.topic = params.topic
     this.state = params.consentState
     this.lastMessage = lastMessage
@@ -252,7 +247,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * @returns {Promise<Member[]>} A Promise that resolves to an array of Member objects.
    * To get the latest member list from the network, call sync() first.
    */
-  async membersList(): Promise<Member[]> {
+  async members(): Promise<Member[]> {
     return await XMTP.listConversationMembers(this.client.inboxId, this.id)
   }
 }

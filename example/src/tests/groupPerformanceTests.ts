@@ -72,6 +72,7 @@ let boClient: Client
 let davonV3Client: Client
 let initialPeers: Client[]
 let initialGroups: Group[]
+let initialV3Peers: Client[]
 // let initialDms: Dm[]
 // let initialV2Convos: Conversation<DefaultContentTypes>[]
 
@@ -86,7 +87,7 @@ async function beforeAll(
   ;[davonV3Client] = await createV3Clients(1)
 
   initialPeers = await createClients(peersSize)
-  const initialV3Peers = await createV3Clients(peersSize)
+  initialV3Peers = await createV3Clients(peersSize)
   boClient = initialPeers[0]
 
   initialGroups = await createGroups(
@@ -116,6 +117,7 @@ test('test compare V2 and V3 dms', async () => {
   v2Convos = await alixClient.conversations.list()
   end = Date.now()
   console.log(`Alix 2nd loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+  const v2Load = end - start
 
   start = Date.now()
   await davonV3Client.conversations.syncConversations()
@@ -123,9 +125,39 @@ test('test compare V2 and V3 dms', async () => {
   console.log(`Davon synced ${v2Convos.length} Dms in ${end - start}ms`)
 
   start = Date.now()
-  const dms = await davonV3Client.conversations.listConversations()
+  let dms = await davonV3Client.conversations.listConversations()
   end = Date.now()
   console.log(`Davon loaded ${dms.length} Dms in ${end - start}ms`)
+  const v3Load = end - start
+
+  await createDms(davonV3Client, await createV3Clients(5), 1)
+
+  await createV2Convos(alixClient, await createClients(5), 1)
+
+  start = Date.now()
+  v2Convos = await alixClient.conversations.list()
+  end = Date.now()
+  console.log(`Alix loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+
+  start = Date.now()
+  v2Convos = await alixClient.conversations.list()
+  end = Date.now()
+  console.log(`Alix 2nd loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+
+  start = Date.now()
+  await davonV3Client.conversations.syncConversations()
+  end = Date.now()
+  console.log(`Davon synced ${v2Convos.length} Dms in ${end - start}ms`)
+
+  start = Date.now()
+  dms = await davonV3Client.conversations.listConversations()
+  end = Date.now()
+  console.log(`Davon loaded ${dms.length} Dms in ${end - start}ms`)
+
+  assert(
+    v3Load < v2Load,
+    'v3 conversations should load faster than v2 conversations'
+  )
 
   return true
 })
@@ -148,10 +180,8 @@ test('testing large group listings with ordering', async () => {
   let start2 = Date.now()
   let groups2 = await alixClient.conversations.listGroups(
     {
-      members: false,
       consentState: false,
       description: false,
-      creatorInboxId: false,
       addedByInboxId: false,
       isActive: false,
       lastMessage: true,
@@ -196,10 +226,8 @@ test('testing large group listings with ordering', async () => {
   start2 = Date.now()
   groups2 = await boClient.conversations.listGroups(
     {
-      members: false,
       consentState: false,
       description: false,
-      creatorInboxId: false,
       addedByInboxId: false,
       isActive: false,
       lastMessage: true,

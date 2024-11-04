@@ -1179,7 +1179,7 @@ class XMTPModule : Module() {
                 val conversation = client.findConversation(dmId)
                     ?: throw XMTPException("no conversation found for $dmId")
                 val dm = (conversation as Conversation.Dm).dm
-                dm.peerInboxId()
+                dm.peerInboxId
             }
         }
 
