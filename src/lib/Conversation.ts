@@ -3,8 +3,8 @@ import { Buffer } from 'buffer'
 
 import { ConsentState } from './ConsentListEntry'
 import {
+  ConversationContainerBase,
   ConversationVersion,
-  ConversationContainer,
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { MessagesOptions } from './types'
@@ -27,14 +27,14 @@ export interface ConversationParams {
 }
 
 export class Conversation<ContentTypes extends DefaultContentTypes>
-  implements ConversationContainer<ContentTypes>
+  implements ConversationContainerBase<ContentTypes>
 {
   client: XMTP.Client<ContentTypes>
   createdAt: number
   context?: ConversationContext
   topic: string
   peerAddress: string
-  version = ConversationVersion.DIRECT
+  version = ConversationVersion.DIRECT as const
   conversationID?: string | undefined
   id: string
   state: ConsentState

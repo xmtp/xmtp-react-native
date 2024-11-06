@@ -1,8 +1,8 @@
 import { InboxId } from './Client'
 import { ConsentState } from './ConsentListEntry'
 import {
+  ConversationContainerBase,
   ConversationVersion,
-  ConversationContainer,
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
@@ -31,12 +31,12 @@ export interface GroupParams {
 
 export class Group<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
-> implements ConversationContainer<ContentTypes>
+> implements ConversationContainerBase<ContentTypes>
 {
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
-  version = ConversationVersion.GROUP
+  version = ConversationVersion.GROUP as const
   topic: string
   name: string
   isGroupActive: boolean

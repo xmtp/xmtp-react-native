@@ -2,7 +2,7 @@ import { ConsentState } from './ConsentListEntry'
 import { ConversationSendPayload, MessagesOptions } from './types'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
-import { DecodedMessage, Member } from '../index'
+import { Conversation, DecodedMessage, Member, Dm, Group } from '../index'
 
 export enum ConversationVersion {
   DIRECT = 'DIRECT',
@@ -10,7 +10,7 @@ export enum ConversationVersion {
   DM = 'DM',
 }
 
-export interface ConversationContainer<
+export interface ConversationContainerBase<
   ContentTypes extends DefaultContentTypes,
 > {
   client: XMTP.Client<ContentTypes>
@@ -36,3 +36,7 @@ export interface ConversationContainer<
   ): Promise<DecodedMessage<ContentTypes>>
   members(): Promise<Member[]>
 }
+
+export type ConversationContainer<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+> = Group<ContentTypes> | Dm<ContentTypes> | Conversation<ContentTypes>

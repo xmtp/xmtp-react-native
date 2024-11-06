@@ -2,7 +2,7 @@ import { InboxId } from './Client'
 import { ConsentState } from './ConsentListEntry'
 import {
   ConversationVersion,
-  ConversationContainer,
+  ConversationContainerBase,
 } from './ConversationContainer'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
@@ -21,12 +21,12 @@ export interface DmParams {
 }
 
 export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
-  implements ConversationContainer<ContentTypes>
+  implements ConversationContainerBase<ContentTypes>
 {
   client: XMTP.Client<ContentTypes>
   id: string
   createdAt: number
-  version = ConversationVersion.DM
+  version = ConversationVersion.DM as const
   topic: string
   state: ConsentState
   lastMessage?: DecodedMessage<ContentTypes>
