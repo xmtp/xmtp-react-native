@@ -9,7 +9,7 @@ import org.xmtp.android.library.Group
 class GroupWrapper {
 
     companion object {
-        suspend fun encodeToObj(
+        fun encodeToObj(
             client: Client,
             group: Group,
             groupParams: ConversationParamsWrapper = ConversationParamsWrapper(),
@@ -29,7 +29,7 @@ class GroupWrapper {
                     put("consentState", consentStateToString(group.consentState()))
                 }
                 if (groupParams.lastMessage) {
-                    val lastMessage = group.decryptedMessages(limit = 1).firstOrNull()
+                    val lastMessage = group.messages(limit = 1).firstOrNull()
                     if (lastMessage != null) {
                         put("lastMessage", DecodedMessageWrapper.encode(lastMessage))
                     }
@@ -37,7 +37,7 @@ class GroupWrapper {
             }
         }
 
-        suspend fun encode(
+        fun encode(
             client: Client,
             group: Group,
             groupParams: ConversationParamsWrapper = ConversationParamsWrapper(),

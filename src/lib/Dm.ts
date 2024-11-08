@@ -2,8 +2,8 @@ import { InboxId } from './Client'
 import { ConsentState } from './ConsentListEntry'
 import {
   ConversationVersion,
-  ConversationContainerBase,
-} from './ConversationContainer'
+  ConversationBase,
+} from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
@@ -21,7 +21,7 @@ export interface DmParams {
 }
 
 export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
-  implements ConversationContainerBase<ContentTypes>
+  implements ConversationBase<ContentTypes>
 {
   client: XMTP.Client<ContentTypes>
   id: string

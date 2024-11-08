@@ -1,6 +1,5 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
-import android.util.Base64
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Conversation
@@ -8,32 +7,32 @@ import org.xmtp.android.library.Conversation
 class ConversationWrapper {
 
     companion object {
-        fun encodeToObj(client: Client, conversation: Conversation): Map<String, Any?> {
-            val context = when (conversation.version) {
-                Conversation.Version.V2 -> mapOf<String, Any>(
-                    "conversationID" to (conversation.conversationId ?: ""),
-                    // TODO: expose the context/metadata explicitly in xmtp-android
-                    "metadata" to conversation.toTopicData().invitation.context.metadataMap,
-                )
+        fun encodeToObj(
+            client: Client,
+            conversation: Conversation,
+            conversationParams: ConversationParamsWrapper = ConversationParamsWrapper(),
+        ): Map<String, Any?> {
+            return when (conversation.type) {
+                Conversation.Type.GROUP -> {
+                    val group = (conversation as Conversation.Group).group
+                    GroupWrapper.encodeToObj(client, group, conversationParams)
+                }
 
-                else -> mapOf()
+                Conversation.Type.DM -> {
+                    val dm = (conversation as Conversation.Dm).dm
+                    DmWrapper.encodeToObj(client, dm, conversationParams)
+                }
             }
-            return mapOf(
-                "clientAddress" to client.address,
-                "createdAt" to conversation.createdAt.time,
-                "context" to context,
-                "topic" to conversation.topic,
-                "peerAddress" to conversation.peerAddress,
-                "version" to "DIRECT",
-                "conversationID" to (conversation.conversationId ?: ""),
-                "keyMaterial" to (conversation.keyMaterial?.let { Base64.encodeToString(it, Base64.NO_WRAP) } ?: ""),
-                "consentProof" to if (conversation.consentProof != null) Base64.encodeToString(conversation.consentProof?.toByteArray(), Base64.NO_WRAP) else null
-            )
         }
 
-        fun encode(client: Client, conversation: Conversation): String {
+        fun encode(
+            client: Client,
+            conversation: Conversation,
+            conversationParams: ConversationParamsWrapper = ConversationParamsWrapper(),
+        ): String {
             val gson = GsonBuilder().create()
-            val obj = encodeToObj(client, conversation)
+            val obj =
+                ConversationWrapper.encodeToObj(client, conversation, conversationParams)
             return gson.toJson(obj)
         }
     }

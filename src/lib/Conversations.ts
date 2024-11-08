@@ -1,11 +1,10 @@
 import type { invitation, keystore } from '@xmtp/proto'
 
 import { Client } from './Client'
-import { Conversation, ConversationParams } from './Conversation'
 import {
   ConversationVersion,
   ConversationContainer,
-} from './ConversationContainer'
+} from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Dm, DmParams } from './Dm'
 import { Group, GroupParams } from './Group'
@@ -23,7 +22,6 @@ export default class Conversations<
   ContentTypes extends ContentCodec<any>[] = [],
 > {
   client: Client<ContentTypes>
-  private known = {} as { [topic: string]: boolean }
   private subscriptions: { [key: string]: { remove: () => void } } = {}
 
   constructor(client: Client<ContentTypes>) {
@@ -31,54 +29,18 @@ export default class Conversations<
   }
 
   /**
-   * This method returns a list of all conversations that the client is a member of.
-   *
-   * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
-   */
-  async list(): Promise<Conversation<ContentTypes>[]> {
-    const result = await XMTPModule.listConversations(this.client)
-
-    for (const conversation of result) {
-      this.known[conversation.topic] = true
-    }
-
-    return result
-  }
-
-  async getHmacKeys(): Promise<keystore.GetConversationHmacKeysResponse> {
-    return await XMTPModule.getHmacKeys(this.client.inboxId)
-  }
-
-  async importTopicData(
-    topicData: string
-  ): Promise<Conversation<ContentTypes>> {
-    const conversation = await XMTPModule.importConversationTopicData(
-      this.client,
-      topicData
-    )
-    this.known[conversation.topic] = true
-    return conversation
-  }
-  /**
    * Creates a new conversation.
    *
    * This method creates a new conversation with the specified peer address and context.
    *
    * @param {string} peerAddress - The address of the peer to create a conversation with.
-   * @param {ConversationContext} context - Optional context to associate with the conversation.
    * @returns {Promise<Conversation>} A Promise that resolves to a Conversation object.
    */
-  async newConversation(
-    peerAddress: string,
-    context?: ConversationContext,
-    consentProof?: invitation.ConsentProofPayload
-  ): Promise<Conversation<ContentTypes>> {
+  async newConversation(peerAddress: string): Promise<Conversation<ContentTypes>> {
     const checksumAddress = getAddress(peerAddress)
     return await XMTPModule.createConversation(
       this.client,
       checksumAddress,
-      context,
-      consentProof
     )
   }
 

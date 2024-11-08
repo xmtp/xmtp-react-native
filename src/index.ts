@@ -16,7 +16,7 @@ import { Conversation } from './lib/Conversation'
 import {
   ConversationContainer,
   ConversationVersion,
-} from './lib/ConversationContainer'
+} from './lib/Conversation'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
 import { Dm } from './lib/Dm'
 import { Group, PermissionUpdateOption } from './lib/Group'
@@ -1522,7 +1522,7 @@ export { Conversation } from './lib/Conversation'
 export {
   ConversationContainer,
   ConversationVersion,
-} from './lib/ConversationContainer'
+} from './lib/Conversation'
 export { Query } from './lib/Query'
 export { XMTPPush } from './lib/XMTPPush'
 export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus }

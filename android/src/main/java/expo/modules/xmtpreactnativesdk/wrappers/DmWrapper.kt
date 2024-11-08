@@ -9,7 +9,7 @@ import org.xmtp.android.library.Group
 
 class DmWrapper {
     companion object {
-        suspend fun encodeToObj(
+        fun encodeToObj(
             client: Client,
             dm: Dm,
             dmParams: ConversationParamsWrapper = ConversationParamsWrapper(),
@@ -25,7 +25,7 @@ class DmWrapper {
                     put("consentState", consentStateToString(dm.consentState()))
                 }
                 if (dmParams.lastMessage) {
-                    val lastMessage = dm.decryptedMessages(limit = 1).firstOrNull()
+                    val lastMessage = dm.messages(limit = 1).firstOrNull()
                     if (lastMessage != null) {
                         put("lastMessage", DecodedMessageWrapper.encode(lastMessage))
                     }
@@ -33,7 +33,7 @@ class DmWrapper {
             }
         }
 
-        suspend fun encode(
+        fun encode(
             client: Client,
             dm: Dm,
             dmParams: ConversationParamsWrapper = ConversationParamsWrapper(),
