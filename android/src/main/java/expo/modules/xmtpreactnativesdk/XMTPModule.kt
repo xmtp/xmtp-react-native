@@ -201,13 +201,12 @@ class XMTPModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("XMTP")
         Events(
-            // Auth
             "sign",
             "authed",
             "preAuthenticateToInboxCallback",
             "conversation",
-            "allMessages",
             "message",
+            "conversationMessage",
         )
 
         Function("address") { inboxId: String ->
@@ -1291,7 +1290,7 @@ class XMTPModule : Module() {
             try {
                 client.conversations.streamAllMessages(type).collect { message ->
                     sendEvent(
-                        "allMessages",
+                        "message",
                         mapOf(
                             "inboxId" to inboxId,
                             "message" to DecodedMessageWrapper.encodeMap(message),
@@ -1315,7 +1314,7 @@ class XMTPModule : Module() {
                 try {
                     conversation.streamMessages().collect { message ->
                         sendEvent(
-                            "message",
+                            "conversationMessage",
                             mapOf(
                                 "inboxId" to inboxId,
                                 "message" to DecodedMessageWrapper.encodeMap(message),

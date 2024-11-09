@@ -883,12 +883,17 @@ export class Client<
     }
   }
 }
+export type XMTPEnvironment = 'local' | 'dev' | 'production'
 
 export type ClientOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
    */
-  env: 'local' | 'dev' | 'production'
+  env: XMTPEnvironment
+  /**
+   * REQUIRED specify the encryption key for the database. The encryption key must be exactly 32 bytes.
+   */
+  dbEncryptionKey: Uint8Array
   /**
    * identifier that's included with API requests.
    *
@@ -900,21 +905,10 @@ export type ClientOptions = {
    * SDK updates, including deprecations and required upgrades.
    */
   appVersion?: string
-
   /**
    * Set optional callbacks for handling identity setup
    */
-  preCreateIdentityCallback?: () => Promise<void> | void
-  preEnableIdentityCallback?: () => Promise<void> | void
   preAuthenticateToInboxCallback?: () => Promise<void> | void
-  /**
-   * Specify whether to enable V3 version of MLS (Group Chat)
-   */
-  enableV3?: boolean
-  /**
-   * REQUIRED specify the encryption key for the database. The encryption key must be exactly 32 bytes.
-   */
-  dbEncryptionKey?: Uint8Array
   /**
    * OPTIONAL specify the XMTP managed database directory
    */

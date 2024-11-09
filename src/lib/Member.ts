@@ -1,3 +1,4 @@
+import { Address } from '../utils/address'
 import { InboxId } from './Client'
 import { ConsentState } from './ConsentListEntry'
 
@@ -5,13 +6,13 @@ export type PermissionLevel = 'member' | 'admin' | 'super_admin'
 
 export class Member {
   inboxId: InboxId
-  addresses: string[]
+  addresses: Address[]
   permissionLevel: PermissionLevel
   consentState: ConsentState
 
   constructor(
     inboxId: InboxId,
-    addresses: string[],
+    addresses: Address[],
     permissionLevel: PermissionLevel,
     consentState: ConsentState
   ) {

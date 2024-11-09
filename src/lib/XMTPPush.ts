@@ -1,5 +1,6 @@
 import { Client } from './Client'
 import * as XMTPModule from '../index'
+import { ConversationTopic } from '../index'
 
 export class XMTPPush {
   client: Client<any>
@@ -11,7 +12,7 @@ export class XMTPPush {
     XMTPModule.registerPushToken(server, token)
   }
 
-  subscribe(topics: string[]) {
-    XMTPModule.subscribePushTopics(this.client.address, topics)
+  subscribe(topics: ConversationTopic[]) {
+    XMTPModule.subscribePushTopics(topics)
   }
 }
