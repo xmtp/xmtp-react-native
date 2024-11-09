@@ -135,17 +135,9 @@ fun Conversation.cacheKey(inboxId: String): String {
     return "${inboxId}:${topic}"
 }
 
-fun Group.cacheKey(inboxId: String): String {
-    return "${inboxId}:${id}"
-}
-
-fun Dm.cacheKey(inboxId: String): String {
-    return "${inboxId}:${id}"
-}
-
 class XMTPModule : Module() {
 
-    val context: Context
+    private val context: Context
         get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
 
     private fun apiEnvironments(env: String, appVersion: String?): ClientOptions.Api {
@@ -330,7 +322,6 @@ class XMTPModule : Module() {
         AsyncFunction("build") Coroutine { address: String, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("build")
-                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
@@ -391,7 +382,6 @@ class XMTPModule : Module() {
 
         AsyncFunction("encryptAttachment") { inboxId: String, fileJson: String ->
             logV("encryptAttachment")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
             val file = DecryptedLocalAttachment.fromJson(fileJson)
             val uri = Uri.parse(file.fileUri)
             val data = appContext.reactContext?.contentResolver
@@ -418,7 +408,6 @@ class XMTPModule : Module() {
 
         AsyncFunction("decryptAttachment") { inboxId: String, encryptedFileJson: String ->
             logV("decryptAttachment")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
             val encryptedFile = EncryptedLocalAttachment.fromJson(encryptedFileJson)
             val encryptedData = appContext.reactContext?.contentResolver
                 ?.openInputStream(Uri.parse(encryptedFile.encryptedLocalFileUri))
@@ -1042,12 +1031,8 @@ class XMTPModule : Module() {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val group = client.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                val permissionPolicySet = group?.permissionPolicySet()
-                if (permissionPolicySet != null) {
-                    PermissionPolicySetWrapper.encodeToJsonString(permissionPolicySet)
-                } else {
-                    throw XMTPException("Permission policy set not found for group: $groupId")
-                }
+                val permissionPolicySet = group.permissionPolicySet()
+                PermissionPolicySetWrapper.encodeToJsonString(permissionPolicySet)
             }
         }
 
@@ -1090,7 +1075,6 @@ class XMTPModule : Module() {
                 if (xmtpPush == null) {
                     throw XMTPException("Push server not registered")
                 }
-                val client = clients[inboxId] ?: throw XMTPException("No client")
 
                 val subscriptions = topics.map {
                     Service.Subscription.newBuilder().also { sub ->
@@ -1105,7 +1089,7 @@ class XMTPModule : Module() {
         AsyncFunction("setConsentState") Coroutine { inboxId: String, value: String, entryType: String, consentType: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val consentList = client.preferences.consentList.setConsentState(
+                client.preferences.consentList.setConsentState(
                     listOf(
                         ConsentListEntry(
                             value,
