@@ -35,10 +35,13 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
+import org.xmtp.android.library.ConsentListEntry
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
-import org.xmtp.android.library.Conversations.ConversationOrder
+import org.xmtp.android.library.Conversations
+import org.xmtp.android.library.Conversations.*
 import org.xmtp.android.library.Dm
+import org.xmtp.android.library.EntryType
 import org.xmtp.android.library.Group
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.SendOptions
@@ -1099,10 +1102,18 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("setConsentState") Coroutine { inboxId: String ->
+        AsyncFunction("setConsentState") Coroutine { inboxId: String, value: String, entryType: String, consentType: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val consentList = client.preferences.consentList.setConsentState()
+                val consentList = client.preferences.consentList.setConsentState(
+                    listOf(
+                        ConsentListEntry(
+                            value,
+                            getEntryType(entryType),
+                            getConsentState(consentType)
+                        )
+                    )
+                )
             }
         }
 
@@ -1228,9 +1239,9 @@ class XMTPModule : Module() {
 
     private fun getStreamType(typeString: String): ConversationType {
         return when (typeString) {
-            "groups" -> GROUPS
-            "dms" -> DMS
-            else -> ALL
+            "groups" -> ConversationType.GROUPS
+            "dms" -> ConversationType.DMS
+            else -> ConversationType.ALL
         }
     }
 
@@ -1239,6 +1250,15 @@ class XMTPModule : Module() {
             "allowed" -> ConsentState.ALLOWED
             "denied" -> ConsentState.DENIED
             else -> ConsentState.UNKNOWN
+        }
+    }
+
+    private fun getEntryType(entryString: String): EntryType {
+        return when (entryString) {
+            "address" -> EntryType.ADDRESS
+            "conversation_id" -> EntryType.CONVERSATION_ID
+            "inbox_id" -> EntryType.INBOX_ID
+            else -> throw XMTPException("Invalid entry type: $entryString")
         }
     }
 
