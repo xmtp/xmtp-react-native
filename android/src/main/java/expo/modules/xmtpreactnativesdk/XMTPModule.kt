@@ -13,7 +13,6 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
@@ -38,11 +37,8 @@ import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.ConsentListEntry
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
-import org.xmtp.android.library.Conversations
 import org.xmtp.android.library.Conversations.*
-import org.xmtp.android.library.Dm
 import org.xmtp.android.library.EntryType
-import org.xmtp.android.library.Group
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
@@ -380,7 +376,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("encryptAttachment") { inboxId: String, fileJson: String ->
+        AsyncFunction("encryptAttachment") { fileJson: String ->
             logV("encryptAttachment")
             val file = DecryptedLocalAttachment.fromJson(fileJson)
             val uri = Uri.parse(file.fileUri)
@@ -406,7 +402,7 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("decryptAttachment") { inboxId: String, encryptedFileJson: String ->
+        AsyncFunction("decryptAttachment") { encryptedFileJson: String ->
             logV("decryptAttachment")
             val encryptedFile = EncryptedLocalAttachment.fromJson(encryptedFileJson)
             val encryptedData = appContext.reactContext?.contentResolver
@@ -1069,7 +1065,7 @@ class XMTPModule : Module() {
             xmtpPush?.register(token)
         }
 
-        Function("subscribePushTopics") { inboxId: String, topics: List<String> ->
+        Function("subscribePushTopics") { topics: List<String> ->
             logV("subscribePushTopics")
             if (topics.isNotEmpty()) {
                 if (xmtpPush == null) {
@@ -1250,6 +1246,14 @@ class XMTPModule : Module() {
         return when (order) {
             "lastMessage" -> ConversationOrder.LAST_MESSAGE
             else -> ConversationOrder.CREATED_AT
+        }
+    }
+
+    private fun consentStateToString(state: ConsentState): String {
+        return when (state) {
+            ConsentState.ALLOWED -> "allowed"
+            ConsentState.DENIED -> "denied"
+            ConsentState.UNKNOWN -> "unknown"
         }
     }
 

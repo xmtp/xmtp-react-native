@@ -8,7 +8,7 @@ import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionPolicySet
 class PermissionPolicySetWrapper {
 
     companion object {
-        fun fromPermissionOption(permissionOption: PermissionOption): String {
+        private fun fromPermissionOption(permissionOption: PermissionOption): String {
             return when (permissionOption) {
                 PermissionOption.Allow -> "allow"
                 PermissionOption.Deny -> "deny"
@@ -18,7 +18,7 @@ class PermissionPolicySetWrapper {
             }
         }
 
-        fun createPermissionOptionFromString(permissionOptionString: String): PermissionOption {
+        private fun createPermissionOptionFromString(permissionOptionString: String): PermissionOption {
             return when (permissionOptionString) {
                 "allow" -> PermissionOption.Allow
                 "deny" -> PermissionOption.Deny
@@ -27,7 +27,7 @@ class PermissionPolicySetWrapper {
                 else -> PermissionOption.Unknown
             }
         }
-        fun encodeToObj(policySet: PermissionPolicySet): Map<String, Any> {
+        private fun encodeToObj(policySet: PermissionPolicySet): Map<String, Any> {
             return mapOf(
                 "addMemberPolicy" to fromPermissionOption(policySet.addMemberPolicy),
                 "removeMemberPolicy" to fromPermissionOption(policySet.removeMemberPolicy),

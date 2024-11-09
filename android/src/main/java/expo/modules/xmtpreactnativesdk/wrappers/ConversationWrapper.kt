@@ -32,7 +32,7 @@ class ConversationWrapper {
         ): String {
             val gson = GsonBuilder().create()
             val obj =
-                ConversationWrapper.encodeToObj(client, conversation, conversationParams)
+                encodeToObj(client, conversation, conversationParams)
             return gson.toJson(obj)
         }
     }

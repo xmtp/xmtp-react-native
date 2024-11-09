@@ -1,11 +1,8 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
-import com.google.gson.JsonParser
-import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.Dm
-import org.xmtp.android.library.Group
 
 class DmWrapper {
     companion object {

@@ -39,7 +39,7 @@ class EncryptedLocalAttachment(
         }
     }
 
-    fun toJsonMap(): Map<String, Any> = mapOf(
+    private fun toJsonMap(): Map<String, Any> = mapOf(
         "encryptedLocalFileUri" to encryptedLocalFileUri,
         "metadata" to metadata.toJsonMap()
     )

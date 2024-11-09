@@ -13,7 +13,7 @@ class DecryptedLocalAttachment(
     val filename: String,
 ) {
     companion object {
-        fun fromJsonObject(obj: JsonObject) = DecryptedLocalAttachment(
+        private fun fromJsonObject(obj: JsonObject) = DecryptedLocalAttachment(
             obj.get("fileUri").asString,
             obj.get("mimeType")?.asString ?: "",
             obj.get("filename")?.asString ?: "",
@@ -25,7 +25,7 @@ class DecryptedLocalAttachment(
         }
     }
 
-    fun toJsonMap(): Map<String, Any> = mapOf(
+    private fun toJsonMap(): Map<String, Any> = mapOf(
         "fileUri" to fileUri,
         "mimeType" to mimeType,
         "filename" to filename,

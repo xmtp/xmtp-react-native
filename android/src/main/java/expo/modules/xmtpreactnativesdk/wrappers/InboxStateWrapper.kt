@@ -7,7 +7,7 @@ import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.InboxState
 class InboxStateWrapper {
     companion object {
         val gson: Gson = GsonBuilder().create()
-        fun encodeToObj(inboxState: InboxState): Map<String, Any> {
+        private fun encodeToObj(inboxState: InboxState): Map<String, Any> {
             return mapOf(
                 "inboxId" to inboxState.inboxId,
                 "addresses" to inboxState.addresses,
