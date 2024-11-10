@@ -2,7 +2,7 @@ import { ConsentState } from './ConsentListEntry'
 import { ConversationSendPayload, MessagesOptions } from './types'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
-import { Conversation, DecodedMessage, Member, Dm, Group } from '../index'
+import { DecodedMessage, Member, Dm, Group } from '../index'
 
 export enum ConversationVersion {
   GROUP = 'GROUP',

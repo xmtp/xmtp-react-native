@@ -1,5 +1,5 @@
-import { Address } from '../utils/address'
 import { InboxId } from './Client'
+import { Address } from '../utils/address'
 
 export class InboxState {
   inboxId: InboxId

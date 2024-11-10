@@ -1,7 +1,7 @@
 export type MessagesOptions = {
   limit?: number | undefined
-  before?: number | Date | undefined
-  after?: number | Date | undefined
+  beforeNs?: number | undefined
+  afterNs?: number | undefined
   direction?: MessageOrder | undefined
 }
 

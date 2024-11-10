@@ -1,9 +1,6 @@
 import { InboxId } from './Client'
 import { ConsentState } from './ConsentListEntry'
-import {
-  ConversationVersion,
-  ConversationBase,
-} from './Conversation'
+import { ConversationVersion, ConversationBase } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
@@ -11,11 +8,12 @@ import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { MessagesOptions } from './types/MessagesOptions'
 import * as XMTP from '../index'
+import { ConversationId, ConversationTopic } from '../index'
 
 export interface DmParams {
-  id: string
+  id: ConversationId
   createdAt: number
-  topic: string
+  topic: ConversationTopic
   consentState: ConsentState
   lastMessage?: DecodedMessage
 }
@@ -24,7 +22,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   implements ConversationBase<ContentTypes>
 {
   client: XMTP.Client<ContentTypes>
-  id: string
+  id: ConversationId
   createdAt: number
   version = ConversationVersion.DM as const
   topic: string
@@ -104,13 +102,9 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         content = { text: content }
       }
 
-      return await XMTP.prepareConversationMessage(
-        this.client.inboxId,
-        this.id,
-        content
-      )
+      return await XMTP.prepareMessage(this.client.inboxId, this.id, content)
     } catch (e) {
-      console.info('ERROR in prepareGroupMessage()', e.message)
+      console.info('ERROR in prepareMessage()', e.message)
       throw e
     }
   }
@@ -122,10 +116,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    */
   async publishPreparedMessages() {
     try {
-      return await XMTP.publishPreparedGroupMessages(
-        this.client.inboxId,
-        this.id
-      )
+      return await XMTP.publishPreparedMessages(this.client.inboxId, this.id)
     } catch (e) {
       console.info('ERROR in publishPreparedMessages()', e.message)
       throw e
@@ -137,8 +128,8 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * To get the latest messages from the network, call sync() first.
    *
    * @param {number | undefined} limit - Optional maximum number of messages to return.
-   * @param {number | Date | undefined} before - Optional filter for specifying the maximum timestamp of messages to return.
-   * @param {number | Date | undefined} after - Optional filter for specifying the minimum timestamp of messages to return.
+   * @param {number | undefined} before - Optional filter for specifying the maximum timestamp of messages to return.
+   * @param {number | undefined} after - Optional filter for specifying the minimum timestamp of messages to return.
    * @param direction - Optional parameter to specify the time ordering of the messages to return.
    * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
    */
@@ -149,8 +140,8 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
       this.client,
       this.id,
       opts?.limit,
-      opts?.before,
-      opts?.after,
+      opts?.beforeNs,
+      opts?.afterNs,
       opts?.direction
     )
   }
@@ -176,10 +167,9 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   async streamMessages(
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<() => void> {
-    await XMTP.subscribeToConversationMessages(this.client.inboxId, this.id)
-    const hasSeen = {}
+    await XMTP.subscribeToMessages(this.client.inboxId, this.id)
     const messageSubscription = XMTP.emitter.addListener(
-      EventTypes.ConversationV3Message,
+      EventTypes.ConversationMessage,
       async ({
         inboxId,
         message,
@@ -196,11 +186,6 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         if (conversationId !== this.id) {
           return
         }
-        if (hasSeen[message.id]) {
-          return
-        }
-
-        hasSeen[message.id] = true
 
         message.client = this.client
         await callback(DecodedMessage.fromObject(message, this.client))
@@ -208,10 +193,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     )
     return async () => {
       messageSubscription.remove()
-      await XMTP.unsubscribeFromConversationMessages(
-        this.client.inboxId,
-        this.id
-      )
+      await XMTP.unsubscribeFromMessages(this.client.inboxId, this.id)
     }
   }
 
@@ -219,11 +201,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     encryptedMessage: string
   ): Promise<DecodedMessage<ContentTypes>> {
     try {
-      return await XMTP.processConversationMessage(
-        this.client,
-        this.id,
-        encryptedMessage
-      )
+      return await XMTP.processMessage(this.client, this.id, encryptedMessage)
     } catch (e) {
       console.info('ERROR in processConversationMessage()', e)
       throw e
@@ -231,7 +209,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   }
 
   async consentState(): Promise<ConsentState> {
-    return await XMTP.conversationV3ConsentState(this.client.inboxId, this.id)
+    return await XMTP.conversationConsentState(this.client.inboxId, this.id)
   }
 
   async updateConsent(state: ConsentState): Promise<void> {

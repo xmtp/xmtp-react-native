@@ -581,7 +581,7 @@ export async function canMessage(
 }
 
 export async function getOrCreateInboxId(
-  address: InboxId,
+  address: Address,
   environment: XMTPEnvironment
 ): Promise<InboxId> {
   return await XMTPModule.getOrCreateInboxId(getAddress(address), environment)
