@@ -1,6 +1,5 @@
-import { InboxId } from './Client'
+import { Address, InboxId } from './Client'
 import { ConsentState } from './ConsentListEntry'
-import { Address } from '../utils/address'
 
 export type PermissionLevel = 'member' | 'admin' | 'super_admin'
 

@@ -1,8 +1,8 @@
-import { Client, InboxId } from './Client'
+import { Address, Client, InboxId } from './Client'
 import { ConsentListEntry, ConsentState } from './ConsentListEntry'
 import * as XMTPModule from '../index'
 import { ConversationId } from '../index'
-import { Address, getAddress } from '../utils/address'
+import { getAddress } from '../utils/address'
 
 export default class PrivatePreferences {
   client: Client<any>
@@ -11,7 +11,7 @@ export default class PrivatePreferences {
     this.client = client
   }
 
-  async consentConversationIdState(
+  async conversationIdConsentState(
     conversationId: ConversationId
   ): Promise<ConsentState> {
     return await XMTPModule.consentConversationIdState(
@@ -20,11 +20,11 @@ export default class PrivatePreferences {
     )
   }
 
-  async consentInboxIdState(inboxId: InboxId): Promise<ConsentState> {
+  async inboxIdConsentState(inboxId: InboxId): Promise<ConsentState> {
     return await XMTPModule.consentInboxIdState(this.client.inboxId, inboxId)
   }
 
-  async consentAddressState(address: Address): Promise<ConsentState> {
+  async addressConsentState(address: Address): Promise<ConsentState> {
     return await XMTPModule.consentAddressState(
       this.client.inboxId,
       getAddress(address)

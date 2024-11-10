@@ -14,7 +14,6 @@ import { Signer, getSigner } from './Signer'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
-import { Address } from '../index'
 
 declare const Buffer
 
@@ -25,6 +24,7 @@ export type ExtractDecodedType<C> =
   C extends XMTPModule.ContentCodec<infer T> ? T : never
 
 export type InboxId = string & { readonly brand: unique symbol }
+export type Address = string
 
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
@@ -34,7 +34,7 @@ export class Client<
   installationId: string
   dbPath: string
   conversations: Conversations<ContentTypes>
-  preferences: PrivatePreferences
+  zpreferences: PrivatePreferences
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
   private static signSubscription: Subscription | null = null
   private static authSubscription: Subscription | null = null

@@ -4,8 +4,6 @@ import { TextEncoder } from 'text-encoding'
 const addressRegex = /^0x[a-fA-F0-9]{40}$/
 const encoder = new TextEncoder()
 
-export type Address = string
-
 export function stringToBytes(value: string): Uint8Array {
   const bytes = encoder.encode(value)
   return bytes

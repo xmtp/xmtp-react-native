@@ -2,7 +2,7 @@ import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import { Client } from '.'
 import XMTPModule from './XMTPModule'
-import { InboxId, XMTPEnvironment } from './lib/Client'
+import { Address, InboxId, XMTPEnvironment } from './lib/Client'
 import {
   ConsentListEntry,
   ConsentListEntryType,
@@ -29,7 +29,7 @@ import {
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
-import { Address, getAddress } from './utils/address'
+import { getAddress } from './utils/address'
 
 export * from './context'
 export * from './hooks'
@@ -955,7 +955,7 @@ export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus, ConsentState }
 export { Group } from './lib/Group'
 export { Dm } from './lib/Dm'
 export { Member } from './lib/Member'
-export { InboxId, XMTPEnvironment } from './lib/Client'
+export { Address, InboxId, XMTPEnvironment } from './lib/Client'
 export {
   ConversationOptions,
   ConversationOrder,
@@ -963,5 +963,4 @@ export {
   ConversationTopic,
   ConversationType,
 } from './lib/types/ConversationOptions'
-export { Address } from './utils/address'
 export { MessageId, MessageOrder } from './lib/types/MessagesOptions'

@@ -1,5 +1,5 @@
-import { Test, assert, createV3Clients, delayToPropogate } from './test-utils'
-import { ConversationContainer, ConversationVersion } from '../../../src/index'
+import { Test, assert, createClients, delayToPropogate } from './test-utils'
+import { Conversation, ConversationVersion } from '../../../src/index'
 
 export const conversationTests: Test[] = []
 let counter = 1
@@ -11,7 +11,7 @@ function test(name: string, perform: () => Promise<boolean>) {
 }
 
 test('can find a conversations by id', async () => {
-  const [alixClient, boClient] = await createV3Clients(2)
+  const [alixClient, boClient] = await createClients(2)
   const alixGroup = await alixClient.conversations.newGroup([boClient.address])
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
 
@@ -36,7 +36,7 @@ test('can find a conversations by id', async () => {
 })
 
 test('can find a conversation by topic', async () => {
-  const [alixClient, boClient] = await createV3Clients(2)
+  const [alixClient, boClient] = await createClients(2)
   const alixGroup = await alixClient.conversations.newGroup([boClient.address])
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
 
@@ -62,7 +62,7 @@ test('can find a conversation by topic', async () => {
 })
 
 test('can find a dm by address', async () => {
-  const [alixClient, boClient] = await createV3Clients(2)
+  const [alixClient, boClient] = await createClients(2)
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
 
   await boClient.conversations.syncConversations()
@@ -77,7 +77,7 @@ test('can find a dm by address', async () => {
 })
 
 test('can list conversations with params', async () => {
-  const [alixClient, boClient, caroClient] = await createV3Clients(3)
+  const [alixClient, boClient, caroClient] = await createClients(3)
 
   const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
   const boGroup2 = await boClient.conversations.newGroup([alixClient.address])
@@ -93,13 +93,13 @@ test('can list conversations with params', async () => {
   // Order should be [Dm1, Group2, Dm2, Group1]
 
   await boClient.conversations.syncAllConversations()
-  const boConvosOrderCreated = await boClient.conversations.listConversations()
+  const boConvosOrderCreated = await boClient.conversations.list()
   const boConvosOrderLastMessage =
-    await boClient.conversations.listConversations(
+    await boClient.conversations.list(
       { lastMessage: true },
       'lastMessage'
     )
-  const boGroupsLimit = await boClient.conversations.listConversations(
+  const boGroupsLimit = await boClient.conversations.list(
     {},
     undefined,
     1
@@ -139,7 +139,7 @@ test('can list conversations with params', async () => {
 })
 
 test('can list groups', async () => {
-  const [alixClient, boClient, caroClient] = await createV3Clients(3)
+  const [alixClient, boClient, caroClient] = await createClients(3)
 
   const boGroup = await boClient.conversations.newGroup([alixClient.address])
   await boClient.conversations.newGroup([
@@ -149,9 +149,9 @@ test('can list groups', async () => {
   const boDm = await boClient.conversations.findOrCreateDm(caroClient.address)
   await boClient.conversations.findOrCreateDm(alixClient.address)
 
-  const boConversations = await boClient.conversations.listConversations()
+  const boConversations = await boClient.conversations.list()
   await alixClient.conversations.syncConversations()
-  const alixConversations = await alixClient.conversations.listConversations()
+  const alixConversations = await alixClient.conversations.list()
 
   assert(
     boConversations.length === 4,
@@ -176,15 +176,15 @@ test('can list groups', async () => {
 })
 
 test('can stream both conversations and messages at same time', async () => {
-  const [alix, bo] = await createV3Clients(2)
+  const [alix, bo] = await createClients(2)
 
   let conversationCallbacks = 0
   let messageCallbacks = 0
-  await bo.conversations.streamConversations(async () => {
+  await bo.conversations.stream(async () => {
     conversationCallbacks++
   })
 
-  await bo.conversations.streamAllConversationMessages(async () => {
+  await bo.conversations.streamAllMessages(async () => {
     messageCallbacks++
   })
 
@@ -208,7 +208,7 @@ test('can stream both conversations and messages at same time', async () => {
 })
 
 test('can stream conversation messages', async () => {
-  const [alixClient, boClient] = await createV3Clients(2)
+  const [alixClient, boClient] = await createClients(2)
 
   const alixGroup = await alixClient.conversations.newGroup([boClient.address])
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
@@ -233,11 +233,11 @@ test('can stream conversation messages', async () => {
 })
 
 test('can stream all groups and conversations', async () => {
-  const [alixClient, boClient, caroClient] = await createV3Clients(3)
+  const [alixClient, boClient, caroClient] = await createClients(3)
 
-  const containers: ConversationContainer<any>[] = []
-  const cancelStreamAll = await alixClient.conversations.streamConversations(
-    async (conversation: ConversationContainer<any>) => {
+  const containers: Conversation<any>[] = []
+  const cancelStreamAll = await alixClient.conversations.stream(
+    async (conversation: Conversation<any>) => {
       containers.push(conversation)
     }
   )

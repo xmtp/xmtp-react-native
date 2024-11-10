@@ -6,7 +6,7 @@ import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
-import { MessagesOptions } from './types/MessagesOptions'
+import { MessageId, MessagesOptions } from './types/MessagesOptions'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
 import * as XMTP from '../index'
 import { Address, ConversationId, ConversationTopic } from '../index'
@@ -87,7 +87,7 @@ export class Group<
    */
   async send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
     content: ConversationSendPayload<SendContentTypes>
-  ): Promise<string> {
+  ): Promise<MessageId> {
     // TODO: Enable other content types
     // if (opts && opts.contentType) {
     // return await this._sendWithJSCodec(content, opts.contentType)

@@ -6,7 +6,7 @@ import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
-import { MessagesOptions } from './types/MessagesOptions'
+import { MessageId, MessagesOptions } from './types/MessagesOptions'
 import * as XMTP from '../index'
 import { ConversationId, ConversationTopic } from '../index'
 
@@ -25,7 +25,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   id: ConversationId
   createdAt: number
   version = ConversationVersion.DM as const
-  topic: string
+  topic: ConversationTopic
   state: ConsentState
   lastMessage?: DecodedMessage<ContentTypes>
 
@@ -60,7 +60,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    */
   async send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
     content: ConversationSendPayload<SendContentTypes>
-  ): Promise<string> {
+  ): Promise<MessageId> {
     // TODO: Enable other content types
     // if (opts && opts.contentType) {
     // return await this._sendWithJSCodec(content, opts.contentType)
