@@ -348,17 +348,13 @@ export async function prepareMessage(
   return await XMTPModule.prepareMessage(inboxId, conversationId, contentJson)
 }
 
-export async function sendMessageToConversation(
+export async function sendMessage(
   inboxId: InboxId,
   conversationId: ConversationId,
   content: any
 ): Promise<MessageId> {
   const contentJson = JSON.stringify(content)
-  return await XMTPModule.sendMessageToConversation(
-    inboxId,
-    conversationId,
-    contentJson
-  )
+  return await XMTPModule.sendMessage(inboxId, conversationId, contentJson)
 }
 
 export async function publishPreparedMessages(

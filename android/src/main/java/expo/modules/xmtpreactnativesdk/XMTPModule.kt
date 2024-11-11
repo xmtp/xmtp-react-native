@@ -539,9 +539,9 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("sendMessageToConversation") Coroutine { inboxId: String, id: String, contentJson: String ->
+        AsyncFunction("sendMessage") Coroutine { inboxId: String, id: String, contentJson: String ->
             withContext(Dispatchers.IO) {
-                logV("sendMessageToConversation")
+                logV("sendMessage")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val conversation = client.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
@@ -1151,10 +1151,10 @@ class XMTPModule : Module() {
             subscribeToAllMessages(inboxId = inboxId, getStreamType(type))
         }
 
-        AsyncFunction("subscribeToConversationMessages") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("subscribeToMessages") Coroutine { inboxId: String, id: String ->
             withContext(Dispatchers.IO) {
-                logV("subscribeToConversationMessages")
-                subscribeToConversationMessages(
+                logV("subscribeToMessages")
+                subscribeToMessages(
                     inboxId = inboxId,
                     id = id
                 )
@@ -1171,10 +1171,10 @@ class XMTPModule : Module() {
             subscriptions[getConversationsKey(inboxId)]?.cancel()
         }
 
-        AsyncFunction("unsubscribeFromConversationMessages") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("unsubscribeFromMessages") Coroutine { inboxId: String, id: String ->
             withContext(Dispatchers.IO) {
-                logV("unsubscribeFromConversationMessages")
-                unsubscribeFromConversationMessages(
+                logV("unsubscribeFromMessages")
+                unsubscribeFromMessages(
                     inboxId = inboxId,
                     id = id
                 )
@@ -1284,7 +1284,7 @@ class XMTPModule : Module() {
         }
     }
 
-    private suspend fun subscribeToConversationMessages(inboxId: String, id: String) {
+    private suspend fun subscribeToMessages(inboxId: String, id: String) {
         val client = clients[inboxId] ?: throw XMTPException("No client")
         val conversation = client.findConversation(id)
             ?: throw XMTPException("no conversation found for $id")
@@ -1317,7 +1317,7 @@ class XMTPModule : Module() {
         return "conversations:$inboxId"
     }
 
-    private fun unsubscribeFromConversationMessages(
+    private fun unsubscribeFromMessages(
         inboxId: String,
         id: String,
     ) {

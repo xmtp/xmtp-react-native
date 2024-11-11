@@ -1,9 +1,5 @@
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
-import {
-  Conversation,
-  ConversationId,
-  ConversationVersion,
-} from '../../../src/index'
+import { Conversation } from '../../../src/index'
 
 export const dmTests: Test[] = []
 let counter = 1
@@ -28,7 +24,6 @@ test('can list dms with params', async () => {
   await boDm2.send({ text: `third message` })
   await boGroup2.send({ text: `first message` })
   await boDm1.send({ text: `dm message` })
-  // Order should be [Dm1, Group2, Dm2, Group1]
 
   await boClient.conversations.syncAllConversations()
   const boConvosOrderCreated = await boClient.conversations.listDms()
@@ -36,26 +31,31 @@ test('can list dms with params', async () => {
     { lastMessage: true },
     'lastMessage'
   )
-  const boGroupsLimit = await boClient.conversations.listDms({}, undefined, 1)
+  const boDmsLimit = await boClient.conversations.listDms({}, undefined, 1)
 
   assert(
     boConvosOrderCreated
       .map((conversation: any) => conversation.id)
       .toString() === [boDm1.id, boDm2.id].toString(),
-    `Conversation created at order should be ${[boDm1.id, boDm2.id].toString()} but was ${boConvosOrderCreated.map((group: any) => group.id).toString()}`
+    `Conversation created at order should be ${[boDm1.id, boDm2.id].toString()} but was ${boConvosOrderCreated.map((convo: any) => convo.id).toString()}`
   )
 
   assert(
     boConvosOrderLastMessage
       .map((conversation: any) => conversation.id)
       .toString() === [boDm1.id, boDm2.id].toString(),
-    `Conversation last message order should be ${[boDm1.id, boDm2.id].toString()} but was ${boConvosOrderLastMessage.map((group: any) => group.id).toString()}`
+    `Conversation last message order should be ${[boDm1.id, boDm2.id].toString()} but was ${boConvosOrderLastMessage.map((convo: any) => convo.id).toString()}`
   )
 
   const messages = await boConvosOrderLastMessage[0].messages()
   assert(
     messages[0].content() === 'dm message',
     `last message 1 should be dm message ${messages[0].content()}`
+  )
+
+  assert(
+    boDmsLimit[0].id === boDm1.id,
+    `Dms limit should be ${boDm1.id} but was ${boDmsLimit[0].id}`
   )
 
   return true
@@ -68,7 +68,7 @@ test('can stream all dm messages', async () => {
   let messageCallbacks = 0
   await bo.conversations.stream(async () => {
     conversationCallbacks++
-  })
+  }, 'dms')
 
   await bo.conversations.streamAllMessages(async () => {
     messageCallbacks++
@@ -82,12 +82,12 @@ test('can stream all dm messages', async () => {
   await delayToPropogate()
 
   assert(
-    conversationCallbacks === 2,
-    'conversation stream should have received 2 conversation'
+    conversationCallbacks === 1,
+    'conversation stream should have received 1 conversation'
   )
   assert(
-    messageCallbacks === 2,
-    'message stream should have received 2 message'
+    messageCallbacks === 1,
+    'message stream should have received 1 message'
   )
 
   return true

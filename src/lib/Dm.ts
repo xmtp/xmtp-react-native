@@ -71,11 +71,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         content = { text: content }
       }
 
-      return await XMTP.sendMessageToConversation(
-        this.client.inboxId,
-        this.id,
-        content
-      )
+      return await XMTP.sendMessage(this.client.inboxId, this.id, content)
     } catch (e) {
       console.info('ERROR in send()', e.message)
       throw e
@@ -179,7 +175,6 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         message: DecodedMessage<ContentTypes>
         conversationId: string
       }) => {
-        // Long term these checks should be able to be done on the native layer as well, but additional checks in JS for safety
         if (inboxId !== this.client.inboxId) {
           return
         }

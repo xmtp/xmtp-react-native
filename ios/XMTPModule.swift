@@ -1659,7 +1659,7 @@ public class XMTPModule: Module {
 						.streamAllMessages(type: type)
 					{
 						try sendEvent(
-							"messages",
+							"message",
 							[
 								"inboxId": inboxId,
 								"message": DecodedMessageWrapper.encodeToObj(

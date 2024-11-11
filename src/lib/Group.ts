@@ -98,7 +98,7 @@ export class Group<
         content = { text: content }
       }
 
-      return await XMTP.sendMessageToConversation(
+      return await XMTP.sendMessage(
         this.client.inboxId,
         this.id,
         content
