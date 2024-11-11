@@ -434,7 +434,7 @@ public class XMTPModule: Module {
 			var results: [String] = []
 			for conversation in conversations {
 				let encodedConversationContainer =
-					try await ConversationContainerWrapper.encode(
+					try await ConversationWrapper.encode(
 						conversation, client: client)
 				results.append(encodedConversationContainer)
 			}
@@ -486,7 +486,7 @@ public class XMTPModule: Module {
 			}
 			if let message = try client.findMessage(messageId: messageId) {
 				return try DecodedMessageWrapper.encode(
-					message.decrypt(), client: client)
+					message.decode(), client: client)
 			} else {
 				return nil
 			}
@@ -515,7 +515,7 @@ public class XMTPModule: Module {
 			if let conversation = try client.findConversation(
 				conversationId: conversationId)
 			{
-				return try await ConversationContainerWrapper.encode(
+				return try await ConversationWrapper.encode(
 					conversation, client: client)
 			} else {
 				return nil
@@ -531,7 +531,7 @@ public class XMTPModule: Module {
 			if let conversation = try client.findConversationByTopic(
 				topic: topic)
 			{
-				return try await ConversationContainerWrapper.encode(
+				return try await ConversationWrapper.encode(
 					conversation, client: client)
 			} else {
 				return nil
@@ -722,7 +722,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(dmId)")
 			}
 			if case let .dm(dm) = conversation {
-				return try await dm.peerInboxId
+				return try dm.peerInboxId
 			} else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(dmId)")
@@ -1263,9 +1263,9 @@ public class XMTPModule: Module {
 				throw Error.noMessage
 			}
 			let decodedMessage = try await conversation.processMessage(
-				envelopeBytes: encryptedMessageData)
+				messageBytes: encryptedMessageData)
 			return try DecodedMessageWrapper.encode(
-				decodedMessage.decrypt(), client: client)
+				decodedMessage.decode(), client: client)
 		}
 
 		AsyncFunction("processWelcomeMessage") {
@@ -1287,23 +1287,26 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound("no group found")
 			}
 
-			return try await ConversationContainerWrapper.encode(
+			return try await ConversationWrapper.encode(
 				conversation, client: client)
 		}
 
-		AsyncFunction("subscribeToConversations") { (inboxId: String) in
-			try await subscribeToConversations(inboxId: inboxId)
+		AsyncFunction("subscribeToConversations") {
+			(inboxId: String, type: String) in
+
+			try await subscribeToConversations(
+				inboxId: inboxId, type: getConversationType(type: type))
 		}
 
 		AsyncFunction("subscribeToAllMessages") {
-			(inboxId: String, includeGroups: Bool) in
+			(inboxId: String, type: String) in
 			try await subscribeToAllMessages(
-				inboxId: inboxId, includeGroups: includeGroups)
+				inboxId: inboxId, type: getConversationType(type: type))
 		}
 
 		AsyncFunction("subscribeToMessages") {
-			(inboxId: String, topic: String) in
-			try await subscribeToMessages(inboxId: inboxId, topic: topic)
+			(inboxId: String, id: String) in
+			try await subscribeToMessages(inboxId: inboxId, id: id)
 		}
 
 		AsyncFunction("unsubscribeFromConversations") { (inboxId: String) in
@@ -1317,8 +1320,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("unsubscribeFromMessages") {
-			(inboxId: String, topic: String) in
-			try await unsubscribeFromMessages(inboxId: inboxId, topic: topic)
+			(inboxId: String, id: String) in
+			try await unsubscribeFromMessages(inboxId: inboxId, id: id)
 		}
 
 		AsyncFunction("registerPushToken") {
@@ -1348,34 +1351,37 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("consentAddressState") {
-			(inboxId: String, address: String) -> Bool in
+			(inboxId: String, address: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
 				throw Error.noClient
 			}
-			return try ConsentWrapper.consentStateToString(
-				state: client.preferences.consentList.addressState(address))
+			return try await ConsentWrapper.consentStateToString(
+				state: client.preferences.consentList.addressState(
+					address: address))
 		}
 
 		AsyncFunction("consentInboxIdState") {
-			(inboxId: String, inboxId: String) -> Bool in
+			(inboxId: String, peerInboxId: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
 				throw Error.noClient
 			}
-			return try ConsentWrapper.consentStateToString(
-				state: client.preferences.consentList.inboxIdState(inboxId))
+			return try await ConsentWrapper.consentStateToString(
+				state: client.preferences.consentList.inboxIdState(
+					inboxId: peerInboxId))
 		}
 
 		AsyncFunction("consentConversationIdState") {
-			(inboxId: String, conversationId: String) -> Bool in
+			(inboxId: String, conversationId: String) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
 				throw Error.noClient
 			}
-			return try ConsentWrapper.consentStateToString(
+			return try await ConsentWrapper.consentStateToString(
 				state: client.preferences.consentList.conversationState(
-					conversationId))
+					conversationId:
+						conversationId))
 		}
 
 		AsyncFunction("setConsentState") {
@@ -1387,14 +1393,17 @@ public class XMTPModule: Module {
 			else {
 				throw Error.noClient
 			}
-			client.preferences.consentList.setConsentState(
-				[
-					ConsentListEntry(
-						value,
-						getEntryType(entryType),
-						getConsentState(consentType)
-					)
 
+			let resolvedEntryType = try getEntryType(type: entryType)
+			let resolvedConsentState = try getConsentState(state: consentType)
+
+			try await client.preferences.consentList.setConsentState(
+				entries: [
+					ConsentListEntry(
+						value: value,
+						entryType: resolvedEntryType,
+						consentType: resolvedConsentState
+					)
 				]
 			)
 		}
@@ -1414,7 +1423,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(conversationId)")
 			}
 			return try ConsentWrapper.consentStateToString(
-				state: await conversation.consentState())
+				state: conversation.consentState())
 		}
 
 		Function("preAuthenticateToInboxCallbackCompleted") {
@@ -1551,6 +1560,17 @@ public class XMTPModule: Module {
 		}
 	}
 
+	private func getConversationType(type: String) throws -> ConversationType {
+		switch type {
+		case "groups":
+			return .groups
+		case "dms":
+			return .dms
+		default:
+			return .all
+		}
+	}
+
 	func createApiClient(env: String, appVersion: String? = nil)
 		-> XMTP.ClientOptions.Api
 	{
@@ -1590,7 +1610,9 @@ public class XMTPModule: Module {
 			historySyncUrl: historySyncUrl)
 	}
 
-	func subscribeToConversations(inboxId: String) async throws {
+	func subscribeToConversations(inboxId: String, type: ConversationType)
+		async throws
+	{
 		guard let client = await clientsManager.getClient(key: inboxId) else {
 			return
 		}
@@ -1602,9 +1624,9 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await conversation in await client.conversations
-						.stream()
+						.stream(type: type)
 					{
-						try sendEvent(
+						try await sendEvent(
 							"conversation",
 							[
 								"inboxId": inboxId,
@@ -1620,7 +1642,9 @@ public class XMTPModule: Module {
 			})
 	}
 
-	func subscribeToAllMessages(inboxId: String) async throws {
+	func subscribeToAllMessages(inboxId: String, type: ConversationType)
+		async throws
+	{
 		guard let client = await clientsManager.getClient(key: inboxId) else {
 			return
 		}
@@ -1632,7 +1656,7 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await message in await client.conversations
-						.streamAllMessages()
+						.streamAllMessages(type: type)
 					{
 						try sendEvent(
 							"messages",
@@ -1663,7 +1687,7 @@ public class XMTPModule: Module {
 		await subscriptionsManager.get(converation.cacheKey(client.inboxID))?
 			.cancel()
 		await subscriptionsManager.set(
-			try converation.cacheKey(client.inboxID),
+			converation.cacheKey(client.inboxID),
 			Task {
 				do {
 					for try await message in converation.streamMessages() {
@@ -1701,7 +1725,7 @@ public class XMTPModule: Module {
 			return
 		}
 
-		await subscriptionsManager.get(try converation.cacheKey(inboxId))?
+		await subscriptionsManager.get(converation.cacheKey(inboxId))?
 			.cancel()
 	}
 
