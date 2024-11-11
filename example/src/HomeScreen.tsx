@@ -103,7 +103,7 @@ function GroupListItem({
   const [consentState, setConsentState] = useState<string | undefined>()
 
   const denyGroup = async () => {
-    await client?.contacts.denyGroups([group.id])
+    await group.updateConsent('denied')
     const consent = await group.consentState()
     setConsentState(consent)
   }
@@ -154,7 +154,7 @@ function GroupListItem({
             {lastMessage?.fallback}
           </Text>
           <Text>{lastMessage?.senderAddress}:</Text>
-          <Text>{moment(lastMessage?.sent).fromNow()}</Text>
+          <Text>{moment(lastMessage?.sentNs / 1000000).fromNow()}</Text>
         </View>
       </View>
     </Pressable>
@@ -185,7 +185,7 @@ function ConversationItem({
   }, [conversation])
 
   const denyContact = async () => {
-    await client?.contacts.deny([conversation.peerAddress])
+    await conversation.updateConsent('denied')
     conversation
       .consentState()
       .then(setConsentState)
@@ -223,7 +223,7 @@ function ConversationItem({
             {lastMessage?.fallback}
           </Text>
           <Text>{lastMessage?.senderAddress}:</Text>
-          <Text>{moment(lastMessage?.sent).fromNow()}</Text>
+          <Text>{moment(lastMessage?.sentNs / 1000000).fromNow()}</Text>
           <Text style={{ fontWeight: 'bold', color: 'red' }}>
             {getConsentState}
           </Text>

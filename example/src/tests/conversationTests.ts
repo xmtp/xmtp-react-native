@@ -1,5 +1,5 @@
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
-import { Conversation, ConversationVersion } from '../../../src/index'
+import { Conversation, ConversationId, ConversationVersion } from '../../../src/index'
 
 export const conversationTests: Test[] = []
 let counter = 1
@@ -15,10 +15,12 @@ test('can find a conversations by id', async () => {
   const alixGroup = await alixClient.conversations.newGroup([boClient.address])
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
 
-  await boClient.conversations.syncConversations()
+  await boClient.conversations.sync()
   const boGroup = await boClient.conversations.findConversation(alixGroup.id)
   const boDm = await boClient.conversations.findConversation(alixDm.id)
-  const boDm2 = await boClient.conversations.findConversation('GARBAGE')
+  const boDm2 = await boClient.conversations.findConversation(
+    'GARBAGE' as ConversationId
+  )
 
   assert(boDm2 === undefined, `bodm2 should be undefined`)
 
@@ -40,7 +42,7 @@ test('can find a conversation by topic', async () => {
   const alixGroup = await alixClient.conversations.newGroup([boClient.address])
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
 
-  await boClient.conversations.syncConversations()
+  await boClient.conversations.sync()
   const boGroup = await boClient.conversations.findConversationByTopic(
     alixGroup.topic
   )
@@ -65,7 +67,7 @@ test('can find a dm by address', async () => {
   const [alixClient, boClient] = await createClients(2)
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
 
-  await boClient.conversations.syncConversations()
+  await boClient.conversations.sync()
   const boDm = await boClient.conversations.findDm(alixClient.address)
 
   assert(
@@ -94,16 +96,11 @@ test('can list conversations with params', async () => {
 
   await boClient.conversations.syncAllConversations()
   const boConvosOrderCreated = await boClient.conversations.list()
-  const boConvosOrderLastMessage =
-    await boClient.conversations.list(
-      { lastMessage: true },
-      'lastMessage'
-    )
-  const boGroupsLimit = await boClient.conversations.list(
-    {},
-    undefined,
-    1
+  const boConvosOrderLastMessage = await boClient.conversations.list(
+    { lastMessage: true },
+    'lastMessage'
   )
+  const boGroupsLimit = await boClient.conversations.list({}, undefined, 1)
 
   assert(
     boConvosOrderCreated.map((group: any) => group.id).toString() ===
@@ -150,7 +147,7 @@ test('can list groups', async () => {
   await boClient.conversations.findOrCreateDm(alixClient.address)
 
   const boConversations = await boClient.conversations.list()
-  await alixClient.conversations.syncConversations()
+  await alixClient.conversations.sync()
   const alixConversations = await alixClient.conversations.list()
 
   assert(

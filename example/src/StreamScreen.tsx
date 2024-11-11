@@ -154,7 +154,7 @@ const ConversationItem = ({
           <FlatList
             data={messages}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <Text>{item.sent}</Text>}
+            renderItem={({ item }) => <Text>{item.sentNs}</Text>}
           />
         </>
       )}

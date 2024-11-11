@@ -258,7 +258,7 @@ export default class Conversations<
    * Executes a network request to fetch the latest list of conversations associated with the client
    * and save them to the local state.
    */
-  async syncConversations() {
+  async sync() {
     await XMTPModule.syncConversations(this.client.inboxId)
   }
 

@@ -1,14 +1,12 @@
 import {
   Client,
   ContentTypeId,
-  Conversation,
   ConversationVersion,
   EncodedContent,
   JSContentCodec,
   ReactionCodec,
   ReplyCodec,
   TextCodec,
-  sendMessage,
 } from 'xmtp-react-native-sdk'
 
 const ContentTypeNumber: ContentTypeId = {
@@ -63,7 +61,7 @@ export const typeTests = async () => {
   // @ts-expect-error
   await textConvo.send({ wrong: 'hello' })
 
-  const textConvo2 = new Conversation(textClient, {
+  const textConvo2 = new Dm(textClient, {
     createdAt: 123,
     topic: 'sdf',
     peerAddress: 'sdf',

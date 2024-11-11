@@ -10,7 +10,7 @@ import { useXmtp } from 'xmtp-react-native-sdk'
 import { NavigationParamList } from './Navigation'
 import { TestCategory } from './TestScreen'
 import { supportedCodecs } from './contentTypes/contentTypes'
-import { useSavedKeys } from './hooks'
+import { useSavedAddress } from './hooks'
 
 const appVersion = 'XMTP_RN_EX/0.0.1'
 
@@ -65,11 +65,10 @@ export default function LaunchScreen(
   const [selectedNetwork, setSelectedNetwork] = useState<
     'dev' | 'local' | 'production'
   >('dev')
-  const [enableGroups, setEnableGroups] = useState('true')
   const signer = useSigner()
   const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
   const { setClient } = useXmtp()
-  const savedKeys = useSavedKeys()
+  const savedKeys = useSavedAddress()
   const configureWallet = useCallback(
     (label: string, configuring: Promise<XMTP.Client<any>>) => {
       console.log('Connecting XMTP client', label)
@@ -81,8 +80,7 @@ export default function LaunchScreen(
           setClient(client)
           navigation.navigate('home')
           // Save the configured client keys for use in later sessions.
-          const keyBundle = await client.exportKeyBundle()
-          await savedKeys.save(keyBundle)
+          await savedKeys.save(client.address)
         })
         .catch((err) =>
           console.log('Unable to connect XMTP client', label, err)
@@ -90,14 +88,6 @@ export default function LaunchScreen(
     },
     []
   )
-
-  const preCreateIdentityCallback = () => {
-    console.log('Pre Create Identity Callback')
-  }
-
-  const preEnableIdentityCallback = () => {
-    console.log('Pre Enable Identity Callback')
-  }
 
   const preAuthenticateToInboxCallback = async () => {
     console.log('Pre Authenticate To Inbox Callback')
@@ -191,10 +181,6 @@ export default function LaunchScreen(
           selectTextStyle={styles.modalSelectText}
           backdropPressToClose
           data={groupOptions}
-          initValue={enableGroups}
-          onChange={(option) => {
-            setEnableGroups(option.label)
-          }}
         />
       </View>
       <View style={styles.row}>
@@ -209,12 +195,7 @@ export default function LaunchScreen(
               color="orange"
               onPress={() => {
                 ;(async () => {
-                  console.log(
-                    'Using network ' +
-                      selectedNetwork +
-                      ' and enableV3 ' +
-                      enableGroups
-                  )
+                  console.log('Using network ' + selectedNetwork)
 
                   const dbEncryptionKey = await getDbEncryptionKey(
                     selectedNetwork,
@@ -227,10 +208,7 @@ export default function LaunchScreen(
                       env: selectedNetwork,
                       appVersion,
                       codecs: supportedCodecs,
-                      preCreateIdentityCallback,
-                      preEnableIdentityCallback,
                       preAuthenticateToInboxCallback,
-                      enableV3: enableGroups === 'true',
                       dbEncryptionKey,
                     })
                   )
@@ -246,12 +224,7 @@ export default function LaunchScreen(
           color="green"
           onPress={() => {
             ;(async () => {
-              console.log(
-                'Using network ' +
-                  selectedNetwork +
-                  ' and enableV3 ' +
-                  enableGroups
-              )
+              console.log('Using network ' + selectedNetwork)
               const dbEncryptionKey = await getDbEncryptionKey(
                 selectedNetwork,
                 true
@@ -262,10 +235,7 @@ export default function LaunchScreen(
                   env: selectedNetwork,
                   appVersion,
                   codecs: supportedCodecs,
-                  preCreateIdentityCallback,
-                  preEnableIdentityCallback,
                   preAuthenticateToInboxCallback,
-                  enableV3: enableGroups === 'true',
                   dbEncryptionKey,
                 })
               )
@@ -273,7 +243,7 @@ export default function LaunchScreen(
           }}
         />
       </View>
-      {!!savedKeys.keyBundle && (
+      {!!savedKeys.address && (
         <>
           <View key="saved-dev" style={{ margin: 16 }}>
             <Button
@@ -281,21 +251,15 @@ export default function LaunchScreen(
               color="purple"
               onPress={() => {
                 ;(async () => {
-                  console.log(
-                    'Using network ' +
-                      selectedNetwork +
-                      ' and enableV3 ' +
-                      enableGroups
-                  )
+                  console.log('Using network ' + selectedNetwork)
                   const dbEncryptionKey =
                     await getDbEncryptionKey(selectedNetwork)
                   configureWallet(
                     selectedNetwork,
-                    XMTP.Client.createFromKeyBundle(savedKeys.keyBundle!, {
+                    XMTP.Client.build(savedKeys.address!, {
                       env: selectedNetwork,
                       appVersion,
                       codecs: supportedCodecs,
-                      enableV3: enableGroups === 'true',
                       dbEncryptionKey,
                     })
                   )

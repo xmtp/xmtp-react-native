@@ -24,32 +24,11 @@ export function useConversationList(): UseQueryResult<
   Conversation<SupportedContentTypes>[]
 > {
   const { client } = useXmtp()
-  client?.contacts
-    .refreshConsentList()
-    .then(() => {
-      console.log('Refreshed consent list successfully')
-    })
-    .catch((error) => {
-      console.error('Error refreshing consent list', error)
-    })
   return useQuery<Conversation<SupportedContentTypes>[]>(
     ['xmtp', 'conversations', client?.address],
-    () => client!.conversations.list(),
-    {
-      enabled: !!client,
-    }
-  )
-}
-
-export function useGroupsList(): UseQueryResult<
-  Group<SupportedContentTypes>[]
-> {
-  const { client } = useXmtp()
-  return useQuery<Group<SupportedContentTypes>[]>(
-    ['xmtp', 'groups', client?.address],
     async () => {
-      await client?.conversations.syncGroups()
-      return (await client?.conversations.listGroups()) || []
+      await client?.conversations.sync()
+      return (await client?.conversations.list()) || []
     },
     {
       enabled: !!client,
@@ -550,23 +529,23 @@ export function usePrepareRemoteAttachment({
 /**
  * Load or save a keyBundle for future use.
  */
-export function useSavedKeys(): {
-  keyBundle: string | null | undefined
-  save: (keyBundle: string) => void
+export function useSavedAddress(): {
+  address: string | null | undefined
+  save: (address: string) => void
   clear: () => void
 } {
-  const { data: keyBundle, refetch } = useQuery<string | null>(
-    ['xmtp', 'keyBundle'],
-    () => EncryptedStorage.getItem('xmtp.keyBundle')
+  const { data: address, refetch } = useQuery<string | null>(
+    ['xmtp', 'address'],
+    () => EncryptedStorage.getItem('xmtp.address')
   )
   return {
-    keyBundle,
-    save: async (keyBundle: string) => {
-      await EncryptedStorage.setItem('xmtp.keyBundle', keyBundle)
+    address,
+    save: async (address: string) => {
+      await EncryptedStorage.setItem('xmtp.address', address)
       await refetch()
     },
     clear: async () => {
-      await EncryptedStorage.removeItem('xmtp.keyBundle')
+      await EncryptedStorage.removeItem('xmtp.address')
       await refetch()
     },
   }
