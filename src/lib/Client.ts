@@ -34,7 +34,7 @@ export class Client<
   installationId: string
   dbPath: string
   conversations: Conversations<ContentTypes>
-  zpreferences: PrivatePreferences
+  preferences: PrivatePreferences
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
   private static signSubscription: Subscription | null = null
   private static authSubscription: Subscription | null = null
@@ -174,13 +174,13 @@ export class Client<
           Boolean(authInboxSubscription),
           options.dbDirectory,
           options.historySyncUrl,
-          signer.walletType(),
-          signer.getChainId(),
-          signer.getBlockNumber()
+          signer.walletType?.(),
+          signer.getChainId?.(),
+          signer.getBlockNumber?.()
         )
       })().catch((error) => {
         this.removeAllSubscriptions(authInboxSubscription)
-        console.error('ERROR in create: ', error)
+        console.error('ERROR in create: ', error.message)
       })
     })
   }
@@ -434,7 +434,7 @@ export class Client<
     if (!file.fileUri?.startsWith('file://')) {
       throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.encryptAttachment(file)
+    return await XMTPModule.encryptAttachment(this.inboxId, file)
   }
 
   /**
@@ -451,7 +451,7 @@ export class Client<
     if (!encryptedFile.encryptedLocalFileUri?.startsWith('file://')) {
       throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.decryptAttachment(encryptedFile)
+    return await XMTPModule.decryptAttachment(this.inboxId, encryptedFile)
   }
 }
 export type XMTPEnvironment = 'local' | 'dev' | 'production'

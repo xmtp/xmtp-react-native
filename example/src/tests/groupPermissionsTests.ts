@@ -55,7 +55,7 @@ test('super admin can add a new admin', async () => {
   assert(!boIsSuperAdmin, `bo should not be a super admin`)
 
   // Verify that bo can not add a new admin
-  await bo.conversations.syncConversations()
+  await bo.conversations.sync()
   const boGroup = (await bo.conversations.listGroups())[0]
   try {
     await boGroup.addAdmin(caro.inboxId)
@@ -67,7 +67,7 @@ test('super admin can add a new admin', async () => {
 
   // Alix adds bo as an admin
   await alixGroup.addAdmin(bo.inboxId)
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   const alixGroupIsAdmin = await alixGroup.isAdmin(bo.inboxId)
   assert(alixGroupIsAdmin, `alix should be an admin`)
 
@@ -98,7 +98,7 @@ test('in admin only group, members can not update group name unless they are an 
   )
 
   // Verify that bo can not update the group name
-  await bo.conversations.syncConversations()
+  await bo.conversations.sync()
   const boGroup = (await bo.conversations.listGroups())[0]
   try {
     await boGroup.updateGroupName("bo's group")
@@ -135,7 +135,7 @@ test('in admin only group, members can update group name once they are an admin'
   )
 
   // Verify that bo can not update the group name
-  await bo.conversations.syncConversations()
+  await bo.conversations.sync()
   const boGroup = (await bo.conversations.listGroups())[0]
   try {
     await boGroup.updateGroupName("bo's group")
@@ -147,7 +147,7 @@ test('in admin only group, members can update group name once they are an admin'
 
   // Alix adds bo as an admin
   await alixGroup.addAdmin(bo.inboxId)
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   const alixGroupIsAdmin = await alixGroup.isAdmin(bo.inboxId)
   assert(alixGroupIsAdmin, `alix should be an admin`)
 
@@ -190,12 +190,12 @@ test('in admin only group, members can not update group name after admin status 
 
   // Alix adds bo as an admin
   await alixGroup.addAdmin(bo.inboxId)
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   let boIsAdmin = await alixGroup.isAdmin(bo.inboxId)
   assert(boIsAdmin, `bo should be an admin`)
 
   // Now bo can update the group name
-  await bo.conversations.syncConversations()
+  await bo.conversations.sync()
   const boGroup = (await bo.conversations.listGroups())[0]
   await boGroup.sync()
   await boGroup.updateGroupName("bo's group")
@@ -208,7 +208,7 @@ test('in admin only group, members can not update group name after admin status 
 
   // Now alix removed bo as an admin
   await alixGroup.removeAdmin(bo.inboxId)
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   boIsAdmin = await alixGroup.isAdmin(bo.inboxId)
   assert(!boIsAdmin, `bo should not be an admin`)
 
@@ -251,7 +251,7 @@ test('can not remove a super admin from a group', async () => {
     `number of members should be 2 but was ${numMembers}`
   )
 
-  await bo.conversations.syncConversations()
+  await bo.conversations.sync()
   const boGroup = (await bo.conversations.listGroups())[0]
   await boGroup.sync()
 
@@ -327,7 +327,7 @@ test('can commit after invalid permissions commit', async () => {
     [alix.address, caro.address],
     { permissionLevel: 'all_members' }
   )
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   const alixGroup = (await alix.conversations.listGroups())[0]
 
   // Verify that Alix cannot add an admin
@@ -373,7 +373,7 @@ test('group with All Members policy has remove function that is admin only', asy
     [alix.address, caro.address],
     { permissionLevel: 'all_members' }
   )
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   const alixGroup = (await alix.conversations.listGroups())[0]
 
   // Verify that Alix cannot remove a member
@@ -429,7 +429,7 @@ test('can update group permissions', async () => {
   )
 
   // Verify that alix can not update the group description
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   const alixGroup = (await alix.conversations.listGroups())[0]
   try {
     await alixGroup.updateGroupDescription('new description 2')
@@ -479,7 +479,7 @@ test('can update group pinned frame', async () => {
   )
 
   // Verify that alix can not update the group pinned frame
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   const alixGroup = (await alix.conversations.listGroups())[0]
   try {
     await alixGroup.updateGroupPinnedFrameUrl('new pinned frame')
@@ -540,7 +540,7 @@ test('can create a group with custom permissions', async () => {
   )
 
   // Verify that bo can read the correct permissions
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   const alixGroup = (await alix.conversations.listGroups())[0]
   const permissions = await alixGroup.permissionPolicySet()
   assert(

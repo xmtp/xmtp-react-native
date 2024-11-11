@@ -172,14 +172,12 @@ class XMTPModule : Module() {
             dbEncryptionKey.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                 a.apply { set(i, v.toByte()) }
             }
-
         val historySyncUrl = authOptions.historySyncUrl
             ?: when (authOptions.environment) {
                 "production" -> "https://message-history.production.ephemera.network/"
                 "local" -> "http://0.0.0.0:5558"
                 else -> "https://message-history.dev.ephemera.network/"
             }
-
         return ClientOptions(
             api = apiEnvironments(authOptions.environment, authOptions.appVersion),
             preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
@@ -533,9 +531,9 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("findDm") Coroutine { inboxId: String, peerAddress: String ->
+        AsyncFunction("findDmByAddress") Coroutine { inboxId: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
-                logV("findDm")
+                logV("findDmByAddress")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val dm = client.findDm(peerAddress)
                 dm?.let {

@@ -200,17 +200,16 @@ export class Group<
       async ({
         inboxId,
         message,
-        groupId,
+        conversationId,
       }: {
         inboxId: string
         message: DecodedMessage<ContentTypes>
-        groupId: string
+        conversationId: string
       }) => {
-        // Long term these checks should be able to be done on the native layer as well, but additional checks in JS for safety
         if (inboxId !== this.client.inboxId) {
           return
         }
-        if (groupId !== this.id) {
+        if (conversationId !== this.id) {
           return
         }
 
@@ -223,7 +222,6 @@ export class Group<
       await XMTP.unsubscribeFromMessages(this.client.inboxId, this.id)
     }
   }
-
   /**
    *
    * @param addresses addresses to add to the group

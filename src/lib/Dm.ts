@@ -43,8 +43,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   }
 
   /**
-   * This method returns an array of inbox ids associated with the group.
-   * To get the latest member inbox ids from the network, call sync() first.
+   * This method return the peer inbox id associated with the dm.
    * @returns {Promise<InboxId>} A Promise that resolves to a InboxId.
    */
   async peerInboxId(): Promise<InboxId> {
@@ -52,7 +51,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   }
 
   /**
-   * Sends a message to the current group.
+   * Sends a message to the current dm.
    *
    * @param {string | MessageContent} content - The content of the message. It can be either a string or a structured MessageContent object.
    * @returns {Promise<string>} A Promise that resolves to a string identifier for the sent message.
@@ -79,7 +78,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   }
 
   /**
-   * Prepare a group message to be sent.
+   * Prepare a dm message to be sent.
    *
    * @param {string | MessageContent} content - The content of the message. It can be either a string or a structured MessageContent object.
    * @returns {Promise<string>} A Promise that resolves to a string identifier for the prepared message to be sent.
@@ -120,7 +119,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   }
 
   /**
-   * This method returns an array of messages associated with the group.
+   * This method returns an array of messages associated with the dm.
    * To get the latest messages from the network, call sync() first.
    *
    * @param {number | undefined} limit - Optional maximum number of messages to return.
@@ -144,14 +143,14 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
 
   /**
    * Executes a network request to fetch the latest messages and membership changes
-   * associated with the group and saves them to the local state.
+   * associated with the dm and saves them to the local state.
    */
   async sync() {
     await XMTP.syncConversation(this.client.inboxId, this.id)
   }
 
   /**
-   * Sets up a real-time message stream for the current group.
+   * Sets up a real-time message stream for the current dm.
    *
    * This method subscribes to incoming messages in real-time and listens for new message events.
    * When a new message is detected, the provided callback function is invoked with the details of the message.

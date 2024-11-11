@@ -11,7 +11,7 @@ export default class PrivatePreferences {
     this.client = client
   }
 
-  async conversationIdConsentState(
+  async conversationConsentState(
     conversationId: ConversationId
   ): Promise<ConsentState> {
     return await XMTPModule.consentConversationIdState(

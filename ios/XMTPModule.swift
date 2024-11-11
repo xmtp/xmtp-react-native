@@ -545,7 +545,7 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("findDm") {
+		AsyncFunction("findDmByAddress") {
 			(inboxId: String, peerAddress: String) -> String? in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {

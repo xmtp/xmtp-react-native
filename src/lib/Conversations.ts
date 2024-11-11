@@ -77,13 +77,13 @@ export default class Conversations<
   }
 
   /**
-   * This method returns a list of all groups that the client is a member of.
-   * To get the latest list of groups from the network, call syncGroups() first.
-   * @param {ConversationOptions} opts - The options to specify what fields you want returned for the groups in the list.
-   * @param {ConversationOrder} order - The order to specify if you want groups listed by last message or by created at.
-   * @param {number} limit - Limit the number of groups returned in the list.
+   * This method returns a list of all dms that the client is a member of.
+   * To get the latest list of dms from the network, call sync() first.
+   * @param {ConversationOptions} opts - The options to specify what fields you want returned for the dms in the list.
+   * @param {ConversationOrder} order - The order to specify if you want dms listed by last message or by created at.
+   * @param {number} limit - Limit the number of dms returned in the list.
    *
-   * @returns {Promise<Dm[]>} A Promise that resolves to an array of Group objects.
+   * @returns {Promise<Dm[]>} A Promise that resolves to an array of Dms objects.
    */
   async listDms(
     opts?: ConversationOptions | undefined,
@@ -95,7 +95,7 @@ export default class Conversations<
 
   /**
    * This method returns a group by the group id if that group exists in the local database.
-   * To get the latest list of groups from the network, call syncGroups() first.
+   * To get the latest list of groups from the network, call sync() first.
    *
    * @returns {Promise<Group>} A Promise that resolves to a Group or undefined if not found.
    */
@@ -107,9 +107,9 @@ export default class Conversations<
 
   /**
    * This method returns a Dm by the address if that dm exists in the local database.
-   * To get the latest list of groups from the network, call syncConversations() first.
+   * To get the latest list of dms from the network, call sync() first.
    *
-   * @returns {Promise<Dm>} A Promise that resolves to a Group or undefined if not found.
+   * @returns {Promise<Dm>} A Promise that resolves to a Dm or undefined if not found.
    */
   async findDm(address: Address): Promise<Dm<ContentTypes> | undefined> {
     return await XMTPModule.findDm(this.client, address)
@@ -117,9 +117,9 @@ export default class Conversations<
 
   /**
    * This method returns a conversation by the topic if that conversation exists in the local database.
-   * To get the latest list of groups from the network, call syncConversations() first.
+   * To get the latest list of conversations from the network, call sync() first.
    *
-   * @returns {Promise<Conversation>} A Promise that resolves to a Group or undefined if not found.
+   * @returns {Promise<Conversation>} A Promise that resolves to a Conversation or undefined if not found.
    */
   async findConversationByTopic(
     topic: ConversationTopic
@@ -129,9 +129,9 @@ export default class Conversations<
 
   /**
    * This method returns a conversation by the conversation id if that conversation exists in the local database.
-   * To get the latest list of groups from the network, call syncConversations() first.
+   * To get the latest list of conversations from the network, call sync() first.
    *
-   * @returns {Promise<Conversation>} A Promise that resolves to a Group or undefined if not found.
+   * @returns {Promise<Conversation>} A Promise that resolves to a Conversation or undefined if not found.
    */
   async findConversation(
     conversationId: ConversationId
@@ -141,7 +141,7 @@ export default class Conversations<
 
   /**
    * This method returns a message by the message id if that message exists in the local database.
-   * To get the latest list of messages from the network, call syncGroups() first.
+   * To get the latest list of messages from the network, call sync() first.
    *
    * @returns {Promise<DecodedMessage>} A Promise that resolves to a DecodedMessage or undefined if not found.
    */
@@ -153,7 +153,7 @@ export default class Conversations<
 
   /**
    * This method returns a list of all V3 conversations that the client is a member of.
-   * To include the latest groups from the network in the returned list, call syncGroups() first.
+   * To include the latest conversations from the network in the returned list, call sync() first.
    *
    * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
    */

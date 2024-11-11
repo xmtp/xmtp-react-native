@@ -27,7 +27,7 @@ test('group createdAt matches listGroups', async () => {
   const boGroup = await bo.conversations.newGroup([alix.address])
 
   // Fetch groups using listGroups method
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   const alixGroups = await alix.conversations.listGroups()
 
   const first = 0
@@ -73,7 +73,7 @@ test('group createdAt matches listAll', async () => {
   const boGroup = await bo.conversations.newGroup([alix.address])
 
   // Fetch groups using listGroups method
-  await alix.conversations.syncConversations()
+  await alix.conversations.sync()
   const alixGroups = await alix.conversations.list()
 
   assert(alixGroups.length === 2, 'alix should have two groups')

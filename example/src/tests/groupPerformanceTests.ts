@@ -82,7 +82,7 @@ async function beforeAll(
 test('test compare V3 dms', async () => {
   await beforeAll(0, 0, 50, true)
   let start = Date.now()
-  await alixClient.conversations.syncConversations()
+  await alixClient.conversations.sync()
   let end = Date.now()
   console.log(`Davon synced ${50} Dms in ${end - start}ms`)
 
@@ -94,7 +94,7 @@ test('test compare V3 dms', async () => {
   await createDms(alixClient, await createClients(5), 1)
 
   start = Date.now()
-  await alixClient.conversations.syncConversations()
+  await alixClient.conversations.sync()
   end = Date.now()
   console.log(`Davon synced ${dms.length} Dms in ${end - start}ms`)
 
@@ -140,7 +140,7 @@ test('testing large group listings with ordering', async () => {
   )
 
   start = Date.now()
-  await alixClient.conversations.syncConversations()
+  await alixClient.conversations.sync()
   end = Date.now()
   console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
   assert(
@@ -149,7 +149,7 @@ test('testing large group listings with ordering', async () => {
   )
 
   start = Date.now()
-  await boClient.conversations.syncConversations()
+  await boClient.conversations.sync()
   end = Date.now()
   console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
 
@@ -201,7 +201,7 @@ test('testing large group listings', async () => {
   )
 
   start = Date.now()
-  await alixClient.conversations.syncConversations()
+  await alixClient.conversations.sync()
   end = Date.now()
   console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
   assert(
@@ -210,7 +210,7 @@ test('testing large group listings', async () => {
   )
 
   start = Date.now()
-  await boClient.conversations.syncConversations()
+  await boClient.conversations.sync()
   end = Date.now()
   console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
   assert(
@@ -252,7 +252,7 @@ test('testing large message listings', async () => {
     'syncing 2000 self messages should take less than a .1 second'
   )
 
-  await boClient.conversations.syncConversations()
+  await boClient.conversations.sync()
   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
   start = Date.now()
   await boGroup!.sync()
@@ -297,7 +297,7 @@ test('testing large member listings', async () => {
     'syncing 50 members should take less than a .1 second'
   )
 
-  await boClient.conversations.syncConversations()
+  await boClient.conversations.sync()
   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
   start = Date.now()
   await boGroup!.sync()
@@ -368,7 +368,7 @@ test('testing sending message in large group', async () => {
     'sending a message should take less than a .2 second'
   )
 
-  await boClient.conversations.syncConversations()
+  await boClient.conversations.sync()
   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
   start = Date.now()
   await boGroup!.prepareMessage({ text: `Bo message` })

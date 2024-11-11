@@ -2,6 +2,7 @@ import { useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
 
+import { clientTests } from './tests/clientTests'
 import { conversationTests } from './tests/conversationTests'
 import { dmTests } from './tests/dmTests'
 import { groupPerformanceTests } from './tests/groupPerformanceTests'
@@ -106,9 +107,10 @@ function TestView({
 
 export enum TestCategory {
   all = 'all',
-  conversation = 'conversation',
-  group = 'group',
+  client = 'client',
   dm = 'dm',
+  group = 'group',
+  conversation = 'conversation',
   restartStreans = 'restartStreams',
   groupPermissions = 'groupPermissions',
   groupPerformance = 'groupPerformance',
@@ -121,6 +123,7 @@ export default function TestScreen(): JSX.Element {
     testSelection: TestCategory
   }
   const allTests = [
+    ...clientTests,
     ...dmTests,
     ...groupTests,
     ...conversationTests,
@@ -132,6 +135,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.all:
       activeTests = allTests
       title = 'All Unit Tests'
+      break
+    case TestCategory.client:
+      activeTests = clientTests
+      title = 'Client Unit Tests'
       break
     case TestCategory.dm:
       activeTests = dmTests

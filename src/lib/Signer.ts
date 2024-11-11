@@ -14,6 +14,8 @@ export function getSigner(wallet: Signer | WalletClient | null): Signer | null {
   if (!wallet) {
     return null
   }
+  console.log("Lopi444")
+
   if (isWalletClient(wallet)) {
     return convertWalletClientToSigner(wallet)
   }

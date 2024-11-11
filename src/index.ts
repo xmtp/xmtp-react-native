@@ -73,6 +73,10 @@ export async function requestMessageHistorySync(inboxId: InboxId) {
   return XMTPModule.requestMessageHistorySync(inboxId)
 }
 
+export async function revokeAllOtherInstallations(inboxId: InboxId) {
+  return XMTPModule.revokeAllOtherInstallations(inboxId)
+}
+
 export async function getInboxState(
   inboxId: InboxId,
   refreshFromNetwork: boolean
@@ -81,8 +85,8 @@ export async function getInboxState(
   return InboxState.from(inboxState)
 }
 
-export async function revokeAllOtherInstallations(inboxId: InboxId) {
-  return XMTPModule.revokeAllOtherInstallations(inboxId)
+export function preAuthenticateToInboxCallbackCompleted() {
+  XMTPModule.preAuthenticateToInboxCallbackCompleted()
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
@@ -171,74 +175,42 @@ export async function dropClient(inboxId: InboxId) {
   return await XMTPModule.dropClient(inboxId)
 }
 
-export async function findOrCreateDm<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(
-  client: Client<ContentTypes>,
-  peerAddress: Address
-): Promise<Dm<ContentTypes>> {
-  const dm = JSON.parse(
-    await XMTPModule.findOrCreateDm(client.inboxId, peerAddress)
-  )
-  return new Dm(client, dm)
+export async function canMessage(
+  inboxId: InboxId,
+  peerAddresses: Address[]
+): Promise<{ [key: Address]: boolean }> {
+  return await XMTPModule.canMessage(inboxId, peerAddresses)
 }
 
-export async function createGroup<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(
-  client: Client<ContentTypes>,
-  peerAddresses: Address[],
-  permissionLevel: 'all_members' | 'admin_only' = 'all_members',
-  name: string = '',
-  imageUrlSquare: string = '',
-  description: string = '',
-  pinnedFrameUrl: string = ''
-): Promise<Group<ContentTypes>> {
-  const options: CreateGroupParams = {
-    name,
-    imageUrlSquare,
-    description,
-    pinnedFrameUrl,
-  }
-  const group = JSON.parse(
-    await XMTPModule.createGroup(
-      client.inboxId,
-      peerAddresses,
-      permissionLevel,
-      JSON.stringify(options)
-    )
-  )
-
-  return new Group(client, group)
+export async function getOrCreateInboxId(
+  address: Address,
+  environment: XMTPEnvironment
+): Promise<InboxId> {
+  return await XMTPModule.getOrCreateInboxId(getAddress(address), environment)
 }
 
-export async function createGroupCustomPermissions<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(
-  client: Client<ContentTypes>,
-  peerAddresses: Address[],
-  permissionPolicySet: PermissionPolicySet,
-  name: string = '',
-  imageUrlSquare: string = '',
-  description: string = '',
-  pinnedFrameUrl: string = ''
-): Promise<Group<ContentTypes>> {
-  const options: CreateGroupParams = {
-    name,
-    imageUrlSquare,
-    description,
-    pinnedFrameUrl,
-  }
-  const group = JSON.parse(
-    await XMTPModule.createGroupCustomPermissions(
-      client.inboxId,
-      peerAddresses,
-      JSON.stringify(permissionPolicySet),
-      JSON.stringify(options)
-    )
+export async function encryptAttachment(
+  inboxId: InboxId,
+  file: DecryptedLocalAttachment
+): Promise<EncryptedLocalAttachment> {
+  const fileJson = JSON.stringify(file)
+  const encryptedFileJson = await XMTPModule.encryptAttachment(
+    inboxId,
+    fileJson
   )
+  return JSON.parse(encryptedFileJson)
+}
 
-  return new Group(client, group)
+export async function decryptAttachment(
+  inboxId: InboxId,
+  encryptedFile: EncryptedLocalAttachment
+): Promise<DecryptedLocalAttachment> {
+  const encryptedFileJson = JSON.stringify(encryptedFile)
+  const fileJson = await XMTPModule.decryptAttachment(
+    inboxId,
+    encryptedFileJson
+  )
+  return JSON.parse(fileJson)
 }
 
 export async function listGroups<
@@ -316,54 +288,6 @@ export async function listConversations<
   })
 }
 
-export async function listMemberInboxIds<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(client: Client<ContentTypes>, id: ConversationId): Promise<InboxId[]> {
-  return XMTPModule.listMemberInboxIds(client.inboxId, id)
-}
-
-export async function listPeerInboxId<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(client: Client<ContentTypes>, dmId: ConversationId): Promise<InboxId> {
-  return XMTPModule.listPeerInboxId(client.inboxId, dmId)
-}
-
-export async function listConversationMembers(
-  inboxId: InboxId,
-  id: ConversationId
-): Promise<Member[]> {
-  const members = await XMTPModule.listConversationMembers(inboxId, id)
-
-  return members.map((json: string) => {
-    return Member.from(json)
-  })
-}
-
-export async function prepareMessage(
-  inboxId: InboxId,
-  conversationId: ConversationId,
-  content: any
-): Promise<MessageId> {
-  const contentJson = JSON.stringify(content)
-  return await XMTPModule.prepareMessage(inboxId, conversationId, contentJson)
-}
-
-export async function sendMessage(
-  inboxId: InboxId,
-  conversationId: ConversationId,
-  content: any
-): Promise<MessageId> {
-  const contentJson = JSON.stringify(content)
-  return await XMTPModule.sendMessage(inboxId, conversationId, contentJson)
-}
-
-export async function publishPreparedMessages(
-  inboxId: InboxId,
-  conversationId: ConversationId
-) {
-  return await XMTPModule.publishPreparedMessages(inboxId, conversationId)
-}
-
 export async function conversationMessages<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
@@ -385,6 +309,16 @@ export async function conversationMessages<
   return messages.map((json: string) => {
     return DecodedMessage.from(json, client)
   })
+}
+
+export async function findMessage<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  messageId: MessageId
+): Promise<DecodedMessage<ContentTypes> | undefined> {
+  const message = await XMTPModule.findMessage(client.inboxId, messageId)
+  return DecodedMessage.from(message, client)
 }
 
 export async function findGroup<
@@ -440,13 +374,13 @@ export async function findConversationByTopic<
   }
 }
 
-export async function findDm<
+export async function findDmByAddress<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
   address: Address
 ): Promise<Dm<ContentTypes> | undefined> {
-  const json = await XMTPModule.findDm(client.inboxId, address)
+  const json = await XMTPModule.findDmByAddress(client.inboxId, address)
   const dm = JSON.parse(json)
   if (!dm || Object.keys(dm).length === 0) {
     return undefined
@@ -455,14 +389,122 @@ export async function findDm<
   return new Dm(client, dm)
 }
 
-export async function findMessage<
+export async function sendMessage(
+  inboxId: InboxId,
+  conversationId: ConversationId,
+  content: any
+): Promise<MessageId> {
+  const contentJson = JSON.stringify(content)
+  return await XMTPModule.sendMessage(inboxId, conversationId, contentJson)
+}
+
+export async function publishPreparedMessages(
+  inboxId: InboxId,
+  conversationId: ConversationId
+) {
+  return await XMTPModule.publishPreparedMessages(inboxId, conversationId)
+}
+
+export async function prepareMessage(
+  inboxId: InboxId,
+  conversationId: ConversationId,
+  content: any
+): Promise<MessageId> {
+  const contentJson = JSON.stringify(content)
+  return await XMTPModule.prepareMessage(inboxId, conversationId, contentJson)
+}
+
+export async function findOrCreateDm<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  messageId: MessageId
-): Promise<DecodedMessage<ContentTypes> | undefined> {
-  const message = await XMTPModule.findMessage(client.inboxId, messageId)
-  return DecodedMessage.from(message, client)
+  peerAddress: Address
+): Promise<Dm<ContentTypes>> {
+  const dm = JSON.parse(
+    await XMTPModule.findOrCreateDm(client.inboxId, peerAddress)
+  )
+  return new Dm(client, dm)
+}
+
+export async function createGroup<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  peerAddresses: Address[],
+  permissionLevel: 'all_members' | 'admin_only' = 'all_members',
+  name: string = '',
+  imageUrlSquare: string = '',
+  description: string = '',
+  pinnedFrameUrl: string = ''
+): Promise<Group<ContentTypes>> {
+  const options: CreateGroupParams = {
+    name,
+    imageUrlSquare,
+    description,
+    pinnedFrameUrl,
+  }
+  const group = JSON.parse(
+    await XMTPModule.createGroup(
+      client.inboxId,
+      peerAddresses,
+      permissionLevel,
+      JSON.stringify(options)
+    )
+  )
+
+  return new Group(client, group)
+}
+
+export async function createGroupCustomPermissions<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  peerAddresses: Address[],
+  permissionPolicySet: PermissionPolicySet,
+  name: string = '',
+  imageUrlSquare: string = '',
+  description: string = '',
+  pinnedFrameUrl: string = ''
+): Promise<Group<ContentTypes>> {
+  const options: CreateGroupParams = {
+    name,
+    imageUrlSquare,
+    description,
+    pinnedFrameUrl,
+  }
+  const group = JSON.parse(
+    await XMTPModule.createGroupCustomPermissions(
+      client.inboxId,
+      peerAddresses,
+      JSON.stringify(permissionPolicySet),
+      JSON.stringify(options)
+    )
+  )
+
+  return new Group(client, group)
+}
+
+export async function listMemberInboxIds<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(client: Client<ContentTypes>, id: ConversationId): Promise<InboxId[]> {
+  return XMTPModule.listMemberInboxIds(client.inboxId, id)
+}
+
+export async function dmPeerInboxId<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(client: Client<ContentTypes>, dmId: ConversationId): Promise<InboxId> {
+  return XMTPModule.dmPeerInboxId(client.inboxId, dmId)
+}
+
+export async function listConversationMembers(
+  inboxId: InboxId,
+  id: ConversationId
+): Promise<Member[]> {
+  const members = await XMTPModule.listConversationMembers(inboxId, id)
+
+  return members.map((json: string) => {
+    return Member.from(json)
+  })
 }
 
 export async function syncConversations(inboxId: InboxId) {
@@ -509,19 +551,19 @@ export async function removeGroupMembersByInboxId(
   return XMTPModule.removeGroupMembersByInboxId(inboxId, id, inboxIds)
 }
 
-export function groupDescription(
+export function groupName(
   inboxId: InboxId,
   id: ConversationId
 ): string | PromiseLike<string> {
-  return XMTPModule.groupDescription(inboxId, id)
+  return XMTPModule.groupName(inboxId, id)
 }
 
-export function updateGroupDescription(
+export function updateGroupName(
   inboxId: InboxId,
   id: ConversationId,
-  description: string
+  groupName: string
 ): Promise<void> {
-  return XMTPModule.updateGroupDescription(inboxId, id, description)
+  return XMTPModule.updateGroupName(inboxId, id, groupName)
 }
 
 export function groupImageUrlSquare(
@@ -539,19 +581,19 @@ export function updateGroupImageUrlSquare(
   return XMTPModule.updateGroupImageUrlSquare(inboxId, id, imageUrlSquare)
 }
 
-export function groupName(
+export function groupDescription(
   inboxId: InboxId,
   id: ConversationId
 ): string | PromiseLike<string> {
-  return XMTPModule.groupName(inboxId, id)
+  return XMTPModule.groupDescription(inboxId, id)
 }
 
-export function updateGroupName(
+export function updateGroupDescription(
   inboxId: InboxId,
   id: ConversationId,
-  groupName: string
+  description: string
 ): Promise<void> {
-  return XMTPModule.updateGroupName(inboxId, id, groupName)
+  return XMTPModule.updateGroupDescription(inboxId, id, description)
 }
 
 export function groupPinnedFrameUrl(
@@ -569,133 +611,7 @@ export function updateGroupPinnedFrameUrl(
   return XMTPModule.updateGroupPinnedFrameUrl(inboxId, id, pinnedFrameUrl)
 }
 
-export async function canMessage(
-  inboxId: InboxId,
-  peerAddresses: Address[]
-): Promise<{ [key: Address]: boolean }> {
-  return await XMTPModule.canMessage(inboxId, peerAddresses)
-}
-
-export async function getOrCreateInboxId(
-  address: Address,
-  environment: XMTPEnvironment
-): Promise<InboxId> {
-  return await XMTPModule.getOrCreateInboxId(getAddress(address), environment)
-}
-
-export async function encryptAttachment(
-  file: DecryptedLocalAttachment
-): Promise<EncryptedLocalAttachment> {
-  const fileJson = JSON.stringify(file)
-  const encryptedFileJson = await XMTPModule.encryptAttachment(
-    inboxId,
-    fileJson
-  )
-  return JSON.parse(encryptedFileJson)
-}
-
-export async function decryptAttachment(
-  encryptedFile: EncryptedLocalAttachment
-): Promise<DecryptedLocalAttachment> {
-  const encryptedFileJson = JSON.stringify(encryptedFile)
-  const fileJson = await XMTPModule.decryptAttachment(
-    inboxId,
-    encryptedFileJson
-  )
-  return JSON.parse(fileJson)
-}
-
-export function subscribeToConversations(
-  inboxId: InboxId,
-  type: ConversationType
-) {
-  return XMTPModule.subscribeToConversations(inboxId, type)
-}
-
-export function subscribeToAllMessages(
-  inboxId: InboxId,
-  type: ConversationType
-) {
-  return XMTPModule.subscribeToAllMessages(inboxId, type)
-}
-
-export async function subscribeToMessages(
-  inboxId: InboxId,
-  id: ConversationId
-) {
-  return await XMTPModule.subscribeToMessages(inboxId, id)
-}
-
-export function unsubscribeFromConversations(inboxId: InboxId) {
-  return XMTPModule.unsubscribeFromConversations(inboxId)
-}
-
-export function unsubscribeFromAllMessages(inboxId: InboxId) {
-  return XMTPModule.unsubscribeFromAllMessages(inboxId)
-}
-
-export async function unsubscribeFromMessages(
-  inboxId: InboxId,
-  id: ConversationId
-) {
-  return await XMTPModule.unsubscribeFromMessages(inboxId, id)
-}
-
-export function registerPushToken(pushServer: string, token: string) {
-  return XMTPModule.registerPushToken(pushServer, token)
-}
-
-export function subscribePushTopics(topics: ConversationTopic[]) {
-  return XMTPModule.subscribePushTopics(topics)
-}
-
-export async function conversationConsentState(
-  inboxId: InboxId,
-  conversationId: ConversationId
-): Promise<ConsentState> {
-  return await XMTPModule.conversationV3ConsentState(inboxId, conversationId)
-}
-
-export async function consentConversationIdState(
-  inboxId: InboxId,
-  conversationId: ConversationId
-): Promise<ConsentState> {
-  return await XMTPModule.consentConversationIdState(inboxId, conversationId)
-}
-
-export async function consentInboxIdState(
-  inboxId: InboxId,
-  peerInboxId: InboxId
-): Promise<ConsentState> {
-  return await XMTPModule.consentInboxIdState(inboxId, peerInboxId)
-}
-
-export async function consentAddressState(
-  inboxId: InboxId,
-  address: Address
-): Promise<ConsentState> {
-  return await XMTPModule.consentAddressState(inboxId, address)
-}
-
-export async function setConsentState(
-  inboxId: InboxId,
-  value: string,
-  entryType: ConsentListEntryType,
-  consentType: ConsentState
-): Promise<void> {
-  return await XMTPModule.setConsentState(
-    inboxId,
-    value,
-    entryType,
-    consentType
-  )
-}
-
-export function preAuthenticateToInboxCallbackCompleted() {
-  XMTPModule.preAuthenticateToInboxCallbackCompleted()
-}
-
-export async function isGroupActive(
+export function isGroupActive(
   inboxId: InboxId,
   id: ConversationId
 ): Promise<boolean> {
@@ -882,14 +798,6 @@ export async function permissionPolicySet(
   return JSON.parse(json)
 }
 
-export async function updateConversationConsent(
-  inboxId: InboxId,
-  conversationId: ConversationId,
-  state: ConsentState
-): Promise<void> {
-  return XMTPModule.updateConversationConsent(inboxId, conversationId, state)
-}
-
 export async function processMessage<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
@@ -907,7 +815,7 @@ export async function processWelcomeMessage<
   client: Client<ContentTypes>,
   encryptedMessage: string
 ): Promise<Promise<Conversation<ContentTypes>>> {
-  const json = await XMTPModule.processConversationWelcomeMessage(
+  const json = await XMTPModule.processWelcomeMessage(
     client.inboxId,
     encryptedMessage
   )
@@ -918,6 +826,97 @@ export async function processWelcomeMessage<
   } else {
     return new Dm(client, conversation)
   }
+}
+
+export async function setConsentState(
+  inboxId: InboxId,
+  value: string,
+  entryType: ConsentListEntryType,
+  consentType: ConsentState
+): Promise<void> {
+  return await XMTPModule.setConsentState(
+    inboxId,
+    value,
+    entryType,
+    consentType
+  )
+}
+
+export async function consentAddressState(
+  inboxId: InboxId,
+  address: Address
+): Promise<ConsentState> {
+  return await XMTPModule.consentAddressState(inboxId, address)
+}
+export async function consentInboxIdState(
+  inboxId: InboxId,
+  peerInboxId: InboxId
+): Promise<ConsentState> {
+  return await XMTPModule.consentInboxIdState(inboxId, peerInboxId)
+}
+export async function consentConversationIdState(
+  inboxId: InboxId,
+  conversationId: ConversationId
+): Promise<ConsentState> {
+  return await XMTPModule.consentConversationIdState(inboxId, conversationId)
+}
+export async function conversationConsentState(
+  inboxId: InboxId,
+  conversationId: ConversationId
+): Promise<ConsentState> {
+  return await XMTPModule.conversationConsentState(inboxId, conversationId)
+}
+
+export async function updateConversationConsent(
+  inboxId: InboxId,
+  conversationId: ConversationId,
+  state: ConsentState
+): Promise<void> {
+  return XMTPModule.updateConversationConsent(inboxId, conversationId, state)
+}
+
+export function subscribeToConversations(
+  inboxId: InboxId,
+  type: ConversationType
+) {
+  return XMTPModule.subscribeToConversations(inboxId, type)
+}
+
+export function subscribeToAllMessages(
+  inboxId: InboxId,
+  type: ConversationType
+) {
+  return XMTPModule.subscribeToAllMessages(inboxId, type)
+}
+
+export async function subscribeToMessages(
+  inboxId: InboxId,
+  id: ConversationId
+) {
+  return await XMTPModule.subscribeToMessages(inboxId, id)
+}
+
+export function unsubscribeFromConversations(inboxId: InboxId) {
+  return XMTPModule.unsubscribeFromConversations(inboxId)
+}
+
+export function unsubscribeFromAllMessages(inboxId: InboxId) {
+  return XMTPModule.unsubscribeFromAllMessages(inboxId)
+}
+
+export async function unsubscribeFromMessages(
+  inboxId: InboxId,
+  id: ConversationId
+) {
+  return await XMTPModule.unsubscribeFromMessages(inboxId, id)
+}
+
+export function registerPushToken(pushServer: string, token: string) {
+  return XMTPModule.registerPushToken(pushServer, token)
+}
+
+export function subscribePushTopics(topics: ConversationTopic[]) {
+  return XMTPModule.subscribePushTopics(topics)
 }
 
 export async function exportNativeLogs() {

@@ -174,16 +174,6 @@ export default function LaunchScreen(
         />
       </View>
       <View style={styles.row}>
-        <Text style={styles.label}>Enable Groups:</Text>
-        <ModalSelector
-          selectStyle={styles.modalSelector}
-          initValueTextStyle={styles.modalSelectText}
-          selectTextStyle={styles.modalSelectText}
-          backdropPressToClose
-          data={groupOptions}
-        />
-      </View>
-      <View style={styles.row}>
         <Text style={styles.label}>External Wallet:</Text>
         <ConnectWallet theme="dark" />
       </View>

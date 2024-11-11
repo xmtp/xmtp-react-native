@@ -276,3 +276,139 @@ test('can stream all groups and conversations', async () => {
 
   return true
 })
+
+test('can streamAll from multiple clients', async () => {
+  const [alix, bo, caro] = await createClients(3)
+
+  // Setup stream alls
+  const allBoConversations: any[] = []
+  const allAliConversations: any[] = []
+
+  await bo.conversations.stream(async (conversation) => {
+    allBoConversations.push(conversation)
+  })
+  await alix.conversations.stream(async (conversation) => {
+    allAliConversations.push(conversation)
+  })
+
+  // Start Caro starts a new conversation.
+  await caro.conversations.newConversation(alix.address)
+  await delayToPropogate()
+  if (allBoConversations.length !== 0) {
+    throw Error(
+      'Unexpected all conversations count for Bo ' +
+        allBoConversations.length +
+        ' and Alix had ' +
+        allAliConversations.length
+    )
+  }
+  if (allAliConversations.length !== 1) {
+    throw Error(
+      'Unexpected all conversations count ' + allAliConversations.length
+    )
+  }
+  return true
+})
+
+test('can streamAll from multiple clients - swapped orderring', async () => {
+  const [alix, bo, caro] = await createClients(3)
+
+  // Setup stream alls
+  const allBoConversations: any[] = []
+  const allAliConversations: any[] = []
+
+  await alix.conversations.stream(async (conversation) => {
+    allAliConversations.push(conversation)
+  })
+
+  await bo.conversations.stream(async (conversation) => {
+    allBoConversations.push(conversation)
+  })
+
+  // Start Caro starts a new conversation.
+  await caro.conversations.newConversation(alix.address)
+  await delayToPropogate()
+  if (allBoConversations.length !== 0) {
+    throw Error(
+      'Unexpected all conversations count for Bo ' +
+        allBoConversations.length +
+        ' and Alix had ' +
+        allAliConversations.length
+    )
+  }
+  if (allAliConversations.length !== 1) {
+    throw Error(
+      'Unexpected all conversations count ' + allAliConversations.length
+    )
+  }
+  return true
+})
+
+test('can streamAllMessages from multiple clients', async () => {
+  const [alix, bo, caro] = await createClients(3)
+
+  // Setup stream
+  const allBoMessages: any[] = []
+  const allAliMessages: any[] = []
+
+  await bo.conversations.streamAllMessages(async (conversation) => {
+    allBoMessages.push(conversation)
+  })
+  await alix.conversations.streamAllMessages(async (conversation) => {
+    allAliMessages.push(conversation)
+  })
+
+  // Start Caro starts a new conversation.
+  const caroConversation = await caro.conversations.newConversation(
+    alix.address
+  )
+  await caroConversation.send({ text: `Message` })
+  await delayToPropogate()
+  if (allBoMessages.length !== 0) {
+    throw Error('Unexpected all messages count for Bo ' + allBoMessages.length)
+  }
+
+  if (allAliMessages.length !== 1) {
+    throw Error(
+      'Unexpected all conversations count for Ali ' + allAliMessages.length
+    )
+  }
+
+  return true
+})
+
+test('can streamAllMessages from multiple clients - swapped', async () => {
+  const [alix, bo, caro] = await createClients(3)
+
+  // Setup stream
+  const allBoMessages: any[] = []
+  const allAliMessages: any[] = []
+  const caroGroup = await caro.conversations.newGroup([alix.address])
+
+  await alix.conversations.streamAllMessages(async (conversation) => {
+    allAliMessages.push(conversation)
+  })
+  await bo.conversations.streamAllMessages(async (conversation) => {
+    allBoMessages.push(conversation)
+  })
+
+  // Start Caro starts a new conversation.
+  const caroConvo = await caro.conversations.newConversation(alix.address)
+  await delayToPropogate()
+  await caroConvo.send({ text: `Message` })
+  await caroGroup.send({ text: `Message` })
+  await delayToPropogate()
+  if (allBoMessages.length !== 0) {
+    throw Error(
+      'Unexpected all conversations count for Bo ' + allBoMessages.length
+    )
+  }
+
+  if (allAliMessages.length !== 2) {
+    throw Error(
+      'Unexpected all conversations count for Ali ' + allAliMessages.length
+    )
+  }
+
+  return true
+})
