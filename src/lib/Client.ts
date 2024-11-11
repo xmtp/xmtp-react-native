@@ -56,6 +56,28 @@ export class Client<
     this.authSubscription = null
   }
 
+  private static async handleSignatureRequest(
+    signer: any,
+    request: { id: string; message: string }
+  ): Promise<void> {
+    const signatureString = await signer.signMessage(request.message)
+
+    if (signer.walletType?.() === 'SCW') {
+      await XMTPModule.receiveSCWSignature(request.id, signatureString)
+    } else {
+      const eSig = splitSignature(signatureString)
+      const r = hexToBytes(eSig.r)
+      const s = hexToBytes(eSig.s)
+      const sigBytes = new Uint8Array(65)
+      sigBytes.set(r)
+      sigBytes.set(s, r.length)
+      sigBytes[64] = eSig.recoveryParam
+
+      const signature = Buffer.from(sigBytes).toString('base64')
+      await XMTPModule.receiveSignature(request.id, signature)
+    }
+  }
+
   /**
    * Creates a new instance of the XMTP Client with a randomly generated address.
    *
@@ -111,32 +133,14 @@ export class Client<
     if (!signer) {
       throw new Error('Signer is not configured')
     }
+
     return new Promise<Client<ContentCodecs>>((resolve, reject) => {
       ;(async () => {
         this.signSubscription = XMTPModule.emitter.addListener(
           'sign',
           async (message: { id: string; message: string }) => {
-            const request: { id: string; message: string } = message
             try {
-              const signatureString = await signer.signMessage(request.message)
-              if (signer.walletType() === 'SCW') {
-                await XMTPModule.receiveSCWSignature(
-                  request.id,
-                  signatureString
-                )
-              } else {
-                const eSig = splitSignature(signatureString)
-                const r = hexToBytes(eSig.r)
-                const s = hexToBytes(eSig.s)
-                const sigBytes = new Uint8Array(65)
-                sigBytes.set(r)
-                sigBytes.set(s, r.length)
-                sigBytes[64] = eSig.recoveryParam
-
-                const signature = Buffer.from(sigBytes).toString('base64')
-
-                await XMTPModule.receiveSignature(request.id, signature)
-              }
+              await Client.handleSignatureRequest(signer, message)
             } catch (e) {
               const errorMessage = 'ERROR in create. User rejected signature'
               console.info(errorMessage, e)
@@ -166,6 +170,7 @@ export class Client<
             )
           }
         )
+
         await XMTPModule.create(
           await signer.getAddress(),
           options.env,
@@ -359,34 +364,24 @@ export class Client<
     if (!signer) {
       throw new Error('Signer is not configured')
     }
+
     return new Promise<void>((resolve, reject) => {
       ;(async () => {
         Client.signSubscription = XMTPModule.emitter.addListener(
           'sign',
           async (message: { id: string; message: string }) => {
-            const request: { id: string; message: string } = message
             try {
-              const signatureString = await signer.signMessage(request.message)
-              const eSig = splitSignature(signatureString)
-              const r = hexToBytes(eSig.r)
-              const s = hexToBytes(eSig.s)
-              const sigBytes = new Uint8Array(65)
-              sigBytes.set(r)
-              sigBytes.set(s, r.length)
-              sigBytes[64] = eSig.recoveryParam
-
-              const signature = Buffer.from(sigBytes).toString('base64')
-
-              await XMTPModule.receiveSignature(request.id, signature)
+              await Client.handleSignatureRequest(signer, message)
             } catch (e) {
               const errorMessage =
-                'ERROR in revokeInstallations. User rejected signature'
-              Client.signSubscription?.remove()
+                'ERROR in revokeAllOtherInstallations. User rejected signature'
               console.info(errorMessage, e)
+              Client.signSubscription?.remove()
               reject(errorMessage)
             }
           }
         )
+
         await XMTPModule.revokeAllOtherInstallations(this.inboxId)
         Client.signSubscription?.remove()
         resolve()
@@ -454,6 +449,7 @@ export class Client<
     return await XMTPModule.decryptAttachment(this.inboxId, encryptedFile)
   }
 }
+
 export type XMTPEnvironment = 'local' | 'dev' | 'production'
 
 export type ClientOptions = {
