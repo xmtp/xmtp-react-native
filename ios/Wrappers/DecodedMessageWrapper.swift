@@ -4,7 +4,7 @@ import XMTP
 // Wrapper around XMTP.DecodedMessage to allow passing these objects back
 // into react native.
 struct DecodedMessageWrapper {
-	static func encodeToObj(_ model: XMTP.DecryptedMessage, client: Client) throws -> [String: Any] {
+	static func encodeToObj(_ model: XMTP.DecodedMessage, client: Client) throws -> [String: Any] {
     // Swift Protos don't support null values and will always put the default ""
     // Check if there is a fallback, if there is then make it the set fallback, if not null
 		let fallback = model.encodedContent.hasFallback ? model.encodedContent.fallback : nil
@@ -14,13 +14,13 @@ struct DecodedMessageWrapper {
 			"contentTypeId": model.encodedContent.type.description,
 			"content": try ContentJson.fromEncoded(model.encodedContent, client: client).toJsonMap() as Any,
 			"senderAddress": model.senderAddress,
-			"sent": UInt64(model.sentAt.timeIntervalSince1970 * 1000),
+			"sentNs": model.sentNs,
 			"fallback": fallback,
 			"deliveryStatus": model.deliveryStatus.rawValue.uppercased(),
 		]
 	}
 
-	static func encode(_ model: XMTP.DecryptedMessage, client: Client) throws -> String {
+	static func encode(_ model: XMTP.DecodedMessage, client: Client) throws -> String {
 		let obj = try encodeToObj(model, client: client)
 		return try obj.toJson()
 	}

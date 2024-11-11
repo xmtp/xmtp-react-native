@@ -23,7 +23,7 @@ class DecodedMessageWrapper {
                 "contentTypeId" to model.encodedContent.type.description,
                 "content" to ContentJson(model.encodedContent).toJsonMap(),
                 "senderAddress" to model.senderAddress,
-                "sentNs" to model.sent.time,
+                "sentNs" to model.sentNs,
                 "fallback" to fallback,
                 "deliveryStatus" to model.deliveryStatus.toString()
             )

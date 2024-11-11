@@ -433,18 +433,8 @@ class XMTPModule : Module() {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
-                val sortedGroupList = if (order == ConversationOrder.LAST_MESSAGE) {
-                    client.conversations.listGroups()
-                        .sortedByDescending { group ->
-                            group.messages(limit = 1).firstOrNull()?.sent
-                        }
-                        .let { groups ->
-                            if (limit != null && limit > 0) groups.take(limit) else groups
-                        }
-                } else {
-                    client.conversations.listGroups(limit = limit)
-                }
-                sortedGroupList.map { group ->
+                val groups = client.conversations.listGroups(order = order, limit = limit)
+                groups.map { group ->
                     GroupWrapper.encode(client, group, params)
                 }
             }
@@ -471,18 +461,8 @@ class XMTPModule : Module() {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
-                val sortedDmList = if (order == ConversationOrder.LAST_MESSAGE) {
-                    client.conversations.listDms()
-                        .sortedByDescending { dm ->
-                            dm.messages(limit = 1).firstOrNull()?.sent
-                        }
-                        .let { dms ->
-                            if (limit != null && limit > 0) dms.take(limit) else dms
-                        }
-                } else {
-                    client.conversations.listDms(limit = limit)
-                }
-                sortedDmList.map { dm ->
+                val dms = client.conversations.listDms(order = order, limit = limit)
+                dms.map { dm ->
                     DmWrapper.encode(client, dm, params)
                 }
             }
