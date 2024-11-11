@@ -331,7 +331,7 @@ test('unpublished messages handling', async () => {
   const isGroupAllowed = await alixClient.preferences.conversationConsentState(
     boGroup.id
   )
-  if (isGroupAllowed === 'allowed') {
+  if (isGroupAllowed !== 'allowed') {
     throw new Error('Group should be allowed after preparing a message')
   }
 
@@ -1129,7 +1129,7 @@ test('can group consent', async () => {
   )
 
   await bo.preferences.setConsentState(
-    new ConsentListEntry(group.id, 'group_id', 'denied')
+    new ConsentListEntry(group.id, 'conversation_id', 'denied')
   )
   const isDenied = await bo.preferences.conversationConsentState(group.id)
   assert(isDenied === 'denied', `bo group should be denied but was ${isDenied}`)

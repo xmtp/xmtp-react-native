@@ -1,6 +1,6 @@
 export type ConsentState = 'allowed' | 'denied' | 'unknown'
 
-export type ConsentListEntryType = 'address' | 'group_id' | 'inbox_id'
+export type ConsentListEntryType = 'address' | 'conversation_id' | 'inbox_id'
 
 export class ConsentListEntry {
   value: string

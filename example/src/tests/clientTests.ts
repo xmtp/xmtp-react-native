@@ -1,7 +1,8 @@
-import { Test, assert, createClients, delayToPropogate } from './test-utils'
-import { Client, Conversation, ConversationId, ConversationVersion } from '../../../src/index'
 import { Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
+
+import { Test, assert, createClients } from './test-utils'
+import { Client } from '../../../src/index'
 
 export const clientTests: Test[] = []
 let counter = 1
@@ -11,7 +12,6 @@ function test(name: string, perform: () => Promise<boolean>) {
     run: perform,
   })
 }
-
 
 test('can make a client', async () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
