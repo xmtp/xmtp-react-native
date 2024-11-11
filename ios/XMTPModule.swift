@@ -173,6 +173,13 @@ public class XMTPModule: Module {
 			return try InboxStateWrapper.encode(inboxState)
 		}
 
+		Function("preAuthenticateToInboxCallbackCompleted") {
+			DispatchQueue.global().async {
+				self.preAuthenticateToInboxCallbackDeferred?.signal()
+				self.preAuthenticateToInboxCallbackDeferred = nil
+			}
+		}
+
 		//
 		// Auth functions
 		//
@@ -255,7 +262,7 @@ public class XMTPModule: Module {
 			self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
 		}
 
-		AsyncFunction("buildV3") {
+		AsyncFunction("build") {
 			(address: String, dbEncryptionKey: [UInt8], authParams: String)
 				-> [String: String] in
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
@@ -1291,6 +1298,101 @@ public class XMTPModule: Module {
 				conversation, client: client)
 		}
 
+		AsyncFunction("setConsentState") {
+			(
+				inboxId: String, value: String, entryType: String,
+				consentType: String
+			) in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+
+			let resolvedEntryType = try getEntryType(type: entryType)
+			let resolvedConsentState = try getConsentState(state: consentType)
+
+			try await client.preferences.consentList.setConsentState(
+				entries: [
+					ConsentListEntry(
+						value: value,
+						entryType: resolvedEntryType,
+						consentType: resolvedConsentState
+					)
+				]
+			)
+		}
+
+		AsyncFunction("consentAddressState") {
+			(inboxId: String, address: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			return try await ConsentWrapper.consentStateToString(
+				state: client.preferences.consentList.addressState(
+					address: address))
+		}
+
+		AsyncFunction("consentInboxIdState") {
+			(inboxId: String, peerInboxId: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			return try await ConsentWrapper.consentStateToString(
+				state: client.preferences.consentList.inboxIdState(
+					inboxId: peerInboxId))
+		}
+
+		AsyncFunction("consentConversationIdState") {
+			(inboxId: String, conversationId: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			return try await ConsentWrapper.consentStateToString(
+				state: client.preferences.consentList.conversationState(
+					conversationId:
+						conversationId))
+		}
+
+		AsyncFunction("conversationConsentState") {
+			(inboxId: String, conversationId: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+
+			guard
+				let conversation = try client.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
+			}
+			return try ConsentWrapper.consentStateToString(
+				state: conversation.consentState())
+		}
+
+		AsyncFunction("updateConversationConsent") {
+			(inboxId: String, conversationId: String, state: String) in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+
+			guard
+				let conversation = try client.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
+			}
+
+			try await conversation.updateConsentState(
+				state: getConsentState(state: state))
+		}
+
 		AsyncFunction("subscribeToConversations") {
 			(inboxId: String, type: String) in
 
@@ -1348,108 +1450,6 @@ public class XMTPModule: Module {
 			} catch {
 				print("Error subscribing: \(error)")
 			}
-		}
-
-		AsyncFunction("consentAddressState") {
-			(inboxId: String, address: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
-			else {
-				throw Error.noClient
-			}
-			return try await ConsentWrapper.consentStateToString(
-				state: client.preferences.consentList.addressState(
-					address: address))
-		}
-
-		AsyncFunction("consentInboxIdState") {
-			(inboxId: String, peerInboxId: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
-			else {
-				throw Error.noClient
-			}
-			return try await ConsentWrapper.consentStateToString(
-				state: client.preferences.consentList.inboxIdState(
-					inboxId: peerInboxId))
-		}
-
-		AsyncFunction("consentConversationIdState") {
-			(inboxId: String, conversationId: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
-			else {
-				throw Error.noClient
-			}
-			return try await ConsentWrapper.consentStateToString(
-				state: client.preferences.consentList.conversationState(
-					conversationId:
-						conversationId))
-		}
-
-		AsyncFunction("setConsentState") {
-			(
-				inboxId: String, value: String, entryType: String,
-				consentType: String
-			) in
-			guard let client = await clientsManager.getClient(key: inboxId)
-			else {
-				throw Error.noClient
-			}
-
-			let resolvedEntryType = try getEntryType(type: entryType)
-			let resolvedConsentState = try getConsentState(state: consentType)
-
-			try await client.preferences.consentList.setConsentState(
-				entries: [
-					ConsentListEntry(
-						value: value,
-						entryType: resolvedEntryType,
-						consentType: resolvedConsentState
-					)
-				]
-			)
-		}
-
-		AsyncFunction("conversationConsentState") {
-			(inboxId: String, conversationId: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
-			else {
-				throw Error.noClient
-			}
-
-			guard
-				let conversation = try client.findConversation(
-					conversationId: conversationId)
-			else {
-				throw Error.conversationNotFound(
-					"no conversation found for \(conversationId)")
-			}
-			return try ConsentWrapper.consentStateToString(
-				state: conversation.consentState())
-		}
-
-		Function("preAuthenticateToInboxCallbackCompleted") {
-			DispatchQueue.global().async {
-				self.preAuthenticateToInboxCallbackDeferred?.signal()
-				self.preAuthenticateToInboxCallbackDeferred = nil
-			}
-		}
-
-		AsyncFunction("updateConversationConsent") {
-			(inboxId: String, conversationId: String, state: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
-			else {
-				throw Error.noClient
-			}
-
-			guard
-				let conversation = try client.findConversation(
-					conversationId: conversationId)
-			else {
-				throw Error.conversationNotFound(
-					"no conversation found for \(conversationId)")
-			}
-
-			try await conversation.updateConsentState(
-				state: getConsentState(state: state))
 		}
 
 		AsyncFunction("exportNativeLogs") { () -> String in
