@@ -89,7 +89,7 @@ import { Client } from '@xmtp/react-native-sdk'
 import { ConnectWallet, useSigner } from "@thirdweb-dev/react-native";
 
 // Create the client with your wallet. This will connect to the XMTP development network by default
-const xmtp = await Client.create(useSigner());
+const xmtp = await Client.create(useSigner(), { env: 'production', dbEncryptionKey: [32 Byte Array] });
 // Start a conversation with XMTP
 const conversation = await xmtp.conversations.newConversation(
   '0x3F11b27F323b62B159D2642964fa27C46C841897'
@@ -106,16 +106,9 @@ for await (const message of await conversation.streamMessages()) {
 
 Currently, network nodes are configured to rate limit high-volume publishing from clients. A rate-limited client can expect to receive a 429 status code response from a node. Rate limits can change at any time in the interest of maintaining network health.
 
-## Use local storage
-
-> **Important**  
-> If you are building a production-grade app, be sure to use an architecture that includes a local cache backed by an XMTP SDK.  
-
-To learn more, see [Use local-first architecture](https://xmtp.org/docs/build/local-first).
-
 ## Create a client
 
-A client is created with `Client.create(wallet: Signer): Promise<Client>` that requires passing in a connected wallet that implements the Signer interface. The client will request a wallet signature in two cases:
+A client is created with `Client.create(wallet: Signer, options: ClientOptions): Promise<Client>` that requires passing in a connected wallet that implements the Signer interface. The client will request a wallet signature in two cases:
 
 1. To sign the newly generated key bundle. This happens only the very first time when key bundle is not found in storage.
 2. To sign a random salt used to encrypt the key bundle in storage. This happens every time the client is started (including the very first time).
@@ -126,18 +119,19 @@ A client is created with `Client.create(wallet: Signer): Promise<Client>` that r
 ```tsx
 import { Client } from '@xmtp/react-native-sdk'
 // Create the client with a `Signer` from your application
-const xmtp = await Client.create(wallet)
+const xmtp = await Client.create(wallet, options)
 ```
 
 ### Configure the client
 
-The client's network connection and key storage method can be configured with these optional parameters of `Client.create`:
+You can configure the client with these parameters of `Client.create`:
 
-| Parameter                 | Default                                                                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| appVersion                | `undefined`                                                                       | Add a client app version identifier that's included with API requests.<br/>For example, you can use the following format: `appVersion: APP_NAME + '/' + APP_VERSION`.<br/>Setting this value provides telemetry that shows which apps are using the XMTP client SDK. This information can help XMTP developers provide app support, especially around communicating important SDK updates, including deprecations and required upgrades. |
-| env                       | `dev`                                                                             | Connect to the specified XMTP network environment. Valid values include `dev`, `production`, or `local`. For important details about working with these environments, see [XMTP `production` and `dev` network environments](#xmtp-production-and-dev-network-environments). |
-| codecs                    | `[new XMTP.ReactionCodec()]`                                                                     | Add codecs to support additional content types.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Parameter  | Default     | Description                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------- |-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| env        | `DEV`       | Connect to the specified XMTP network environment. Valid values include `DEV`, `.PRODUCTION`, or `LOCAL`. For important details about working with these environments, see [XMTP `production` and `dev` network environments](#xmtp-production-and-dev-network-environments).                                                                                                                                                            |
+| dbEncryptionKey | `REQUIRED`  | A 32 ByteArray used to encrypt the local database.                                                                                                                                                                                                                                                                                                                                                                                       |
+| historySyncUrl | `https://message-history.dev.ephemera.network/` | The history sync url used to specify where history can be synced from other devices on the network.                                                                                                                                                                                                                                                                                                                                      |
+| appVersion | `undefined` | Add a client app version identifier that's included with API requests.<br/>For example, you can use the following format: `appVersion: APP_NAME + '/' + APP_VERSION`.<br/>Setting this value provides telemetry that shows which apps are using the XMTP client SDK. This information can help XMTP developers provide app support, especially around communicating important SDK updates, including deprecations and required upgrades. |                                                                                                                                                                                                                       |
 
 ## Handle conversations
 
@@ -146,7 +140,7 @@ Most of the time, when interacting with the network, you'll want to do it throug
 ```tsx
 import { Client } from '@xmtp/react-native-sdk'
 // Create the client with a `Signer` from your application
-const xmtp = await Client.create(wallet)
+const xmtp = await Client.create(wallet, options)
 const conversations = xmtp.conversations
 ```
 
@@ -170,12 +164,12 @@ These conversations include all conversations for a user **regardless of which a
 You can also listen for new conversations being started in real-time. This will allow applications to display incoming messages from new contacts.
 
 > **Warning**  
-> This stream will continue infinitely. To end the stream you can call `cancelStream()`.
+> This stream will continue infinitely. To end the stream you can call `xmtp.conversations.cancelStream()`.
 
 ```tsx
-const stream = await xmtp.conversations.stream()
+await xmtp.conversations.stream()
 for await (const conversation of stream) {
-  console.log(`New conversation started with ${conversation.peerAddress}`)
+  console.log(`New conversation started with ${conversation.peerInboxId}`)
   // Say hello to your new friend
   await conversation.send('Hi there!')
   // Break from the loop to stop listening
@@ -210,7 +204,7 @@ You can receive the complete message history in a conversation by calling `conve
 
 ```tsx
 for (const conversation of await xmtp.conversations.list()) {
-  const messagesInConversation = await conversation.messages(before: new Date(new Date().setDate(new Date().getDate() - 1)), after: new Date())
+  const messagesInConversation = await conversation.messages(beforeNs: 1293487234981234, afterNs: 3458123498234234)
 }
 ```
 
@@ -263,7 +257,7 @@ To listen for any new messages from _all_ conversations, use `conversations.stre
 > There is a chance this stream can miss messages if multiple new conversations are received in the time it takes to update the stream to include a new conversation.
 
 > **Warning**  
-> This stream will continue infinitely. To end the stream you can call `cancelStreamAllMessages()`.
+> This stream will continue infinitely. To end the stream you can call `conversations.cancelStreamAllMessages()`.
 
 ```tsx
 for await (const message of await xmtp.conversations.streamAllMessages()) {
@@ -294,9 +288,7 @@ If you would like to check and see if a blockchain address is registered on the 
 ```tsx
 import { Client } from '@xmtp/react-native-sdk'
 
-const isOnProdNetwork = await Client.canMessage(
-  '0x3F11b27F323b62B159D2642964fa27C46C841897', { env: 'production' }
-)
+const isOnProdNetwork = await Client.canMessage('0x3F11b27F323b62B159D2642964fa27C46C841897')
 ```
 
 ## Send a broadcast message
@@ -381,21 +373,12 @@ To learn more about how to build a custom content type, see [Build a custom cont
 
 Custom codecs and content types may be proposed as interoperable standards through XRCs. To learn about the custom content type proposal process, see [XIP-5](https://github.com/xmtp/XIPs/blob/main/XIPs/xip-5-message-content-types.md).
 
-## Manually handle private key storage
-
-The SDK will handle key storage for the user by encrypting the private key bundle using a signature generated from the wallet, and storing the encrypted payload on the XMTP network. This can be awkward for some server-side applications, where you may only want to give the application access to the XMTP keys but not your wallet keys. Mobile applications may also want to store keys in a secure enclave rather than rely on decrypting the remote keys on the network each time the application starts up.
-
-You can export the unencrypted key bundle using the static method `Client.exportKeyBundle`, save it somewhere secure, and then provide those keys at a later time to initialize a new client using the exported XMTP identity.
+## Build an existing Client
 
 ```js
 import { Client } from '@xmtp/react-native-sdk'
-// Get the keys using a valid Signer. Save them somewhere secure.
-const keys = await Client.exportKeyBundle()
-// Create a client using keys returned from getKeys
-const client = await Client.createFromKeyBundle(keys, { env: "dev" })
+const client = await Client.build(address, options)
 ```
-
-The keys returned by `exportKeyBundle` should be treated with the utmost care as compromise of these keys will allow an attacker to impersonate the user on the XMTP network. Ensure these keys are stored somewhere secure and encrypted.
 
 ## Enable the example app to send push notifications
 
@@ -407,20 +390,20 @@ Because `xmtp-react-native` is in active development, you should expect breaking
 
 XMTP communicates about breaking revisions in the [XMTP Discord community](https://discord.gg/xmtp), providing as much advance notice as possible. Additionally, breaking revisions in an `xmtp-react-native` release are described on the [Releases page](https://github.com/xmtp/xmtp-react-native/releases).
 
-### Deprecation
+## Deprecation
 
 Older versions of the SDK will eventually be deprecated, which means:
 
 1. The network will not support and eventually actively reject connections from clients using deprecated versions.
 2. Bugs will not be fixed in deprecated versions.
 
-Following table shows the deprecation schedule.
+The following table provides the deprecation schedule.
 
-| Announced  | Effective  | Minimum Version | Rationale                                                                                                         |
-| ---------- | ---------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 2022-08-18 | 2022-11-08 | v6.0.0          | XMTP network will stop supporting the Waku/libp2p based client interface in favor of the new GRPC based interface |
+| Announced              | Effective     | Minimum Version | Rationale                                                                                                                                                                  |
+|------------------------|---------------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| No more support for V2 | March 1, 2025 | 3.0.0           | In a move towards better security with MLS and the ability to decentralize we will be shutting down V2 and moving entirely to V3 MLS. You can see the legacy branch here: https://github.com/xmtp/xmtp-android/tree/xmtp-legacy |
 
-Issues and PRs are welcome in accordance with our [contribution guidelines](https://github.com/xmtp/.github/blob/main/CONTRIBUTING.md).
+Bug reports, feature requests, and PRs are welcome in accordance with these [contribution guidelines](https://github.com/xmtp/xmtp-android/blob/main/CONTRIBUTING.md).
 
 ## XMTP `production` and `dev` network environments
 
@@ -441,7 +424,3 @@ The `env` parameter accepts one of three valid values: `dev`, `production`, or `
 - `local`: Use to have a client communicate with an XMTP node you are running locally. For example, an XMTP node developer can set `env` to `local` to generate client traffic to test a node running locally.
 
 The `production` network is configured to store messages indefinitely. XMTP may occasionally delete messages and keys from the `dev` network, and will provide advance notice in the [XMTP Discord community](https://discord.gg/xmtp).
-
-## Enabling group chat
-
-Coming soon...
