@@ -56,7 +56,7 @@ test('can revoke all other installations', async () => {
     dbEncryptionKey: keyBytes,
   })
 
-  const alix2Build = await Client.build(alix2.address, {
+  await Client.build(alix2.address, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,

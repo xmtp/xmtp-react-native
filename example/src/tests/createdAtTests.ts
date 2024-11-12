@@ -172,11 +172,9 @@ test('group createdAt matches streamAll', async () => {
 
   // Start streaming groups
   const allGroups: Conversation<any>[] = []
-  const cancelStream = await alix.conversations.stream(
-    async (group: Conversation<any>) => {
-      allGroups.push(group)
-    }
-  )
+  await alix.conversations.stream(async (group: Conversation<any>) => {
+    allGroups.push(group)
+  })
 
   await delayToPropogate()
 

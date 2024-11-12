@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-extra-non-null-assertion */
-import { Client, Conversation, Dm, Group } from 'xmtp-react-native-sdk'
+import { Client, Dm, Group } from 'xmtp-react-native-sdk'
 
 import { Test, assert, createClients } from './test-utils'
 
@@ -60,7 +60,7 @@ async function beforeAll(
   groupSize: number = 1,
   messages: number = 1,
   peersSize: number = 1,
-  includeDms: boolean = false,
+  includeDms: boolean = false
 ) {
   ;[alixClient] = await createClients(1)
 

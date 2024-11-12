@@ -1,5 +1,9 @@
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
-import { Conversation, ConversationId, ConversationVersion } from '../../../src/index'
+import {
+  Conversation,
+  ConversationId,
+  ConversationVersion,
+} from '../../../src/index'
 
 export const conversationTests: Test[] = []
 let counter = 1
@@ -172,6 +176,39 @@ test('can list groups', async () => {
   return true
 })
 
+test('can list conversation messages', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3)
+
+  const boGroup = await boClient.conversations.newGroup([alixClient.address])
+  const boDm = await boClient.conversations.findOrCreateDm(caroClient.address)
+  const boGroupConversation = await boClient.conversations.findConversation(
+    boGroup.id
+  )
+  const boDmConversation = await boClient.conversations.findConversation(
+    boDm.id
+  )
+
+  await boGroupConversation?.send('hello')
+  await boGroupConversation?.send('hello')
+  await boDmConversation?.send('hello')
+  await boDmConversation?.send('hello')
+
+  const boGroupMessages = await boGroupConversation?.messages()
+  const boDmMessages = await boDmConversation?.messages()
+
+  assert(
+    boGroupMessages?.length === 3,
+    `bo conversation lengths should be 4 but was ${boGroupMessages?.length}`
+  )
+
+  assert(
+    boDmMessages?.length === 3,
+    `alix conversation lengths should be 3 but was ${boDmMessages?.length}`
+  )
+
+  return true
+})
+
 test('can stream both conversations and messages at same time', async () => {
   const [alix, bo] = await createClients(2)
 
@@ -209,22 +246,34 @@ test('can stream conversation messages', async () => {
 
   const alixGroup = await alixClient.conversations.newGroup([boClient.address])
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
-  const alixConversation = await alixClient.conversations.findConversation(
+  const alixGroupConversation = await alixClient.conversations.findConversation(
     alixGroup.id
+  )
+  const alixDmConversation = await alixClient.conversations.findConversation(
+    alixDm.id
   )
 
   let dmMessageCallbacks = 0
   let conversationMessageCallbacks = 0
-  await alixConversation?.streamMessages(async () => {
+  await alixGroupConversation?.streamMessages(async () => {
     conversationMessageCallbacks++
   })
 
-  await alixDm.streamMessages(async () => {
+  await alixDmConversation?.streamMessages(async () => {
     dmMessageCallbacks++
   })
 
-  await alixConversation?.send({ text: `first message` })
-  await alixDm.send({ text: `first message` })
+  await alixGroupConversation?.send({ text: `first message` })
+  await alixDmConversation?.send({ text: `first message` })
+
+  assert(
+    conversationMessageCallbacks === 1,
+    'conversation stream should have received 1 conversation'
+  )
+  assert(
+    dmMessageCallbacks === 1,
+    'message stream should have received 1 message'
+  )
 
   return true
 })

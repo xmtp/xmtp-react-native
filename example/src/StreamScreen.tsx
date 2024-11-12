@@ -2,15 +2,19 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Button, FlatList, Text, View, Switch, Pressable } from 'react-native'
 
+import { getDbEncryptionKey } from './hooks'
 import { Client, Conversation, DecodedMessage } from '../../src'
 
 let events: StreamEvent[] = []
 
 const useClient = () => {
   const [client, setClient] = useState<Client<any> | null>(null)
-
   useEffect(() => {
-    Client.createRandom().then((client) => {
+    const dbEncryptionKey = getDbEncryptionKey('dev')
+    Client.createRandom({
+      env: 'dev',
+      dbEncryptionKey,
+    }).then((client) => {
       setClient(client)
     })
   }, [])

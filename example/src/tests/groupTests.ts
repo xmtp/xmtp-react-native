@@ -609,12 +609,9 @@ test('can stream groups', async () => {
 
   // Start streaming groups
   const groups: Conversation<any>[] = []
-  await alixClient.conversations.stream(
-    async (group: Conversation<any>) => {
-      groups.push(group)
-    },
-    'groups'
-  )
+  await alixClient.conversations.stream(async (group: Conversation<any>) => {
+    groups.push(group)
+  }, 'groups')
 
   // caro creates a group with alix, so stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -805,7 +802,7 @@ test('can stream groups and messages', async () => {
 })
 
 test('canMessage', async () => {
-  const [bo, alix, caro] = await createClients(3)
+  const [alix, caro] = await createClients(3)
 
   const canMessageV3 = await caro.canMessage([
     caro.address,

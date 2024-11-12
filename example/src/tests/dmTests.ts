@@ -115,6 +115,15 @@ test('can stream dm messages', async () => {
   await alixConversation?.send({ text: `first message` })
   await alixDm.send({ text: `first message` })
 
+  assert(
+    conversationMessageCallbacks === 1,
+    'conversation stream should have received 1 conversation'
+  )
+  assert(
+    dmMessageCallbacks === 1,
+    'message stream should have received 1 message'
+  )
+
   return true
 })
 

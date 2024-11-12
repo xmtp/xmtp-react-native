@@ -10,49 +10,9 @@ import { useXmtp } from 'xmtp-react-native-sdk'
 import { NavigationParamList } from './Navigation'
 import { TestCategory } from './TestScreen'
 import { supportedCodecs } from './contentTypes/contentTypes'
-import { useSavedAddress } from './hooks'
+import { getDbEncryptionKey, useSavedAddress } from './hooks'
 
 const appVersion = 'XMTP_RN_EX/0.0.1'
-
-async function getDbEncryptionKey(
-  network: string,
-  clear: boolean = false
-): Promise<Uint8Array> {
-  const key = `xmtp-${network}`
-  const result = await EncryptedStorage.getItem(key)
-  if ((result && clear === true) || !result) {
-    if (result) {
-      await EncryptedStorage.removeItem(key)
-    }
-
-    const randomBytes = crypto.getRandomValues(new Uint8Array(32))
-    const randomBytesString = uint8ArrayToHexString(randomBytes)
-    await EncryptedStorage.setItem(key, randomBytesString)
-    return randomBytes
-  } else {
-    return hexStringToUint8Array(result)
-  }
-}
-
-function uint8ArrayToHexString(byteArray: Uint8Array): string {
-  return Array.from(byteArray, function (byte) {
-    return ('0' + (byte & 0xff).toString(16)).slice(-2)
-  }).join('')
-}
-
-function hexStringToUint8Array(hexString: string): Uint8Array {
-  // Ensure the hex string has an even number of characters for proper parsing
-  if (hexString.length % 2 !== 0) {
-    console.error('The hex string must have an even number of characters')
-    return new Uint8Array()
-  }
-  // Split the hex string into an array of byte-sized (2 characters) hex strings
-  const byteStrings = hexString.match(/.{1,2}/g) || []
-  // Convert each byte-sized hex string into a numeric byte value
-  const byteArray = byteStrings.map((byteStr) => parseInt(byteStr, 16))
-  // Create a new Uint8Array from the array of numeric byte values
-  return new Uint8Array(byteArray)
-}
 
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
 export default function LaunchScreen(
@@ -97,11 +57,6 @@ export default function LaunchScreen(
     { key: 0, label: 'dev' },
     { key: 1, label: 'local' },
     { key: 2, label: 'production' },
-  ]
-
-  const groupOptions = [
-    { key: 0, label: 'true' },
-    { key: 1, label: 'false' },
   ]
 
   const testOptions = Object.entries(TestCategory).map(
