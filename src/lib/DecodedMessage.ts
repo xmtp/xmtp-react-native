@@ -28,7 +28,7 @@ export class DecodedMessage<
   topic: string
   contentTypeId: string
   senderAddress: string
-  sent: number // timestamp in milliseconds
+  sentNs: number // timestamp in nanoseconds
   nativeContent: NativeMessageContent
   fallback: string | undefined
   deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
@@ -44,7 +44,7 @@ export class DecodedMessage<
       decoded.topic,
       decoded.contentTypeId,
       decoded.senderAddress,
-      decoded.sent,
+      decoded.sentNs,
       decoded.content,
       decoded.fallback,
       decoded.deliveryStatus
@@ -59,7 +59,7 @@ export class DecodedMessage<
       topic: string
       contentTypeId: string
       senderAddress: string
-      sent: number // timestamp in milliseconds
+      sentNs: number // timestamp in nanoseconds
       content: any
       fallback: string | undefined
       deliveryStatus: MessageDeliveryStatus | undefined
@@ -72,7 +72,7 @@ export class DecodedMessage<
       object.topic,
       object.contentTypeId,
       object.senderAddress,
-      object.sent,
+      object.sentNs,
       object.content,
       object.fallback,
       object.deliveryStatus
@@ -85,7 +85,7 @@ export class DecodedMessage<
     topic: string,
     contentTypeId: string,
     senderAddress: string,
-    sent: number,
+    sentNs: number,
     content: any,
     fallback: string | undefined,
     deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
@@ -95,7 +95,7 @@ export class DecodedMessage<
     this.topic = topic
     this.contentTypeId = contentTypeId
     this.senderAddress = senderAddress
-    this.sent = sent
+    this.sentNs = sentNs
     this.nativeContent = content
     // undefined comes back as null when bridged, ensure undefined so integrators don't have to add a new check for null as well
     this.fallback = fallback ?? undefined

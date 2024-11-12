@@ -5,7 +5,7 @@ import {
   delayToPropogate,
   isIos,
 } from './test-utils'
-import { Conversation, ConversationContainer, Group } from '../../../src/index'
+import { Conversation, Group } from '../../../src/index'
 
 export const createdAtTests: Test[] = []
 
@@ -27,7 +27,7 @@ test('group createdAt matches listGroups', async () => {
   const boGroup = await bo.conversations.newGroup([alix.address])
 
   // Fetch groups using listGroups method
-  await alix.conversations.syncGroups()
+  await alix.conversations.sync()
   const alixGroups = await alix.conversations.listGroups()
 
   const first = 0
@@ -73,8 +73,8 @@ test('group createdAt matches listAll', async () => {
   const boGroup = await bo.conversations.newGroup([alix.address])
 
   // Fetch groups using listGroups method
-  await alix.conversations.syncGroups()
-  const alixGroups = await alix.conversations.listAll()
+  await alix.conversations.sync()
+  const alixGroups = await alix.conversations.list()
 
   assert(alixGroups.length === 2, 'alix should have two groups')
 
@@ -123,11 +123,9 @@ test('group createdAt matches streamGroups', async () => {
 
   // Start streaming groups
   const allGroups: Group<any>[] = []
-  const cancelStream = await alix.conversations.streamGroups(
-    async (group: Group<any>) => {
-      allGroups.push(group)
-    }
-  )
+  await alix.conversations.stream(async (group: Conversation<any>) => {
+    allGroups.push(group as Group)
+  }, 'groups')
 
   await delayToPropogate()
 
@@ -163,7 +161,7 @@ test('group createdAt matches streamGroups', async () => {
     'second ' + allGroups[1].createdAt + ' != ' + caroGroup.createdAt
   )
 
-  cancelStream()
+  alix.conversations.cancelStream()
 
   return true
 })
@@ -173,12 +171,10 @@ test('group createdAt matches streamAll', async () => {
   const [alix, bo, caro] = await createClients(3)
 
   // Start streaming groups
-  const allGroups: ConversationContainer<any>[] = []
-  const cancelStream = await alix.conversations.streamAll(
-    async (group: ConversationContainer<any>) => {
-      allGroups.push(group)
-    }
-  )
+  const allGroups: Conversation<any>[] = []
+  await alix.conversations.stream(async (group: Conversation<any>) => {
+    allGroups.push(group)
+  })
 
   await delayToPropogate()
 
@@ -213,7 +209,7 @@ test('group createdAt matches streamAll', async () => {
     'second ' + allGroups[1].createdAt + ' != ' + caroGroup.createdAt
   )
 
-  cancelStream()
+  alix.conversations.cancelStream()
 
   return true
 })
@@ -274,7 +270,7 @@ test('conversation createdAt matches listAll', async () => {
   )
 
   // Fetch conversations using list() method
-  const alixConversations = await alix.conversations.listAll()
+  const alixConversations = await alix.conversations.list()
   assert(alixConversations.length === 2, 'alix should have two conversations')
 
   const first = 0
@@ -367,8 +363,8 @@ test('conversation createdAt matches streamAll', async () => {
   const [alix, bo, caro] = await createClients(3)
 
   // Start streaming conversations
-  const allConversations: ConversationContainer<any>[] = []
-  const cancel = await alix.conversations.streamAll(async (conversation) => {
+  const allConversations: Conversation<any>[] = []
+  await alix.conversations.stream(async (conversation) => {
     allConversations.push(conversation)
   })
 
@@ -418,7 +414,7 @@ test('conversation createdAt matches streamAll', async () => {
       caroConversation.createdAt
   )
 
-  cancel()
+  alix.conversations.cancelStream()
 
   return true
 })

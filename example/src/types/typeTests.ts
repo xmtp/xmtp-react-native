@@ -1,14 +1,14 @@
 import {
   Client,
   ContentTypeId,
-  Conversation,
   ConversationVersion,
+  Dm,
   EncodedContent,
   JSContentCodec,
   ReactionCodec,
   ReplyCodec,
-  TextCodec,
   sendMessage,
+  TextCodec,
 } from 'xmtp-react-native-sdk'
 
 const ContentTypeNumber: ContentTypeId = {
@@ -54,7 +54,14 @@ class NumberCodec implements JSContentCodec<NumberRef> {
 }
 
 export const typeTests = async () => {
-  const textClient = await Client.createRandom<[TextCodec]>({ env: 'local' })
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const textClient = await Client.createRandom<[TextCodec]>({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   const textConvo = (await textClient.conversations.list())[0]
   await textConvo.send({ text: 'hello' })
   await textConvo.send('hello')
@@ -63,8 +70,9 @@ export const typeTests = async () => {
   // @ts-expect-error
   await textConvo.send({ wrong: 'hello' })
 
-  const textConvo2 = new Conversation(textClient, {
+  const textConvo2 = new Dm(textClient, {
     createdAt: 123,
+    // @ts-expect-error
     topic: 'sdf',
     peerAddress: 'sdf',
     version: 'sdf',
@@ -75,8 +83,6 @@ export const typeTests = async () => {
   await textConvo2.send(12312312)
   // @ts-expect-error
   await textConvo2.send({ wrong: 'hello' })
-  await sendMessage<[TextCodec]>('0x1234', 'topic', { text: 'hello' })
-  await sendMessage<[TextCodec]>('0x1234', 'topic', 'hello')
   // @ts-expect-error
   await sendMessage<[TextCodec]>('0x1234', 'topic', 12314)
 
@@ -84,6 +90,7 @@ export const typeTests = async () => {
   const reactionClient = await Client.createRandom<typeof supportedCodecs>({
     codecs: supportedCodecs,
     env: 'local',
+    dbEncryptionKey: keyBytes,
   })
   const reactionConvo = (await reactionClient.conversations.list())[0]
   await reactionConvo.send({
@@ -113,13 +120,14 @@ export const typeTests = async () => {
   await reactionConvo.send({
     text: 'text',
   })
-  const keyBundle = await reactionClient.exportKeyBundle()
-  const keyBundleReactionClient = await Client.createFromKeyBundle<
-    typeof supportedCodecs
-  >(keyBundle, {
-    codecs: supportedCodecs,
-    env: 'local',
-  })
+  const keyBundleReactionClient = await Client.build<typeof supportedCodecs>(
+    reactionClient.address,
+    {
+      codecs: supportedCodecs,
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+    }
+  )
   const reactionKeyBundleConvo = (
     await keyBundleReactionClient.conversations.list()
   )[0]
@@ -152,6 +160,7 @@ export const typeTests = async () => {
   const customContentClient = await Client.createRandom({
     env: 'local',
     codecs: [new NumberCodec()],
+    dbEncryptionKey: keyBytes,
   })
   const customContentConvo = (await customContentClient.conversations.list())[0]
 
@@ -185,6 +194,7 @@ export const typeTests = async () => {
   const replyClient = await Client.createRandom<typeof supportedReplyCodecs>({
     codecs: supportedReplyCodecs,
     env: 'local',
+    dbEncryptionKey: keyBytes,
   })
 
   const replyConvo = (await replyClient.conversations.list())[0]
@@ -242,8 +252,9 @@ export const typeTests = async () => {
   const convoClient = await Client.createRandom({
     env: 'local',
     codecs: [new NumberCodec()],
+    dbEncryptionKey: keyBytes,
   })
-  const convos = await convoClient.conversations.listConversations()
+  const convos = await convoClient.conversations.list()
   const firstConvo = convos[0]
   if (firstConvo.version === ConversationVersion.GROUP) {
     const groupName = firstConvo.name
@@ -254,7 +265,6 @@ export const typeTests = async () => {
     // @ts-expect-error
     const groupName = firstConvo.name
   } else {
-    const peerAddress = firstConvo.peerAddress
     // @ts-expect-error
     const peerAddress2 = firstConvo.peerInboxId()
   }

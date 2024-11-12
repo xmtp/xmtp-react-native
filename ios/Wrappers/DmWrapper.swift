@@ -17,14 +17,14 @@ struct DmWrapper {
 			"createdAt": UInt64(dm.createdAt.timeIntervalSince1970 * 1000),
 			"version": "DM",
 			"topic": dm.topic,
-			"peerInboxId": try await dm.peerInboxId
+			"peerInboxId": try dm.peerInboxId
 		]
 
 		if conversationParams.consentState {
 			result["consentState"] = ConsentWrapper.consentStateToString(state: try dm.consentState())
 		}
 		if conversationParams.lastMessage {
-			if let lastMessage = try await dm.decryptedMessages(limit: 1).first {
+			if let lastMessage = try await dm.messages(limit: 1).first {
 				result["lastMessage"] = try DecodedMessageWrapper.encode(lastMessage, client: client)
 			}
 		}

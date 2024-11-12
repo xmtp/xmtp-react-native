@@ -6,7 +6,6 @@ import android.util.Base64
 import android.util.Base64.NO_WRAP
 import android.util.Log
 import androidx.core.net.toUri
-import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Coroutine
@@ -14,22 +13,18 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper.Companion.consentStateToString
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
-import expo.modules.xmtpreactnativesdk.wrappers.ConversationContainerWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
-import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PermissionPolicySetWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.PreparedLocalMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,15 +32,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
+import org.xmtp.android.library.ConsentListEntry
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
-import org.xmtp.android.library.Conversations.ConversationOrder
-import org.xmtp.android.library.Group
+import org.xmtp.android.library.Conversations.*
+import org.xmtp.android.library.EntryType
 import org.xmtp.android.library.PreEventCallback
-import org.xmtp.android.library.PreparedMessage
 import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
 import org.xmtp.android.library.WalletType
@@ -58,24 +52,16 @@ import org.xmtp.android.library.codecs.EncryptedEncodedContent
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.hexToByteArray
-import org.xmtp.android.library.messages.EnvelopeBuilder
-import org.xmtp.android.library.messages.InvitationV1ContextBuilder
-import org.xmtp.android.library.messages.Pagination
+import org.xmtp.android.library.libxmtp.Message
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
-import org.xmtp.android.library.messages.getPublicKeyBundle
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
-import org.xmtp.proto.keystore.api.v1.Keystore.TopicMap.TopicData
-import org.xmtp.proto.message.api.v1.MessageApiOuterClass
-import org.xmtp.proto.message.contents.Invitation.ConsentProofPayload
-import org.xmtp.proto.message.contents.PrivateKeyOuterClass
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
-import java.util.Date
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
@@ -145,17 +131,9 @@ fun Conversation.cacheKey(inboxId: String): String {
     return "${inboxId}:${topic}"
 }
 
-fun Group.cacheKey(inboxId: String): String {
-    return "${inboxId}:${id}"
-}
-
-fun Conversation.cacheKeyV3(inboxId: String): String {
-    return "${inboxId}:${topic}:${id}"
-}
-
 class XMTPModule : Module() {
 
-    val context: Context
+    private val context: Context
         get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
 
     private fun apiEnvironments(env: String, appVersion: String?): ClientOptions.Api {
@@ -181,45 +159,28 @@ class XMTPModule : Module() {
     }
 
     private fun clientOptions(
-        dbEncryptionKey: List<Int>?,
+        dbEncryptionKey: List<Int>,
         authParams: String,
-        hasCreateIdentityCallback: Boolean? = null,
-        hasEnableIdentityCallback: Boolean? = null,
         hasPreAuthenticateToInboxCallback: Boolean? = null,
     ): ClientOptions {
-        if (hasCreateIdentityCallback == true)
-            preCreateIdentityCallbackDeferred = CompletableDeferred()
-        if (hasEnableIdentityCallback == true)
-            preEnableIdentityCallbackDeferred = CompletableDeferred()
         if (hasPreAuthenticateToInboxCallback == true)
             preAuthenticateToInboxCallbackDeferred = CompletableDeferred()
-        val preCreateIdentityCallback: PreEventCallback? =
-            preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
-        val preEnableIdentityCallback: PreEventCallback? =
-            preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
         val preAuthenticateToInboxCallback: PreEventCallback? =
             preAuthenticateToInboxCallback.takeIf { hasPreAuthenticateToInboxCallback == true }
-
         val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
-        val context = if (authOptions.enableV3) context else null
         val encryptionKeyBytes =
-            dbEncryptionKey?.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
+            dbEncryptionKey.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                 a.apply { set(i, v.toByte()) }
             }
-
         val historySyncUrl = authOptions.historySyncUrl
             ?: when (authOptions.environment) {
                 "production" -> "https://message-history.production.ephemera.network/"
                 "local" -> "http://0.0.0.0:5558"
                 else -> "https://message-history.dev.ephemera.network/"
             }
-
         return ClientOptions(
             api = apiEnvironments(authOptions.environment, authOptions.appVersion),
-            preCreateIdentityCallback = preCreateIdentityCallback,
-            preEnableIdentityCallback = preEnableIdentityCallback,
             preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
-            enableV3 = authOptions.enableV3,
             appContext = context,
             dbEncryptionKey = encryptionKeyBytes,
             dbDirectory = authOptions.dbDirectory,
@@ -231,38 +192,19 @@ class XMTPModule : Module() {
     private var xmtpPush: XMTPPush? = null
     private var signer: ReactNativeSigner? = null
     private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
-    private val conversations: MutableMap<String, Conversation> = mutableMapOf()
-    private val groups: MutableMap<String, Group> = mutableMapOf()
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
-    private var preEnableIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
-    private var preCreateIdentityCallbackDeferred: CompletableDeferred<Unit>? = null
     private var preAuthenticateToInboxCallbackDeferred: CompletableDeferred<Unit>? = null
 
 
     override fun definition() = ModuleDefinition {
         Name("XMTP")
         Events(
-            // Auth
             "sign",
             "authed",
-            "authedV3",
-            "bundleAuthed",
-            "preCreateIdentityCallback",
-            "preEnableIdentityCallback",
             "preAuthenticateToInboxCallback",
-            // ConversationV2
             "conversation",
-            "conversationContainer",
             "message",
             "conversationMessage",
-            // ConversationV3
-            "conversationV3",
-            "allConversationMessages",
-            "conversationV3Message",
-            // Group
-            "groupMessage",
-            "allGroupMessage",
-            "group",
         )
 
         Function("address") { inboxId: String ->
@@ -332,30 +274,14 @@ class XMTPModule : Module() {
             }
         }
 
+        Function("preAuthenticateToInboxCallbackCompleted") {
+            logV("preAuthenticateToInboxCallbackCompleted")
+            preAuthenticateToInboxCallbackDeferred?.complete(Unit)
+        }
+
         //
         // Auth functions
         //
-        AsyncFunction("auth") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
-            withContext(Dispatchers.IO) {
-
-                logV("auth")
-                val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
-                signer = reactSigner
-                val options = clientOptions(
-                    dbEncryptionKey,
-                    authParams,
-                    hasCreateIdentityCallback,
-                    hasEnableIdentityCallback,
-                    hasAuthInboxCallback,
-                )
-                val client = Client().create(account = reactSigner, options = options)
-                clients[client.inboxId] = client
-                ContentJson.Companion
-                signer = null
-                sendEvent("authed", ClientWrapper.encodeToObj(client))
-            }
-        }
-
         Function("receiveSignature") { requestID: String, signature: String ->
             logV("receiveSignature")
             signer?.handle(id = requestID, signature = signature)
@@ -366,16 +292,13 @@ class XMTPModule : Module() {
             signer?.handleSCW(id = requestID, signature = signature)
         }
 
-        // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") Coroutine { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
+        AsyncFunction("createRandom") Coroutine { hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("createRandom")
                 val privateKey = PrivateKeyBuilder()
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
-                    hasCreateIdentityCallback,
-                    hasEnableIdentityCallback,
                     hasPreAuthenticateToInboxCallback,
                 )
                 val randomClient = Client().create(account = privateKey, options = options)
@@ -386,62 +309,9 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createFromKeyBundle") Coroutine { keyBundle: String, dbEncryptionKey: List<Int>?, authParams: String ->
+        AsyncFunction("create") Coroutine { address: String, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
-                logV("createFromKeyBundle")
-                try {
-                    val options = clientOptions(
-                        dbEncryptionKey,
-                        authParams
-                    )
-                    val bundle =
-                        PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
-                            Base64.decode(
-                                keyBundle,
-                                NO_WRAP
-                            )
-                        )
-                    val client = Client().buildFromBundle(bundle = bundle, options = options)
-                    ContentJson.Companion
-                    clients[client.inboxId] = client
-                    ClientWrapper.encodeToObj(client)
-                } catch (e: Exception) {
-                    throw XMTPException("Failed to create client: $e")
-                }
-            }
-        }
-
-        AsyncFunction("createFromKeyBundleWithSigner") Coroutine { address: String, keyBundle: String, dbEncryptionKey: List<Int>?, authParams: String ->
-            withContext(Dispatchers.IO) {
-                logV("createFromKeyBundleWithSigner")
-                try {
-                    val options = clientOptions(
-                        dbEncryptionKey,
-                        authParams
-                    )
-                    val bundle =
-                        PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
-                            Base64.decode(
-                                keyBundle,
-                                NO_WRAP
-                            )
-                        )
-                    val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
-                    signer = reactSigner
-                    val client = Client().buildFromBundle(bundle = bundle, options = options, account = reactSigner)
-                    clients[client.inboxId] = client
-                    ContentJson.Companion
-                    signer = null
-                    sendEvent("bundleAuthed", ClientWrapper.encodeToObj(client))
-                } catch (e: Exception) {
-                    throw XMTPException("Failed to create client: $e")
-                }
-            }
-        }
-
-        AsyncFunction("createV3") Coroutine { address: String, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
-            withContext(Dispatchers.IO) {
-                logV("createV3")
+                logV("create")
                 val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
                 val reactSigner = ReactNativeSigner(
                     module = this@XMTPModule,
@@ -454,49 +324,27 @@ class XMTPModule : Module() {
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
-                    hasCreateIdentityCallback,
-                    hasEnableIdentityCallback,
                     hasAuthInboxCallback,
                 )
-                val client = Client().createV3(account = reactSigner, options = options)
+                val client = Client().create(account = reactSigner, options = options)
                 clients[client.inboxId] = client
                 ContentJson.Companion
                 signer = null
-                sendEvent("authedV3", ClientWrapper.encodeToObj(client))
+                sendEvent("authed", ClientWrapper.encodeToObj(client))
             }
         }
 
-        AsyncFunction("buildV3") Coroutine { address: String, dbEncryptionKey: List<Int>?, authParams: String ->
+        AsyncFunction("build") Coroutine { address: String, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
-                logV("buildV3")
-                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+                logV("build")
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
                 )
-                val client = Client().buildV3(address = address, options = options)
+                val client = Client().build(address = address, options = options)
                 ContentJson.Companion
                 clients[client.inboxId] = client
                 ClientWrapper.encodeToObj(client)
-            }
-        }
-
-        AsyncFunction("createRandomV3") Coroutine { hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>?, authParams: String ->
-            withContext(Dispatchers.IO) {
-                logV("createRandomV3")
-                val privateKey = PrivateKeyBuilder()
-                val options = clientOptions(
-                    dbEncryptionKey,
-                    authParams,
-                    hasCreateIdentityCallback,
-                    hasEnableIdentityCallback,
-                    hasPreAuthenticateToInboxCallback,
-                )
-                val randomClient = Client().createV3(account = privateKey, options = options)
-
-                ContentJson.Companion
-                clients[randomClient.inboxId] = randomClient
-                ClientWrapper.encodeToObj(randomClient)
             }
         }
 
@@ -508,110 +356,11 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("sign") Coroutine { inboxId: String, digest: List<Int>, keyType: String, preKeyIndex: Int ->
-            // V2 ONLY
-            withContext(Dispatchers.IO) {
-                logV("sign")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val digestBytes =
-                    digest.foldIndexed(ByteArray(digest.size)) { i, a, v ->
-                        a.apply {
-                            set(
-                                i,
-                                v.toByte()
-                            )
-                        }
-                    }
-                val privateKeyBundle = client.keys
-                val signedPrivateKey = if (keyType == "prekey") {
-                    privateKeyBundle.preKeysList[preKeyIndex]
-                } else {
-                    privateKeyBundle.identityKey
-                }
-                val privateKey = PrivateKeyBuilder.buildFromSignedPrivateKey(signedPrivateKey)
-                val signature = PrivateKeyBuilder(privateKey).sign(digestBytes)
-                signature.toByteArray().map { it.toInt() and 0xFF }
-            }
-        }
-
-        AsyncFunction("exportPublicKeyBundle") { inboxId: String ->
-            // V2 ONLY
-            logV("exportPublicKeyBundle")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.keys.getPublicKeyBundle().toByteArray().map { it.toInt() and 0xFF }
-        }
-
-        AsyncFunction("exportKeyBundle") { inboxId: String ->
-            // V2 ONLY
-            logV("exportKeyBundle")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            Base64.encodeToString(client.privateKeyBundle.toByteArray(), NO_WRAP)
-        }
-
-        // Export the conversation's serialized topic data.
-        AsyncFunction("exportConversationTopicData") Coroutine { inboxId: String, topic: String ->
-            // V2 ONLY
-            withContext(Dispatchers.IO) {
-                logV("exportConversationTopicData")
-                val conversation = findConversation(inboxId, topic)
-                    ?: throw XMTPException("no conversation found for $topic")
-                Base64.encodeToString(conversation.toTopicData().toByteArray(), NO_WRAP)
-            }
-        }
-
-        AsyncFunction("getHmacKeys") { inboxId: String ->
-            logV("getHmacKeys")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            val hmacKeys = client.conversations.getHmacKeys()
-            logV("$hmacKeys")
-            hmacKeys.toByteArray().map { it.toInt() and 0xFF }
-        }
-
-        // Import a conversation from its serialized topic data.
-        AsyncFunction("importConversationTopicData") { inboxId: String, topicData: String ->
-            // V2 ONLY
-            logV("importConversationTopicData")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            val data = TopicData.parseFrom(Base64.decode(topicData, NO_WRAP))
-            val conversation = client.conversations.importTopicData(data)
-            conversations[conversation.cacheKey(inboxId)] = conversation
-            if (conversation.keyMaterial == null) {
-                logV("Null key material before encode conversation")
-            }
-            ConversationWrapper.encode(client, conversation)
-        }
-
-        //
-        // Client API
-        AsyncFunction("canMessage") Coroutine { inboxId: String, peerAddress: String ->
-            // V2 ONLY
+        AsyncFunction("canMessage") Coroutine { inboxId: String, peerAddresses: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("canMessage")
-
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-
-                client.canMessage(peerAddress)
-            }
-        }
-
-        AsyncFunction("canGroupMessage") Coroutine { inboxId: String, peerAddresses: List<String> ->
-            withContext(Dispatchers.IO) {
-                logV("canGroupMessage")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.canMessageV3(peerAddresses)
-            }
-        }
-
-        AsyncFunction("staticCanMessage") Coroutine { peerAddress: String, environment: String, appVersion: String? ->
-            // V2 ONLY
-            withContext(Dispatchers.IO) {
-                try {
-                    logV("staticCanMessage")
-                    val options = ClientOptions(api = apiEnvironments(environment, appVersion))
-                    Client.canMessage(peerAddress = peerAddress, options = options)
-                } catch (e: Exception) {
-                    throw XMTPException("Failed to create client: ${e.message}")
-                }
+                client.canMessage(peerAddresses)
             }
         }
 
@@ -619,8 +368,10 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 try {
                     logV("getOrCreateInboxId")
-                    val options = ClientOptions(api = apiEnvironments(environment, null))
-                    Client.getOrCreateInboxId(options = options, address = address)
+                    Client.getOrCreateInboxId(
+                        environment = apiEnvironments(environment, null),
+                        address = address
+                    )
                 } catch (e: Exception) {
                     throw XMTPException("Failed to getOrCreateInboxId: ${e.message}")
                 }
@@ -629,7 +380,6 @@ class XMTPModule : Module() {
 
         AsyncFunction("encryptAttachment") { inboxId: String, fileJson: String ->
             logV("encryptAttachment")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
             val file = DecryptedLocalAttachment.fromJson(fileJson)
             val uri = Uri.parse(file.fileUri)
             val data = appContext.reactContext?.contentResolver
@@ -656,7 +406,6 @@ class XMTPModule : Module() {
 
         AsyncFunction("decryptAttachment") { inboxId: String, encryptedFileJson: String ->
             logV("decryptAttachment")
-            val client = clients[inboxId] ?: throw XMTPException("No client")
             val encryptedFile = EncryptedLocalAttachment.fromJson(encryptedFileJson)
             val encryptedData = appContext.reactContext?.contentResolver
                 ?.openInputStream(Uri.parse(encryptedFile.encryptedLocalFileUri))
@@ -681,145 +430,70 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("sendEncodedContent") Coroutine { inboxId: String, topic: String, encodedContentData: List<Int> ->
-            // V2 ONLY
-            withContext(Dispatchers.IO) {
-                val conversation =
-                    findConversation(
-                        inboxId = inboxId,
-                        topic = topic
-                    ) ?: throw XMTPException("no conversation found for $topic")
-
-                val encodedContentDataBytes =
-                    encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
-                        a.apply {
-                            set(
-                                i,
-                                v.toByte()
-                            )
-                        }
-                    }
-                val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
-
-                conversation.send(encodedContent = encodedContent)
-            }
-        }
-
-        AsyncFunction("listConversations") Coroutine { inboxId: String ->
-            // V2 ONLY
-            withContext(Dispatchers.IO) {
-                logV("listConversations")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val conversationList = client.conversations.list()
-                conversationList.map { conversation ->
-                    conversations[conversation.cacheKey(inboxId)] = conversation
-                    if (conversation.keyMaterial == null) {
-                        logV("Null key material before encode conversation")
-                    }
-                    ConversationWrapper.encode(client, conversation)
-                }
-            }
-        }
-
         AsyncFunction("listGroups") Coroutine { inboxId: String, groupParams: String?, sortOrder: String?, limit: Int? ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
-                val sortedGroupList = if (order == ConversationOrder.LAST_MESSAGE) {
-                    client.conversations.listGroups()
-                        .sortedByDescending { group ->
-                            group.decryptedMessages(limit = 1).firstOrNull()?.sentAt
-                        }
-                        .let { groups ->
-                            if (limit != null && limit > 0) groups.take(limit) else groups
-                        }
-                } else {
-                    client.conversations.listGroups(limit = limit)
-                }
-                sortedGroupList.map { group ->
-                    groups[group.cacheKey(inboxId)] = group
+                val groups = client.conversations.listGroups(order = order, limit = limit)
+                groups.map { group ->
                     GroupWrapper.encode(client, group, params)
                 }
             }
         }
 
-        AsyncFunction("listV3Conversations") Coroutine { inboxId: String, conversationParams: String?, sortOrder: String?, limit: Int? ->
+        AsyncFunction("listDms") Coroutine { inboxId: String, groupParams: String?, sortOrder: String?, limit: Int? ->
             withContext(Dispatchers.IO) {
-                logV("listV3Conversations")
+                logV("listDms")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
+                val order = getConversationSortOrder(sortOrder ?: "")
+                val dms = client.conversations.listDms(order = order, limit = limit)
+                dms.map { dm ->
+                    DmWrapper.encode(client, dm, params)
+                }
+            }
+        }
+
+        AsyncFunction("listConversations") Coroutine { inboxId: String, conversationParams: String?, sortOrder: String?, limit: Int? ->
+            withContext(Dispatchers.IO) {
+                logV("listConversations")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val params =
                     ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
                 val conversations =
-                    client.conversations.listConversations(order = order, limit = limit)
+                    client.conversations.list(order = order, limit = limit)
                 conversations.map { conversation ->
-                    ConversationContainerWrapper.encode(client, conversation, params)
+                    ConversationWrapper.encode(client, conversation, params)
                 }
             }
         }
 
-        AsyncFunction("listAll") Coroutine { inboxId: String ->
-            withContext(Dispatchers.IO) {
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val conversationContainerList = client.conversations.list(includeGroups = true)
-                conversationContainerList.map { conversation ->
-                    conversations[conversation.cacheKey(inboxId)] = conversation
-                    ConversationContainerWrapper.encode(client, conversation)
-                }
-            }
-        }
-
-        AsyncFunction("loadMessages") Coroutine { inboxId: String, topic: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
-            // V2 ONLY
-            withContext(Dispatchers.IO) {
-                logV("loadMessages")
-                val conversation =
-                    findConversation(
-                        inboxId = inboxId,
-                        topic = topic,
-                    ) ?: throw XMTPException("no conversation found for $topic")
-                val beforeDate = if (before != null) Date(before) else null
-                val afterDate = if (after != null) Date(after) else null
-
-                conversation.decryptedMessages(
-                    limit = limit,
-                    before = beforeDate,
-                    after = afterDate,
-                    direction = MessageApiOuterClass.SortDirection.valueOf(
-                        direction ?: "SORT_DIRECTION_DESCENDING"
-                    )
-                )
-                    .map { DecodedMessageWrapper.encode(it) }
-            }
-        }
-
-        AsyncFunction("conversationMessages") Coroutine { inboxId: String, conversationId: String, limit: Int?, before: Long?, after: Long?, direction: String? ->
+        AsyncFunction("conversationMessages") Coroutine { inboxId: String, conversationId: String, limit: Int?, beforeNs: Long?, afterNs: Long?, direction: String? ->
             withContext(Dispatchers.IO) {
                 logV("conversationMessages")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val beforeDate = if (before != null) Date(before) else null
-                val afterDate = if (after != null) Date(after) else null
                 val conversation = client.findConversation(conversationId)
-                conversation?.decryptedMessages(
+                conversation?.messages(
                     limit = limit,
-                    before = beforeDate,
-                    after = afterDate,
-                    direction = MessageApiOuterClass.SortDirection.valueOf(
-                        direction ?: "SORT_DIRECTION_DESCENDING"
+                    beforeNs = beforeNs,
+                    afterNs = afterNs,
+                    direction = Message.SortDirection.valueOf(
+                        direction ?: "DESCENDING"
                     )
                 )?.map { DecodedMessageWrapper.encode(it) }
             }
         }
 
-        AsyncFunction("findV3Message") Coroutine { inboxId: String, messageId: String ->
+        AsyncFunction("findMessage") Coroutine { inboxId: String, messageId: String ->
             withContext(Dispatchers.IO) {
-                logV("findV3Message")
+                logV("findMessage")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val message = client.findMessage(messageId)
                 message?.let {
-                    DecodedMessageWrapper.encode(it.decrypt())
+                    DecodedMessageWrapper.encode(it.decode())
                 }
             }
         }
@@ -841,7 +515,7 @@ class XMTPModule : Module() {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val conversation = client.findConversation(conversationId)
                 conversation?.let {
-                    ConversationContainerWrapper.encode(client, conversation)
+                    ConversationWrapper.encode(client, conversation)
                 }
             }
         }
@@ -852,14 +526,14 @@ class XMTPModule : Module() {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val conversation = client.findConversationByTopic(topic)
                 conversation?.let {
-                    ConversationContainerWrapper.encode(client, conversation)
+                    ConversationWrapper.encode(client, conversation)
                 }
             }
         }
 
-        AsyncFunction("findDm") Coroutine { inboxId: String, peerAddress: String ->
+        AsyncFunction("findDmByAddress") Coroutine { inboxId: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
-                logV("findDm")
+                logV("findDmByAddress")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val dm = client.findDm(peerAddress)
                 dm?.let {
@@ -868,75 +542,9 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("loadBatchMessages") Coroutine { inboxId: String, topics: List<String> ->
-            // V2 ONLY
-            withContext(Dispatchers.IO) {
-                logV("loadBatchMessages")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val topicsList = mutableListOf<Pair<String, Pagination>>()
-                topics.forEach {
-                    val jsonObj = JSONObject(it)
-                    val topic = jsonObj.get("topic").toString()
-                    var limit: Int? = null
-                    var before: Long? = null
-                    var after: Long? = null
-                    var direction: MessageApiOuterClass.SortDirection =
-                        MessageApiOuterClass.SortDirection.SORT_DIRECTION_DESCENDING
-
-                    try {
-                        limit = jsonObj.get("limit").toString().toInt()
-                        before = jsonObj.get("before").toString().toLong()
-                        after = jsonObj.get("after").toString().toLong()
-                        direction = MessageApiOuterClass.SortDirection.valueOf(
-                            if (jsonObj.get("direction").toString().isNullOrBlank()) {
-                                "SORT_DIRECTION_DESCENDING"
-                            } else {
-                                jsonObj.get("direction").toString()
-                            }
-                        )
-                    } catch (e: Exception) {
-                        Log.e(
-                            "XMTPModule",
-                            "Pagination given incorrect information ${e.message}"
-                        )
-                    }
-
-                    val page = Pagination(
-                        limit = if (limit != null && limit > 0) limit else null,
-                        before = if (before != null && before > 0) Date(before) else null,
-                        after = if (after != null && after > 0) Date(after) else null,
-                        direction = direction
-                    )
-
-                    topicsList.add(Pair(topic, page))
-                }
-
-                client.conversations.listBatchDecryptedMessages(topicsList)
-                    .map { DecodedMessageWrapper.encode(it) }
-            }
-        }
-
-        AsyncFunction("sendMessage") Coroutine { inboxId: String, conversationTopic: String, contentJson: String ->
-            // V2 ONLY
+        AsyncFunction("sendMessage") Coroutine { inboxId: String, id: String, contentJson: String ->
             withContext(Dispatchers.IO) {
                 logV("sendMessage")
-                val conversation =
-                    findConversation(
-                        inboxId = inboxId,
-                        topic = conversationTopic
-                    )
-                        ?: throw XMTPException("no conversation found for $conversationTopic")
-                val sending = ContentJson.fromJson(contentJson)
-                conversation.send(
-                    content = sending.content,
-                    options = SendOptions(contentType = sending.type)
-                )
-            }
-        }
-
-        AsyncFunction("sendMessageToConversation") Coroutine { inboxId: String, id: String, contentJson: String ->
-            withContext(Dispatchers.IO) {
-                logV("sendMessageToConversation")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val conversation = client.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
@@ -948,164 +556,36 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("publishPreparedGroupMessages") Coroutine { inboxId: String, groupId: String ->
+        AsyncFunction("publishPreparedMessages") Coroutine { inboxId: String, id: String ->
             withContext(Dispatchers.IO) {
-                logV("publishPreparedGroupMessages")
-                val group =
-                    findGroup(
-                        inboxId = inboxId,
-                        id = groupId
-                    )
-                        ?: throw XMTPException("no group found for $groupId")
-
-                group.publishMessages()
-            }
-        }
-
-        AsyncFunction("prepareConversationMessage") Coroutine { inboxId: String, id: String, contentJson: String ->
-            withContext(Dispatchers.IO) {
-                logV("prepareConversationMessage")
+                logV("publishPreparedMessages")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val conversation = client.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
-                val sending = ContentJson.fromJson(contentJson)
-                conversation.prepareMessageV3(
-                    content = sending.content,
-                    options = SendOptions(contentType = sending.type)
-                )
+                conversation.publishMessages()
             }
         }
 
-        AsyncFunction("prepareMessage") Coroutine { inboxId: String, conversationTopic: String, contentJson: String ->
-            // V2 ONLY
+        AsyncFunction("prepareMessage") Coroutine { inboxId: String, id: String, contentJson: String ->
             withContext(Dispatchers.IO) {
                 logV("prepareMessage")
-                val conversation =
-                    findConversation(
-                        inboxId = inboxId,
-                        topic = conversationTopic
-                    )
-                        ?: throw XMTPException("no conversation found for $conversationTopic")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(id)
+                    ?: throw XMTPException("no conversation found for $id")
                 val sending = ContentJson.fromJson(contentJson)
-                val prepared = conversation.prepareMessage(
+                conversation.prepareMessage(
                     content = sending.content,
                     options = SendOptions(contentType = sending.type)
                 )
-                val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
-                val preparedFile = File.createTempFile(prepared.messageId, null)
-                preparedFile.writeBytes(prepared.toSerializedData())
-                PreparedLocalMessage(
-                    messageId = prepared.messageId,
-                    preparedFileUri = preparedFile.toURI().toString(),
-                    preparedAt = preparedAtMillis,
-                ).toJson()
             }
         }
 
-        AsyncFunction("prepareEncodedMessage") Coroutine { inboxId: String, conversationTopic: String, encodedContentData: List<Int> ->
-            // V2 ONLY
+        AsyncFunction("findOrCreateDm") Coroutine { inboxId: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
-                logV("prepareEncodedMessage")
-                val conversation =
-                    findConversation(
-                        inboxId = inboxId,
-                        topic = conversationTopic
-                    )
-                        ?: throw XMTPException("no conversation found for $conversationTopic")
-
-                val encodedContentDataBytes =
-                    encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
-                        a.apply {
-                            set(
-                                i,
-                                v.toByte()
-                            )
-                        }
-                    }
-                val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
-
-                val prepared = conversation.prepareMessage(
-                    encodedContent = encodedContent,
-                )
-                val preparedAtMillis = prepared.envelopes[0].timestampNs / 1_000_000
-                val preparedFile = File.createTempFile(prepared.messageId, null)
-                preparedFile.writeBytes(prepared.toSerializedData())
-                PreparedLocalMessage(
-                    messageId = prepared.messageId,
-                    preparedFileUri = preparedFile.toURI().toString(),
-                    preparedAt = preparedAtMillis,
-                ).toJson()
-            }
-        }
-
-        AsyncFunction("sendPreparedMessage") Coroutine { inboxId: String, preparedLocalMessageJson: String ->
-            // V2 ONLY
-            withContext(Dispatchers.IO) {
-                logV("sendPreparedMessage")
+                logV("findOrCreateDm")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val local = PreparedLocalMessage.fromJson(preparedLocalMessageJson)
-                val preparedFileUrl = Uri.parse(local.preparedFileUri)
-                val contentResolver = appContext.reactContext?.contentResolver!!
-                val preparedData = contentResolver.openInputStream(preparedFileUrl)!!
-                    .use { it.buffered().readBytes() }
-                val prepared = PreparedMessage.fromSerializedData(preparedData)
-                client.publish(envelopes = prepared.envelopes)
-                try {
-                    contentResolver.delete(preparedFileUrl, null, null)
-                } catch (ignore: Exception) {
-                    /* ignore: the sending succeeds even if we fail to rm the tmp file afterward */
-                }
-                prepared.messageId
-            }
-        }
-
-        AsyncFunction("createConversation") Coroutine { inboxId: String, peerAddress: String, contextJson: String, consentProofPayload: List<Int> ->
-            // V2 Only
-            withContext(Dispatchers.IO) {
-                logV("createConversation: $contextJson")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val context = JsonParser.parseString(contextJson).asJsonObject
-
-                var consentProof: ConsentProofPayload? = null
-                if (consentProofPayload.isNotEmpty()) {
-                    val consentProofDataBytes =
-                        consentProofPayload.foldIndexed(ByteArray(consentProofPayload.size)) { i, a, v ->
-                            a.apply {
-                                set(
-                                    i,
-                                    v.toByte()
-                                )
-                            }
-                        }
-                    consentProof = ConsentProofPayload.parseFrom(consentProofDataBytes)
-                }
-
-                val conversation = client.conversations.newConversation(
-                    peerAddress,
-                    context = InvitationV1ContextBuilder.buildFromConversation(
-                        conversationId = when {
-                            context.has("conversationID") -> context.get("conversationID").asString
-                            else -> ""
-                        },
-                        metadata = when {
-                            context.has("metadata") -> {
-                                val metadata = context.get("metadata").asJsonObject
-                                metadata.entrySet()
-                                    .associate { (key, value) -> key to value.asString }
-                            }
-
-                            else -> mapOf()
-                        },
-                    ),
-                    consentProof
-                )
-                if (conversation.keyMaterial == null) {
-                    logV("Null key material before encode conversation")
-                }
-                if (conversation.consentProof == null) {
-                    logV("Null consent before encode conversation")
-                }
-                ConversationWrapper.encode(client, conversation)
+                val dm = client.conversations.findOrCreateDm(peerAddress)
+                DmWrapper.encode(client, dm)
             }
         }
 
@@ -1128,15 +608,6 @@ class XMTPModule : Module() {
                     createGroupParams.groupPinnedFrameUrl
                 )
                 GroupWrapper.encode(client, group)
-            }
-        }
-
-        AsyncFunction("findOrCreateDm") Coroutine { inboxId: String, peerAddress: String ->
-            withContext(Dispatchers.IO) {
-                logV("findOrCreateDm")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val dm = client.conversations.findOrCreateDm(peerAddress)
-                DmWrapper.encode(client, dm)
             }
         }
 
@@ -1163,18 +634,19 @@ class XMTPModule : Module() {
         }
 
 
-        AsyncFunction("listMemberInboxIds") Coroutine { inboxId: String, groupId: String ->
+        AsyncFunction("listMemberInboxIds") Coroutine { inboxId: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("listMembers")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, groupId)
-                group?.members()?.map { it.inboxId }
+                val conversation = client.findConversation(id)
+                    ?: throw XMTPException("no conversation found for $id")
+                conversation.members().map { it.inboxId }
             }
         }
 
         AsyncFunction("dmPeerInboxId") Coroutine { inboxId: String, dmId: String ->
             withContext(Dispatchers.IO) {
-                logV("listPeerInboxId")
+                logV("dmPeerInboxId")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val conversation = client.findConversation(dmId)
                     ?: throw XMTPException("no conversation found for $dmId")
@@ -1197,7 +669,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("syncConversations")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.conversations.syncConversations()
+                client.conversations.sync()
             }
         }
 
@@ -1205,10 +677,8 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("syncAllConversations")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                // Expo Modules do not support UInt, so we need to convert to Int
                 val numGroupsSyncedInt: Int =
-                    client.conversations.syncAllConversations()?.toInt()
-                        ?: throw IllegalArgumentException("Value cannot be null")
+                    client.conversations.syncAllConversations().toInt()
                 numGroupsSyncedInt
             }
         }
@@ -1223,337 +693,335 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("addGroupMembers") Coroutine { inboxId: String, id: String, peerAddresses: List<String> ->
+        AsyncFunction("addGroupMembers") Coroutine { inboxId: String, groupId: String, peerAddresses: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("addGroupMembers")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.addMembers(peerAddresses)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.addMembers(peerAddresses)
             }
         }
 
-        AsyncFunction("removeGroupMembers") Coroutine { inboxId: String, id: String, peerAddresses: List<String> ->
+        AsyncFunction("removeGroupMembers") Coroutine { inboxId: String, groupId: String, peerAddresses: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("removeGroupMembers")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.removeMembers(peerAddresses)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.removeMembers(peerAddresses)
             }
         }
 
-        AsyncFunction("addGroupMembersByInboxId") Coroutine { inboxId: String, id: String, peerInboxIds: List<String> ->
+        AsyncFunction("addGroupMembersByInboxId") Coroutine { inboxId: String, groupId: String, peerInboxIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("addGroupMembersByInboxId")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.addMembersByInboxId(peerInboxIds)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.addMembersByInboxId(peerInboxIds)
             }
         }
 
-        AsyncFunction("removeGroupMembersByInboxId") Coroutine { inboxId: String, id: String, peerInboxIds: List<String> ->
+        AsyncFunction("removeGroupMembersByInboxId") Coroutine { inboxId: String, groupId: String, peerInboxIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("removeGroupMembersByInboxId")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.removeMembersByInboxId(peerInboxIds)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.removeMembersByInboxId(peerInboxIds)
             }
         }
 
-        AsyncFunction("groupName") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("groupName") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("groupName")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.name
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.name
             }
         }
 
-        AsyncFunction("updateGroupName") Coroutine { inboxId: String, id: String, groupName: String ->
+        AsyncFunction("updateGroupName") Coroutine { inboxId: String, groupId: String, groupName: String ->
             withContext(Dispatchers.IO) {
                 logV("updateGroupName")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.updateGroupName(groupName)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateGroupName(groupName)
             }
         }
 
-        AsyncFunction("groupImageUrlSquare") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("groupImageUrlSquare") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("groupImageUrlSquare")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.imageUrlSquare
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.imageUrlSquare
             }
         }
 
-        AsyncFunction("updateGroupImageUrlSquare") Coroutine { inboxId: String, id: String, groupImageUrl: String ->
+        AsyncFunction("updateGroupImageUrlSquare") Coroutine { inboxId: String, groupId: String, groupImageUrl: String ->
             withContext(Dispatchers.IO) {
                 logV("updateGroupImageUrlSquare")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.updateGroupImageUrlSquare(groupImageUrl)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateGroupImageUrlSquare(groupImageUrl)
             }
         }
 
-        AsyncFunction("groupDescription") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("groupDescription") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("groupDescription")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.description
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.description
             }
         }
 
-        AsyncFunction("updateGroupDescription") Coroutine { inboxId: String, id: String, groupDescription: String ->
+        AsyncFunction("updateGroupDescription") Coroutine { inboxId: String, groupId: String, groupDescription: String ->
             withContext(Dispatchers.IO) {
                 logV("updateGroupDescription")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.updateGroupDescription(groupDescription)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateGroupDescription(groupDescription)
             }
         }
 
-        AsyncFunction("groupPinnedFrameUrl") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("groupPinnedFrameUrl") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("groupPinnedFrameUrl")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.pinnedFrameUrl
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.pinnedFrameUrl
             }
         }
 
-        AsyncFunction("updateGroupPinnedFrameUrl") Coroutine { inboxId: String, id: String, pinnedFrameUrl: String ->
+        AsyncFunction("updateGroupPinnedFrameUrl") Coroutine { inboxId: String, groupId: String, pinnedFrameUrl: String ->
             withContext(Dispatchers.IO) {
                 logV("updateGroupPinnedFrameUrl")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.updateGroupPinnedFrameUrl(pinnedFrameUrl)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateGroupPinnedFrameUrl(pinnedFrameUrl)
             }
         }
 
-        AsyncFunction("isGroupActive") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("isGroupActive") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupActive")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.isActive()
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.isActive()
             }
         }
 
-        AsyncFunction("addedByInboxId") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("addedByInboxId") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("addedByInboxId")
-                val group = findGroup(inboxId, id) ?: throw XMTPException("No group found")
-
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
                 group.addedByInboxId()
             }
         }
 
-        AsyncFunction("creatorInboxId") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("creatorInboxId") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("creatorInboxId")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.creatorInboxId()
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.creatorInboxId()
             }
         }
 
-        AsyncFunction("isAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
+        AsyncFunction("isAdmin") Coroutine { clientInboxId: String, groupId: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupAdmin")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.isAdmin(inboxId)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.isAdmin(inboxId)
             }
         }
 
-        AsyncFunction("isSuperAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
+        AsyncFunction("isSuperAdmin") Coroutine { clientInboxId: String, groupId: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("isSuperAdmin")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.isSuperAdmin(inboxId)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.isSuperAdmin(inboxId)
             }
         }
 
-        AsyncFunction("listAdmins") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("listAdmins") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("listAdmins")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.listAdmins()
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.listAdmins()
             }
         }
 
-        AsyncFunction("listSuperAdmins") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("listSuperAdmins") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("listSuperAdmins")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                group?.listSuperAdmins()
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.listSuperAdmins()
             }
         }
 
-        AsyncFunction("addAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
+        AsyncFunction("addAdmin") Coroutine { clientInboxId: String, groupId: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("addAdmin")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-                group?.addAdmin(inboxId)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.addAdmin(inboxId)
             }
         }
 
-        AsyncFunction("addSuperAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
+        AsyncFunction("addSuperAdmin") Coroutine { clientInboxId: String, groupId: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("addSuperAdmin")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.addSuperAdmin(inboxId)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.addSuperAdmin(inboxId)
             }
         }
 
-        AsyncFunction("removeAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
+        AsyncFunction("removeAdmin") Coroutine { clientInboxId: String, groupId: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("removeAdmin")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.removeAdmin(inboxId)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.removeAdmin(inboxId)
             }
         }
 
-        AsyncFunction("removeSuperAdmin") Coroutine { clientInboxId: String, id: String, inboxId: String ->
+        AsyncFunction("removeSuperAdmin") Coroutine { clientInboxId: String, groupId: String, inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("removeSuperAdmin")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.removeSuperAdmin(inboxId)
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.removeSuperAdmin(inboxId)
             }
         }
 
-        AsyncFunction("updateAddMemberPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+        AsyncFunction("updateAddMemberPermission") Coroutine { clientInboxId: String, groupId: String, newPermission: String ->
             withContext(Dispatchers.IO) {
                 logV("updateAddMemberPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.updateAddMemberPermission(getPermissionOption(newPermission))
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateAddMemberPermission(getPermissionOption(newPermission))
             }
         }
 
-        AsyncFunction("updateRemoveMemberPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+        AsyncFunction("updateRemoveMemberPermission") Coroutine { clientInboxId: String, groupId: String, newPermission: String ->
             withContext(Dispatchers.IO) {
                 logV("updateRemoveMemberPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.updateRemoveMemberPermission(getPermissionOption(newPermission))
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateRemoveMemberPermission(getPermissionOption(newPermission))
             }
         }
 
-        AsyncFunction("updateAddAdminPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+        AsyncFunction("updateAddAdminPermission") Coroutine { clientInboxId: String, groupId: String, newPermission: String ->
             withContext(Dispatchers.IO) {
                 logV("updateAddAdminPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.updateAddAdminPermission(getPermissionOption(newPermission))
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateAddAdminPermission(getPermissionOption(newPermission))
             }
         }
 
-        AsyncFunction("updateRemoveAdminPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+        AsyncFunction("updateRemoveAdminPermission") Coroutine { clientInboxId: String, groupId: String, newPermission: String ->
             withContext(Dispatchers.IO) {
                 logV("updateRemoveAdminPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.updateRemoveAdminPermission(getPermissionOption(newPermission))
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateRemoveAdminPermission(getPermissionOption(newPermission))
             }
         }
 
-        AsyncFunction("updateGroupNamePermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+        AsyncFunction("updateGroupNamePermission") Coroutine { clientInboxId: String, groupId: String, newPermission: String ->
             withContext(Dispatchers.IO) {
                 logV("updateGroupNamePermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.updateGroupNamePermission(getPermissionOption(newPermission))
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateGroupNamePermission(getPermissionOption(newPermission))
             }
         }
 
-        AsyncFunction("updateGroupImageUrlSquarePermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+        AsyncFunction("updateGroupImageUrlSquarePermission") Coroutine { clientInboxId: String, groupId: String, newPermission: String ->
             withContext(Dispatchers.IO) {
                 logV("updateGroupImageUrlSquarePermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.updateGroupImageUrlSquarePermission(getPermissionOption(newPermission))
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateGroupImageUrlSquarePermission(getPermissionOption(newPermission))
             }
         }
 
-        AsyncFunction("updateGroupDescriptionPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+        AsyncFunction("updateGroupDescriptionPermission") Coroutine { clientInboxId: String, groupId: String, newPermission: String ->
             withContext(Dispatchers.IO) {
                 logV("updateGroupDescriptionPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.updateGroupDescriptionPermission(getPermissionOption(newPermission))
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateGroupDescriptionPermission(getPermissionOption(newPermission))
             }
         }
 
-        AsyncFunction("updateGroupPinnedFrameUrlPermission") Coroutine { clientInboxId: String, id: String, newPermission: String ->
+        AsyncFunction("updateGroupPinnedFrameUrlPermission") Coroutine { clientInboxId: String, groupId: String, newPermission: String ->
             withContext(Dispatchers.IO) {
                 logV("updateGroupPinnedFrameUrlPermission")
                 val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                val group = findGroup(clientInboxId, id)
-
-                group?.updateGroupPinnedFrameUrlPermission(getPermissionOption(newPermission))
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateGroupPinnedFrameUrlPermission(getPermissionOption(newPermission))
             }
         }
 
-        AsyncFunction("permissionPolicySet") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("permissionPolicySet") Coroutine { inboxId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("groupImageUrlSquare")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val group = findGroup(inboxId, id)
-
-                val permissionPolicySet = group?.permissionPolicySet()
-                if (permissionPolicySet != null) {
-                    PermissionPolicySetWrapper.encodeToJsonString(permissionPolicySet)
-                } else {
-                    throw XMTPException("Permission policy set not found for group: $id")
-                }
+                val group = client.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                val permissionPolicySet = group.permissionPolicySet()
+                PermissionPolicySetWrapper.encodeToJsonString(permissionPolicySet)
             }
         }
 
-        AsyncFunction("processConversationMessage") Coroutine { inboxId: String, id: String, encryptedMessage: String ->
+        AsyncFunction("processMessage") Coroutine { inboxId: String, id: String, encryptedMessage: String ->
             withContext(Dispatchers.IO) {
-                logV("processGroupMessage")
+                logV("processMessage")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val conversation = client.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 val message = conversation.processMessage(Base64.decode(encryptedMessage, NO_WRAP))
-                DecodedMessageWrapper.encodeMap(message.decrypt())
+                DecodedMessageWrapper.encodeMap(message.decode())
             }
         }
 
@@ -1562,69 +1030,88 @@ class XMTPModule : Module() {
                 logV("processWelcomeMessage")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
 
-                val group =
-                    client.conversations.fromWelcome(Base64.decode(encryptedMessage, NO_WRAP))
-                GroupWrapper.encode(client, group)
-            }
-        }
-
-        AsyncFunction("processConversationWelcomeMessage") Coroutine { inboxId: String, encryptedMessage: String ->
-            withContext(Dispatchers.IO) {
-                logV("processConversationWelcomeMessage")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-
                 val conversation =
-                    client.conversations.conversationFromWelcome(
+                    client.conversations.fromWelcome(
                         Base64.decode(
                             encryptedMessage,
                             NO_WRAP
                         )
                     )
-                ConversationContainerWrapper.encode(client, conversation)
+                ConversationWrapper.encode(client, conversation)
             }
         }
 
-        Function("subscribeToConversations") { inboxId: String ->
-            // V2 ONLY
-            logV("subscribeToConversations")
-            subscribeToConversations(inboxId = inboxId)
-        }
-
-        Function("subscribeToGroups") { inboxId: String ->
-            logV("subscribeToGroups")
-            subscribeToGroups(inboxId = inboxId)
-        }
-
-        Function("subscribeToAll") { inboxId: String ->
-            logV("subscribeToAll")
-            subscribeToAll(inboxId = inboxId)
-        }
-
-        Function("subscribeToAllMessages") { inboxId: String, includeGroups: Boolean ->
-            logV("subscribeToAllMessages")
-            subscribeToAllMessages(inboxId = inboxId, includeGroups = includeGroups)
-        }
-
-        Function("subscribeToAllGroupMessages") { inboxId: String ->
-            logV("subscribeToAllGroupMessages")
-            subscribeToAllGroupMessages(inboxId = inboxId)
-        }
-
-        AsyncFunction("subscribeToMessages") Coroutine { inboxId: String, topic: String ->
-            // V2 ONLY
+        AsyncFunction("setConsentState") Coroutine { inboxId: String, value: String, entryType: String, consentType: String ->
             withContext(Dispatchers.IO) {
-                logV("subscribeToMessages")
-                subscribeToMessages(
-                    inboxId = inboxId,
-                    topic = topic
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.preferences.consentList.setConsentState(
+                    listOf(
+                        ConsentListEntry(
+                            value,
+                            getEntryType(entryType),
+                            getConsentState(consentType)
+                        )
+                    )
                 )
             }
         }
 
-        AsyncFunction("subscribeToGroupMessages") Coroutine { inboxId: String, id: String ->
+        AsyncFunction("consentAddressState") Coroutine { inboxId: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
-                logV("subscribeToGroupMessages")
-                subscribeToGroupMessages(
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                consentStateToString(client.preferences.consentList.addressState(peerAddress))
+            }
+        }
+
+        AsyncFunction("consentInboxIdState") Coroutine { inboxId: String, peerInboxId: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                consentStateToString(client.preferences.consentList.inboxIdState(peerInboxId))
+            }
+        }
+
+        AsyncFunction("consentConversationIdState") Coroutine { inboxId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                consentStateToString(client.preferences.consentList.conversationState(conversationId))
+            }
+        }
+
+        AsyncFunction("conversationConsentState") Coroutine { inboxId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no group found for $conversationId")
+                consentStateToString(conversation.consentState())
+            }
+        }
+
+        AsyncFunction("updateConversationConsent") Coroutine { inboxId: String, conversationId: String, state: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateConversationConsent")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no group found for $conversationId")
+
+                conversation.updateConsentState(getConsentState(state))
+            }
+        }
+
+        Function("subscribeToConversations") { inboxId: String, type: String ->
+            logV("subscribeToConversations")
+
+            subscribeToConversations(inboxId = inboxId, getStreamType(type))
+        }
+
+        Function("subscribeToAllMessages") { inboxId: String, type: String ->
+            logV("subscribeToAllMessages")
+            subscribeToAllMessages(inboxId = inboxId, getStreamType(type))
+        }
+
+        AsyncFunction("subscribeToMessages") Coroutine { inboxId: String, id: String ->
+            withContext(Dispatchers.IO) {
+                logV("subscribeToMessages")
+                subscribeToMessages(
                     inboxId = inboxId,
                     id = id
                 )
@@ -1632,14 +1119,8 @@ class XMTPModule : Module() {
         }
 
         Function("unsubscribeFromConversations") { inboxId: String ->
-            // V2 ONLY
             logV("unsubscribeFromConversations")
             subscriptions[getConversationsKey(inboxId)]?.cancel()
-        }
-
-        Function("unsubscribeFromGroups") { inboxId: String ->
-            logV("unsubscribeFromGroups")
-            subscriptions[getGroupsKey(inboxId)]?.cancel()
         }
 
         Function("unsubscribeFromAllMessages") { inboxId: String ->
@@ -1647,26 +1128,10 @@ class XMTPModule : Module() {
             subscriptions[getMessagesKey(inboxId)]?.cancel()
         }
 
-        Function("unsubscribeFromAllGroupMessages") { inboxId: String ->
-            logV("unsubscribeFromAllGroupMessages")
-            subscriptions[getGroupMessagesKey(inboxId)]?.cancel()
-        }
-
-        AsyncFunction("unsubscribeFromMessages") Coroutine { inboxId: String, topic: String ->
-            // V2 ONLY
+        AsyncFunction("unsubscribeFromMessages") Coroutine { inboxId: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("unsubscribeFromMessages")
                 unsubscribeFromMessages(
-                    inboxId = inboxId,
-                    topic = topic
-                )
-            }
-        }
-
-        AsyncFunction("unsubscribeFromGroupMessages") Coroutine { inboxId: String, id: String ->
-            withContext(Dispatchers.IO) {
-                logV("unsubscribeFromGroupMessages")
-                unsubscribeFromGroupMessages(
                     inboxId = inboxId,
                     id = id
                 )
@@ -1679,200 +1144,20 @@ class XMTPModule : Module() {
             xmtpPush?.register(token)
         }
 
-        Function("subscribePushTopics") { inboxId: String, topics: List<String> ->
+        Function("subscribePushTopics") { topics: List<String> ->
             logV("subscribePushTopics")
             if (topics.isNotEmpty()) {
                 if (xmtpPush == null) {
                     throw XMTPException("Push server not registered")
                 }
-                val client = clients[inboxId] ?: throw XMTPException("No client")
 
-                val hmacKeysResult = client.conversations.getHmacKeys()
                 val subscriptions = topics.map {
-                    val hmacKeys = hmacKeysResult.hmacKeysMap
-                    val result = hmacKeys[it]?.valuesList?.map { hmacKey ->
-                        Service.Subscription.HmacKey.newBuilder().also { sub_key ->
-                            sub_key.key = hmacKey.hmacKey
-                            sub_key.thirtyDayPeriodsSinceEpoch = hmacKey.thirtyDayPeriodsSinceEpoch
-                        }.build()
-                    }
-
                     Service.Subscription.newBuilder().also { sub ->
-                        sub.addAllHmacKeys(result)
-                        if (!result.isNullOrEmpty()) {
-                            sub.addAllHmacKeys(result)
-                        }
                         sub.topic = it
                     }.build()
                 }
 
                 xmtpPush?.subscribeWithMetadata(subscriptions)
-            }
-        }
-
-        AsyncFunction("decodeMessage") Coroutine { inboxId: String, topic: String, encryptedMessage: String ->
-            // V2 ONLY
-            withContext(Dispatchers.IO) {
-                logV("decodeMessage")
-                val encryptedMessageData = Base64.decode(encryptedMessage, NO_WRAP)
-                val envelope = EnvelopeBuilder.buildFromString(topic, Date(), encryptedMessageData)
-                val conversation =
-                    findConversation(
-                        inboxId = inboxId,
-                        topic = topic
-                    )
-                        ?: throw XMTPException("no conversation found for $topic")
-                val decodedMessage = conversation.decrypt(envelope)
-                DecodedMessageWrapper.encode(decodedMessage)
-            }
-        }
-
-        AsyncFunction("isAllowed") Coroutine { inboxId: String, address: String ->
-            withContext(Dispatchers.IO) {
-                logV("isAllowed")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.isAllowed(address)
-            }
-        }
-
-        AsyncFunction("isDenied") Coroutine { inboxId: String, address: String ->
-            withContext(Dispatchers.IO) {
-                logV("isDenied")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.isDenied(address)
-            }
-        }
-
-        AsyncFunction("denyContacts") Coroutine { inboxId: String, addresses: List<String> ->
-            withContext(Dispatchers.IO) {
-                logV("denyContacts")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.deny(addresses)
-            }
-        }
-
-        AsyncFunction("allowContacts") Coroutine { inboxId: String, addresses: List<String> ->
-            withContext(Dispatchers.IO) {
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.allow(addresses)
-            }
-        }
-
-        AsyncFunction("isInboxAllowed") Coroutine { clientInboxId: String, inboxId: String ->
-            withContext(Dispatchers.IO) {
-                logV("isInboxIdAllowed")
-                val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                client.contacts.isInboxAllowed(inboxId)
-            }
-        }
-
-        AsyncFunction("isInboxDenied") Coroutine { clientInboxId: String, inboxId: String ->
-            withContext(Dispatchers.IO) {
-                logV("isInboxIdDenied")
-                val client = clients[clientInboxId] ?: throw XMTPException("No client")
-                client.contacts.isInboxDenied(inboxId)
-            }
-        }
-
-        AsyncFunction("denyInboxes") Coroutine { inboxId: String, inboxIds: List<String> ->
-            withContext(Dispatchers.IO) {
-                logV("denyInboxIds")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.denyInboxes(inboxIds)
-            }
-        }
-
-        AsyncFunction("allowInboxes") Coroutine { inboxId: String, inboxIds: List<String> ->
-            withContext(Dispatchers.IO) {
-                logV("allowInboxIds")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.allowInboxes(inboxIds)
-            }
-        }
-
-        AsyncFunction("refreshConsentList") Coroutine { inboxId: String ->
-            withContext(Dispatchers.IO) {
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val consentList = client.contacts.refreshConsentList()
-                consentList.entries.map { ConsentWrapper.encode(it.value) }
-            }
-        }
-
-        AsyncFunction("conversationConsentState") Coroutine { inboxId: String, conversationTopic: String ->
-            withContext(Dispatchers.IO) {
-                val conversation = findConversation(inboxId, conversationTopic)
-                    ?: throw XMTPException("no conversation found for $conversationTopic")
-                consentStateToString(conversation.consentState())
-            }
-        }
-
-        AsyncFunction("conversationV3ConsentState") Coroutine { inboxId: String, conversationId: String ->
-            withContext(Dispatchers.IO) {
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
-                    ?: throw XMTPException("no group found for $conversationId")
-                consentStateToString(conversation.consentState())
-            }
-        }
-
-        AsyncFunction("consentList") { inboxId: String ->
-            val client = clients[inboxId] ?: throw XMTPException("No client")
-            client.contacts.consentList.entries.map { ConsentWrapper.encode(it.value) }
-        }
-
-        Function("preCreateIdentityCallbackCompleted") {
-            logV("preCreateIdentityCallbackCompleted")
-            preCreateIdentityCallbackDeferred?.complete(Unit)
-        }
-
-        Function("preEnableIdentityCallbackCompleted") {
-            logV("preEnableIdentityCallbackCompleted")
-            preEnableIdentityCallbackDeferred?.complete(Unit)
-        }
-
-        Function("preAuthenticateToInboxCallbackCompleted") {
-            logV("preAuthenticateToInboxCallbackCompleted")
-            preAuthenticateToInboxCallbackDeferred?.complete(Unit)
-        }
-
-        AsyncFunction("allowGroups") Coroutine { inboxId: String, groupIds: List<String> ->
-            withContext(Dispatchers.IO) {
-                logV("allowGroups")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.allowGroups(groupIds)
-            }
-        }
-
-        AsyncFunction("denyGroups") Coroutine { inboxId: String, groupIds: List<String> ->
-            withContext(Dispatchers.IO) {
-                logV("denyGroups")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.denyGroups(groupIds)
-            }
-        }
-
-        AsyncFunction("isGroupAllowed") Coroutine { inboxId: String, groupId: String ->
-            withContext(Dispatchers.IO) {
-                logV("isGroupAllowed")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.isGroupAllowed(groupId)
-            }
-        }
-        AsyncFunction("isGroupDenied") Coroutine { inboxId: String, groupId: String ->
-            withContext(Dispatchers.IO) {
-                logV("isGroupDenied")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.contacts.isGroupDenied(groupId)
-            }
-        }
-        AsyncFunction("updateConversationConsent") Coroutine { inboxId: String, conversationId: String, state: String ->
-            withContext(Dispatchers.IO) {
-                logV("updateConversationConsent")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
-                    ?: throw XMTPException("no group found for $conversationId")
-
-                conversation.updateConsentState(getConsentState(state))
             }
         }
 
@@ -1893,46 +1178,6 @@ class XMTPModule : Module() {
                 }
             }
         }
-
-        Function("subscribeToV3Conversations") { inboxId: String ->
-            logV("subscribeToV3Conversations")
-            subscribeToV3Conversations(inboxId = inboxId)
-        }
-
-        Function("subscribeToAllConversationMessages") { inboxId: String ->
-            logV("subscribeToAllConversationMessages")
-            subscribeToAllConversationMessages(inboxId = inboxId)
-        }
-
-        AsyncFunction("subscribeToConversationMessages") Coroutine { inboxId: String, id: String ->
-            withContext(Dispatchers.IO) {
-                logV("subscribeToConversationMessages")
-                subscribeToConversationMessages(
-                    inboxId = inboxId,
-                    id = id
-                )
-            }
-        }
-
-        Function("unsubscribeFromAllConversationMessages") { inboxId: String ->
-            logV("unsubscribeFromAllConversationMessages")
-            subscriptions[getConversationMessagesKey(inboxId)]?.cancel()
-        }
-
-        Function("unsubscribeFromV3Conversations") { inboxId: String ->
-            logV("unsubscribeFromV3Conversations")
-            subscriptions[getV3ConversationsKey(inboxId)]?.cancel()
-        }
-
-        AsyncFunction("unsubscribeFromConversationMessages") Coroutine { inboxId: String, id: String ->
-            withContext(Dispatchers.IO) {
-                logV("unsubscribeFromConversationMessages")
-                unsubscribeFromConversationMessages(
-                    inboxId = inboxId,
-                    id = id
-                )
-            }
-        }
     }
 
     //
@@ -1949,11 +1194,28 @@ class XMTPModule : Module() {
         }
     }
 
+    private fun getStreamType(typeString: String): ConversationType {
+        return when (typeString) {
+            "groups" -> ConversationType.GROUPS
+            "dms" -> ConversationType.DMS
+            else -> ConversationType.ALL
+        }
+    }
+
     private fun getConsentState(stateString: String): ConsentState {
         return when (stateString) {
             "allowed" -> ConsentState.ALLOWED
             "denied" -> ConsentState.DENIED
             else -> ConsentState.UNKNOWN
+        }
+    }
+
+    private fun getEntryType(entryString: String): EntryType {
+        return when (entryString) {
+            "address" -> EntryType.ADDRESS
+            "conversation_id" -> EntryType.CONVERSATION_ID
+            "inbox_id" -> EntryType.INBOX_ID
+            else -> throw XMTPException("Invalid entry type: $entryString")
         }
     }
 
@@ -1964,58 +1226,22 @@ class XMTPModule : Module() {
         }
     }
 
-    private suspend fun findConversation(
-        inboxId: String,
-        topic: String,
-    ): Conversation? {
-        val client = clients[inboxId] ?: throw XMTPException("No client")
-
-        val cacheKey = "${inboxId}:${topic}"
-        val cacheConversation = conversations[cacheKey]
-        if (cacheConversation != null) {
-            return cacheConversation
-        } else {
-            val conversation = client.conversations.list()
-                .firstOrNull { it.topic == topic }
-            if (conversation != null) {
-                conversations[conversation.cacheKey(inboxId)] = conversation
-                return conversation
-            }
+    private fun consentStateToString(state: ConsentState): String {
+        return when (state) {
+            ConsentState.ALLOWED -> "allowed"
+            ConsentState.DENIED -> "denied"
+            ConsentState.UNKNOWN -> "unknown"
         }
-        return null
     }
 
-    private fun findGroup(
-        inboxId: String,
-        id: String,
-    ): Group? {
+    private fun subscribeToConversations(inboxId: String, type: ConversationType) {
         val client = clients[inboxId] ?: throw XMTPException("No client")
 
-        val cacheKey = "${inboxId}:${id}"
-        val cacheGroup = groups[cacheKey]
-        if (cacheGroup != null) {
-            return cacheGroup
-        } else {
-            val group = client.findGroup(id)
-            if (group != null) {
-                groups[group.cacheKey(inboxId)] = group
-                return group
-            }
-        }
-        return null
-    }
-
-    private fun subscribeToConversations(inboxId: String) {
-        val client = clients[inboxId] ?: throw XMTPException("No client")
-
-        subscriptions[getConversationsKey(inboxId)]?.cancel()
-        subscriptions[getConversationsKey(inboxId)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                client.conversations.stream().collect { conversation ->
-                    run {
-                        if (conversation.keyMaterial == null) {
-                            logV("Null key material before encode conversation")
-                        }
+        subscriptions[getConversationsKey(client.inboxId)]?.cancel()
+        subscriptions[getConversationsKey(client.inboxId)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    client.conversations.stream(type).collect { conversation ->
                         sendEvent(
                             "conversation",
                             mapOf(
@@ -2027,171 +1253,50 @@ class XMTPModule : Module() {
                             )
                         )
                     }
-                }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in conversations subscription: $e")
-                subscriptions[getConversationsKey(inboxId)]?.cancel()
-            }
-        }
-    }
-
-    private fun subscribeToGroups(inboxId: String) {
-        val client = clients[inboxId] ?: throw XMTPException("No client")
-
-        subscriptions[getGroupsKey(client.inboxId)]?.cancel()
-        subscriptions[getGroupsKey(client.inboxId)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                client.conversations.streamGroups().collect { group ->
-                    sendEvent(
-                        "group",
-                        mapOf(
-                            "inboxId" to inboxId,
-                            "group" to GroupWrapper.encodeToObj(client, group)
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in group subscription: $e")
-                subscriptions[getGroupsKey(client.inboxId)]?.cancel()
-            }
-        }
-    }
-
-    private fun subscribeToV3Conversations(inboxId: String) {
-        val client = clients[inboxId] ?: throw XMTPException("No client")
-
-        subscriptions[getV3ConversationsKey(client.inboxId)]?.cancel()
-        subscriptions[getV3ConversationsKey(client.inboxId)] =
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    client.conversations.streamConversations().collect { conversation ->
-                        sendEvent(
-                            "conversationV3",
-                            mapOf(
-                                "inboxId" to inboxId,
-                                "conversation" to ConversationContainerWrapper.encodeToObj(
-                                    client,
-                                    conversation
-                                )
-                            )
-                        )
-                    }
                 } catch (e: Exception) {
                     Log.e("XMTPModule", "Error in group subscription: $e")
-                    subscriptions[getV3ConversationsKey(client.inboxId)]?.cancel()
+                    subscriptions[getConversationsKey(client.inboxId)]?.cancel()
                 }
             }
     }
 
-    private fun subscribeToAll(inboxId: String) {
-        val client = clients[inboxId] ?: throw XMTPException("No client")
-
-        subscriptions[getConversationsKey(inboxId)]?.cancel()
-        subscriptions[getConversationsKey(inboxId)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                client.conversations.streamAll().collect { conversation ->
-                    sendEvent(
-                        "conversationContainer",
-                        mapOf(
-                            "inboxId" to inboxId,
-                            "conversationContainer" to ConversationContainerWrapper.encodeToObj(
-                                client,
-                                conversation
-                            )
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in subscription to groups + conversations: $e")
-                subscriptions[getConversationsKey(inboxId)]?.cancel()
-            }
-        }
-    }
-
-    private fun subscribeToAllMessages(inboxId: String, includeGroups: Boolean = false) {
+    private fun subscribeToAllMessages(inboxId: String, type: ConversationType) {
         val client = clients[inboxId] ?: throw XMTPException("No client")
 
         subscriptions[getMessagesKey(inboxId)]?.cancel()
         subscriptions[getMessagesKey(inboxId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.conversations.streamAllDecryptedMessages(includeGroups = includeGroups)
-                    .collect { message ->
-                        sendEvent(
-                            "message",
-                            mapOf(
-                                "inboxId" to inboxId,
-                                "message" to DecodedMessageWrapper.encodeMap(message),
-                            )
+                client.conversations.streamAllMessages(type).collect { message ->
+                    sendEvent(
+                        "message",
+                        mapOf(
+                            "inboxId" to inboxId,
+                            "message" to DecodedMessageWrapper.encodeMap(message),
                         )
-                    }
+                    )
+                }
             } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in all messages subscription: $e")
+                Log.e("XMTPModule", "Error in all group messages subscription: $e")
                 subscriptions[getMessagesKey(inboxId)]?.cancel()
             }
         }
     }
 
-    private fun subscribeToAllGroupMessages(inboxId: String) {
+    private suspend fun subscribeToMessages(inboxId: String, id: String) {
         val client = clients[inboxId] ?: throw XMTPException("No client")
-
-        subscriptions[getGroupMessagesKey(inboxId)]?.cancel()
-        subscriptions[getGroupMessagesKey(inboxId)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                client.conversations.streamAllGroupDecryptedMessages().collect { message ->
-                    sendEvent(
-                        "allGroupMessage",
-                        mapOf(
-                            "inboxId" to inboxId,
-                            "message" to DecodedMessageWrapper.encodeMap(message),
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in all group messages subscription: $e")
-                subscriptions[getGroupMessagesKey(inboxId)]?.cancel()
-            }
-        }
-    }
-
-    private fun subscribeToAllConversationMessages(inboxId: String) {
-        val client = clients[inboxId] ?: throw XMTPException("No client")
-
-        subscriptions[getConversationMessagesKey(inboxId)]?.cancel()
-        subscriptions[getConversationMessagesKey(inboxId)] = CoroutineScope(Dispatchers.IO).launch {
-            try {
-                client.conversations.streamAllConversationDecryptedMessages().collect { message ->
-                    sendEvent(
-                        "allConversationMessages",
-                        mapOf(
-                            "inboxId" to inboxId,
-                            "message" to DecodedMessageWrapper.encodeMap(message),
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("XMTPModule", "Error in all group messages subscription: $e")
-                subscriptions[getConversationMessagesKey(inboxId)]?.cancel()
-            }
-        }
-    }
-
-    private suspend fun subscribeToMessages(inboxId: String, topic: String) {
-        val conversation =
-            findConversation(
-                inboxId = inboxId,
-                topic = topic
-            ) ?: return
+        val conversation = client.findConversation(id)
+            ?: throw XMTPException("no conversation found for $id")
         subscriptions[conversation.cacheKey(inboxId)]?.cancel()
         subscriptions[conversation.cacheKey(inboxId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    conversation.streamDecryptedMessages().collect { message ->
+                    conversation.streamMessages().collect { message ->
                         sendEvent(
                             "conversationMessage",
                             mapOf(
                                 "inboxId" to inboxId,
                                 "message" to DecodedMessageWrapper.encodeMap(message),
-                                "topic" to topic,
+                                "conversationId" to id,
                             )
                         )
                     }
@@ -2202,110 +1307,15 @@ class XMTPModule : Module() {
             }
     }
 
-    private suspend fun subscribeToGroupMessages(inboxId: String, id: String) {
-        val client = clients[inboxId] ?: throw XMTPException("No client")
-        val group =
-            findGroup(
-                inboxId = inboxId,
-                id = id
-            ) ?: return
-        subscriptions[group.cacheKey(inboxId)]?.cancel()
-        subscriptions[group.cacheKey(inboxId)] =
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    group.streamDecryptedMessages().collect { message ->
-                        sendEvent(
-                            "groupMessage",
-                            mapOf(
-                                "inboxId" to inboxId,
-                                "message" to DecodedMessageWrapper.encodeMap(message),
-                                "groupId" to id,
-                            )
-                        )
-                    }
-                } catch (e: Exception) {
-                    Log.e("XMTPModule", "Error in messages subscription: $e")
-                    subscriptions[group.cacheKey(inboxId)]?.cancel()
-                }
-            }
-    }
-
-    private suspend fun subscribeToConversationMessages(inboxId: String, id: String) {
-        val client = clients[inboxId] ?: throw XMTPException("No client")
-        val conversation = client.findConversation(id)
-            ?: throw XMTPException("no conversation found for $id")
-        subscriptions[conversation.cacheKeyV3(inboxId)]?.cancel()
-        subscriptions[conversation.cacheKeyV3(inboxId)] =
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    conversation.streamDecryptedMessages().collect { message ->
-                        sendEvent(
-                            "conversationV3Message",
-                            mapOf(
-                                "inboxId" to inboxId,
-                                "message" to DecodedMessageWrapper.encodeMap(message),
-                                "conversationId" to id,
-                            )
-                        )
-                    }
-                } catch (e: Exception) {
-                    Log.e("XMTPModule", "Error in messages subscription: $e")
-                    subscriptions[conversation?.cacheKey(inboxId)]?.cancel()
-                }
-            }
-    }
-
     private fun getMessagesKey(inboxId: String): String {
         return "messages:$inboxId"
-    }
-
-    private fun getGroupMessagesKey(inboxId: String): String {
-        return "groupMessages:$inboxId"
-    }
-
-    private fun getConversationMessagesKey(inboxId: String): String {
-        return "conversationMessages:$inboxId"
     }
 
     private fun getConversationsKey(inboxId: String): String {
         return "conversations:$inboxId"
     }
 
-    private fun getV3ConversationsKey(inboxId: String): String {
-        return "conversationsV3:$inboxId"
-    }
-
-    private fun getGroupsKey(inboxId: String): String {
-        return "groups:$inboxId"
-    }
-
-    private suspend fun unsubscribeFromMessages(
-        inboxId: String,
-        topic: String,
-    ) {
-        val conversation =
-            findConversation(
-                inboxId = inboxId,
-                topic = topic
-            ) ?: return
-        subscriptions[conversation.cacheKey(inboxId)]?.cancel()
-    }
-
-    private fun unsubscribeFromGroupMessages(
-        inboxId: String,
-        id: String,
-    ) {
-        val client = clients[inboxId] ?: throw XMTPException("No client")
-
-        val group =
-            findGroup(
-                inboxId = inboxId,
-                id = id
-            ) ?: return
-        subscriptions[group.cacheKey(inboxId)]?.cancel()
-    }
-
-    private fun unsubscribeFromConversationMessages(
+    private fun unsubscribeFromMessages(
         inboxId: String,
         id: String,
     ) {
@@ -2318,18 +1328,6 @@ class XMTPModule : Module() {
         if (isDebugEnabled) {
             Log.v("XMTPModule", msg)
         }
-    }
-
-    private val preEnableIdentityCallback: suspend () -> Unit = {
-        sendEvent("preEnableIdentityCallback")
-        preEnableIdentityCallbackDeferred?.await()
-        preCreateIdentityCallbackDeferred == null
-    }
-
-    private val preCreateIdentityCallback: suspend () -> Unit = {
-        sendEvent("preCreateIdentityCallback")
-        preCreateIdentityCallbackDeferred?.await()
-        preCreateIdentityCallbackDeferred = null
     }
 
     private val preAuthenticateToInboxCallback: suspend () -> Unit = {

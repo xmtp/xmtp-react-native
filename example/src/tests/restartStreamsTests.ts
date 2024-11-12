@@ -51,13 +51,13 @@ test('Can cancel a stream and restart', async () => {
 
 // Existing issue, client who started stream, creating groups will not
 // be streamed
-test('Can cancel a streamGroups and restart', async () => {
+test('Can cancel a stream and restart', async () => {
   // Create clients
   const [alix, bo, caro, davon] = await createClients(4)
 
   // Start stream
   let numEvents1 = 0
-  await alix.conversations.streamGroups(async (_) => {
+  await alix.conversations.stream(async (_) => {
     numEvents1++
   })
   await delayToPropogate()
@@ -66,14 +66,14 @@ test('Can cancel a streamGroups and restart', async () => {
   assert(numEvents1 === 1, 'expected 1 event, first stream')
 
   // Cancel stream
-  alix.conversations.cancelStreamGroups()
+  alix.conversations.cancelStream()
   await caro.conversations.newGroup([alix.address])
   await delayToPropogate()
   assert(numEvents1 === 1, 'expected 1 event, first stream after cancel')
 
   // Start new stream
   let numEvents2 = 0
-  await alix.conversations.streamGroups(async (_) => {
+  await alix.conversations.stream(async (_) => {
     numEvents2++
   })
   await delayToPropogate()
@@ -108,7 +108,7 @@ test('Can cancel a streamAllMessages and restart', async () => {
   let numEvents1 = 0
   await alix.conversations.streamAllMessages(async (_) => {
     numEvents1++
-  }, true)
+  })
   await delayToPropogate()
 
   // Send one Group message and one Conversation Message
@@ -135,7 +135,7 @@ test('Can cancel a streamAllMessages and restart', async () => {
   let numEvents2 = 0
   await alix.conversations.streamAllMessages(async (_) => {
     numEvents2++
-  }, true)
+  })
   await delayToPropogate()
 
   await boGroup.send('test')
@@ -150,62 +150,6 @@ test('Can cancel a streamAllMessages and restart', async () => {
   assert(
     numEvents2 === 2,
     'expected 2 events, second stream, but found ' + numEvents2
-  )
-
-  return true
-})
-
-test('Can cancel a streamAllGroupMessages and restart', async () => {
-  // Create clients
-  const [alix, bo] = await createClients(2)
-
-  // Create a group
-  await delayToPropogate()
-  await bo.conversations.newGroup([alix.address])
-  await delayToPropogate()
-
-  // Start stream
-  let numEvents1 = 0
-  await alix.conversations.streamAllGroupMessages(async (_) => {
-    numEvents1++
-  })
-  await delayToPropogate()
-
-  // Send one Group message and one Conversation Message
-  const boGroup = (await bo.conversations.listGroups())[0]
-
-  await boGroup.send('test')
-  await delayToPropogate()
-
-  assert(
-    numEvents1 === 1,
-    'expected 1 events, first stream, but found ' + numEvents1
-  )
-
-  // Cancel stream
-  alix.conversations.cancelStreamAllGroupMessages()
-  await boGroup.send('test')
-  await delayToPropogate()
-  assert(numEvents1 === 1, 'expected 1 event, first stream after cancel')
-
-  // Start new stream
-  let numEvents2 = 0
-  await alix.conversations.streamAllGroupMessages(async (_) => {
-    numEvents2++
-  })
-  await delayToPropogate()
-
-  await boGroup.send('test')
-  await delayToPropogate()
-
-  // Verify correct number of events from each stream
-  assert(
-    numEvents1 === 1,
-    'expected 1 event, first stream after cancel, but found ' + numEvents1
-  )
-  assert(
-    numEvents2 === 1,
-    'expected 1 event, second stream, but found ' + numEvents2
   )
 
   return true

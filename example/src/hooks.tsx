@@ -24,32 +24,11 @@ export function useConversationList(): UseQueryResult<
   Conversation<SupportedContentTypes>[]
 > {
   const { client } = useXmtp()
-  client?.contacts
-    .refreshConsentList()
-    .then(() => {
-      console.log('Refreshed consent list successfully')
-    })
-    .catch((error) => {
-      console.error('Error refreshing consent list', error)
-    })
   return useQuery<Conversation<SupportedContentTypes>[]>(
     ['xmtp', 'conversations', client?.address],
-    () => client!.conversations.list(),
-    {
-      enabled: !!client,
-    }
-  )
-}
-
-export function useGroupsList(): UseQueryResult<
-  Group<SupportedContentTypes>[]
-> {
-  const { client } = useXmtp()
-  return useQuery<Group<SupportedContentTypes>[]>(
-    ['xmtp', 'groups', client?.address],
     async () => {
-      await client?.conversations.syncGroups()
-      return (await client?.conversations.listGroups()) || []
+      await client?.conversations.sync()
+      return (await client?.conversations.list()) || []
     },
     {
       enabled: !!client,
@@ -550,24 +529,69 @@ export function usePrepareRemoteAttachment({
 /**
  * Load or save a keyBundle for future use.
  */
-export function useSavedKeys(): {
-  keyBundle: string | null | undefined
-  save: (keyBundle: string) => void
+export function useSavedAddress(): {
+  address: string | null | undefined
+  save: (address: string) => void
   clear: () => void
 } {
-  const { data: keyBundle, refetch } = useQuery<string | null>(
-    ['xmtp', 'keyBundle'],
-    () => EncryptedStorage.getItem('xmtp.keyBundle')
+  const { data: address, refetch } = useQuery<string | null>(
+    ['xmtp', 'address'],
+    () => EncryptedStorage.getItem('xmtp.address')
   )
   return {
-    keyBundle,
-    save: async (keyBundle: string) => {
-      await EncryptedStorage.setItem('xmtp.keyBundle', keyBundle)
+    address,
+    save: async (address: string) => {
+      await EncryptedStorage.setItem('xmtp.address', address)
       await refetch()
     },
     clear: async () => {
-      await EncryptedStorage.removeItem('xmtp.keyBundle')
+      await EncryptedStorage.removeItem('xmtp.address')
       await refetch()
     },
   }
+}
+
+export function getDbEncryptionKey(
+  network: string,
+  clear: boolean = false
+): Uint8Array {
+  const key = `xmtp-${network}`
+  // eslint-disable-next-line no-unused-expressions
+  ;async () => {
+    const result = await EncryptedStorage.getItem(key)
+    if ((result && clear === true) || !result) {
+      if (result) {
+        await EncryptedStorage.removeItem(key)
+      }
+
+      const randomBytes = crypto.getRandomValues(new Uint8Array(32))
+      const randomBytesString = uint8ArrayToHexString(randomBytes)
+      await EncryptedStorage.setItem(key, randomBytesString)
+      return randomBytes
+    } else {
+      return hexStringToUint8Array(result)
+    }
+  }
+  const randomBytes = crypto.getRandomValues(new Uint8Array(32))
+  return randomBytes
+}
+
+function uint8ArrayToHexString(byteArray: Uint8Array): string {
+  return Array.from(byteArray, function (byte) {
+    return ('0' + (byte & 0xff).toString(16)).slice(-2)
+  }).join('')
+}
+
+function hexStringToUint8Array(hexString: string): Uint8Array {
+  // Ensure the hex string has an even number of characters for proper parsing
+  if (hexString.length % 2 !== 0) {
+    console.error('The hex string must have an even number of characters')
+    return new Uint8Array()
+  }
+  // Split the hex string into an array of byte-sized (2 characters) hex strings
+  const byteStrings = hexString.match(/.{1,2}/g) || []
+  // Convert each byte-sized hex string into a numeric byte value
+  const byteArray = byteStrings.map((byteStr) => parseInt(byteStr, 16))
+  // Create a new Uint8Array from the array of numeric byte values
+  return new Uint8Array(byteArray)
 }

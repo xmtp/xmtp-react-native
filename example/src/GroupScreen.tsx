@@ -959,7 +959,7 @@ function MessageItem({
                   {message.senderAddress.slice(-4)}
                 </Text>
                 <Text style={{ fontWeight: '300' }}>
-                  {moment(message.sent).fromNow()}
+                  {moment(message.sentNs / 1000000).fromNow()}
                 </Text>
               </View>
             )}

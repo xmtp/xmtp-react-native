@@ -2,21 +2,18 @@ import { splitSignature } from '@ethersproject/bytes'
 import { Subscription } from 'expo-modules-core'
 import type { WalletClient } from 'viem'
 
-import Contacts from './Contacts'
 import type {
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
-  PreparedLocalMessage,
 } from './ContentCodec'
 import Conversations from './Conversations'
 import { InboxState } from './InboxState'
 import { TextCodec } from './NativeCodecs/TextCodec'
-import { Query } from './Query'
+import PrivatePreferences from './PrivatePreferences'
 import { Signer, getSigner } from './Signer'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
-import { DecodedMessage } from '../index'
 
 declare const Buffer
 
@@ -27,6 +24,7 @@ export type ExtractDecodedType<C> =
   C extends XMTPModule.ContentCodec<infer T> ? T : never
 
 export type InboxId = string & { readonly brand: unique symbol }
+export type Address = string
 
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
@@ -36,16 +34,87 @@ export class Client<
   installationId: string
   dbPath: string
   conversations: Conversations<ContentTypes>
-  contacts: Contacts
+  preferences: PrivatePreferences
   codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
   private static signSubscription: Subscription | null = null
   private static authSubscription: Subscription | null = null
+
+  static async exportNativeLogs() {
+    return XMTPModule.exportNativeLogs()
+  }
+
+  private static removeAllSubscriptions(
+    authInboxSubscription?: Subscription
+  ): void {
+    ;[
+      authInboxSubscription,
+      this.signSubscription,
+      this.authSubscription,
+    ].forEach((subscription) => subscription?.remove())
+
+    this.signSubscription = null
+    this.authSubscription = null
+  }
+
+  private static async handleSignatureRequest(
+    signer: any,
+    request: { id: string; message: string }
+  ): Promise<void> {
+    const signatureString = await signer.signMessage(request.message)
+
+    if (signer.walletType?.() === 'SCW') {
+      await XMTPModule.receiveSCWSignature(request.id, signatureString)
+    } else {
+      const eSig = splitSignature(signatureString)
+      const r = hexToBytes(eSig.r)
+      const s = hexToBytes(eSig.s)
+      const sigBytes = new Uint8Array(65)
+      sigBytes.set(r)
+      sigBytes.set(s, r.length)
+      sigBytes[64] = eSig.recoveryParam
+
+      const signature = Buffer.from(sigBytes).toString('base64')
+      await XMTPModule.receiveSignature(request.id, signature)
+    }
+  }
+
+  /**
+   * Creates a new instance of the XMTP Client with a randomly generated address.
+   *
+   * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include encryption key.
+   * @returns {Promise<Client>} A Promise that resolves to a new Client instance with a random address.
+   */
+  static async createRandom<ContentTypes extends DefaultContentTypes>(
+    options: ClientOptions & { codecs?: ContentTypes }
+  ): Promise<Client<ContentTypes>> {
+    if (options.dbEncryptionKey.length !== 32) {
+      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
+    }
+    const { authInboxSubscription } = this.setupSubscriptions(options)
+    const client = await XMTPModule.createRandom(
+      options.env,
+      options.dbEncryptionKey,
+      options.appVersion,
+      Boolean(authInboxSubscription),
+      options.dbDirectory,
+      options.historySyncUrl
+    )
+    this.removeSubscription(authInboxSubscription)
+
+    return new Client(
+      client['address'],
+      client['inboxId'],
+      client['installationId'],
+      client['dbPath'],
+      options?.codecs || []
+    )
+  }
 
   /**
    * Creates a new instance of the Client class using the provided signer.
    *
    * @param {Signer} signer - The signer object used for authentication and message signing.
-   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
+   * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance.
    *
    * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
@@ -56,46 +125,26 @@ export class Client<
     wallet: Signer | WalletClient | null,
     options: ClientOptions & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
-    if (
-      options.enableV3 === true &&
-      (options.dbEncryptionKey === undefined ||
-        options.dbEncryptionKey.length !== 32)
-    ) {
+    if (options.dbEncryptionKey.length !== 32) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
-    const { enableSubscription, createSubscription, authInboxSubscription } =
-      this.setupSubscriptions(options)
+    const { authInboxSubscription } = this.setupSubscriptions(options)
     const signer = getSigner(wallet)
     if (!signer) {
       throw new Error('Signer is not configured')
     }
+
     return new Promise<Client<ContentCodecs>>((resolve, reject) => {
       ;(async () => {
         this.signSubscription = XMTPModule.emitter.addListener(
           'sign',
           async (message: { id: string; message: string }) => {
-            const request: { id: string; message: string } = message
             try {
-              const signatureString = await signer.signMessage(request.message)
-              const eSig = splitSignature(signatureString)
-              const r = hexToBytes(eSig.r)
-              const s = hexToBytes(eSig.s)
-              const sigBytes = new Uint8Array(65)
-              sigBytes.set(r)
-              sigBytes.set(s, r.length)
-              sigBytes[64] = eSig.recoveryParam
-
-              const signature = Buffer.from(sigBytes).toString('base64')
-
-              await XMTPModule.receiveSignature(request.id, signature)
+              await Client.handleSignatureRequest(signer, message)
             } catch (e) {
               const errorMessage = 'ERROR in create. User rejected signature'
               console.info(errorMessage, e)
-              this.removeAllSubscriptions(
-                createSubscription,
-                enableSubscription,
-                authInboxSubscription
-              )
+              this.removeAllSubscriptions(authInboxSubscription)
               reject(errorMessage)
             }
           }
@@ -109,11 +158,7 @@ export class Client<
             installationId: string
             dbPath: string
           }) => {
-            this.removeAllSubscriptions(
-              createSubscription,
-              enableSubscription,
-              authInboxSubscription
-            )
+            this.removeAllSubscriptions(authInboxSubscription)
             resolve(
               new Client(
                 message.address,
@@ -125,395 +170,49 @@ export class Client<
             )
           }
         )
-        await XMTPModule.auth(
+
+        await XMTPModule.create(
           await signer.getAddress(),
           options.env,
-          options.appVersion,
-          Boolean(createSubscription),
-          Boolean(enableSubscription),
-          Boolean(authInboxSubscription),
-          Boolean(options.enableV3),
           options.dbEncryptionKey,
-          options.dbDirectory,
-          options.historySyncUrl
-        )
-      })().catch((error) => {
-        this.removeAllSubscriptions(
-          createSubscription,
-          enableSubscription,
-          authInboxSubscription
-        )
-        console.error('ERROR in create: ', error)
-      })
-    })
-  }
-
-  static async exportNativeLogs() {
-    return XMTPModule.exportNativeLogs()
-  }
-
-  private static removeAllSubscriptions(
-    createSubscription?: Subscription,
-    enableSubscription?: Subscription,
-    authInboxSubscription?: Subscription
-  ): void {
-    ;[
-      createSubscription,
-      enableSubscription,
-      authInboxSubscription,
-      this.signSubscription,
-      this.authSubscription,
-    ].forEach((subscription) => subscription?.remove())
-
-    this.signSubscription = null
-    this.authSubscription = null
-  }
-
-  /**
-   * Creates a new instance of the XMTP Client with a randomly generated address.
-   *
-   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
-   * @returns {Promise<Client>} A Promise that resolves to a new Client instance with a random address.
-   */
-  static async createRandom<ContentTypes extends DefaultContentTypes>(
-    options: ClientOptions & { codecs?: ContentTypes }
-  ): Promise<Client<ContentTypes>> {
-    if (
-      options.enableV3 === true &&
-      (options.dbEncryptionKey === undefined ||
-        options.dbEncryptionKey.length !== 32)
-    ) {
-      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
-    }
-    const { createSubscription, enableSubscription, authInboxSubscription } =
-      this.setupSubscriptions(options)
-    const client = await XMTPModule.createRandom(
-      options.env,
-      options.appVersion,
-      Boolean(createSubscription),
-      Boolean(enableSubscription),
-      Boolean(authInboxSubscription),
-      Boolean(options.enableV3),
-      options.dbEncryptionKey,
-      options.dbDirectory,
-      options.historySyncUrl
-    )
-    this.removeSubscription(createSubscription)
-    this.removeSubscription(enableSubscription)
-    this.removeSubscription(authInboxSubscription)
-
-    return new Client(
-      client['address'],
-      client['inboxId'],
-      client['installationId'],
-      client['dbPath'],
-      options?.codecs || []
-    )
-  }
-
-  /**
-   * Creates a new instance of the Client class from a provided key bundle.
-   *
-   * This method is useful for scenarios where you want to manually handle private key storage,
-   * allowing the application to have access to XMTP keys without exposing wallet keys.
-   *
-   * @param {string} keyBundle - The key bundle used for address generation.
-   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
-   * @returns {Promise<Client>} A Promise that resolves to a new Client instance based on the provided key bundle.
-   */
-  static async createFromKeyBundle<
-    ContentCodecs extends DefaultContentTypes = [],
-  >(
-    keyBundle: string,
-    options: ClientOptions & { codecs?: ContentCodecs },
-    wallet?: Signer | WalletClient | undefined
-  ): Promise<Client<ContentCodecs>> {
-    if (
-      options.enableV3 === true &&
-      (options.dbEncryptionKey === undefined ||
-        options.dbEncryptionKey.length !== 32)
-    ) {
-      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
-    }
-
-    if (!wallet) {
-      const client = await XMTPModule.createFromKeyBundle(
-        keyBundle,
-        options.env,
-        options.appVersion,
-        Boolean(options.enableV3),
-        options.dbEncryptionKey,
-        options.dbDirectory,
-        options.historySyncUrl
-      )
-
-      return new Client(
-        client['address'],
-        client['inboxId'],
-        client['installationId'],
-        client['dbPath'],
-        options.codecs || []
-      )
-    } else {
-      const signer = getSigner(wallet)
-      if (!signer) {
-        throw new Error('Signer is not configured')
-      }
-      return new Promise<Client<ContentCodecs>>((resolve, reject) => {
-        ;(async () => {
-          this.signSubscription = XMTPModule.emitter.addListener(
-            'sign',
-            async (message: { id: string; message: string }) => {
-              const request: { id: string; message: string } = message
-              try {
-                const signatureString = await signer.signMessage(
-                  request.message
-                )
-                const eSig = splitSignature(signatureString)
-                const r = hexToBytes(eSig.r)
-                const s = hexToBytes(eSig.s)
-                const sigBytes = new Uint8Array(65)
-                sigBytes.set(r)
-                sigBytes.set(s, r.length)
-                sigBytes[64] = eSig.recoveryParam
-
-                const signature = Buffer.from(sigBytes).toString('base64')
-
-                await XMTPModule.receiveSignature(request.id, signature)
-              } catch (e) {
-                this.removeAllSubscriptions()
-                const errorMessage = 'ERROR in create. User rejected signature'
-                console.info(errorMessage, e)
-                reject(errorMessage)
-              }
-            }
-          )
-
-          this.authSubscription = XMTPModule.emitter.addListener(
-            'bundleAuthed',
-            async (message: {
-              inboxId: string
-              address: string
-              installationId: string
-              dbPath: string
-            }) => {
-              this.removeAllSubscriptions()
-              resolve(
-                new Client(
-                  message.address,
-                  message.inboxId as InboxId,
-                  message.installationId,
-                  message.dbPath,
-                  options.codecs || []
-                )
-              )
-            }
-          )
-          await XMTPModule.createFromKeyBundleWithSigner(
-            await signer.getAddress(),
-            keyBundle,
-            options.env,
-            options.appVersion,
-            Boolean(options.enableV3),
-            options.dbEncryptionKey,
-            options.dbDirectory,
-            options.historySyncUrl
-          )
-        })().catch((error) => {
-          this.removeAllSubscriptions()
-          console.error('ERROR in create: ', error)
-        })
-      })
-    }
-  }
-
-  /**
-   * Creates a new V3 ONLY instance of the XMTP Client with a randomly generated address.
-   *
-   * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include encryption key.
-   * @returns {Promise<Client>} A Promise that resolves to a new V3 ONLY Client instance with a random address.
-   */
-  static async createRandomV3<ContentTypes extends DefaultContentTypes>(
-    options: ClientOptions & { codecs?: ContentTypes }
-  ): Promise<Client<ContentTypes>> {
-    options.enableV3 = true
-    if (
-      options.dbEncryptionKey === undefined ||
-      options.dbEncryptionKey.length !== 32
-    ) {
-      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
-    }
-    const { createSubscription, enableSubscription, authInboxSubscription } =
-      this.setupSubscriptions(options)
-    const client = await XMTPModule.createRandomV3(
-      options.env,
-      options.appVersion,
-      Boolean(createSubscription),
-      Boolean(enableSubscription),
-      Boolean(authInboxSubscription),
-      Boolean(options.enableV3),
-      options.dbEncryptionKey,
-      options.dbDirectory,
-      options.historySyncUrl
-    )
-    this.removeSubscription(createSubscription)
-    this.removeSubscription(enableSubscription)
-    this.removeSubscription(authInboxSubscription)
-
-    return new Client(
-      client['address'],
-      client['inboxId'],
-      client['installationId'],
-      client['dbPath'],
-      options?.codecs || []
-    )
-  }
-
-  /**
-   * Creates a new V3 ONLY instance of the Client class using the provided signer.
-   *
-   * @param {Signer} signer - The signer object used for authentication and message signing.
-   * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
-   * @returns {Promise<Client>} A Promise that resolves to a new V3 ONLY Client instance.
-   *
-   * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
-   */
-  static async createV3<
-    ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
-  >(
-    wallet: Signer | WalletClient | null,
-    options: ClientOptions & { codecs?: ContentCodecs }
-  ): Promise<Client<ContentCodecs>> {
-    options.enableV3 = true
-    if (
-      options.dbEncryptionKey === undefined ||
-      options.dbEncryptionKey.length !== 32
-    ) {
-      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
-    }
-    const { enableSubscription, createSubscription, authInboxSubscription } =
-      this.setupSubscriptions(options)
-    const signer = getSigner(wallet)
-    if (!signer) {
-      throw new Error('Signer is not configured')
-    }
-    return new Promise<Client<ContentCodecs>>((resolve, reject) => {
-      ;(async () => {
-        this.signSubscription = XMTPModule.emitter.addListener(
-          'sign',
-          async (message: { id: string; message: string }) => {
-            const request: { id: string; message: string } = message
-            try {
-              const signatureString = await signer.signMessage(request.message)
-              if (signer.walletType() === 'SCW') {
-                await XMTPModule.receiveSCWSignature(
-                  request.id,
-                  signatureString
-                )
-              } else {
-                const eSig = splitSignature(signatureString)
-                const r = hexToBytes(eSig.r)
-                const s = hexToBytes(eSig.s)
-                const sigBytes = new Uint8Array(65)
-                sigBytes.set(r)
-                sigBytes.set(s, r.length)
-                sigBytes[64] = eSig.recoveryParam
-
-                const signature = Buffer.from(sigBytes).toString('base64')
-
-                await XMTPModule.receiveSignature(request.id, signature)
-              }
-            } catch (e) {
-              const errorMessage = 'ERROR in create. User rejected signature'
-              console.info(errorMessage, e)
-              this.removeAllSubscriptions(
-                createSubscription,
-                enableSubscription,
-                authInboxSubscription
-              )
-              reject(errorMessage)
-            }
-          }
-        )
-
-        this.authSubscription = XMTPModule.emitter.addListener(
-          'authedV3',
-          async (message: {
-            inboxId: string
-            address: string
-            installationId: string
-            dbPath: string
-          }) => {
-            this.removeAllSubscriptions(
-              createSubscription,
-              enableSubscription,
-              authInboxSubscription
-            )
-            resolve(
-              new Client(
-                message.address,
-                message.inboxId as InboxId,
-                message.installationId,
-                message.dbPath,
-                options.codecs || []
-              )
-            )
-          }
-        )
-        await XMTPModule.createV3(
-          await signer.getAddress(),
-          options.env,
           options.appVersion,
-          Boolean(createSubscription),
-          Boolean(enableSubscription),
           Boolean(authInboxSubscription),
-          Boolean(options.enableV3),
-          options.dbEncryptionKey,
           options.dbDirectory,
           options.historySyncUrl,
-          signer.walletType(),
-          signer.getChainId(),
-          signer.getBlockNumber()
+          signer.walletType?.(),
+          signer.getChainId?.(),
+          signer.getBlockNumber?.()
         )
       })().catch((error) => {
-        this.removeAllSubscriptions(
-          createSubscription,
-          enableSubscription,
-          authInboxSubscription
-        )
-        console.error('ERROR in create: ', error)
+        this.removeAllSubscriptions(authInboxSubscription)
+        console.error('ERROR in create: ', error.message)
       })
     })
   }
 
   /**
-   * Builds a V3 ONLY instance of the Client class using the provided address and chainId if SCW.
+   * Builds a instance of the Client class using the provided address and chainId if SCW.
    *
    * @param {string} address - The address of the account to build
    * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
-   * @returns {Promise<Client>} A Promise that resolves to a new V3 ONLY Client instance.
+   * @returns {Promise<Client>} A Promise that resolves to a new Client instance.
    *
    * See {@link https://xmtp.org/docs/build/authentication#create-a-client | XMTP Docs} for more information.
    */
-  static async buildV3<
+  static async build<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
-    address: string,
+    address: Address,
     options: ClientOptions & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
-    options.enableV3 = true
-    if (
-      options.dbEncryptionKey === undefined ||
-      options.dbEncryptionKey.length !== 32
-    ) {
+    if (options.dbEncryptionKey.length !== 32) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
-    const client = await XMTPModule.buildV3(
+    const client = await XMTPModule.build(
       address,
       options.env,
-      options.appVersion,
-      Boolean(options.enableV3),
       options.dbEncryptionKey,
+      options.appVersion,
       options.dbDirectory,
       options.historySyncUrl
     )
@@ -530,29 +229,8 @@ export class Client<
   /**
    * Drop the client from memory. Use when you want to remove the client from memory and are done with it.
    */
-  static async dropClient(inboxId: string) {
+  static async dropClient(inboxId: InboxId) {
     return await XMTPModule.dropClient(inboxId)
-  }
-
-  /**
-   * Static method to determine if the address is currently in our network.
-   *
-   * This method checks if the specified peer has signed up for XMTP.
-   *
-   * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
-   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
-   * @returns {Promise<boolean>}
-   */
-  static async canMessage(
-    peerAddress: string,
-    opts?: Partial<ClientOptions>
-  ): Promise<boolean> {
-    const options = defaultOptions(opts)
-    return await XMTPModule.staticCanMessage(
-      peerAddress,
-      options.env,
-      options.appVersion
-    )
   }
 
   private static addSubscription(
@@ -583,28 +261,8 @@ export class Client<
   }
 
   private static setupSubscriptions(opts: ClientOptions): {
-    createSubscription?: Subscription
-    enableSubscription?: Subscription
     authInboxSubscription?: Subscription
   } {
-    const enableSubscription = this.addSubscription(
-      'preEnableIdentityCallback',
-      opts,
-      async () => {
-        await this.executeCallback(opts?.preEnableIdentityCallback)
-        XMTPModule.preEnableIdentityCallbackCompleted()
-      }
-    )
-
-    const createSubscription = this.addSubscription(
-      'preCreateIdentityCallback',
-      opts,
-      async () => {
-        await this.executeCallback(opts?.preCreateIdentityCallback)
-        XMTPModule.preCreateIdentityCallbackCompleted()
-      }
-    )
-
     const authInboxSubscription = this.addSubscription(
       'preAuthenticateToInboxCallback',
       opts,
@@ -614,26 +272,25 @@ export class Client<
       }
     )
 
-    return { createSubscription, enableSubscription, authInboxSubscription }
+    return { authInboxSubscription }
   }
 
   /**
    * Static method to determine the inboxId for the address.
    *
-   * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
+   * @param {Address} peerAddress - The address of the peer to check for messaging eligibility.
    * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
    * @returns {Promise<InboxId>}
    */
   static async getOrCreateInboxId(
-    address: string,
-    opts?: Partial<ClientOptions>
+    address: Address,
+    env: XMTPEnvironment
   ): Promise<InboxId> {
-    const options = defaultOptions(opts)
-    return await XMTPModule.getOrCreateInboxId(address, options.env)
+    return await XMTPModule.getOrCreateInboxId(address, env)
   }
 
   constructor(
-    address: string,
+    address: Address,
     inboxId: InboxId,
     installationId: string,
     dbPath: string,
@@ -644,7 +301,7 @@ export class Client<
     this.installationId = installationId
     this.dbPath = dbPath
     this.conversations = new Conversations(this)
-    this.contacts = new Contacts(this)
+    this.preferences = new PrivatePreferences(this)
     this.codecRegistry = {}
 
     this.register(new TextCodec())
@@ -659,52 +316,14 @@ export class Client<
     this.codecRegistry[id] = contentCodec
   }
 
-  async sign(digest: Uint8Array, keyType: KeyType): Promise<Uint8Array> {
-    return XMTPModule.sign(
-      this.inboxId,
-      digest,
-      keyType.kind,
-      keyType.prekeyIndex
-    )
-  }
-
-  async exportPublicKeyBundle(): Promise<Uint8Array> {
-    return XMTPModule.exportPublicKeyBundle(this.inboxId)
-  }
-
   /**
-   * Exports the key bundle associated with the current XMTP address.
-   *
-   * This method allows you to obtain the unencrypted key bundle for the current XMTP address.
-   * Ensure the exported keys are stored securely and encrypted.
-   *
-   * @returns {Promise<string>} A Promise that resolves to the unencrypted key bundle for the current XMTP address.
-   */
-  async exportKeyBundle(): Promise<string> {
-    return XMTPModule.exportKeyBundle(this.inboxId)
-  }
-
-  /**
-   * Determines whether the current user can send messages to a specified peer over 1:1 conversations.
-   *
-   * This method checks if the specified peer has signed up for XMTP
-   * and ensures that the message is not addressed to the sender (no self-messaging).
-   *
-   * @param {string} peerAddress - The address of the peer to check for messaging eligibility.
-   * @returns {Promise<boolean>} A Promise resolving to true if messaging is allowed, and false otherwise.
-   */
-  async canMessage(peerAddress: string): Promise<boolean> {
-    return await XMTPModule.canMessage(this.inboxId, peerAddress)
-  }
-
-  /**
-   * Find the inboxId associated with this address
+   * Find the Address associated with this address
    *
    * @param {string} peerAddress - The address of the peer to check for inboxId.
    * @returns {Promise<InboxId>} A Promise resolving to the InboxId.
    */
   async findInboxIdFromAddress(
-    peerAddress: string
+    peerAddress: Address
   ): Promise<InboxId | undefined> {
     return await XMTPModule.findInboxIdFromAddress(this.inboxId, peerAddress)
   }
@@ -745,34 +364,24 @@ export class Client<
     if (!signer) {
       throw new Error('Signer is not configured')
     }
+
     return new Promise<void>((resolve, reject) => {
       ;(async () => {
         Client.signSubscription = XMTPModule.emitter.addListener(
           'sign',
           async (message: { id: string; message: string }) => {
-            const request: { id: string; message: string } = message
             try {
-              const signatureString = await signer.signMessage(request.message)
-              const eSig = splitSignature(signatureString)
-              const r = hexToBytes(eSig.r)
-              const s = hexToBytes(eSig.s)
-              const sigBytes = new Uint8Array(65)
-              sigBytes.set(r)
-              sigBytes.set(s, r.length)
-              sigBytes[64] = eSig.recoveryParam
-
-              const signature = Buffer.from(sigBytes).toString('base64')
-
-              await XMTPModule.receiveSignature(request.id, signature)
+              await Client.handleSignatureRequest(signer, message)
             } catch (e) {
               const errorMessage =
-                'ERROR in revokeInstallations. User rejected signature'
-              Client.signSubscription?.remove()
+                'ERROR in revokeAllOtherInstallations. User rejected signature'
               console.info(errorMessage, e)
+              Client.signSubscription?.remove()
               reject(errorMessage)
             }
           }
         )
+
         await XMTPModule.revokeAllOtherInstallations(this.inboxId)
         Client.signSubscription?.remove()
         resolve()
@@ -798,38 +407,11 @@ export class Client<
    *
    * This method checks if the specified peers are using clients that support group messaging.
    *
-   * @param {string[]} addresses - The addresses of the peers to check for messaging eligibility.
-   * @returns {Promise<{ [key: string]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the V3 network.
+   * @param {Address[]} addresses - The addresses of the peers to check for messaging eligibility.
+   * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the V3 network.
    */
-  async canGroupMessage(
-    addresses: string[]
-  ): Promise<{ [key: string]: boolean }> {
-    return await XMTPModule.canGroupMessage(this.inboxId, addresses)
-  }
-
-  // TODO: support persisting conversations for quick lookup
-  // async importConversation(exported: string): Promise<Conversation> { ... }
-  // async exportConversation(topic: string): Promise<string> { ... }
-
-  /**
-   * Retrieves a list of batch messages based on the provided queries.
-   *
-   * This method pulls messages associated from multiple conversation with the current address
-   * and specified queries.
-   *
-   * @param {Query[]} queries - An array of queries to filter the batch messages.
-   * @returns {Promise<DecodedMessage[]>} A Promise that resolves to a list of batch messages.
-   * @throws {Error} The error is logged, and the method gracefully returns an empty array.
-   */
-  async listBatchMessages(
-    queries: Query[]
-  ): Promise<DecodedMessage<ContentTypes>[]> {
-    try {
-      return await XMTPModule.listBatchMessages<ContentTypes>(this, queries)
-    } catch (e) {
-      console.info('ERROR in listBatchMessages', e)
-      return []
-    }
+  async canMessage(addresses: Address[]): Promise<{ [key: Address]: boolean }> {
+    return await XMTPModule.canMessage(this.inboxId, addresses)
   }
 
   /**
@@ -866,29 +448,19 @@ export class Client<
     }
     return await XMTPModule.decryptAttachment(this.inboxId, encryptedFile)
   }
-
-  /**
-   * Sends a prepared message.
-   *
-   * @param {PreparedLocalMessage} prepared - The prepared local message to be sent.
-   * @returns {Promise<string>} A Promise that resolves to a string identifier for the sent message.
-   * @throws {Error} Throws an error if there is an issue with sending the prepared message.
-   */
-  async sendPreparedMessage(prepared: PreparedLocalMessage): Promise<string> {
-    try {
-      return await XMTPModule.sendPreparedMessage(this.inboxId, prepared)
-    } catch (e) {
-      console.info('ERROR in sendPreparedMessage()', e)
-      throw e
-    }
-  }
 }
+
+export type XMTPEnvironment = 'local' | 'dev' | 'production'
 
 export type ClientOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
    */
-  env: 'local' | 'dev' | 'production'
+  env: XMTPEnvironment
+  /**
+   * REQUIRED specify the encryption key for the database. The encryption key must be exactly 32 bytes.
+   */
+  dbEncryptionKey: Uint8Array
   /**
    * identifier that's included with API requests.
    *
@@ -900,21 +472,10 @@ export type ClientOptions = {
    * SDK updates, including deprecations and required upgrades.
    */
   appVersion?: string
-
   /**
    * Set optional callbacks for handling identity setup
    */
-  preCreateIdentityCallback?: () => Promise<void> | void
-  preEnableIdentityCallback?: () => Promise<void> | void
   preAuthenticateToInboxCallback?: () => Promise<void> | void
-  /**
-   * Specify whether to enable V3 version of MLS (Group Chat)
-   */
-  enableV3?: boolean
-  /**
-   * REQUIRED specify the encryption key for the database. The encryption key must be exactly 32 bytes.
-   */
-  dbEncryptionKey?: Uint8Array
   /**
    * OPTIONAL specify the XMTP managed database directory
    */
@@ -928,21 +489,4 @@ export type ClientOptions = {
 export type KeyType = {
   kind: 'identity' | 'prekey'
   prekeyIndex?: number
-}
-
-/**
- * Provide a default client configuration. These settings can be used on their own, or as a starting point for custom configurations
- *
- * @param opts additional options to override the default settings
- */
-export function defaultOptions(opts?: Partial<ClientOptions>): ClientOptions {
-  const _defaultOptions: ClientOptions = {
-    env: 'dev',
-    enableV3: false,
-    dbEncryptionKey: undefined,
-    dbDirectory: undefined,
-    historySyncUrl: undefined,
-  }
-
-  return { ..._defaultOptions, ...opts } as ClientOptions
 }

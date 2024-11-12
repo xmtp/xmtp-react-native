@@ -1,6 +1,5 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
-import com.google.gson.GsonBuilder
 import org.xmtp.android.library.Client
 
 class ClientWrapper {
@@ -12,12 +11,6 @@ class ClientWrapper {
                 "installationId" to client.installationId,
                 "dbPath" to client.dbPath
             )
-        }
-
-        fun encode(client: Client): String {
-            val gson = GsonBuilder().create()
-            val obj = encodeToObj(client)
-            return gson.toJson(obj)
         }
     }
 }

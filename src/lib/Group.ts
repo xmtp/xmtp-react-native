@@ -1,25 +1,22 @@
 import { InboxId } from './Client'
 import { ConsentState } from './ConsentListEntry'
-import {
-  ConversationContainerBase,
-  ConversationVersion,
-} from './ConversationContainer'
+import { ConversationBase, ConversationVersion } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
-import { MessagesOptions } from './types/MessagesOptions'
+import { MessageId, MessagesOptions } from './types/MessagesOptions'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
 import * as XMTP from '../index'
+import { Address, ConversationId, ConversationTopic } from '../index'
 
 export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
 
 export interface GroupParams {
-  id: string
+  id: ConversationId
   createdAt: number
-  members: string[]
-  topic: string
+  topic: ConversationTopic
   name: string
   isActive: boolean
   addedByInboxId: InboxId
@@ -31,13 +28,13 @@ export interface GroupParams {
 
 export class Group<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
-> implements ConversationContainerBase<ContentTypes>
+> implements ConversationBase<ContentTypes>
 {
   client: XMTP.Client<ContentTypes>
-  id: string
+  id: ConversationId
   createdAt: number
   version = ConversationVersion.GROUP as const
-  topic: string
+  topic: ConversationTopic
   name: string
   isGroupActive: boolean
   addedByInboxId: InboxId
@@ -90,7 +87,7 @@ export class Group<
    */
   async send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
     content: ConversationSendPayload<SendContentTypes>
-  ): Promise<string> {
+  ): Promise<MessageId> {
     // TODO: Enable other content types
     // if (opts && opts.contentType) {
     // return await this._sendWithJSCodec(content, opts.contentType)
@@ -101,11 +98,7 @@ export class Group<
         content = { text: content }
       }
 
-      return await XMTP.sendMessageToConversation(
-        this.client.inboxId,
-        this.id,
-        content
-      )
+      return await XMTP.sendMessage(this.client.inboxId, this.id, content)
     } catch (e) {
       console.info('ERROR in send()', e.message)
       throw e
@@ -132,11 +125,7 @@ export class Group<
         content = { text: content }
       }
 
-      return await XMTP.prepareConversationMessage(
-        this.client.inboxId,
-        this.id,
-        content
-      )
+      return await XMTP.prepareMessage(this.client.inboxId, this.id, content)
     } catch (e) {
       console.info('ERROR in prepareGroupMessage()', e.message)
       throw e
@@ -150,10 +139,7 @@ export class Group<
    */
   async publishPreparedMessages() {
     try {
-      return await XMTP.publishPreparedGroupMessages(
-        this.client.inboxId,
-        this.id
-      )
+      return await XMTP.publishPreparedMessages(this.client.inboxId, this.id)
     } catch (e) {
       console.info('ERROR in publishPreparedMessages()', e.message)
       throw e
@@ -177,8 +163,8 @@ export class Group<
       this.client,
       this.id,
       opts?.limit,
-      opts?.before,
-      opts?.after,
+      opts?.beforeNs,
+      opts?.afterNs,
       opts?.direction
     )
   }
@@ -204,31 +190,24 @@ export class Group<
   async streamMessages(
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
   ): Promise<() => void> {
-    await XMTP.subscribeToGroupMessages(this.client.inboxId, this.id)
-    const hasSeen = {}
+    await XMTP.subscribeToMessages(this.client.inboxId, this.id)
     const messageSubscription = XMTP.emitter.addListener(
-      EventTypes.GroupMessage,
+      EventTypes.ConversationMessage,
       async ({
         inboxId,
         message,
-        groupId,
+        conversationId,
       }: {
         inboxId: string
         message: DecodedMessage<ContentTypes>
-        groupId: string
+        conversationId: string
       }) => {
-        // Long term these checks should be able to be done on the native layer as well, but additional checks in JS for safety
         if (inboxId !== this.client.inboxId) {
           return
         }
-        if (groupId !== this.id) {
+        if (conversationId !== this.id) {
           return
         }
-        if (hasSeen[message.id]) {
-          return
-        }
-
-        hasSeen[message.id] = true
 
         message.client = this.client
         await callback(DecodedMessage.fromObject(message, this.client))
@@ -236,22 +215,15 @@ export class Group<
     )
     return async () => {
       messageSubscription.remove()
-      await XMTP.unsubscribeFromGroupMessages(this.client.inboxId, this.id)
+      await XMTP.unsubscribeFromMessages(this.client.inboxId, this.id)
     }
   }
-
-  async streamGroupMessages(
-    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
-  ): Promise<() => void> {
-    return this.streamMessages(callback)
-  }
-
   /**
    *
    * @param addresses addresses to add to the group
    * @returns
    */
-  async addMembers(addresses: string[]): Promise<void> {
+  async addMembers(addresses: Address[]): Promise<void> {
     return XMTP.addGroupMembers(this.client.inboxId, this.id, addresses)
   }
 
@@ -260,7 +232,7 @@ export class Group<
    * @param addresses addresses to remove from the group
    * @returns
    */
-  async removeMembers(addresses: string[]): Promise<void> {
+  async removeMembers(addresses: Address[]): Promise<void> {
     return XMTP.removeGroupMembers(this.client.inboxId, this.id, addresses)
   }
 
@@ -606,11 +578,7 @@ export class Group<
     encryptedMessage: string
   ): Promise<DecodedMessage<ContentTypes>> {
     try {
-      return await XMTP.processConversationMessage(
-        this.client,
-        this.id,
-        encryptedMessage
-      )
+      return await XMTP.processMessage(this.client, this.id, encryptedMessage)
     } catch (e) {
       console.info('ERROR in processGroupMessage()', e)
       throw e
@@ -618,7 +586,7 @@ export class Group<
   }
 
   async consentState(): Promise<ConsentState> {
-    return await XMTP.conversationV3ConsentState(this.client.inboxId, this.id)
+    return await XMTP.conversationConsentState(this.client.inboxId, this.id)
   }
 
   async updateConsent(state: ConsentState): Promise<void> {
@@ -627,20 +595,6 @@ export class Group<
       this.id,
       state
     )
-  }
-
-  /**
-   * @returns {Promise<boolean>} a boolean indicating whether the group is allowed by the user.
-   */
-  async isAllowed(): Promise<boolean> {
-    return await XMTP.isGroupAllowed(this.client.inboxId, this.id)
-  }
-
-  /**
-   * @returns {Promise<boolean>}  a boolean indicating whether the group is denied by the user.
-   */
-  async isDenied(): Promise<boolean> {
-    return await XMTP.isGroupDenied(this.client.inboxId, this.id)
   }
 
   /**

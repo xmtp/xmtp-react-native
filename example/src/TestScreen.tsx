@@ -2,14 +2,14 @@ import { useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
 
+import { clientTests } from './tests/clientTests'
 import { conversationTests } from './tests/conversationTests'
+import { dmTests } from './tests/dmTests'
 import { groupPerformanceTests } from './tests/groupPerformanceTests'
 import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
 import { Test } from './tests/test-utils'
-import { tests } from './tests/tests'
-import { v3OnlyTests } from './tests/v3OnlyTests'
 
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
@@ -107,10 +107,10 @@ function TestView({
 
 export enum TestCategory {
   all = 'all',
-  tests = 'tests',
-  conversation = 'conversation',
+  client = 'client',
+  dm = 'dm',
   group = 'group',
-  v3Only = 'v3Only',
+  conversation = 'conversation',
   restartStreans = 'restartStreams',
   groupPermissions = 'groupPermissions',
   groupPerformance = 'groupPerformance',
@@ -123,13 +123,12 @@ export default function TestScreen(): JSX.Element {
     testSelection: TestCategory
   }
   const allTests = [
-    ...tests,
+    ...clientTests,
+    ...dmTests,
     ...groupTests,
     ...conversationTests,
-    ...v3OnlyTests,
     ...restartStreamTests,
     ...groupPermissionsTests,
-    ...groupPerformanceTests,
   ]
   let activeTests, title
   switch (params.testSelection) {
@@ -137,9 +136,13 @@ export default function TestScreen(): JSX.Element {
       activeTests = allTests
       title = 'All Unit Tests'
       break
-    case TestCategory.tests:
-      activeTests = tests
-      title = 'Original Unit Tests'
+    case TestCategory.client:
+      activeTests = clientTests
+      title = 'Client Unit Tests'
+      break
+    case TestCategory.dm:
+      activeTests = dmTests
+      title = 'Dm Unit Tests'
       break
     case TestCategory.group:
       activeTests = groupTests
@@ -148,10 +151,6 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.conversation:
       activeTests = conversationTests
       title = 'Conversation Unit Tests'
-      break
-    case TestCategory.v3Only:
-      activeTests = v3OnlyTests
-      title = 'V3 Only Tests'
       break
     case TestCategory.restartStreans:
       activeTests = restartStreamTests

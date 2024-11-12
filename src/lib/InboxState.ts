@@ -1,16 +1,16 @@
-import { InboxId } from './Client'
+import { Address, InboxId } from './Client'
 
 export class InboxState {
   inboxId: InboxId
-  addresses: string[]
+  addresses: Address[]
   installations: Installation[]
-  recoveryAddress: string
+  recoveryAddress: Address
 
   constructor(
     inboxId: InboxId,
-    addresses: string[],
+    addresses: Address[],
     installations: Installation[],
-    recoveryAddress: string
+    recoveryAddress: Address
   ) {
     this.inboxId = inboxId
     this.addresses = addresses

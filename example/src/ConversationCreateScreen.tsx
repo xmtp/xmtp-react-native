@@ -22,7 +22,7 @@ export default function ConversationCreateScreen({
     }
     if (groupsEnabled) {
       const toAddresses = toAddress.split(',')
-      const canMessage = await client.canGroupMessage(toAddresses)
+      const canMessage = await client.canMessage(toAddresses)
       if (!canMessage) {
         setAlert(`${toAddress} cannot be added to a group conversation yet`)
         return
@@ -30,7 +30,7 @@ export default function ConversationCreateScreen({
       const group = await client.conversations.newGroup(toAddresses)
       navigation.navigate('group', { id: group.id })
     } else {
-      const canMessage = await client.canMessage(toAddress)
+      const canMessage = await client.canMessage([toAddress])
       if (!canMessage) {
         setAlert(`${toAddress} is not on the XMTP network yet`)
         return

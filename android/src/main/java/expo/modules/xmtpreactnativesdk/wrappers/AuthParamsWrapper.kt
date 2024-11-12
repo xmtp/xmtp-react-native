@@ -6,7 +6,6 @@ import org.xmtp.android.library.WalletType
 class AuthParamsWrapper(
     val environment: String,
     val appVersion: String?,
-    val enableV3: Boolean = false,
     val dbDirectory: String?,
     val historySyncUrl: String?,
     val walletType: WalletType = WalletType.EOA,
@@ -19,7 +18,6 @@ class AuthParamsWrapper(
             return AuthParamsWrapper(
                 jsonOptions.get("environment").asString,
                 if (jsonOptions.has("appVersion")) jsonOptions.get("appVersion").asString else null,
-                if (jsonOptions.has("enableV3")) jsonOptions.get("enableV3").asBoolean else false,
                 if (jsonOptions.has("dbDirectory")) jsonOptions.get("dbDirectory").asString else null,
                 if (jsonOptions.has("historySyncUrl")) jsonOptions.get("historySyncUrl").asString else null,
                 if (jsonOptions.has("walletType")) {
