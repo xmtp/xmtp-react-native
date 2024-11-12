@@ -98,11 +98,7 @@ export class Group<
         content = { text: content }
       }
 
-      return await XMTP.sendMessage(
-        this.client.inboxId,
-        this.id,
-        content
-      )
+      return await XMTP.sendMessage(this.client.inboxId, this.id, content)
     } catch (e) {
       console.info('ERROR in send()', e.message)
       throw e

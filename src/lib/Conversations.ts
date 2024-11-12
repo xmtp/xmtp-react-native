@@ -111,8 +111,10 @@ export default class Conversations<
    *
    * @returns {Promise<Dm>} A Promise that resolves to a Dm or undefined if not found.
    */
-  async findDm(address: Address): Promise<Dm<ContentTypes> | undefined> {
-    return await XMTPModule.findDm(this.client, address)
+  async findDmByAddress(
+    address: Address
+  ): Promise<Dm<ContentTypes> | undefined> {
+    return await XMTPModule.findDmByAddress(this.client, address)
   }
 
   /**

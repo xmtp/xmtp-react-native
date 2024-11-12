@@ -1482,16 +1482,16 @@ test('only streams groups that can be decrypted', async () => {
 
   await alixClient.conversations.stream(async (group: Conversation<any>) => {
     alixGroups.push(group)
-  }, 'groups')
+  })
   await boClient.conversations.stream(async (group: Conversation<any>) => {
     boGroups.push(group)
-  }, 'groups')
+  })
   await caroClient.conversations.stream(async (group: Conversation<any>) => {
     caroGroups.push(group)
-  }, 'groups')
+  })
 
   await alixClient.conversations.newGroup([boClient.address])
-
+  await delayToPropogate()
   assert(
     alixGroups.length === 1,
     `alix group length should be 1 but was ${alixGroups.length}`

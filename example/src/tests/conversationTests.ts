@@ -68,7 +68,7 @@ test('can find a dm by address', async () => {
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
 
   await boClient.conversations.sync()
-  const boDm = await boClient.conversations.findDm(alixClient.address)
+  const boDm = await boClient.conversations.findDmByAddress(alixClient.address)
 
   assert(
     boDm?.id === alixDm.id,

@@ -47,7 +47,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * @returns {Promise<InboxId>} A Promise that resolves to a InboxId.
    */
   async peerInboxId(): Promise<InboxId> {
-    return XMTP.listPeerInboxId(this.client, this.id)
+    return XMTP.dmPeerInboxId(this.client, this.id)
   }
 
   /**
