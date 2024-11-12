@@ -2,6 +2,7 @@ import { sha256 } from '@noble/hashes/sha256'
 import { FramesClient } from '@xmtp/frames-client'
 import { content, invitation, signature as signatureProto } from '@xmtp/proto'
 import { createHmac } from 'crypto'
+import { Wallet } from 'ethers'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import Config from 'react-native-config'
 import { TextEncoder, TextDecoder } from 'text-encoding'
@@ -181,6 +182,11 @@ function verifyHmacSignature(
   return result
 }
 
+const keyBytes = new Uint8Array([
+  233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64, 166,
+  83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+])
+
 async function exportHmacKey(key: CryptoKey): Promise<Uint8Array> {
   const exported = await window.crypto.subtle.exportKey('raw', key)
   return new Uint8Array(exported)
@@ -190,10 +196,43 @@ function test(name: string, perform: () => Promise<boolean>) {
   tests.push({ name, run: perform })
 }
 
+test('can revoke all other installations', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const alixWallet = Wallet.createRandom()
+
+  // create a v3 client
+  const alix = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+  })
+
+  const keyBundle = await alix.exportKeyBundle()
+
+  // create from keybundle a v3 client
+  const alixKeyBundle = await Client.createFromKeyBundle(
+    keyBundle,
+    {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      dbEncryptionKey: keyBytes,
+    },
+    alixWallet
+  )
+
+  assert(alixKeyBundle.address === alix.address, `The addresses should match`)
+
+  return true
+})
+
 test('can make a client', async () => {
   const client = await Client.createRandom({
     env: 'local',
     appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
   })
   client.register(new RemoteAttachmentCodec())
   if (Object.keys(client.codecRegistry).length !== 2) {
@@ -233,7 +272,19 @@ test('can load a client from env "2k lens convos" private key', async () => {
   )
   const xmtpClient = await Client.create(signer, {
     env: 'local',
+    dbEncryptionKey: keyBytes,
   })
+
+  const keyBundle = await xmtpClient.exportKeyBundle()
+
+  await Client.createFromKeyBundle(
+    keyBundle,
+    {
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+    },
+    signer
+  )
 
   assert(
     xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
@@ -254,6 +305,7 @@ test('can load 1995 conversations from dev network "2k lens convos" account', as
   )
   const xmtpClient = await Client.create(signer, {
     env: 'dev',
+    dbEncryptionKey: keyBytes,
   })
 
   assert(
@@ -276,8 +328,14 @@ test('can load 1995 conversations from dev network "2k lens convos" account', as
 
 test('can pass a custom filter date and receive message objects with expected dates', async () => {
   try {
-    const bob = await Client.createRandom({ env: 'local' })
-    const alice = await Client.createRandom({ env: 'local' })
+    const bob = await Client.createRandom({
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+    })
+    const alice = await Client.createRandom({
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+    })
 
     if (bob.address === alice.address) {
       throw new Error('bob and alice should be different')
@@ -342,15 +400,24 @@ test('can pass a custom filter date and receive message objects with expected da
 })
 
 test('canMessage', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  const alice = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
 
   const canMessage = await bob.canMessage(alice.address)
   return canMessage
 })
 
 test('fetch a public key bundle and sign a digest', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   const bytes = new Uint8Array([1, 2, 3])
   const signature = await bob.sign(bytes, { kind: 'identity' })
   if (signature.length === 0) {
@@ -368,6 +435,7 @@ test('createFromKeyBundle throws error for non string value', async () => {
     const bytes = [1, 2, 3]
     await Client.createFromKeyBundle(JSON.stringify(bytes), {
       env: 'local',
+      dbEncryptionKey: keyBytes,
     })
   } catch {
     return true
@@ -376,8 +444,14 @@ test('createFromKeyBundle throws error for non string value', async () => {
 })
 
 test('canPrepareMessage', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
-  const alice = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
 
   const bobConversation = await bob.conversations.newConversation(alice.address)
@@ -403,9 +477,15 @@ test('canPrepareMessage', async () => {
 })
 
 test('can list batch messages', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -458,9 +538,15 @@ test('can list batch messages', async () => {
 })
 
 test('can paginate batch messages', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -562,9 +648,15 @@ test('can paginate batch messages', async () => {
 })
 
 test('can stream messages', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
 
   // Record new conversation stream
@@ -661,9 +753,15 @@ test('can stream messages', async () => {
 })
 
 test('can stream conversations with delay', async () => {
-  const bo = await Client.createRandom({ env: 'dev' })
+  const bo = await Client.createRandom({
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'dev' })
+  const alix = await Client.createRandom({
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
 
   const allConvos: Conversation<any>[] = []
@@ -705,10 +803,14 @@ test('can stream conversations with delay', async () => {
 test('remote attachments should work', async () => {
   const alice = await Client.createRandom({
     env: 'local',
+    dbEncryptionKey: keyBytes,
+
     codecs: [new StaticAttachmentCodec(), new RemoteAttachmentCodec()],
   })
   const bob = await Client.createRandom({
     env: 'local',
+    dbEncryptionKey: keyBytes,
+
     codecs: [new StaticAttachmentCodec(), new RemoteAttachmentCodec()],
   })
   const convo = await alice.conversations.newConversation(bob.address)
@@ -792,9 +894,15 @@ test('remote attachments should work', async () => {
 })
 
 test('can send read receipts', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -828,9 +936,15 @@ test('can send read receipts', async () => {
 })
 
 test('can stream all messages', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
+  const bo = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local' })
+  const alix = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
 
   // Record message stream across all conversations
@@ -854,7 +968,10 @@ test('can stream all messages', async () => {
   }
 
   // Starts a new conversation.
-  const caro = await Client.createRandom({ env: 'local' })
+  const caro = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   const caroConvo = await caro.conversations.newConversation(alix.address)
   await delayToPropogate()
   for (let i = 0; i < 5; i++) {
@@ -884,9 +1001,15 @@ test('can stream all messages', async () => {
 })
 
 test('can stream all msgs with delay', async () => {
-  const bo = await Client.createRandom({ env: 'dev' })
+  const bo = await Client.createRandom({
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'dev' })
+  const alix = await Client.createRandom({
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
 
   // Record message stream across all conversations
@@ -911,7 +1034,10 @@ test('can stream all msgs with delay', async () => {
 
   await sleep(LONG_STREAM_DELAY)
   // Starts a new conversation.
-  const caro = await Client.createRandom({ env: 'dev' })
+  const caro = await Client.createRandom({
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
   const caroConvo = await caro.conversations.newConversation(alix.address)
   await delayToPropogate()
 
@@ -943,8 +1069,14 @@ test('can stream all msgs with delay', async () => {
 })
 
 test('canManagePreferences', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
-  const alix = await Client.createRandom({ env: 'local' })
+  const bo = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
+  const alix = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
 
   const alixConversation = await bo.conversations.newConversation(alix.address)
@@ -1007,7 +1139,10 @@ test('canManagePreferences', async () => {
 })
 
 test('is address on the XMTP network', async () => {
-  const alix = await Client.createRandom({ env: 'local' })
+  const alix = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   const notOnNetwork = '0x0000000000000000000000000000000000000000'
 
   const isAlixAddressAvailable = await Client.canMessage(alix.address, {
@@ -1031,10 +1166,14 @@ test('is address on the XMTP network', async () => {
 test('register and use custom content types', async () => {
   const bob = await Client.createRandom({
     env: 'local',
+    dbEncryptionKey: keyBytes,
+
     codecs: [new NumberCodec()],
   })
   const alice = await Client.createRandom({
     env: 'local',
+    dbEncryptionKey: keyBytes,
+
     codecs: [new NumberCodec()],
   })
 
@@ -1063,10 +1202,14 @@ test('register and use custom content types', async () => {
 test('register and use custom content types when preparing message', async () => {
   const bob = await Client.createRandom({
     env: 'local',
+    dbEncryptionKey: keyBytes,
+
     codecs: [new NumberCodec()],
   })
   const alice = await Client.createRandom({
     env: 'local',
+    dbEncryptionKey: keyBytes,
+
     codecs: [new NumberCodec()],
   })
 
@@ -1106,6 +1249,8 @@ test('calls preCreateIdentityCallback when supplied', async () => {
   }
   await Client.createRandom({
     env: 'local',
+    dbEncryptionKey: keyBytes,
+
     preCreateIdentityCallback,
   })
 
@@ -1123,6 +1268,8 @@ test('calls preEnableIdentityCallback when supplied', async () => {
   }
   await Client.createRandom({
     env: 'local',
+    dbEncryptionKey: keyBytes,
+
     preEnableIdentityCallback,
   })
 
@@ -1134,9 +1281,15 @@ test('calls preEnableIdentityCallback when supplied', async () => {
 })
 
 test('returns keyMaterial for conversations', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -1162,9 +1315,15 @@ test('returns keyMaterial for conversations', async () => {
 })
 
 test('correctly handles lowercase addresses', async () => {
-  const bob = await Client.createRandom({ env: 'local' })
+  const bob = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alice = await Client.createRandom({ env: 'local' })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
   if (bob.address === alice.address) {
     throw new Error('bob and alice should be different')
@@ -1224,9 +1383,11 @@ test('handle fallback types appropriately', async () => {
       new NumberCodecEmptyFallback(),
       new NumberCodecUndefinedFallback(),
     ],
+    dbEncryptionKey: keyBytes,
   })
   const alice = await Client.createRandom({
     env: 'local',
+    dbEncryptionKey: keyBytes,
   })
   bob.register(new NumberCodecEmptyFallback())
   bob.register(new NumberCodecUndefinedFallback())
@@ -1276,7 +1437,10 @@ test('handle fallback types appropriately', async () => {
 test('instantiate frames client correctly', async () => {
   const frameUrl =
     'https://fc-polls-five.vercel.app/polls/01032f47-e976-42ee-9e3d-3aac1324f4b8'
-  const client = await Client.createRandom({ env: 'local' })
+  const client = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   const framesClient = new FramesClient(client)
   const metadata = await framesClient.proxy.readMetadata(frameUrl)
   if (!metadata) {
@@ -1384,12 +1548,18 @@ test('fails to validate HMAC with wrong key', async () => {
 })
 
 test('get all HMAC keys', async () => {
-  const alice = await Client.createRandom({ env: 'local' })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
 
   const conversations: Conversation<string | undefined>[] = []
 
   for (let i = 0; i < 5; i++) {
-    const client = await Client.createRandom({ env: 'local' })
+    const client = await Client.createRandom({
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+    })
     const convo = await alice.conversations.newConversation(client.address, {
       conversationID: `https://example.com/${i}`,
       metadata: {
@@ -1460,9 +1630,15 @@ test('get all HMAC keys', async () => {
 })
 
 test('can handle complex streaming setup', async () => {
-  const bo = await Client.createRandom({ env: 'dev' })
+  const bo = await Client.createRandom({
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'dev' })
+  const alix = await Client.createRandom({
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
 
   const allConvos: Conversation<any>[] = []
@@ -1569,9 +1745,15 @@ test('can handle complex streaming setup', async () => {
 })
 
 test('can handle complex streaming setup with messages from self', async () => {
-  const bo = await Client.createRandom({ env: 'dev' })
+  const bo = await Client.createRandom({
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'dev' })
+  const alix = await Client.createRandom({
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
 
   const allConvos: Conversation<any>[] = []
@@ -1700,8 +1882,14 @@ test('can send and receive consent proofs', async () => {
   const boAccount = privateKeyToAccount(boPrivateKey)
   const alixSigner = new ViemSigner(alixAccount)
   const boSigner = new ViemSigner(boAccount)
-  const alix = await Client.create(alixSigner, { env: 'local' })
-  const bo = await Client.create(boSigner, { env: 'local' })
+  const alix = await Client.create(alixSigner, {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
+  const bo = await Client.create(boSigner, {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
 
   const timestamp = Date.now()
   const consentMessage =
@@ -1738,9 +1926,15 @@ test('can send and receive consent proofs', async () => {
 })
 
 test('can start conversations without consent proofs', async () => {
-  const bo = await Client.createRandom({ env: 'local' })
+  const bo = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
-  const alix = await Client.createRandom({ env: 'local' })
+  const alix = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
   await delayToPropogate()
 
   const boConvo = await bo.conversations.newConversation(alix.address)
