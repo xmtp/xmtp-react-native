@@ -1001,7 +1001,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("isAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1014,7 +1014,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("isSuperAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1053,7 +1053,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("addAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1066,7 +1066,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("addSuperAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1079,7 +1079,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("removeAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1092,7 +1092,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("removeSuperAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
