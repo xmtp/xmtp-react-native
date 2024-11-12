@@ -39,18 +39,19 @@ export async function auth(
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
   hasEnableIdentityCallback?: boolean | undefined,
-  dbDirectory?: string | undefined,
+  dbDirectory?: string | undefined
 ) {
   const encryptionKey = Array.from(dbEncryptionKey)
 
   return await XMTPModule.auth(
     address,
+    environment,
+    appVersion,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
     encryptionKey,
-    environment,
-    appVersion,
-    dbDirectory,  )
+    dbDirectory
+  )
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
@@ -82,7 +83,7 @@ export async function createFromKeyBundle(
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
   appVersion?: string | undefined,
-  dbDirectory?: string | undefined,
+  dbDirectory?: string | undefined
 ): Promise<string> {
   const encryptionKey = Array.from(dbEncryptionKey)
 
@@ -101,7 +102,7 @@ export async function createFromKeyBundleWithSigner(
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
   appVersion?: string | undefined,
-  dbDirectory?: string | undefined,
+  dbDirectory?: string | undefined
 ): Promise<string> {
   const encryptionKey = Array.from(dbEncryptionKey)
 

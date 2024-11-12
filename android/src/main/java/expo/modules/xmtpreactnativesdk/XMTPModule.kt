@@ -1,5 +1,6 @@
 package expo.modules.xmtpreactnativesdk
 
+import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import android.util.Base64.NO_WRAP
@@ -7,6 +8,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import com.google.gson.JsonParser
 import com.google.protobuf.kotlin.toByteString
+import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -27,6 +29,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import org.xmtp.android.library.BuildConfig
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.Conversation
@@ -103,6 +106,9 @@ fun Conversation.cacheKey(clientAddress: String): String {
 }
 
 class XMTPModule : Module() {
+    val context: Context
+        get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+
     private fun apiEnvironments(env: String, appVersion: String?): ClientOptions.Api {
         return when (env) {
             "local" -> ClientOptions.Api(
@@ -140,6 +146,7 @@ class XMTPModule : Module() {
         Events(
             "sign",
             "authed",
+            "bundleAuthed",
             "conversation",
             "message",
             "preEnableIdentityCallback",
@@ -155,7 +162,7 @@ class XMTPModule : Module() {
         //
         // Auth functions
         //
-        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
+        AsyncFunction("auth") { address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>, dbDirectory: String? ->
             logV("auth")
             val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
             signer = reactSigner
@@ -168,10 +175,18 @@ class XMTPModule : Module() {
                 preCreateIdentityCallback.takeIf { hasCreateIdentityCallback == true }
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
+            val encryptionKeyBytes =
+                dbEncryptionKey.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
+                    a.apply { set(i, v.toByte()) }
+                }
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback
+                preEnableIdentityCallback = preEnableIdentityCallback,
+                appContext = context,
+                enableV3 = true,
+                dbEncryptionKey = encryptionKeyBytes,
+                dbDirectory = dbDirectory
             )
             clients[address] = Client().create(account = reactSigner, options = options)
             ContentJson.Companion
@@ -185,7 +200,7 @@ class XMTPModule : Module() {
         }
 
         // Generate a random wallet and set the client to that
-        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean? ->
+        AsyncFunction("createRandom") { environment: String, appVersion: String?, hasCreateIdentityCallback: Boolean?, hasEnableIdentityCallback: Boolean?, dbEncryptionKey: List<Int>, dbDirectory: String? ->
             logV("createRandom")
             val privateKey = PrivateKeyBuilder()
 
@@ -198,10 +213,18 @@ class XMTPModule : Module() {
             val preEnableIdentityCallback: PreEventCallback? =
                 preEnableIdentityCallback.takeIf { hasEnableIdentityCallback == true }
 
+            val encryptionKeyBytes =
+                dbEncryptionKey.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
+                    a.apply { set(i, v.toByte()) }
+                }
             val options = ClientOptions(
                 api = apiEnvironments(environment, appVersion),
                 preCreateIdentityCallback = preCreateIdentityCallback,
-                preEnableIdentityCallback = preEnableIdentityCallback
+                preEnableIdentityCallback = preEnableIdentityCallback,
+                appContext = context,
+                enableV3 = true,
+                dbEncryptionKey = encryptionKeyBytes,
+                dbDirectory = dbDirectory
             )
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
@@ -209,10 +232,19 @@ class XMTPModule : Module() {
             randomClient.address
         }
 
-        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String? ->
+        AsyncFunction("createFromKeyBundle") { keyBundle: String, environment: String, appVersion: String?, dbEncryptionKey: List<Int>, dbDirectory: String? ->
             try {
                 logV("createFromKeyBundle")
-                val options = ClientOptions(api = apiEnvironments(environment, appVersion))
+                val encryptionKeyBytes =
+                    dbEncryptionKey.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                val options = ClientOptions(
+                    api = apiEnvironments(environment, appVersion), appContext = context,
+                    enableV3 = true,
+                    dbEncryptionKey = encryptionKeyBytes,
+                    dbDirectory = dbDirectory
+                )
                 val bundle =
                     PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
                         Base64.decode(
@@ -224,6 +256,42 @@ class XMTPModule : Module() {
                 ContentJson.Companion
                 clients[client.address] = client
                 client.address
+            } catch (e: Exception) {
+                throw XMTPException("Failed to create client: $e")
+            }
+        }
+
+        AsyncFunction("createFromKeyBundleWithSigner") { address: String, keyBundle: String, environment: String, appVersion: String?, dbEncryptionKey: List<Int>, dbDirectory: String? ->
+            logV("createFromKeyBundleWithSigner")
+            try {
+                val encryptionKeyBytes =
+                    dbEncryptionKey.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                val options = ClientOptions(
+                    api = apiEnvironments(environment, appVersion), appContext = context,
+                    enableV3 = true,
+                    dbEncryptionKey = encryptionKeyBytes,
+                    dbDirectory = dbDirectory
+                )
+                val bundle =
+                    PrivateKeyOuterClass.PrivateKeyBundle.parseFrom(
+                        Base64.decode(
+                            keyBundle,
+                            NO_WRAP
+                        )
+                    )
+                val reactSigner = ReactNativeSigner(module = this@XMTPModule, address = address)
+                signer = reactSigner
+                val client = Client().buildFromBundle(
+                    bundle = bundle,
+                    options = options,
+                    account = reactSigner
+                )
+                clients[client.inboxId] = client
+                ContentJson.Companion
+                signer = null
+                sendEvent("bundleAuthed")
             } catch (e: Exception) {
                 throw XMTPException("Failed to create client: $e")
             }
