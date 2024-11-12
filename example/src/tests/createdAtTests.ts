@@ -123,12 +123,9 @@ test('group createdAt matches streamGroups', async () => {
 
   // Start streaming groups
   const allGroups: Group<any>[] = []
-  const cancelStream = await alix.conversations.stream(
-    async (group: Conversation<any>) => {
-      allGroups.push(group as Group)
-    },
-    'groups'
-  )
+  await alix.conversations.stream(async (group: Conversation<any>) => {
+    allGroups.push(group as Group)
+  }, 'groups')
 
   await delayToPropogate()
 
@@ -164,7 +161,7 @@ test('group createdAt matches streamGroups', async () => {
     'second ' + allGroups[1].createdAt + ' != ' + caroGroup.createdAt
   )
 
-  cancelStream()
+  alix.conversations.cancelStream()
 
   return true
 })
@@ -214,7 +211,7 @@ test('group createdAt matches streamAll', async () => {
     'second ' + allGroups[1].createdAt + ' != ' + caroGroup.createdAt
   )
 
-  cancelStream()
+  alix.conversations.cancelStream()
 
   return true
 })
@@ -369,7 +366,7 @@ test('conversation createdAt matches streamAll', async () => {
 
   // Start streaming conversations
   const allConversations: Conversation<any>[] = []
-  const cancel = await alix.conversations.stream(async (conversation) => {
+  await alix.conversations.stream(async (conversation) => {
     allConversations.push(conversation)
   })
 
@@ -419,7 +416,7 @@ test('conversation createdAt matches streamAll', async () => {
       caroConversation.createdAt
   )
 
-  cancel()
+  alix.conversations.cancelStream()
 
   return true
 })

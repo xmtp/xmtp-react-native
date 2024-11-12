@@ -175,7 +175,7 @@ export default class Conversations<
   async stream(
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>,
     type: ConversationType = 'all'
-  ): Promise<() => void> {
+  ): Promise<void> {
     XMTPModule.subscribeToConversations(this.client.inboxId, type)
     const subscription = XMTPModule.emitter.addListener(
       EventTypes.Conversation,
@@ -200,10 +200,7 @@ export default class Conversations<
         }
       }
     )
-    return () => {
-      subscription.remove()
-      XMTPModule.unsubscribeFromConversations(this.client.inboxId)
-    }
+    this.subscriptions[EventTypes.Conversation] = subscription
   }
 
   /**

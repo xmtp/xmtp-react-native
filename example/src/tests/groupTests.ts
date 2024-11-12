@@ -609,7 +609,7 @@ test('can stream groups', async () => {
 
   // Start streaming groups
   const groups: Conversation<any>[] = []
-  const cancelstream = await alixClient.conversations.stream(
+  await alixClient.conversations.stream(
     async (group: Conversation<any>) => {
       groups.push(group)
     },
@@ -658,7 +658,7 @@ test('can stream groups', async () => {
     throw Error('Expected group length 4 but it is: ' + groups.length)
   }
 
-  cancelstream()
+  alixClient.conversations.cancelStream()
   await delayToPropogate()
 
   // Creating a group should no longer trigger stream groups

@@ -139,8 +139,8 @@ export async function create(
     dbDirectory,
     historySyncUrl,
     walletType,
-    chainId,
-    blockNumber,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return await XMTPModule.create(
     address,

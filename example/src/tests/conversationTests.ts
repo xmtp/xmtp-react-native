@@ -233,7 +233,7 @@ test('can stream all groups and conversations', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
   const containers: Conversation<any>[] = []
-  const cancelStreamAll = await alixClient.conversations.stream(
+  await alixClient.conversations.stream(
     async (conversation: Conversation<any>) => {
       containers.push(conversation)
     }
@@ -263,7 +263,7 @@ test('can stream all groups and conversations', async () => {
     )
   }
 
-  cancelStreamAll()
+  alixClient.conversations.cancelStream()
   await delayToPropogate()
 
   await caroClient.conversations.newGroup([alixClient.address])
