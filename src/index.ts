@@ -35,17 +35,22 @@ export function address(): string {
 export async function auth(
   address: string,
   environment: 'local' | 'dev' | 'production',
+  dbEncryptionKey: Uint8Array,
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
-  hasEnableIdentityCallback?: boolean | undefined
+  hasEnableIdentityCallback?: boolean | undefined,
+  dbDirectory?: string | undefined,
 ) {
+  const encryptionKey = Array.from(dbEncryptionKey)
+
   return await XMTPModule.auth(
     address,
+    hasCreateIdentityCallback,
+    hasEnableIdentityCallback,
+    encryptionKey,
     environment,
     appVersion,
-    hasCreateIdentityCallback,
-    hasEnableIdentityCallback
-  )
+    dbDirectory,  )
 }
 
 export async function receiveSignature(requestID: string, signature: string) {
@@ -54,26 +59,58 @@ export async function receiveSignature(requestID: string, signature: string) {
 
 export async function createRandom(
   environment: 'local' | 'dev' | 'production',
+  dbEncryptionKey: Uint8Array,
   appVersion?: string | undefined,
   hasCreateIdentityCallback?: boolean | undefined,
-  hasEnableIdentityCallback?: boolean | undefined
+  hasEnableIdentityCallback?: boolean | undefined,
+  dbDirectory?: string | undefined
 ): Promise<string> {
+  const encryptionKey = Array.from(dbEncryptionKey)
+
   return await XMTPModule.createRandom(
+    hasCreateIdentityCallback,
+    hasEnableIdentityCallback,
+    encryptionKey,
     environment,
     appVersion,
-    hasCreateIdentityCallback,
-    hasEnableIdentityCallback
+    dbDirectory,
   )
 }
 
 export async function createFromKeyBundle(
   keyBundle: string,
   environment: 'local' | 'dev' | 'production',
-  appVersion?: string | undefined
+  dbEncryptionKey: Uint8Array,
+  appVersion?: string | undefined,
+  dbDirectory?: string | undefined,
 ): Promise<string> {
+  const encryptionKey = Array.from(dbEncryptionKey)
+
   return await XMTPModule.createFromKeyBundle(
     keyBundle,
+    encryptionKey,
     environment,
+    dbDirectory,
+    appVersion
+  )
+}
+
+export async function createFromKeyBundleWithSigner(
+  address: string,
+  keyBundle: string,
+  environment: 'local' | 'dev' | 'production',
+  dbEncryptionKey: Uint8Array,
+  appVersion?: string | undefined,
+  dbDirectory?: string | undefined,
+): Promise<string> {
+  const encryptionKey = Array.from(dbEncryptionKey)
+
+  return await XMTPModule.createFromKeyBundleWithSigner(
+    address,
+    keyBundle,
+    encryptionKey,
+    environment,
+    dbDirectory,
     appVersion
   )
 }
