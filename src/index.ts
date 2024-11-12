@@ -69,12 +69,12 @@ export async function createRandom(
   const encryptionKey = Array.from(dbEncryptionKey)
 
   return await XMTPModule.createRandom(
+    environment,
+    appVersion,
     hasCreateIdentityCallback,
     hasEnableIdentityCallback,
     encryptionKey,
-    environment,
-    appVersion,
-    dbDirectory,
+    dbDirectory
   )
 }
 
@@ -89,10 +89,10 @@ export async function createFromKeyBundle(
 
   return await XMTPModule.createFromKeyBundle(
     keyBundle,
-    encryptionKey,
     environment,
-    dbDirectory,
-    appVersion
+    appVersion,
+    encryptionKey,
+    dbDirectory
   )
 }
 
@@ -109,10 +109,10 @@ export async function createFromKeyBundleWithSigner(
   return await XMTPModule.createFromKeyBundleWithSigner(
     address,
     keyBundle,
-    encryptionKey,
     environment,
-    dbDirectory,
-    appVersion
+    appVersion,
+    encryptionKey,
+    dbDirectory
   )
 }
 

@@ -53,7 +53,7 @@ public class XMTPModule: Module {
 	public func definition() -> ModuleDefinition {
 		Name("XMTP")
 
-		Events("sign", "authed", "conversation", "message", "preEnableIdentityCallback", "preCreateIdentityCallback")
+		Events("sign", "authed", "bundleAuthed", "conversation", "message", "preEnableIdentityCallback", "preCreateIdentityCallback")
 
 		AsyncFunction("address") { (clientAddress: String) -> String in
 			if let client = await clientsManager.getClient(key: clientAddress) {
@@ -66,7 +66,7 @@ public class XMTPModule: Module {
 		//
 		// Auth functions
 		//
-		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) in
+		AsyncFunction("auth") { (address: String, environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, dbEncryptionKey: [UInt8], dbDirectory: String?) in
 			let signer = ReactNativeSigner(module: self, address: address)
 			self.signer = signer
 			if(hasCreateIdentityCallback ?? false) {
@@ -77,7 +77,8 @@ public class XMTPModule: Module {
 			}
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
-			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			let encryptionKeyData = Data(dbEncryptionKey)
+			let options = createClientConfig(env: environment, dbEncryptionKey: encryptionKeyData, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, dbDirectory: dbDirectory)
 			try await clientsManager.updateClient(key: address, client: await XMTP.Client.create(account: signer, options: options))
 			self.signer = nil
 			sendEvent("authed")
@@ -88,7 +89,7 @@ public class XMTPModule: Module {
 		}
 
 		// Generate a random wallet and set the client to that
-		AsyncFunction("createRandom") { (environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?) -> String in
+		AsyncFunction("createRandom") { (environment: String, appVersion: String?, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, dbEncryptionKey: [UInt8], dbDirectory: String?) -> String in
 			let privateKey = try PrivateKey.generate()
 			if(hasCreateIdentityCallback ?? false) {
 				preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
@@ -98,8 +99,9 @@ public class XMTPModule: Module {
 			}
 			let preCreateIdentityCallback: PreEventCallback? = hasCreateIdentityCallback ?? false ? self.preCreateIdentityCallback : nil
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
+			let encryptionKeyData = Data(dbEncryptionKey)
 
-			let options = createClientConfig(env: environment, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			let options = createClientConfig(env: environment, dbEncryptionKey: encryptionKeyData, appVersion: appVersion, preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, dbDirectory: dbDirectory)
 			let client = try await Client.create(account: privateKey, options: options)
 
 			await clientsManager.updateClient(key: client.address, client: client)
@@ -107,15 +109,15 @@ public class XMTPModule: Module {
 		}
 
 		// Create a client using its serialized key bundle.
-		AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?) -> String in
+		AsyncFunction("createFromKeyBundle") { (keyBundle: String, environment: String, appVersion: String?, dbEncryptionKey: [UInt8], dbDirectory: String?) -> String in
 			do {
 				guard let keyBundleData = Data(base64Encoded: keyBundle),
 				      let bundle = try? PrivateKeyBundle(serializedData: keyBundleData)
 				else {
 					throw Error.invalidKeyBundle
 				}
-
-				let options = createClientConfig(env: environment, appVersion: appVersion)
+				let encryptionKeyData = Data(dbEncryptionKey)
+				let options = createClientConfig(env: environment, dbEncryptionKey: encryptionKeyData, appVersion: appVersion, dbDirectory: dbDirectory)
 				let client = try await Client.from(bundle: bundle, options: options)
 				await clientsManager.updateClient(key: client.address, client: client)
 				return client.address
@@ -125,11 +127,34 @@ public class XMTPModule: Module {
 			}
 		}
 		
+		AsyncFunction("createFromKeyBundleWithSigner") { (address: String, keyBundle: String, environment: String, appVersion: String?, dbEncryptionKey: [UInt8], dbDirectory: String?) in
+			do {
+				guard let keyBundleData = Data(base64Encoded: keyBundle),
+					  let bundle = try? PrivateKeyBundle(serializedData: keyBundleData)
+				else {
+					throw Error.invalidKeyBundle
+				}
+				let encryptionKeyData = Data(dbEncryptionKey)
+
+				let signer = ReactNativeSigner(module: self, address: address)
+				self.signer = signer
+
+				let options = createClientConfig(env: environment, dbEncryptionKey: encryptionKeyData, appVersion: appVersion, dbDirectory: dbDirectory)
+				let client = try await Client.from(v1Bundle: bundle.v1, options: options, signingKey: signer)
+				await clientsManager.updateClient(key: client.inboxID, client: client)
+				self.signer = nil
+				self.sendEvent("bundleAuthed")
+			} catch {
+				print("ERROR! Failed to create client: \(error)")
+				throw error
+			}
+		}
+		
 		AsyncFunction("sign") { (clientAddress: String, digest: [UInt8], keyType: String, preKeyIndex: Int) -> [UInt8] in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			let privateKeyBundle = client.keys
+			let privateKeyBundle = try client.keys
 			let key = keyType == "prekey" ? privateKeyBundle.preKeys[preKeyIndex] : privateKeyBundle.identityKey
 
 			let privateKey = try PrivateKey(key)
@@ -180,7 +205,7 @@ public class XMTPModule: Module {
 			let data = try Xmtp_KeystoreApi_V1_TopicMap.TopicData(
 				serializedData: Data(base64Encoded: Data(topicData.utf8))!
 			)
-			let conversation = await client.conversations.importTopicData(data: data)
+			let conversation = try await client.conversations.importTopicData(data: data)
 			await conversationsManager.set(conversation.cacheKey(clientAddress), conversation)
 			return try ConversationWrapper.encode(conversation, client: client)
 		}
@@ -562,14 +587,14 @@ public class XMTPModule: Module {
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isAllowed(address)
+			return try await client.contacts.isAllowed(address)
 		}
 
 		AsyncFunction("isDenied") { (clientAddress: String, address: String) -> Bool in
 			guard let client = await clientsManager.getClient(key: clientAddress) else {
 				throw Error.noClient
 			}
-			return await client.contacts.isDenied(address)
+			return try await client.contacts.isDenied(address)
 		}
 
 		AsyncFunction("denyContacts") { (clientAddress: String, addresses: [String]) in
@@ -634,7 +659,7 @@ public class XMTPModule: Module {
 	// Helpers
 	//
 
-	func createClientConfig(env: String, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil) -> XMTP.ClientOptions {
+	func createClientConfig(env: String, dbEncryptionKey: Data? = nil, appVersion: String?, preEnableIdentityCallback: PreEventCallback? = nil, preCreateIdentityCallback: PreEventCallback? = nil, dbDirectory: String? = nil) -> XMTP.ClientOptions {
 		// Ensure that all codecs have been registered.
 		switch env {
 		case "local":
@@ -642,19 +667,19 @@ public class XMTPModule: Module {
 				env: XMTP.XMTPEnvironment.local,
 				isSecure: false,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: true, encryptionKey: dbEncryptionKey, dbDirectory: dbDirectory)
 		case "production":
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
 				isSecure: true,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: true, encryptionKey: dbEncryptionKey, dbDirectory: dbDirectory)
 		default:
 			return XMTP.ClientOptions(api: XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
 				isSecure: true,
 				appVersion: appVersion
-			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback)
+			), preEnableIdentityCallback: preEnableIdentityCallback, preCreateIdentityCallback: preCreateIdentityCallback, enableV3: true, encryptionKey: dbEncryptionKey, dbDirectory: dbDirectory)
 		}
 	}
 
