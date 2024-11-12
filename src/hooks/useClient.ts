@@ -6,7 +6,7 @@ import { Signer } from '../lib/Signer'
 
 interface InitializeClientOptions {
   signer: Signer | null
-  options?: ClientOptions
+  options: ClientOptions
 }
 
 export const useClient = (onError?: (e: Error) => void) => {
