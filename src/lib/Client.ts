@@ -116,7 +116,7 @@ export class Client<ContentTypes> {
           options.appVersion,
           Boolean(createSubscription),
           Boolean(enableSubscription),
-          options.dbDirectory,
+          options.dbDirectory
         )
       })()
     })
@@ -160,10 +160,14 @@ export class Client<ContentTypes> {
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance with a random address.
    */
   static async createRandom<
-    ContentTypes extends XMTPModule.ContentCodec<any>[] = [],
+    ContentCodecs extends XMTPModule.ContentCodec<any>[] = [],
   >(
-    options: ClientOptions & { codecs?: ContentTypes }
-  ): Promise<Client<ContentTypes>> {
+    options: ClientOptions & { codecs?: ContentCodecs }
+  ): Promise<
+    Client<
+      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
+    >
+  > {
     if (
       options.dbEncryptionKey === undefined ||
       options.dbEncryptionKey.length !== 32
@@ -172,7 +176,7 @@ export class Client<ContentTypes> {
     }
     const { createSubscription, enableSubscription } =
       this.setupSubscriptions(options)
-    const client = await XMTPModule.createRandom(
+    const address = await XMTPModule.createRandom(
       options.env,
       options.dbEncryptionKey,
       options.appVersion,
@@ -183,7 +187,7 @@ export class Client<ContentTypes> {
     this.removeSubscription(createSubscription)
     this.removeSubscription(enableSubscription)
 
-    return new Client(client['address'], options?.codecs || [])
+    return new Client(address, options?.codecs || [])
   }
 
   /**
@@ -202,7 +206,11 @@ export class Client<ContentTypes> {
     keyBundle: string,
     options: ClientOptions & { codecs?: ContentCodecs },
     wallet?: Signer | WalletClient | undefined
-  ): Promise<Client<ContentCodecs>> {
+  ): Promise<
+    Client<
+      ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
+    >
+  > {
     if (
       options.dbEncryptionKey === undefined ||
       options.dbEncryptionKey.length !== 32
@@ -211,7 +219,7 @@ export class Client<ContentTypes> {
     }
 
     if (!wallet) {
-      const client = await XMTPModule.createFromKeyBundle(
+      const address = await XMTPModule.createFromKeyBundle(
         keyBundle,
         options.env,
         options.dbEncryptionKey,
@@ -219,13 +227,17 @@ export class Client<ContentTypes> {
         options.dbDirectory
       )
 
-      return new Client(client['address'], options.codecs || [])
+      return new Client(address, options?.codecs || [])
     } else {
       const signer = getSigner(wallet)
       if (!signer) {
         throw new Error('Signer is not configured')
       }
-      return new Promise<Client<ContentCodecs>>((resolve, reject) => {
+      return new Promise<
+        Client<
+          ExtractDecodedType<[...ContentCodecs, TextCodec][number]> | undefined
+        >
+      >((resolve, reject) => {
         ;(async () => {
           this.signSubscription = XMTPModule.emitter.addListener(
             'sign',
@@ -257,14 +269,10 @@ export class Client<ContentTypes> {
 
           this.authSubscription = XMTPModule.emitter.addListener(
             'bundleAuthed',
-            async (message: {
-              inboxId: string
-              address: string
-              installationId: string
-              dbPath: string
-            }) => {
+            async () => {
               this.removeAllSubscriptions()
-              resolve(new Client(message.address, options.codecs || []))
+              const address = await signer.getAddress()
+              resolve(new Client(address, options.codecs || []))
             }
           )
           await XMTPModule.createFromKeyBundleWithSigner(

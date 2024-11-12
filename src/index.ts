@@ -103,7 +103,7 @@ export async function createFromKeyBundleWithSigner(
   dbEncryptionKey: Uint8Array,
   appVersion?: string | undefined,
   dbDirectory?: string | undefined
-): Promise<string> {
+) {
   const encryptionKey = Array.from(dbEncryptionKey)
 
   return await XMTPModule.createFromKeyBundleWithSigner(
