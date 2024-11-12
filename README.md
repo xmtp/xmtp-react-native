@@ -87,17 +87,17 @@ Because `xmtp-react-native` is in active development, you should expect breaking
 
 XMTP communicates about breaking revisions in the [XMTP Discord community](https://discord.gg/xmtp), providing as much advance notice as possible. Additionally, breaking revisions in an `xmtp-react-native` release are described on the [Releases page](https://github.com/xmtp/xmtp-react-native/releases).
 
-### Deprecation
+## Deprecation
 
 Older versions of the SDK will eventually be deprecated, which means:
 
 1. The network will not support and eventually actively reject connections from clients using deprecated versions.
 2. Bugs will not be fixed in deprecated versions.
 
-Following table shows the deprecation schedule.
+The following table provides the deprecation schedule.
 
-| Announced  | Effective  | Minimum Version | Rationale                                                                                                         |
-| ---------- | ---------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 2022-08-18 | 2022-11-08 | v6.0.0          | XMTP network will stop supporting the Waku/libp2p based client interface in favor of the new GRPC based interface |
+| Announced              | Effective     | Minimum Version | Rationale                                                                                                                                                                  |
+|------------------------|---------------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| No more support for V2 | March 1, 2025 | 3.0.0           | In a move towards better security with MLS and the ability to decentralize we will be shutting down V2 and moving entirely to V3 MLS. You can see the legacy branch here: https://github.com/xmtp/xmtp-react-native/tree/xmtp-legacy |
 
 Issues and PRs are welcome in accordance with our [contribution guidelines](https://github.com/xmtp/.github/blob/main/CONTRIBUTING.md).
