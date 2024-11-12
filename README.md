@@ -6,11 +6,11 @@ This repo provides a package you can use to build with XMTP in a React Native or
 
 Is there a feature you need that's currently supported? Please [open an issue](https://github.com/xmtp/xmtp-react-native/issues).
 
-Or better yet, open a PR and we'll get it reviewed and merged as soon as possible. If you contribute a PR that gets merged into this repo, you'll be eligible to [claim this XMTP contributor POAP](https://www.gitpoap.io/gp/1100)!
+Or better yet, open a PR and we'll get it reviewed and merged as soon as possible. If you contribute a PR that gets merged into this repo, you'll be eligible to [claim this XMTP contributor POAP](https://www.gitpoap.io/gp/1100).
 
 ## Documentation
 
-To learn how to use the XMTP React Native SDK and get answers to frequently asked questions, see [XMTP documentation](https://docs.xmtp.org/).
+To learn how to use the XMTP React Native SDK and get answers to frequently asked questions, see the [XMTP documentation](https://docs-xmtp-org-git-v3-preview-ephemerahq.vercel.app/).
 
 ## SDK reference
 
