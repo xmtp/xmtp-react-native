@@ -182,7 +182,7 @@ public class XMTPModule: Module {
 			}
 			let inboxStates = try await client.inboxStatesForInboxIds(
 				refreshFromNetwork: refreshFromNetwork, inboxIds: inboxIds)
-			return try inboxStates.map { InboxStateWrapper.encode($0) }
+			return try inboxStates.map { try InboxStateWrapper.encode($0) }
 		}
 
 		Function("preAuthenticateToInboxCallbackCompleted") {
