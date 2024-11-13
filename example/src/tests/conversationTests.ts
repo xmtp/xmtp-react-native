@@ -67,6 +67,21 @@ test('can find a conversation by topic', async () => {
   return true
 })
 
+test('can find a dm by inbox id', async () => {
+  const [alixClient, boClient] = await createClients(2)
+  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
+
+  await boClient.conversations.sync()
+  const boDm = await boClient.conversations.findDmByInboxId(alixClient.inboxId)
+
+  assert(
+    boDm?.id === alixDm.id,
+    `bo dm id ${boDm?.id} does not match alix dm id ${alixDm.id}`
+  )
+
+  return true
+})
+
 test('can find a dm by address', async () => {
   const [alixClient, boClient] = await createClients(2)
   const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
