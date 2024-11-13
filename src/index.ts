@@ -85,6 +85,17 @@ export async function getInboxState(
   return InboxState.from(inboxState)
 }
 
+export async function getInboxStates(
+  inboxId: InboxId,
+  refreshFromNetwork: boolean,
+  inboxIds: InboxId[],
+): Promise<InboxState[]> {
+  const inboxStates = await XMTPModule.getInboxStates(inboxId, refreshFromNetwork, inboxIds)
+  return inboxStates.map((json: string) => {
+    return InboxState.from(json)
+  })
+}
+
 export function preAuthenticateToInboxCallbackCompleted() {
   XMTPModule.preAuthenticateToInboxCallbackCompleted()
 }
@@ -372,6 +383,21 @@ export async function findConversationByTopic<
   } else {
     return new Dm(client, conversation)
   }
+}
+
+export async function findDmByInboxId<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  peerInboxId: InboxId
+): Promise<Dm<ContentTypes> | undefined> {
+  const json = await XMTPModule.findDmByInboxId(client.inboxId, peerInboxId)
+  const dm = JSON.parse(json)
+  if (!dm || Object.keys(dm).length === 0) {
+    return undefined
+  }
+
+  return new Dm(client, dm)
 }
 
 export async function findDmByAddress<

@@ -274,6 +274,14 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("getInboxStates") Coroutine { inboxId: String, refreshFromNetwork: Boolean, inboxIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val inboxStates = client.inboxStatesForInboxIds(refreshFromNetwork, inboxIds)
+                inboxStates.map { InboxStateWrapper.encode(it) }
+            }
+        }
+
         Function("preAuthenticateToInboxCallbackCompleted") {
             logV("preAuthenticateToInboxCallbackCompleted")
             preAuthenticateToInboxCallbackDeferred?.complete(Unit)
@@ -531,11 +539,22 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("findDmByInboxId") Coroutine { inboxId: String, peerInboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("findDmByInboxId")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val dm = client.findDmByInboxId(peerInboxId)
+                dm?.let {
+                    DmWrapper.encode(client, dm)
+                }
+            }
+        }
+
         AsyncFunction("findDmByAddress") Coroutine { inboxId: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
                 logV("findDmByAddress")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val dm = client.findDm(peerAddress)
+                val dm = client.findDmByAddress(peerAddress)
                 dm?.let {
                     DmWrapper.encode(client, dm)
                 }

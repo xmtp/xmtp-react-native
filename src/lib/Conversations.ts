@@ -1,4 +1,4 @@
-import { Client } from './Client'
+import { Client, InboxId } from './Client'
 import { ConversationVersion } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Dm, DmParams } from './Dm'
@@ -103,6 +103,18 @@ export default class Conversations<
     groupId: ConversationId
   ): Promise<Group<ContentTypes> | undefined> {
     return await XMTPModule.findGroup(this.client, groupId)
+  }
+
+  /**
+   * This method returns a Dm by the inboxId if that dm exists in the local database.
+   * To get the latest list of dms from the network, call sync() first.
+   *
+   * @returns {Promise<Dm>} A Promise that resolves to a Dm or undefined if not found.
+   */
+  async findDmByInboxId(
+    inboxId: InboxId
+  ): Promise<Dm<ContentTypes> | undefined> {
+    return await XMTPModule.findDmByInboxId(this.client, inboxId)
   }
 
   /**
