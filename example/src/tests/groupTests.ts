@@ -16,6 +16,7 @@ import {
   GroupUpdatedCodec,
   ConsentListEntry,
 } from '../../../src/index'
+import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
 export const groupTests: Test[] = []
 let counter = 1
@@ -1635,3 +1636,138 @@ test('can create new installation without breaking group', async () => {
 
 //   return true
 // })
+
+test('groups cannot fork', async () => {
+  const [alix, bo, caro] = await createClients(3)
+  // Create group with 3 users
+  const { id: groupId } = await alix.conversations.newGroup([
+    bo.address,
+    caro.address,
+  ])
+
+  const getGroupForClient = async (client: Client) => {
+    // Always sync the client before getting the group
+    await client.conversations.sync()
+    const group = await client.conversations.findGroup(groupId)
+    assert(group !== undefined, `Group not found for ${client.address}`)
+    return group as Group<DefaultContentTypes>
+  }
+
+  const syncClientAndGroup = async (client: Client) => {
+    const group = await getGroupForClient(client)
+    await group.sync()
+  }
+
+  const addMemberToGroup = async (fromClient: Client, addresses: string[]) => {
+    await syncClientAndGroup(fromClient)
+    const group = await getGroupForClient(fromClient)
+    await group.addMembers(addresses)
+    await delayToPropogate(500)
+  }
+
+  const removeMemberFromGroup = async (
+    fromClient: Client,
+    addresses: string[]
+  ) => {
+    await syncClientAndGroup(fromClient)
+    const group = await getGroupForClient(fromClient)
+    await group.removeMembers(addresses)
+    await delayToPropogate(500)
+  }
+
+  // Helper to send a message from a bunch of senders and make sure it is received by all receivers
+  const testMessageSending = async (senderClient: Client, receiver: Client) => {
+    // for (const senderClient of senders) {
+    const messageContent = Math.random().toString(36)
+    await syncClientAndGroup(senderClient)
+    const senderGroup = await getGroupForClient(senderClient)
+    await senderGroup.send(messageContent)
+
+    await delayToPropogate(500)
+    await senderGroup.sync()
+
+    await syncClientAndGroup(receiver)
+
+    const receiverGroupToCheck = await getGroupForClient(receiver)
+    await receiverGroupToCheck.sync()
+
+    const messages = await receiverGroupToCheck.messages({
+      direction: 'DESCENDING',
+    })
+    const lastMessage = messages[0]
+    // console.log(lastMessage);
+    console.log(
+      `${receiverGroupToCheck.client.address} sees ${messages.length} messages in group`
+    )
+    assert(
+      lastMessage !== undefined &&
+        lastMessage.nativeContent.text === messageContent,
+      `${receiverGroupToCheck.client.address} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
+    )
+    // }
+  }
+
+  console.log('Testing that messages sent by alix are received by bo')
+  await testMessageSending(alix, bo)
+  console.log('Alix & Bo are not forked at the beginning')
+
+  // Test adding members one by one
+  // console.log('Testing adding members one by one...')
+  const newClients = await createClients(2)
+
+  // Add back several members
+  console.log('Adding new members to the group...')
+  for (const client of newClients) {
+    console.log(`Adding member ${client.address}...`)
+    await addMemberToGroup(alix, [client.address])
+  }
+  await delayToPropogate()
+
+  await alix.conversations.sync()
+  await syncClientAndGroup(alix)
+
+  // NB => if we don't use Promise.all but a loop, we don't get a fork
+  const REMOVE_MEMBERS_IN_PARALLEL = true
+  if (REMOVE_MEMBERS_IN_PARALLEL) {
+    console.log('Removing members in parallel')
+
+    await Promise.all(
+      newClients.map((client) => {
+        console.log(`Removing member ${client.address}...`)
+        return removeMemberFromGroup(alix, [client.address])
+      })
+    )
+  } else {
+    console.log('Removing members one by one')
+
+    for (const client of newClients) {
+      console.log(`Removing member ${client.address}...`)
+      await removeMemberFromGroup(alix, [client.address])
+    }
+  }
+
+  await delayToPropogate(1000)
+
+  // When forked, it stays forked even if we try 5 times
+  // but sometimes it is not forked and works 5/5 times
+  let forkCount = 0
+  const tryCount = 5
+  for (let i = 0; i < tryCount; i++) {
+    console.log(`Checking fork status ${i+1}/${tryCount}`)
+    try {
+      await syncClientAndGroup(alix)
+      await syncClientAndGroup(bo)
+      await delayToPropogate(500)
+      await testMessageSending(alix, bo)
+      console.log('Not forked!')
+    } catch (e: any) {
+      console.log('Forked!')
+      console.log(e)
+      forkCount++
+    }
+  }
+
+  assert(forkCount === 0, `Forked ${forkCount}/${tryCount} times`)
+
+  return true
+})
