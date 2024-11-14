@@ -9,6 +9,7 @@ import { EventTypes } from './types/EventTypes'
 import { MessageId, MessagesOptions } from './types/MessagesOptions'
 import * as XMTP from '../index'
 import { ConversationId, ConversationTopic } from '../index'
+import { SendOptions } from './types/SendOptions'
 
 export interface DmParams {
   id: ConversationId
@@ -58,12 +59,12 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * @throws {Error} Throws an error if there is an issue with sending the message.
    */
   async send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
-    content: ConversationSendPayload<SendContentTypes>
+    content: ConversationSendPayload<SendContentTypes>,
+    opts?: SendOptions
   ): Promise<MessageId> {
-    // TODO: Enable other content types
-    // if (opts && opts.contentType) {
-    // return await this._sendWithJSCodec(content, opts.contentType)
-    // }
+    if (opts && opts.contentType) {
+      return await this._sendWithJSCodec(content, opts.contentType)
+    }
 
     try {
       if (typeof content === 'string') {
@@ -75,6 +76,27 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
       console.info('ERROR in send()', e.message)
       throw e
     }
+  }
+
+  private async _sendWithJSCodec<T>(
+    content: T,
+    contentType: XMTP.ContentTypeId
+  ): Promise<MessageId> {
+    const codec =
+      this.client.codecRegistry[
+        `${contentType.authorityId}/${contentType.typeId}:${contentType.versionMajor}.${contentType.versionMinor}`
+      ]
+
+    if (!codec) {
+      throw new Error(`no codec found for: ${contentType}`)
+    }
+
+    return await XMTP.sendWithContentType(
+      this.client.inboxId,
+      this.id,
+      content,
+      codec
+    )
   }
 
   /**

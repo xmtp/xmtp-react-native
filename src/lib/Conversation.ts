@@ -1,5 +1,5 @@
 import { ConsentState } from './ConsentListEntry'
-import { ConversationSendPayload, MessageId, MessagesOptions } from './types'
+import { ConversationSendPayload, MessageId, MessagesOptions, SendOptions } from './types'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
 import { DecodedMessage, Member, Dm, Group } from '../index'
@@ -19,7 +19,8 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   lastMessage?: DecodedMessage<ContentTypes>
 
   send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
-    content: ConversationSendPayload<SendContentTypes>
+    content: ConversationSendPayload<SendContentTypes>,
+    opts?: SendOptions
   ): Promise<MessageId>
   sync()
   messages(opts?: MessagesOptions): Promise<DecodedMessage<ContentTypes>[]>
