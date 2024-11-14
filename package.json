@@ -1,6 +1,6 @@
 {
   "name": "@xmtp/react-native-sdk",
-  "version": "1.35.0",
+  "version": "1.35.1",
   "description": "Wraps for native xmtp sdks for react native",
   "main": "build/index.js",
   "types": "build/index.d.ts",
