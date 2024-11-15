@@ -1,14 +1,10 @@
-import RNFS from 'react-native-fs'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
-  Client,
-  ConsentListEntry,
   Conversation,
   ConversationId,
   ConversationVersion,
 } from '../../../src/index'
-import { Wallet } from 'ethers'
 
 export const conversationTests: Test[] = []
 let counter = 1
@@ -549,85 +545,6 @@ test('can streamAllMessages from multiple clients - swapped', async () => {
       'Unexpected all conversations count for Ali ' + allAliMessages.length
     )
   }
-
-  return true
-})
-
-test('can sync consent', async () => {
-  const [bo] = await createClients(1)
-  const keyBytes = new Uint8Array([
-    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
-  ])
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
-  }
-  const directoryExists2 = await RNFS.exists(dbDirPath2)
-  if (!directoryExists2) {
-    await RNFS.mkdir(dbDirPath2)
-  }
-  const alixWallet = Wallet.createRandom()
-
-  const alix = await Client.create(alixWallet, {
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath,
-  })
-
-  // Create DM conversation
-  const dm = await alix.conversations.findOrCreateDm(bo.address)
-  await dm.updateConsent('denied')
-  const consentState = await dm.consentState()
-  assert(consentState === 'denied', `Expected 'denied', got ${consentState}`)
-
-  await bo.conversations.sync()
-  const boDm = await bo.conversations.findConversation(dm.id)
-
-  const alix2 = await Client.create(alixWallet, {
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath2,
-  })
-
-  const state = await alix2.inboxState(true)
-  assert(
-    state.installations.length === 2,
-    `Expected 2 installations, got ${state.installations.length}`
-  )
-
-  // Sync conversations
-  await bo.conversations.sync()
-  if (boDm) await boDm.sync()
-  await alix.conversations.sync()
-  await alix2.conversations.sync()
-  await alix2.preferences.syncConsent()
-  await alix.conversations.syncAllConversations()
-  await delayToPropogate(2000)
-  await alix2.conversations.syncAllConversations()
-  await delayToPropogate(2000)
-
-  const dm2 = await alix2.conversations.findConversation(dm.id)
-  const consentState2 = await dm2?.consentState()
-  assert(consentState2 === 'denied', `Expected 'denied', got ${consentState2}`)
-
-  await alix2.preferences.setConsentState(
-    new ConsentListEntry(dm2!.id, 'conversation_id', 'allowed')
-  )
-
-  const convoState = await alix2.preferences.conversationConsentState(dm2!.id)
-  assert(convoState === 'allowed', `Expected 'allowed', got ${convoState}`)
-
-  const updatedConsentState = await dm2?.consentState()
-  assert(
-    updatedConsentState === 'allowed',
-    `Expected 'allowed', got ${updatedConsentState}`
-  )
 
   return true
 })

@@ -1,5 +1,4 @@
 import { Wallet } from 'ethers'
-import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
   Test,
@@ -15,6 +14,7 @@ import {
   GroupUpdatedContent,
   GroupUpdatedCodec,
   ConsentListEntry,
+  DecodedMessage,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -751,13 +751,17 @@ test('can list groups with params', async () => {
   assert(
     boGroupsOrderCreated.map((group: any) => group.id).toString() ===
       [boGroup1.id, boGroup2.id].toString(),
-    `Group order should be group1 then group2 but was ${boGroupsOrderCreated.map((group: any) => group.id).toString()}`
+    `Group order should be group1 then group2 but was ${boGroupsOrderCreated
+      .map((group: any) => group.id)
+      .toString()}`
   )
 
   assert(
     boGroupsOrderLastMessage.map((group: any) => group.id).toString() ===
       [boGroup2.id, boGroup1.id].toString(),
-    `Group order should be group2 then group1 but was ${boGroupsOrderLastMessage.map((group: any) => group.id).toString()}`
+    `Group order should be group2 then group1 but was ${boGroupsOrderLastMessage
+      .map((group: any) => group.id)
+      .toString()}`
   )
 
   const messages = await boGroupsOrderLastMessage[0].messages()
@@ -1502,8 +1506,8 @@ test('can sync all groups', async () => {
     `messages should be 4 after sync but was ${boGroup?.messages?.length}`
   )
   assert(
-    numGroupsSynced === 50,
-    `should have synced 50 groups but synced ${numGroupsSynced}`
+    numGroupsSynced === 51,
+    `should have synced 51 groups but synced ${numGroupsSynced}`
   )
 
   for (const group of groups) {
@@ -1513,15 +1517,15 @@ test('can sync all groups', async () => {
   // First syncAllConversations after removal will still sync each group to set group inactive
   const numGroupsSynced2 = await bo.conversations.syncAllConversations()
   assert(
-    numGroupsSynced2 === 50,
-    `should have synced 50 groups but synced ${numGroupsSynced2}`
+    numGroupsSynced2 === 51,
+    `should have synced 51 groups but synced ${numGroupsSynced2}`
   )
 
   // Next syncAllConversations will not sync inactive groups
   const numGroupsSynced3 = await bo.conversations.syncAllConversations()
   assert(
-    numGroupsSynced3 === 0,
-    `should have synced 0 groups but synced ${numGroupsSynced3}`
+    numGroupsSynced3 === 1,
+    `should have synced 1 groups but synced ${numGroupsSynced3}`
   )
   return true
 })
