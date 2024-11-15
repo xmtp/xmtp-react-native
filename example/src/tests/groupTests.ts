@@ -671,6 +671,61 @@ test('can stream groups', async () => {
   return true
 })
 
+test('can filter groups by consent', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3)
+
+  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
+  const otherGroup = await alixClient.conversations.newGroup([boClient.address])
+  await boClient.conversations.findOrCreateDm(alixClient.address)
+  await caroClient.conversations.findOrCreateDm(boClient.address)
+  await boClient.conversations.sync
+  await boClient.conversations.findDmByInboxId(caroClient.inboxId)
+  const boGroup2 = await boClient.conversations.findGroup(otherGroup.id)
+
+  const boConvos = await boClient.conversations.listGroups()
+  const boConvosFilteredAllowed = await boClient.conversations.listGroups(
+    {},
+    undefined,
+    undefined,
+    'allowed'
+  )
+  const boConvosFilteredUnknown = await boClient.conversations.listGroups(
+    {},
+    undefined,
+    undefined,
+    'unknown'
+  )
+
+  assert(
+    boConvos.length === 2,
+    `Conversation length should be 2 but was ${boConvos.length}`
+  )
+
+  assert(
+    boConvosFilteredAllowed
+      .map((conversation: any) => conversation.id)
+      .toString() === [boGroup1.id].toString(),
+    `Conversation allowed should be ${[
+      boGroup1.id,
+    ].toString()} but was ${boConvosFilteredAllowed
+      .map((convo: any) => convo.id)
+      .toString()}`
+  )
+
+  assert(
+    boConvosFilteredUnknown
+      .map((conversation: any) => conversation.id)
+      .toString() === [boGroup2?.id].toString(),
+    `Conversation unknown filter should be ${[
+      boGroup2?.id,
+    ].toString()} but was ${boConvosFilteredUnknown
+      .map((convo: any) => convo.id)
+      .toString()}`
+  )
+
+  return true
+})
+
 test('can list groups with params', async () => {
   const [alixClient, boClient] = await createClients(2)
 

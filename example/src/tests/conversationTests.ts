@@ -1,7 +1,9 @@
-import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import RNFS from 'react-native-fs'
+
+import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
   Client,
+  ConsentListEntry,
   Conversation,
   ConversationId,
   ConversationVersion,
@@ -94,6 +96,63 @@ test('can find a dm by address', async () => {
   assert(
     boDm?.id === alixDm.id,
     `bo dm id ${boDm?.id} does not match alix dm id ${alixDm.id}`
+  )
+
+  return true
+})
+
+test('can filter conversations by consent', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3)
+
+  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
+  const otherGroup = await alixClient.conversations.newGroup([boClient.address])
+  const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.address)
+  await caroClient.conversations.findOrCreateDm(boClient.address)
+  await boClient.conversations.sync
+  const boDm2 = await boClient.conversations.findDmByInboxId(caroClient.inboxId)
+  const boGroup2 = await boClient.conversations.findGroup(otherGroup.id)
+
+  const boConvos = await boClient.conversations.list()
+  const boConvosFilteredAllowed = await boClient.conversations.list(
+    {},
+    undefined,
+    undefined,
+    'allowed'
+  )
+  const boConvosFilteredUnknown = await boClient.conversations.list(
+    {},
+    undefined,
+    undefined,
+    'unknown'
+  )
+
+  assert(
+    boConvos.length === 4,
+    `Conversation length should be 4 but was ${boConvos.length}`
+  )
+
+  assert(
+    boConvosFilteredAllowed
+      .map((conversation: any) => conversation.id)
+      .toString() === [boGroup1.id, boDm1.id].toString(),
+    `Conversation allowed should be ${[
+      boGroup1.id,
+      boDm1.id,
+    ].toString()} but was ${boConvosFilteredAllowed
+      .map((convo: any) => convo.id)
+      .toString()}`
+  )
+
+  assert(
+    boConvosFilteredUnknown
+      .map((conversation: any) => conversation.id)
+      .toString() === [boGroup2?.id, boDm2?.id].toString(),
+    `Conversation unknown filter should be ${[
+      boGroup2?.id,
+      boDm2?.id,
+    ].toString()} but was ${boConvosFilteredUnknown
+      .map((convo: any) => convo.id)
+      .toString()}`
   )
 
   return true
@@ -494,15 +553,21 @@ test('can streamAllMessages from multiple clients - swapped', async () => {
 })
 
 test('can sync consent', async () => {
+  const [bo] = await createClients(1)
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
   const directoryExists = await RNFS.exists(dbDirPath)
   if (!directoryExists) {
     await RNFS.mkdir(dbDirPath)
+  }
+  const directoryExists2 = await RNFS.exists(dbDirPath2)
+  if (!directoryExists2) {
+    await RNFS.mkdir(dbDirPath2)
   }
   const alix = await Client.createRandom({
     env: 'local',
@@ -511,6 +576,56 @@ test('can sync consent', async () => {
     dbDirectory: dbDirPath,
   })
 
-  
+  // Create DM conversation
+  const dm = await alix.conversations.findOrCreateDm(bo.address)
+  await dm.updateConsent('denied')
+  const consentState = await dm.consentState()
+  assert(consentState === 'denied', `Expected 'denied', got ${consentState}`)
+
+  await bo.conversations.sync()
+  const boDm = await bo.conversations.findConversation(dm.id)
+
+  const alix2 = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath2,
+  })
+
+  const state = await alix2.inboxState(true)
+  assert(
+    state.installations.length === 2,
+    `Expected 2 installations, got ${state.installations.length}`
+  )
+
+  // Sync conversations
+  await bo.conversations.sync()
+  if (boDm) await boDm.sync()
+  await alix.conversations.sync()
+  await alix2.conversations.sync()
+  await alix2.preferences.syncConsent()
+  await alix.conversations.syncAllConversations()
+
+  await delayToPropogate(2000)
+  await alix2.conversations.syncAllConversations()
+  await delayToPropogate(2000)
+
+  const dm2 = await alix2.conversations.findConversation(dm.id)
+  const consentState2 = await dm2?.consentState()
+  assert(consentState2 === 'denied', `Expected 'denied', got ${consentState2}`)
+
+  await alix2.preferences.setConsentState(
+    new ConsentListEntry(dm2!.id, 'conversation_id', 'allowed')
+  )
+
+  const convoState = await alix2.preferences.conversationConsentState(dm2!.id)
+  assert(convoState === 'allowed', `Expected 'allowed', got ${convoState}`)
+
+  const updatedConsentState = await dm2?.consentState()
+  assert(
+    updatedConsentState === 'allowed',
+    `Expected 'allowed', got ${updatedConsentState}`
+  )
+
   return true
 })
