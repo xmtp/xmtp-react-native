@@ -1727,7 +1727,7 @@ test('groups cannot fork', async () => {
   await syncClientAndGroup(alix)
 
   // NB => if we don't use Promise.all but a loop, we don't get a fork
-  const REMOVE_MEMBERS_IN_PARALLEL = true
+  const REMOVE_MEMBERS_IN_PARALLEL = false
   if (REMOVE_MEMBERS_IN_PARALLEL) {
     console.log('Removing members in parallel')
 
