@@ -1,5 +1,7 @@
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
+import RNFS from 'react-native-fs'
 import {
+  Client,
   Conversation,
   ConversationId,
   ConversationVersion,
@@ -124,13 +126,27 @@ test('can list conversations with params', async () => {
   assert(
     boConvosOrderCreated.map((group: any) => group.id).toString() ===
       [boGroup1.id, boGroup2.id, boDm1.id, boDm2.id].toString(),
-    `Conversation created at order should be ${[boGroup1.id, boGroup2.id, boDm1.id, boDm2.id].toString()} but was ${boConvosOrderCreated.map((group: any) => group.id).toString()}`
+    `Conversation created at order should be ${[
+      boGroup1.id,
+      boGroup2.id,
+      boDm1.id,
+      boDm2.id,
+    ].toString()} but was ${boConvosOrderCreated
+      .map((group: any) => group.id)
+      .toString()}`
   )
 
   assert(
     boConvosOrderLastMessage.map((group: any) => group.id).toString() ===
       [boDm1.id, boGroup2.id, boDm2.id, boGroup1.id].toString(),
-    `Conversation last message order should be ${[boDm1.id, boGroup2.id, boDm2.id, boGroup1.id].toString()} but was ${boConvosOrderLastMessage.map((group: any) => group.id).toString()}`
+    `Conversation last message order should be ${[
+      boDm1.id,
+      boGroup2.id,
+      boDm2.id,
+      boGroup1.id,
+    ].toString()} but was ${boConvosOrderLastMessage
+      .map((group: any) => group.id)
+      .toString()}`
   )
 
   const messages = await boConvosOrderLastMessage[0].messages()
@@ -474,5 +490,27 @@ test('can streamAllMessages from multiple clients - swapped', async () => {
     )
   }
 
+  return true
+})
+
+test('can sync consent', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  const alix = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+  })
+
+  
   return true
 })
