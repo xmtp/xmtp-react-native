@@ -13,6 +13,7 @@ import { PermissionPolicySet } from './types/PermissionPolicySet'
 import * as XMTPModule from '../index'
 import {
   Address,
+  ConsentState,
   ContentCodec,
   Conversation,
   ConversationId,
@@ -30,67 +31,6 @@ export default class Conversations<
 
   constructor(client: Client<ContentTypes>) {
     this.client = client
-  }
-
-  /**
-   * Creates a new conversation.
-   *
-   * This method creates a new conversation with the specified peer address and context.
-   *
-   * @param {Address} peerAddress - The address of the peer to create a conversation with.
-   * @returns {Promise<Conversation>} A Promise that resolves to a Conversation object.
-   */
-  async newConversation(
-    peerAddress: Address
-  ): Promise<Conversation<ContentTypes>> {
-    const checksumAddress = getAddress(peerAddress)
-    return await XMTPModule.findOrCreateDm(this.client, checksumAddress)
-  }
-
-  /**
-   * Creates a new conversation.
-   *
-   * This method creates a new conversation with the specified peer address.
-   *
-   * @param {Address} peerAddress - The address of the peer to create a conversation with.
-   * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
-   */
-  async findOrCreateDm(peerAddress: Address): Promise<Dm<ContentTypes>> {
-    return await XMTPModule.findOrCreateDm(this.client, peerAddress)
-  }
-
-  /**
-   * This method returns a list of all groups that the client is a member of.
-   * To get the latest list of groups from the network, call syncGroups() first.
-   * @param {ConversationOptions} opts - The options to specify what fields you want returned for the groups in the list.
-   * @param {ConversationOrder} order - The order to specify if you want groups listed by last message or by created at.
-   * @param {number} limit - Limit the number of groups returned in the list.
-   *
-   * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
-   */
-  async listGroups(
-    opts?: ConversationOptions | undefined,
-    order?: ConversationOrder | undefined,
-    limit?: number | undefined
-  ): Promise<Group<ContentTypes>[]> {
-    return await XMTPModule.listGroups(this.client, opts, order, limit)
-  }
-
-  /**
-   * This method returns a list of all dms that the client is a member of.
-   * To get the latest list of dms from the network, call sync() first.
-   * @param {ConversationOptions} opts - The options to specify what fields you want returned for the dms in the list.
-   * @param {ConversationOrder} order - The order to specify if you want dms listed by last message or by created at.
-   * @param {number} limit - Limit the number of dms returned in the list.
-   *
-   * @returns {Promise<Dm[]>} A Promise that resolves to an array of Dms objects.
-   */
-  async listDms(
-    opts?: ConversationOptions | undefined,
-    order?: ConversationOrder | undefined,
-    limit?: number | undefined
-  ): Promise<Dm<ContentTypes>[]> {
-    return await XMTPModule.listDms(this.client, opts, order, limit)
   }
 
   /**
@@ -165,54 +105,45 @@ export default class Conversations<
     return await XMTPModule.findMessage(this.client, messageId)
   }
 
-  /**
-   * This method returns a list of all V3 conversations that the client is a member of.
-   * To include the latest conversations from the network in the returned list, call sync() first.
-   *
-   * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
-   */
-  async list(
-    opts?: ConversationOptions | undefined,
-    order?: ConversationOrder | undefined,
-    limit?: number | undefined
-  ): Promise<Conversation<ContentTypes>[]> {
-    return await XMTPModule.listConversations(this.client, opts, order, limit)
+  async fromWelcome(
+    encryptedMessage: string
+  ): Promise<Conversation<ContentTypes>> {
+    try {
+      return await XMTPModule.processWelcomeMessage(
+        this.client,
+        encryptedMessage
+      )
+    } catch (e) {
+      console.info('ERROR in processWelcomeMessage()', e)
+      throw e
+    }
   }
 
   /**
-   * This method streams conversations that the client is a member of.
-   * @param {type} ConversationType - Whether to stream groups, dms, or both
-   * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
+   * Creates a new conversation.
+   *
+   * This method creates a new conversation with the specified peer address and context.
+   *
+   * @param {Address} peerAddress - The address of the peer to create a conversation with.
+   * @returns {Promise<Conversation>} A Promise that resolves to a Conversation object.
    */
-  async stream(
-    callback: (conversation: Conversation<ContentTypes>) => Promise<void>,
-    type: ConversationType = 'all'
-  ): Promise<void> {
-    XMTPModule.subscribeToConversations(this.client.inboxId, type)
-    const subscription = XMTPModule.emitter.addListener(
-      EventTypes.Conversation,
-      async ({
-        inboxId,
-        conversation,
-      }: {
-        inboxId: string
-        conversation: Conversation<ContentTypes>
-      }) => {
-        if (inboxId !== this.client.inboxId) {
-          return
-        }
-        if (conversation.version === ConversationVersion.GROUP) {
-          return await callback(
-            new Group(this.client, conversation as unknown as GroupParams)
-          )
-        } else if (conversation.version === ConversationVersion.DM) {
-          return await callback(
-            new Dm(this.client, conversation as unknown as DmParams)
-          )
-        }
-      }
-    )
-    this.subscriptions[EventTypes.Conversation] = subscription
+  async newConversation(
+    peerAddress: Address
+  ): Promise<Conversation<ContentTypes>> {
+    const checksumAddress = getAddress(peerAddress)
+    return await XMTPModule.findOrCreateDm(this.client, checksumAddress)
+  }
+
+  /**
+   * Creates a new conversation.
+   *
+   * This method creates a new conversation with the specified peer address.
+   *
+   * @param {Address} peerAddress - The address of the peer to create a conversation with.
+   * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
+   */
+  async findOrCreateDm(peerAddress: Address): Promise<Dm<ContentTypes>> {
+    return await XMTPModule.findOrCreateDm(this.client, peerAddress)
   }
 
   /**
@@ -266,6 +197,75 @@ export default class Conversations<
   }
 
   /**
+   * This method returns a list of all groups that the client is a member of.
+   * To get the latest list of groups from the network, call syncGroups() first.
+   * @param {ConversationOptions} opts - The options to specify what fields you want returned for the groups in the list.
+   * @param {ConversationOrder} order - The order to specify if you want groups listed by last message or by created at.
+   * @param {number} limit - Limit the number of groups returned in the list.
+   *
+   * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
+   */
+  async listGroups(
+    opts?: ConversationOptions | undefined,
+    order?: ConversationOrder | undefined,
+    limit?: number | undefined,
+    consentState?: ConsentState | undefined
+  ): Promise<Group<ContentTypes>[]> {
+    return await XMTPModule.listGroups(
+      this.client,
+      opts,
+      order,
+      limit,
+      consentState
+    )
+  }
+
+  /**
+   * This method returns a list of all dms that the client is a member of.
+   * To get the latest list of dms from the network, call sync() first.
+   * @param {ConversationOptions} opts - The options to specify what fields you want returned for the dms in the list.
+   * @param {ConversationOrder} order - The order to specify if you want dms listed by last message or by created at.
+   * @param {number} limit - Limit the number of dms returned in the list.
+   *
+   * @returns {Promise<Dm[]>} A Promise that resolves to an array of Dms objects.
+   */
+  async listDms(
+    opts?: ConversationOptions | undefined,
+    order?: ConversationOrder | undefined,
+    limit?: number | undefined,
+    consentState?: ConsentState | undefined
+  ): Promise<Dm<ContentTypes>[]> {
+    return await XMTPModule.listDms(
+      this.client,
+      opts,
+      order,
+      limit,
+      consentState
+    )
+  }
+
+  /**
+   * This method returns a list of all V3 conversations that the client is a member of.
+   * To include the latest conversations from the network in the returned list, call sync() first.
+   *
+   * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
+   */
+  async list(
+    opts?: ConversationOptions | undefined,
+    order?: ConversationOrder | undefined,
+    limit?: number | undefined,
+    consentState?: ConsentState | undefined
+  ): Promise<Conversation<ContentTypes>[]> {
+    return await XMTPModule.listConversations(
+      this.client,
+      opts,
+      order,
+      limit,
+      consentState
+    )
+  }
+
+  /**
    * Executes a network request to fetch the latest list of conversations associated with the client
    * and save them to the local state.
    */
@@ -280,6 +280,42 @@ export default class Conversations<
    */
   async syncAllConversations(): Promise<number> {
     return await XMTPModule.syncAllConversations(this.client.inboxId)
+  }
+
+  /**
+   * This method streams conversations that the client is a member of.
+   * @param {type} ConversationType - Whether to stream groups, dms, or both
+   * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
+   */
+  async stream(
+    callback: (conversation: Conversation<ContentTypes>) => Promise<void>,
+    type: ConversationType = 'all'
+  ): Promise<void> {
+    XMTPModule.subscribeToConversations(this.client.inboxId, type)
+    const subscription = XMTPModule.emitter.addListener(
+      EventTypes.Conversation,
+      async ({
+        inboxId,
+        conversation,
+      }: {
+        inboxId: string
+        conversation: Conversation<ContentTypes>
+      }) => {
+        if (inboxId !== this.client.inboxId) {
+          return
+        }
+        if (conversation.version === ConversationVersion.GROUP) {
+          return await callback(
+            new Group(this.client, conversation as unknown as GroupParams)
+          )
+        } else if (conversation.version === ConversationVersion.DM) {
+          return await callback(
+            new Dm(this.client, conversation as unknown as DmParams)
+          )
+        }
+      }
+    )
+    this.subscriptions[EventTypes.Conversation] = subscription
   }
 
   /**
@@ -311,20 +347,6 @@ export default class Conversations<
       }
     )
     this.subscriptions[EventTypes.Message] = subscription
-  }
-
-  async fromWelcome(
-    encryptedMessage: string
-  ): Promise<Conversation<ContentTypes>> {
-    try {
-      return await XMTPModule.processWelcomeMessage(
-        this.client,
-        encryptedMessage
-      )
-    } catch (e) {
-      console.info('ERROR in processWelcomeMessage()', e)
-      throw e
-    }
   }
 
   /**

@@ -10,6 +10,61 @@ function test(name: string, perform: () => Promise<boolean>) {
   })
 }
 
+test('can filter dms by consent', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3)
+
+  await boClient.conversations.newGroup([alixClient.address])
+  const otherGroup = await alixClient.conversations.newGroup([boClient.address])
+  const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.address)
+  await caroClient.conversations.findOrCreateDm(boClient.address)
+  await boClient.conversations.sync()
+  const boDm2 = await boClient.conversations.findDmByInboxId(caroClient.inboxId)
+  await boClient.conversations.findGroup(otherGroup.id)
+
+  const boConvos = await boClient.conversations.listDms()
+  const boConvosFilteredAllowed = await boClient.conversations.listDms(
+    {},
+    undefined,
+    undefined,
+    'allowed'
+  )
+  const boConvosFilteredUnknown = await boClient.conversations.listDms(
+    {},
+    undefined,
+    undefined,
+    'unknown'
+  )
+
+  assert(
+    boConvos.length === 2,
+    `Conversation length should be 2 but was ${boConvos.length}`
+  )
+
+  assert(
+    boConvosFilteredAllowed
+      .map((conversation: any) => conversation.id)
+      .toString() === [boDm1.id].toString(),
+    `Conversation allowed should be ${[
+      boDm1.id,
+    ].toString()} but was ${boConvosFilteredAllowed
+      .map((convo: any) => convo.id)
+      .toString()}`
+  )
+
+  assert(
+    boConvosFilteredUnknown
+      .map((conversation: any) => conversation.id)
+      .toString() === [boDm2?.id].toString(),
+    `Conversation unknown filter should be ${[
+      boDm2?.id,
+    ].toString()} but was ${boConvosFilteredUnknown
+      .map((convo: any) => convo.id)
+      .toString()}`
+  )
+
+  return true
+})
+
 test('can list dms with params', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
@@ -37,14 +92,24 @@ test('can list dms with params', async () => {
     boConvosOrderCreated
       .map((conversation: any) => conversation.id)
       .toString() === [boDm1.id, boDm2.id].toString(),
-    `Conversation created at order should be ${[boDm1.id, boDm2.id].toString()} but was ${boConvosOrderCreated.map((convo: any) => convo.id).toString()}`
+    `Conversation created at order should be ${[
+      boDm1.id,
+      boDm2.id,
+    ].toString()} but was ${boConvosOrderCreated
+      .map((convo: any) => convo.id)
+      .toString()}`
   )
 
   assert(
     boConvosOrderLastMessage
       .map((conversation: any) => conversation.id)
       .toString() === [boDm1.id, boDm2.id].toString(),
-    `Conversation last message order should be ${[boDm1.id, boDm2.id].toString()} but was ${boConvosOrderLastMessage.map((convo: any) => convo.id).toString()}`
+    `Conversation last message order should be ${[
+      boDm1.id,
+      boDm2.id,
+    ].toString()} but was ${boConvosOrderLastMessage
+      .map((convo: any) => convo.id)
+      .toString()}`
   )
 
   const messages = await boConvosOrderLastMessage[0].messages()

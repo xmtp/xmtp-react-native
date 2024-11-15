@@ -385,7 +385,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listGroups") {
 			(
 				inboxId: String, groupParams: String?, sortOrder: String?,
-				limit: Int?
+				limit: Int?, consentState: String?
 			) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
@@ -395,9 +395,14 @@ public class XMTPModule: Module {
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
-
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
 			var groupList: [Group] = try await client.conversations.listGroups(
-				limit: limit, order: order)
+				limit: limit, order: order, consentState: consent)
 
 			var results: [String] = []
 			for group in groupList {
@@ -411,7 +416,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listDms") {
 			(
 				inboxId: String, groupParams: String?, sortOrder: String?,
-				limit: Int?
+				limit: Int?, consentState: String?
 			) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
@@ -421,9 +426,14 @@ public class XMTPModule: Module {
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
-
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
 			var dmList: [Dm] = try await client.conversations.listDms(
-				limit: limit, order: order)
+				limit: limit, order: order, consentState: consent)
 
 			var results: [String] = []
 			for dm in dmList {
@@ -437,7 +447,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listConversations") {
 			(
 				inboxId: String, conversationParams: String?,
-				sortOrder: String?, limit: Int?
+				sortOrder: String?, limit: Int?, consentState: String?
 			) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
@@ -447,8 +457,14 @@ public class XMTPModule: Module {
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				conversationParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
 			let conversations = try await client.conversations.list(
-				limit: limit, order: order)
+				limit: limit, order: order, consentState: consent)
 
 			var results: [String] = []
 			for conversation in conversations {
@@ -1327,6 +1343,15 @@ public class XMTPModule: Module {
 
 			return try await ConversationWrapper.encode(
 				conversation, client: client)
+		}
+
+		AsyncFunction("syncConsent") { (inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+
+			try await client.syncConsent()
 		}
 
 		AsyncFunction("setConsentState") {

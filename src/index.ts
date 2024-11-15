@@ -88,9 +88,13 @@ export async function getInboxState(
 export async function getInboxStates(
   inboxId: InboxId,
   refreshFromNetwork: boolean,
-  inboxIds: InboxId[],
+  inboxIds: InboxId[]
 ): Promise<InboxState[]> {
-  const inboxStates = await XMTPModule.getInboxStates(inboxId, refreshFromNetwork, inboxIds)
+  const inboxStates = await XMTPModule.getInboxStates(
+    inboxId,
+    refreshFromNetwork,
+    inboxIds
+  )
   return inboxStates.map((json: string) => {
     return InboxState.from(json)
   })
@@ -230,14 +234,16 @@ export async function listGroups<
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
   order?: ConversationOrder | undefined,
-  limit?: number | undefined
+  limit?: number | undefined,
+  consentState?: ConsentState | undefined
 ): Promise<Group<ContentTypes>[]> {
   return (
     await XMTPModule.listGroups(
       client.inboxId,
       JSON.stringify(opts),
       order,
-      limit
+      limit,
+      consentState
     )
   ).map((json: string) => {
     const group = JSON.parse(json)
@@ -255,10 +261,17 @@ export async function listDms<
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
   order?: ConversationOrder | undefined,
-  limit?: number | undefined
+  limit?: number | undefined,
+  consentState?: ConsentState | undefined
 ): Promise<Dm<ContentTypes>[]> {
   return (
-    await XMTPModule.listDms(client.inboxId, JSON.stringify(opts), order, limit)
+    await XMTPModule.listDms(
+      client.inboxId,
+      JSON.stringify(opts),
+      order,
+      limit,
+      consentState
+    )
   ).map((json: string) => {
     const group = JSON.parse(json)
 
@@ -275,14 +288,16 @@ export async function listConversations<
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
   order?: ConversationOrder | undefined,
-  limit?: number | undefined
+  limit?: number | undefined,
+  consentState?: ConsentState | undefined
 ): Promise<Conversation<ContentTypes>[]> {
   return (
     await XMTPModule.listConversations(
       client.inboxId,
       JSON.stringify(opts),
       order,
-      limit
+      limit,
+      consentState
     )
   ).map((json: string) => {
     const jsonObj = JSON.parse(json)
@@ -852,6 +867,10 @@ export async function processWelcomeMessage<
   } else {
     return new Dm(client, conversation)
   }
+}
+
+export async function syncConsent(inboxId: InboxId): Promise<void> {
+  return await XMTPModule.syncConsent(inboxId)
 }
 
 export async function setConsentState(

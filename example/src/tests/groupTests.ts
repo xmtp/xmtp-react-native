@@ -1,5 +1,4 @@
 import { Wallet } from 'ethers'
-import { DecodedMessage } from 'xmtp-react-native-sdk/lib/DecodedMessage'
 
 import {
   Test,
@@ -15,6 +14,7 @@ import {
   GroupUpdatedContent,
   GroupUpdatedCodec,
   ConsentListEntry,
+  DecodedMessage,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -671,6 +671,61 @@ test('can stream groups', async () => {
   return true
 })
 
+test('can filter groups by consent', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3)
+
+  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
+  const otherGroup = await alixClient.conversations.newGroup([boClient.address])
+  await boClient.conversations.findOrCreateDm(alixClient.address)
+  await caroClient.conversations.findOrCreateDm(boClient.address)
+  await boClient.conversations.sync()
+  await boClient.conversations.findDmByInboxId(caroClient.inboxId)
+  const boGroup2 = await boClient.conversations.findGroup(otherGroup.id)
+
+  const boConvos = await boClient.conversations.listGroups()
+  const boConvosFilteredAllowed = await boClient.conversations.listGroups(
+    {},
+    undefined,
+    undefined,
+    'allowed'
+  )
+  const boConvosFilteredUnknown = await boClient.conversations.listGroups(
+    {},
+    undefined,
+    undefined,
+    'unknown'
+  )
+
+  assert(
+    boConvos.length === 2,
+    `Conversation length should be 2 but was ${boConvos.length}`
+  )
+
+  assert(
+    boConvosFilteredAllowed
+      .map((conversation: any) => conversation.id)
+      .toString() === [boGroup1.id].toString(),
+    `Conversation allowed should be ${[
+      boGroup1.id,
+    ].toString()} but was ${boConvosFilteredAllowed
+      .map((convo: any) => convo.id)
+      .toString()}`
+  )
+
+  assert(
+    boConvosFilteredUnknown
+      .map((conversation: any) => conversation.id)
+      .toString() === [boGroup2?.id].toString(),
+    `Conversation unknown filter should be ${[
+      boGroup2?.id,
+    ].toString()} but was ${boConvosFilteredUnknown
+      .map((convo: any) => convo.id)
+      .toString()}`
+  )
+
+  return true
+})
+
 test('can list groups with params', async () => {
   const [alixClient, boClient] = await createClients(2)
 
@@ -696,13 +751,17 @@ test('can list groups with params', async () => {
   assert(
     boGroupsOrderCreated.map((group: any) => group.id).toString() ===
       [boGroup1.id, boGroup2.id].toString(),
-    `Group order should be group1 then group2 but was ${boGroupsOrderCreated.map((group: any) => group.id).toString()}`
+    `Group order should be group1 then group2 but was ${boGroupsOrderCreated
+      .map((group: any) => group.id)
+      .toString()}`
   )
 
   assert(
     boGroupsOrderLastMessage.map((group: any) => group.id).toString() ===
       [boGroup2.id, boGroup1.id].toString(),
-    `Group order should be group2 then group1 but was ${boGroupsOrderLastMessage.map((group: any) => group.id).toString()}`
+    `Group order should be group2 then group1 but was ${boGroupsOrderLastMessage
+      .map((group: any) => group.id)
+      .toString()}`
   )
 
   const messages = await boGroupsOrderLastMessage[0].messages()
@@ -1447,8 +1506,8 @@ test('can sync all groups', async () => {
     `messages should be 4 after sync but was ${boGroup?.messages?.length}`
   )
   assert(
-    numGroupsSynced === 50,
-    `should have synced 50 groups but synced ${numGroupsSynced}`
+    numGroupsSynced === 51,
+    `should have synced 51 groups but synced ${numGroupsSynced}`
   )
 
   for (const group of groups) {
@@ -1458,15 +1517,15 @@ test('can sync all groups', async () => {
   // First syncAllConversations after removal will still sync each group to set group inactive
   const numGroupsSynced2 = await bo.conversations.syncAllConversations()
   assert(
-    numGroupsSynced2 === 50,
-    `should have synced 50 groups but synced ${numGroupsSynced2}`
+    numGroupsSynced2 === 51,
+    `should have synced 51 groups but synced ${numGroupsSynced2}`
   )
 
   // Next syncAllConversations will not sync inactive groups
   const numGroupsSynced3 = await bo.conversations.syncAllConversations()
   assert(
-    numGroupsSynced3 === 0,
-    `should have synced 0 groups but synced ${numGroupsSynced3}`
+    numGroupsSynced3 === 1,
+    `should have synced 1 groups but synced ${numGroupsSynced3}`
   )
   return true
 })

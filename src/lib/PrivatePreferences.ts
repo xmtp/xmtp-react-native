@@ -39,4 +39,8 @@ export default class PrivatePreferences {
       consentEntry.permissionType
     )
   }
+
+  async syncConsent(): Promise<void> {
+    return await XMTPModule.syncConsent(this.client.inboxId)
+  }
 }
