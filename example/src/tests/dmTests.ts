@@ -17,7 +17,7 @@ test('can filter dms by consent', async () => {
   const otherGroup = await alixClient.conversations.newGroup([boClient.address])
   const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.address)
   await caroClient.conversations.findOrCreateDm(boClient.address)
-  await boClient.conversations.sync
+  await boClient.conversations.sync()
   const boDm2 = await boClient.conversations.findDmByInboxId(caroClient.inboxId)
   await boClient.conversations.findGroup(otherGroup.id)
 

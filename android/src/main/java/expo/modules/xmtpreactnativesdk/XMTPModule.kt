@@ -175,7 +175,7 @@ class XMTPModule : Module() {
         val historySyncUrl = authOptions.historySyncUrl
             ?: when (authOptions.environment) {
                 "production" -> "https://message-history.production.ephemera.network/"
-                "local" -> "http://0.0.0.0:5558"
+                "local" -> "http://10.0.2.2:5558"
                 else -> "https://message-history.dev.ephemera.network/"
             }
         return ClientOptions(

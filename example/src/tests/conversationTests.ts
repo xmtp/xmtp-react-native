@@ -8,6 +8,7 @@ import {
   ConversationId,
   ConversationVersion,
 } from '../../../src/index'
+import { Wallet } from 'ethers'
 
 export const conversationTests: Test[] = []
 let counter = 1
@@ -108,7 +109,7 @@ test('can filter conversations by consent', async () => {
   const otherGroup = await alixClient.conversations.newGroup([boClient.address])
   const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.address)
   await caroClient.conversations.findOrCreateDm(boClient.address)
-  await boClient.conversations.sync
+  await boClient.conversations.sync()
   const boDm2 = await boClient.conversations.findDmByInboxId(caroClient.inboxId)
   const boGroup2 = await boClient.conversations.findGroup(otherGroup.id)
 
@@ -288,12 +289,12 @@ test('can list conversation messages', async () => {
 
   assert(
     boGroupMessages?.length === 3,
-    `bo conversation lengths should be 4 but was ${boGroupMessages?.length}`
+    `bo conversation lengths should be 3 but was ${boGroupMessages?.length}`
   )
 
   assert(
-    boDmMessages?.length === 3,
-    `alix conversation lengths should be 3 but was ${boDmMessages?.length}`
+    boDmMessages?.length === 2,
+    `alix conversation lengths should be 2 but was ${boDmMessages?.length}`
   )
 
   return true
@@ -569,7 +570,9 @@ test('can sync consent', async () => {
   if (!directoryExists2) {
     await RNFS.mkdir(dbDirPath2)
   }
-  const alix = await Client.createRandom({
+  const alixWallet = Wallet.createRandom()
+
+  const alix = await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -585,7 +588,7 @@ test('can sync consent', async () => {
   await bo.conversations.sync()
   const boDm = await bo.conversations.findConversation(dm.id)
 
-  const alix2 = await Client.createRandom({
+  const alix2 = await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -605,7 +608,6 @@ test('can sync consent', async () => {
   await alix2.conversations.sync()
   await alix2.preferences.syncConsent()
   await alix.conversations.syncAllConversations()
-
   await delayToPropogate(2000)
   await alix2.conversations.syncAllConversations()
   await delayToPropogate(2000)

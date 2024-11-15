@@ -395,8 +395,12 @@ public class XMTPModule: Module {
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
-			let consent = consentState.map { getConsentState($0) }
-
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
 			var groupList: [Group] = try await client.conversations.listGroups(
 				limit: limit, order: order, consentState: consent)
 
@@ -422,8 +426,12 @@ public class XMTPModule: Module {
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
-			let consent = consentState.map { getConsentState($0) }
-
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
 			var dmList: [Dm] = try await client.conversations.listDms(
 				limit: limit, order: order, consentState: consent)
 
@@ -449,7 +457,12 @@ public class XMTPModule: Module {
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				conversationParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
-			let consent = consentState.map { getConsentState($0) }
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
 			let conversations = try await client.conversations.list(
 				limit: limit, order: order, consentState: consent)
 
