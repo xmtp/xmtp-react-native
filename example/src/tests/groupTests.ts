@@ -1638,111 +1638,75 @@ function test(name: string, perform: () => Promise<boolean>) {
 // })
 
 test('groups cannot fork', async () => {
-  const [alix, bo, caro] = await createClients(3)
-  // Create group with 3 users
-  const { id: groupId } = await alix.conversations.newGroup([
+  const [alix, bo] = await createClients(3)
+  // Create group with 2 users
+  const alixGroup = await alix.conversations.newGroup([
     bo.address,
-    caro.address,
   ])
 
-  const getGroupForClient = async (client: Client) => {
-    // Always sync the client before getting the group
-    await client.conversations.sync()
-    const group = await client.conversations.findGroup(groupId)
-    assert(group !== undefined, `Group not found for ${client.address}`)
-    return group as Group<DefaultContentTypes>
-  }
-
-  const syncClientAndGroup = async (client: Client) => {
-    const group = await getGroupForClient(client)
-    await group.sync()
-  }
-
-  const addMemberToGroup = async (fromClient: Client, addresses: string[]) => {
-    await syncClientAndGroup(fromClient)
-    const group = await getGroupForClient(fromClient)
-    await group.addMembers(addresses)
-    await delayToPropogate(500)
-  }
-
-  const removeMemberFromGroup = async (
-    fromClient: Client,
-    addresses: string[]
-  ) => {
-    await syncClientAndGroup(fromClient)
-    const group = await getGroupForClient(fromClient)
-    await group.removeMembers(addresses)
-    await delayToPropogate(500)
-  }
+  // sync clients
+  await alix.conversations.sync()
+  await bo.conversations.sync()
+  const boGroup: Group<DefaultContentTypes> = (await bo.conversations.findGroup(alixGroup.id))!
 
   // Helper to send a message from a bunch of senders and make sure it is received by all receivers
-  const testMessageSending = async (senderClient: Client, receiver: Client) => {
-    // for (const senderClient of senders) {
+  const testMessageSending = async (senderClient: Client, receiver: Client, senderGroup: Group<DefaultContentTypes>, receiverGroup: Group<DefaultContentTypes>) => {
     const messageContent = Math.random().toString(36)
-    await syncClientAndGroup(senderClient)
-    const senderGroup = await getGroupForClient(senderClient)
-    await senderGroup.send(messageContent)
+    await senderGroup.sync()
+    await alixGroup.send(messageContent)
 
     await delayToPropogate(500)
-    await senderGroup.sync()
+    await alixGroup.sync()
+    await receiverGroup.sync()
 
-    await syncClientAndGroup(receiver)
-
-    const receiverGroupToCheck = await getGroupForClient(receiver)
-    await receiverGroupToCheck.sync()
-
-    const messages = await receiverGroupToCheck.messages({
+    const messages = await receiverGroup.messages({
       direction: 'DESCENDING',
     })
     const lastMessage = messages[0]
-    // console.log(lastMessage);
     console.log(
-      `${receiverGroupToCheck.client.address} sees ${messages.length} messages in group`
+      `${receiverGroup.client.address} sees ${messages.length} messages in group`
     )
     assert(
       lastMessage !== undefined &&
         lastMessage.nativeContent.text === messageContent,
-      `${receiverGroupToCheck.client.address} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
+      `${receiverGroup.client.address} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
     )
     // }
   }
 
   console.log('Testing that messages sent by alix are received by bo')
-  await testMessageSending(alix, bo)
+  await testMessageSending(alix, bo, alixGroup, boGroup)
   console.log('Alix & Bo are not forked at the beginning')
 
   // Test adding members one by one
-  // console.log('Testing adding members one by one...')
+  console.log('Testing adding members one by one...')
   const newClients = await createClients(2)
-
-  // Add back several members
   console.log('Adding new members to the group...')
   for (const client of newClients) {
     console.log(`Adding member ${client.address}...`)
-    await addMemberToGroup(alix, [client.address])
+    await alixGroup.addMembers([client.address])
   }
   await delayToPropogate()
 
   await alix.conversations.sync()
-  await syncClientAndGroup(alix)
+  await alixGroup.sync()
 
   // NB => if we don't use Promise.all but a loop, we don't get a fork
-  const REMOVE_MEMBERS_IN_PARALLEL = false
+  const REMOVE_MEMBERS_IN_PARALLEL = true
   if (REMOVE_MEMBERS_IN_PARALLEL) {
-    console.log('Removing members in parallel')
+    console.log('*************libxmtp*********************: Removing members in parallel')
 
-    await Promise.all(
+    await Promise.allSettled(
       newClients.map((client) => {
         console.log(`Removing member ${client.address}...`)
-        return removeMemberFromGroup(alix, [client.address])
+        alixGroup.removeMembers([client.address])
       })
     )
   } else {
     console.log('Removing members one by one')
-
     for (const client of newClients) {
       console.log(`Removing member ${client.address}...`)
-      await removeMemberFromGroup(alix, [client.address])
+      await alixGroup.removeMembers([client.address])
     }
   }
 
@@ -1755,10 +1719,10 @@ test('groups cannot fork', async () => {
   for (let i = 0; i < tryCount; i++) {
     console.log(`Checking fork status ${i+1}/${tryCount}`)
     try {
-      await syncClientAndGroup(alix)
-      await syncClientAndGroup(bo)
+      await alixGroup.sync()
+      await boGroup.sync()
       await delayToPropogate(500)
-      await testMessageSending(alix, bo)
+      await testMessageSending(alix, bo, alixGroup, boGroup)
       console.log('Not forked!')
     } catch (e: any) {
       console.log('Forked!')
@@ -1766,7 +1730,6 @@ test('groups cannot fork', async () => {
       forkCount++
     }
   }
-
   assert(forkCount === 0, `Forked ${forkCount}/${tryCount} times`)
 
   return true
