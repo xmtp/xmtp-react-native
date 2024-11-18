@@ -173,6 +173,18 @@ public class XMTPModule: Module {
 			return try InboxStateWrapper.encode(inboxState)
 		}
 
+		AsyncFunction("getInboxStates") {
+			(inboxId: String, refreshFromNetwork: Bool, inboxIds: [String])
+				-> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			let inboxStates = try await client.inboxStatesForInboxIds(
+				refreshFromNetwork: refreshFromNetwork, inboxIds: inboxIds)
+			return try inboxStates.map { try InboxStateWrapper.encode($0) }
+		}
+
 		Function("preAuthenticateToInboxCallbackCompleted") {
 			DispatchQueue.global().async {
 				self.preAuthenticateToInboxCallbackDeferred?.signal()
@@ -373,7 +385,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listGroups") {
 			(
 				inboxId: String, groupParams: String?, sortOrder: String?,
-				limit: Int?
+				limit: Int?, consentState: String?
 			) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
@@ -383,9 +395,14 @@ public class XMTPModule: Module {
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
-
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
 			var groupList: [Group] = try await client.conversations.listGroups(
-				limit: limit, order: order)
+				limit: limit, order: order, consentState: consent)
 
 			var results: [String] = []
 			for group in groupList {
@@ -399,7 +416,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listDms") {
 			(
 				inboxId: String, groupParams: String?, sortOrder: String?,
-				limit: Int?
+				limit: Int?, consentState: String?
 			) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
@@ -409,9 +426,14 @@ public class XMTPModule: Module {
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
-
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
 			var dmList: [Dm] = try await client.conversations.listDms(
-				limit: limit, order: order)
+				limit: limit, order: order, consentState: consent)
 
 			var results: [String] = []
 			for dm in dmList {
@@ -425,7 +447,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listConversations") {
 			(
 				inboxId: String, conversationParams: String?,
-				sortOrder: String?, limit: Int?
+				sortOrder: String?, limit: Int?, consentState: String?
 			) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
@@ -435,8 +457,14 @@ public class XMTPModule: Module {
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				conversationParams ?? "")
 			let order = getConversationSortOrder(order: sortOrder ?? "")
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
 			let conversations = try await client.conversations.list(
-				limit: limit, order: order)
+				limit: limit, order: order, consentState: consent)
 
 			var results: [String] = []
 			for conversation in conversations {
@@ -545,13 +573,26 @@ public class XMTPModule: Module {
 			}
 		}
 
+		AsyncFunction("findDmByInboxId") {
+			(inboxId: String, peerInboxId: String) -> String? in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			if let dm = try client.findDmByInboxId(inboxId: peerInboxId) {
+				return try await DmWrapper.encode(dm, client: client)
+			} else {
+				return nil
+			}
+		}
+
 		AsyncFunction("findDmByAddress") {
 			(inboxId: String, peerAddress: String) -> String? in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
 				throw Error.noClient
 			}
-			if let dm = try await client.findDm(address: peerAddress) {
+			if let dm = try await client.findDmByAddress(address: peerAddress) {
 				return try await DmWrapper.encode(dm, client: client)
 			} else {
 				return nil
@@ -1001,7 +1042,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("isAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientInboxId)
+			guard
+				let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1014,7 +1056,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("isSuperAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: clientInboxId)
+			guard
+				let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1053,7 +1096,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("addAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: clientInboxId)
+			guard
+				let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1066,7 +1110,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("addSuperAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: clientInboxId)
+			guard
+				let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1079,7 +1124,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("removeAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: clientInboxId)
+			guard
+				let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1092,7 +1138,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("removeSuperAdmin") {
 			(clientInboxId: String, id: String, inboxId: String) in
-			guard let client = await clientsManager.getClient(key: clientInboxId)
+			guard
+				let client = await clientsManager.getClient(key: clientInboxId)
 			else {
 				throw Error.noClient
 			}
@@ -1296,6 +1343,15 @@ public class XMTPModule: Module {
 
 			return try await ConversationWrapper.encode(
 				conversation, client: client)
+		}
+
+		AsyncFunction("syncConsent") { (inboxId: String) in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+
+			try await client.syncConsent()
 		}
 
 		AsyncFunction("setConsentState") {
