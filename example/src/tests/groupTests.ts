@@ -1598,46 +1598,46 @@ test('can create new installation without breaking group', async () => {
   return true
 })
 
-// Commenting this out so it doesn't block people, but nice to have?
-// test('can stream messages for a long time', async () => {
-//   const bo = await Client.createRandom({ env: 'local', enableV3: true })
-//   await delayToPropogate()
-//   const alix = await Client.createRandom({ env: 'local', enableV3: true })
-//   await delayToPropogate()
-//   const caro = await Client.createRandom({ env: 'local', enableV3: true })
-//   await delayToPropogate()
+// // Commenting this out so it doesn't block people, but nice to have?
+// // test('can stream messages for a long time', async () => {
+// //   const bo = await Client.createRandom({ env: 'local', enableV3: true })
+// //   await delayToPropogate()
+// //   const alix = await Client.createRandom({ env: 'local', enableV3: true })
+// //   await delayToPropogate()
+// //   const caro = await Client.createRandom({ env: 'local', enableV3: true })
+// //   await delayToPropogate()
 
-//   // Setup stream alls
-//   const allBoMessages: any[] = []
-//   const allAliMessages: any[] = []
+// //   // Setup stream alls
+// //   const allBoMessages: any[] = []
+// //   const allAliMessages: any[] = []
 
-//   const group = await caro.conversations.newGroup([alix.address])
-//   await bo.conversations.streamAllMessages(async (conversation) => {
-//     allBoMessages.push(conversation)
-//   }, true)
-//   await alix.conversations.streamAllMessages(async (conversation) => {
-//     allAliMessages.push(conversation)
-//   }, true)
+// //   const group = await caro.conversations.newGroup([alix.address])
+// //   await bo.conversations.streamAllMessages(async (conversation) => {
+// //     allBoMessages.push(conversation)
+// //   }, true)
+// //   await alix.conversations.streamAllMessages(async (conversation) => {
+// //     allAliMessages.push(conversation)
+// //   }, true)
 
-//   // Wait for 15 minutes
-//   await delayToPropogate(15 * 1000 * 60)
+// //   // Wait for 15 minutes
+// //   await delayToPropogate(15 * 1000 * 60)
 
-//   // Start Caro starts a new conversation.
-//   const convo = await caro.conversations.newConversation(alix.address)
-//   await group.send({ text: 'hello' })
-//   await convo.send({ text: 'hello' })
-//   await delayToPropogate()
-//   if (allBoMessages.length !== 0) {
-//     throw Error('Unexpected all conversations count ' + allBoMessages.length)
-//   }
-//   if (allAliMessages.length !== 2) {
-//     throw Error('Unexpected all conversations count ' + allAliMessages.length)
-//   }
+// //   // Start Caro starts a new conversation.
+// //   const convo = await caro.conversations.newConversation(alix.address)
+// //   await group.send({ text: 'hello' })
+// //   await convo.send({ text: 'hello' })
+// //   await delayToPropogate()
+// //   if (allBoMessages.length !== 0) {
+// //     throw Error('Unexpected all conversations count ' + allBoMessages.length)
+// //   }
+// //   if (allAliMessages.length !== 2) {
+// //     throw Error('Unexpected all conversations count ' + allAliMessages.length)
+// //   }
 
-//   return true
-// })
+// //   return true
+// // })
 
-test('groups cannot fork', async () => {=
+test('groups cannot fork', async () => {
   const [alix, bo, new_one, new_two] = await createClients(4)
   // Create group with 2 users
   const alixGroup = await alix.conversations.newGroup([
