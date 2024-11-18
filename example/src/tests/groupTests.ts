@@ -1598,59 +1598,48 @@ test('can create new installation without breaking group', async () => {
   return true
 })
 
-// Commenting this out so it doesn't block people, but nice to have?
-// test('can stream messages for a long time', async () => {
-//   const bo = await Client.createRandom({ env: 'local', enableV3: true })
-//   await delayToPropogate()
-//   const alix = await Client.createRandom({ env: 'local', enableV3: true })
-//   await delayToPropogate()
-//   const caro = await Client.createRandom({ env: 'local', enableV3: true })
-//   await delayToPropogate()
+Commenting this out so it doesn't block people, but nice to have?
+test('can stream messages for a long time', async () => {
+  const bo = await Client.createRandom({ env: 'local', enableV3: true })
+  await delayToPropogate()
+  const alix = await Client.createRandom({ env: 'local', enableV3: true })
+  await delayToPropogate()
+  const caro = await Client.createRandom({ env: 'local', enableV3: true })
+  await delayToPropogate()
 
-//   // Setup stream alls
-//   const allBoMessages: any[] = []
-//   const allAliMessages: any[] = []
+  // Setup stream alls
+  const allBoMessages: any[] = []
+  const allAliMessages: any[] = []
 
-//   const group = await caro.conversations.newGroup([alix.address])
-//   await bo.conversations.streamAllMessages(async (conversation) => {
-//     allBoMessages.push(conversation)
-//   }, true)
-//   await alix.conversations.streamAllMessages(async (conversation) => {
-//     allAliMessages.push(conversation)
-//   }, true)
+  const group = await caro.conversations.newGroup([alix.address])
+  await bo.conversations.streamAllMessages(async (conversation) => {
+    allBoMessages.push(conversation)
+  }, true)
+  await alix.conversations.streamAllMessages(async (conversation) => {
+    allAliMessages.push(conversation)
+  }, true)
 
-//   // Wait for 15 minutes
-//   await delayToPropogate(15 * 1000 * 60)
+  // Wait for 15 minutes
+  await delayToPropogate(15 * 1000 * 60)
 
-//   // Start Caro starts a new conversation.
-//   const convo = await caro.conversations.newConversation(alix.address)
-//   await group.send({ text: 'hello' })
-//   await convo.send({ text: 'hello' })
-//   await delayToPropogate()
-//   if (allBoMessages.length !== 0) {
-//     throw Error('Unexpected all conversations count ' + allBoMessages.length)
-//   }
-//   if (allAliMessages.length !== 2) {
-//     throw Error('Unexpected all conversations count ' + allAliMessages.length)
-//   }
+  // Start Caro starts a new conversation.
+  const convo = await caro.conversations.newConversation(alix.address)
+  await group.send({ text: 'hello' })
+  await convo.send({ text: 'hello' })
+  await delayToPropogate()
+  if (allBoMessages.length !== 0) {
+    throw Error('Unexpected all conversations count ' + allBoMessages.length)
+  }
+  if (allAliMessages.length !== 2) {
+    throw Error('Unexpected all conversations count ' + allAliMessages.length)
+  }
 
-//   return true
-// })
+  return true
+})
 
 test('groups cannot fork', async () => {
-  const [alix, bo] = await createClients(3)
-  // Create group with 2 users
-  const alixGroup = await alix.conversations.newGroup([
-    bo.address,
-  ])
-
-  // sync clients
-  await alix.conversations.sync()
-  await bo.conversations.sync()
-  const boGroup: Group<DefaultContentTypes> = (await bo.conversations.findGroup(alixGroup.id))!
-
   // Helper to send a message from a bunch of senders and make sure it is received by all receivers
-  const testMessageSending = async (senderClient: Client, receiver: Client, senderGroup: Group<DefaultContentTypes>, receiverGroup: Group<DefaultContentTypes>) => {
+  const testMessageSending = async (senderGroup: Group<DefaultContentTypes>, receiverGroup: Group<DefaultContentTypes>) => {
     const messageContent = Math.random().toString(36)
     await senderGroup.sync()
     await alixGroup.send(messageContent)
@@ -1671,32 +1660,29 @@ test('groups cannot fork', async () => {
         lastMessage.nativeContent.text === messageContent,
       `${receiverGroup.client.address} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
     )
-    // }
   }
 
-  console.log('Testing that messages sent by alix are received by bo')
-  await testMessageSending(alix, bo, alixGroup, boGroup)
-  console.log('Alix & Bo are not forked at the beginning')
+  const [alix, bo, new_one, new_two] = await createClients(4)
+  // Create group with 2 users
+  const alixGroup = await alix.conversations.newGroup([
+    bo.address,
+    new_one.address,
+    new_two.address,
+  ])
 
-  // Test adding members one by one
-  console.log('Testing adding members one by one...')
-  const newClients = await createClients(2)
-  console.log('Adding new members to the group...')
-  for (const client of newClients) {
-    console.log(`Adding member ${client.address}...`)
-    await alixGroup.addMembers([client.address])
-  }
-  await delayToPropogate()
-
+  // sync clients
   await alix.conversations.sync()
-  await alixGroup.sync()
+  await bo.conversations.sync()
+  const boGroup: Group<DefaultContentTypes> = (await bo.conversations.findGroup(alixGroup.id))!
 
+
+  const newClients = [new_one, new_two]
   // NB => if we don't use Promise.all but a loop, we don't get a fork
   const REMOVE_MEMBERS_IN_PARALLEL = true
   if (REMOVE_MEMBERS_IN_PARALLEL) {
     console.log('*************libxmtp*********************: Removing members in parallel')
 
-    await Promise.allSettled(
+    await Promise.all(
       newClients.map((client) => {
         console.log(`Removing member ${client.address}...`)
         alixGroup.removeMembers([client.address])
@@ -1722,7 +1708,7 @@ test('groups cannot fork', async () => {
       await alixGroup.sync()
       await boGroup.sync()
       await delayToPropogate(500)
-      await testMessageSending(alix, bo, alixGroup, boGroup)
+      await testMessageSending(alixGroup, boGroup)
       console.log('Not forked!')
     } catch (e: any) {
       console.log('Forked!')
