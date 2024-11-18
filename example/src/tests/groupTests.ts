@@ -1638,7 +1638,6 @@ test('can create new installation without breaking group', async () => {
 // })
 
 test('groups cannot fork', async () => {=
-
   const [alix, bo, new_one, new_two] = await createClients(4)
   // Create group with 2 users
   const alixGroup = await alix.conversations.newGroup([
@@ -1652,17 +1651,16 @@ test('groups cannot fork', async () => {=
   await bo.conversations.sync()
   const boGroup: Group<DefaultContentTypes> = (await bo.conversations.findGroup(alixGroup.id))!
 
-  const newClients = [new_one, new_two]
+  // Remove two members in parallel
   // NB => if we don't use Promise.all but a loop, we don't get a fork
   console.log('*************libxmtp*********************: Removing members in parallel')
+  const newClients = [new_one, new_two]
   await Promise.all(
     newClients.map((client) => {
       console.log(`Removing member ${client.address}...`)
       alixGroup.removeMembers([client.address])
     })
   )
-  
-  await delayToPropogate(1000)
 
   // Helper to send a message from a bunch of senders and make sure it is received by all receivers
   const testMessageSending = async (senderGroup: Group<DefaultContentTypes>, receiverGroup: Group<DefaultContentTypes>) => {
