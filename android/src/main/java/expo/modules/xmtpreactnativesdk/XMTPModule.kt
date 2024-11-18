@@ -175,7 +175,7 @@ class XMTPModule : Module() {
         val historySyncUrl = authOptions.historySyncUrl
             ?: when (authOptions.environment) {
                 "production" -> "https://message-history.production.ephemera.network/"
-                "local" -> "http://0.0.0.0:5558"
+                "local" -> "http://10.0.2.2:5558"
                 else -> "https://message-history.dev.ephemera.network/"
             }
         return ClientOptions(
@@ -271,6 +271,14 @@ class XMTPModule : Module() {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val inboxState = client.inboxState(refreshFromNetwork)
                 InboxStateWrapper.encode(inboxState)
+            }
+        }
+
+        AsyncFunction("getInboxStates") Coroutine { inboxId: String, refreshFromNetwork: Boolean, inboxIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val inboxStates = client.inboxStatesForInboxIds(refreshFromNetwork, inboxIds)
+                inboxStates.map { InboxStateWrapper.encode(it) }
             }
         }
 
@@ -430,41 +438,43 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("listGroups") Coroutine { inboxId: String, groupParams: String?, sortOrder: String?, limit: Int? ->
+        AsyncFunction("listGroups") Coroutine { inboxId: String, groupParams: String?, sortOrder: String?, limit: Int?, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
-                val groups = client.conversations.listGroups(order = order, limit = limit)
+                val consent = consentState?.let { getConsentState(it) }
+                val groups = client.conversations.listGroups(order = order, limit = limit, consentState = consent)
                 groups.map { group ->
                     GroupWrapper.encode(client, group, params)
                 }
             }
         }
 
-        AsyncFunction("listDms") Coroutine { inboxId: String, groupParams: String?, sortOrder: String?, limit: Int? ->
+        AsyncFunction("listDms") Coroutine { inboxId: String, groupParams: String?, sortOrder: String?, limit: Int?, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("listDms")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
-                val dms = client.conversations.listDms(order = order, limit = limit)
+                val consent = consentState?.let { getConsentState(it) }
+                val dms = client.conversations.listDms(order = order, limit = limit, consentState = consent)
                 dms.map { dm ->
                     DmWrapper.encode(client, dm, params)
                 }
             }
         }
 
-        AsyncFunction("listConversations") Coroutine { inboxId: String, conversationParams: String?, sortOrder: String?, limit: Int? ->
+        AsyncFunction("listConversations") Coroutine { inboxId: String, conversationParams: String?, sortOrder: String?, limit: Int?, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("listConversations")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val params =
                     ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
-                val conversations =
-                    client.conversations.list(order = order, limit = limit)
+                val consent = consentState?.let { getConsentState(it) }
+                val conversations = client.conversations.list(order = order, limit = limit, consentState = consent)
                 conversations.map { conversation ->
                     ConversationWrapper.encode(client, conversation, params)
                 }
@@ -531,11 +541,22 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("findDmByInboxId") Coroutine { inboxId: String, peerInboxId: String ->
+            withContext(Dispatchers.IO) {
+                logV("findDmByInboxId")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val dm = client.findDmByInboxId(peerInboxId)
+                dm?.let {
+                    DmWrapper.encode(client, dm)
+                }
+            }
+        }
+
         AsyncFunction("findDmByAddress") Coroutine { inboxId: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
                 logV("findDmByAddress")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                val dm = client.findDm(peerAddress)
+                val dm = client.findDmByAddress(peerAddress)
                 dm?.let {
                     DmWrapper.encode(client, dm)
                 }
@@ -1038,6 +1059,13 @@ class XMTPModule : Module() {
                         )
                     )
                 ConversationWrapper.encode(client, conversation)
+            }
+        }
+
+        AsyncFunction("syncConsent") Coroutine { inboxId: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                client.syncConsent()
             }
         }
 

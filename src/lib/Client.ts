@@ -393,13 +393,24 @@ export class Client<
   }
 
   /**
-   * Make a request for a inboxs state.
+   * Make a request for your inbox state.
    *
    * @param {boolean} refreshFromNetwork - If you want to refresh the current state of in the inbox from the network or not.
    * @returns {Promise<InboxState>} A Promise resolving to a InboxState.
    */
   async inboxState(refreshFromNetwork: boolean): Promise<InboxState> {
     return await XMTPModule.getInboxState(this.inboxId, refreshFromNetwork)
+  }
+
+  /**
+   * Make a request for a list of inbox states.
+   *
+   * @param {InboxId[]} inboxIds - The inboxIds to get the associate inbox states for.
+   * @param {boolean} refreshFromNetwork - If you want to refresh the current state the inbox from the network or not.
+   * @returns {Promise<InboxState[]>} A Promise resolving to a list of InboxState.
+   */
+  async inboxStates(refreshFromNetwork: boolean, inboxIds: InboxId[]): Promise<InboxState[]> {
+    return await XMTPModule.getInboxStates(this.inboxId, refreshFromNetwork, inboxIds)
   }
 
   /**

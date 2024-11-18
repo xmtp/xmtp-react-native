@@ -281,3 +281,19 @@ test('production client creation does not error', async () => {
   }
   return true
 })
+
+test('can find others inbox states', async () => {
+  const [alix, bo, caro] = await createClients(3)
+
+  const states = await alix.inboxStates(true, [bo.inboxId, caro.inboxId])
+  assert(
+    states[0].recoveryAddress.toLowerCase === bo.address.toLowerCase,
+    `addresses dont match ${states[0].recoveryAddress} and ${bo.address}`
+  )
+  assert(
+    states[1].addresses[0].toLowerCase === caro.address.toLowerCase,
+    `clients dont match ${states[1].addresses[0]} and ${caro.address}`
+  )
+
+  return true
+})
