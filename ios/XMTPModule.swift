@@ -480,7 +480,7 @@ public class XMTPModule: Module {
 			for conversation in conversations {
 				let encodedConversationContainer =
 					try await ConversationWrapper.encode(
-						conversation, client: client)
+						conversation, client: client, conversationParams: params)
 				results.append(encodedConversationContainer)
 			}
 			return results
