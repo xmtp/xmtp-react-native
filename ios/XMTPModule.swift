@@ -299,8 +299,9 @@ public class XMTPModule: Module {
 		AsyncFunction("dropClient") { (inboxId: String) in
 			await clientsManager.dropClient(key: inboxId)
 		}
-		
-		AsyncFunction("signWithInstallationKey") { (inboxId: String, message: String) -> [UInt8] in
+
+		AsyncFunction("signWithInstallationKey") {
+			(inboxId: String, message: String) -> [UInt8] in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
 				throw Error.noClient
