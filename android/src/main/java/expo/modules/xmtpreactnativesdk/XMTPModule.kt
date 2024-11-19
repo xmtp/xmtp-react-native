@@ -728,6 +728,8 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("removeGroupMembers")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
+                val clientObjectHash = System.identityHashCode(client)
+                logV("hashcode of client object in memory performing removeGroupMembers: " + clientObjectHash)
                 val group = client.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.removeMembers(peerAddresses)
