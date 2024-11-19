@@ -34,6 +34,18 @@ test('can make a client', async () => {
   return true
 })
 
+test('can sign with installation key', async () => {
+  const [client] = await createClients(1)
+
+  const signature = await client.signWithInstallationKey('A digest message')
+
+  assert(
+    signature !== undefined && signature.length > 0,
+    `Signature should not be empty but was: ${signature}`
+  )
+  return true
+})
+
 test('can revoke all other installations', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,

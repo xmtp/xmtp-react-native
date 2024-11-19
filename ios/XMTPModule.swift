@@ -300,6 +300,16 @@ public class XMTPModule: Module {
 			await clientsManager.dropClient(key: inboxId)
 		}
 
+		AsyncFunction("signWithInstallationKey") {
+			(inboxId: String, message: String) -> [UInt8] in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			let signature = try client.signWithInstallationKey(message: message)
+			return [UInt8](signature)
+		}
+
 		AsyncFunction("canMessage") {
 			(inboxId: String, peerAddresses: [String]) -> [String: Bool] in
 			guard let client = await clientsManager.getClient(key: inboxId)

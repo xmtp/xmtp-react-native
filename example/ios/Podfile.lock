@@ -56,7 +56,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.14)
   - hermes-engine/Pre-built (0.71.14)
   - libevent (2.1.12)
-  - LibXMTP (3.0.1)
+  - LibXMTP (3.0.3)
   - Logging (1.0.0)
   - MessagePacker (0.4.7)
   - MMKV (2.0.0):
@@ -449,16 +449,16 @@ PODS:
     - GenericJSON (~> 2.0)
     - Logging (~> 1.0.0)
     - secp256k1.swift (~> 0.1)
-  - XMTP (3.0.5):
+  - XMTP (3.0.6):
     - Connect-Swift (= 0.12.0)
     - GzipSwift
-    - LibXMTP (= 3.0.1)
+    - LibXMTP (= 3.0.3)
     - web3.swift
   - XMTPReactNative (0.1.0):
     - ExpoModulesCore
     - MessagePacker
     - secp256k1.swift
-    - XMTP (= 3.0.5)
+    - XMTP (= 3.0.6)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -711,7 +711,7 @@ SPEC CHECKSUMS:
   GzipSwift: 893f3e48e597a1a4f62fafcb6514220fcf8287fa
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  LibXMTP: b23a18d05d458fee72f0a96a114b1eb1e6d77d3b
+  LibXMTP: 948d39cf5b978adaa7d0f6ea5c6c0995a0b9e63f
   Logging: 9ef4ecb546ad3169398d5a723bc9bea1c46bef26
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: f7d1d5945c8765f97f39c3d121f353d46735d801
@@ -763,8 +763,8 @@ SPEC CHECKSUMS:
   secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
   SwiftProtobuf: 407a385e97fd206c4fbe880cc84123989167e0d1
   web3.swift: 2263d1e12e121b2c42ffb63a5a7beb1acaf33959
-  XMTP: 7b9105a3549427a294fb991c5892ebec73d2388d
-  XMTPReactNative: 0862a746eaddb7d643ad4cbdc2727d02863d9a18
+  XMTP: 48d0c71ef732ac4d79c2942902a132bf71661029
+  XMTPReactNative: 406f92e777c9d2891404956309d926e7b2f25c1c
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 0e6fe50018f34e575d38dc6a1fdf1f99c9596cdd

@@ -190,6 +190,17 @@ export async function dropClient(inboxId: InboxId) {
   return await XMTPModule.dropClient(inboxId)
 }
 
+export async function signWithInstallationKey(
+  inboxId: InboxId,
+  message: string
+): Promise<Uint8Array> {
+  const signatureArray = await XMTPModule.signWithInstallationKey(
+    inboxId,
+    message
+  )
+  return new Uint8Array(signatureArray)
+}
+
 export async function canMessage(
   inboxId: InboxId,
   peerAddresses: Address[]
