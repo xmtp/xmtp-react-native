@@ -17,11 +17,13 @@ import * as XMTPModule from '../index'
 
 declare const Buffer
 
-export type GetMessageContentTypeFromClient<C> =
-  C extends Client<infer T> ? T : never
+export type GetMessageContentTypeFromClient<C> = C extends Client<infer T>
+  ? T
+  : never
 
-export type ExtractDecodedType<C> =
-  C extends XMTPModule.ContentCodec<infer T> ? T : never
+export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
+  ? T
+  : never
 
 export type InboxId = string & { readonly brand: unique symbol }
 export type Address = string
@@ -316,6 +318,10 @@ export class Client<
     this.codecRegistry[id] = contentCodec
   }
 
+  async signWithInstallationKey(message: string): Promise<Uint8Array> {
+    return XMTPModule.signWithInstallationKey(this.inboxId, message)
+  }
+
   /**
    * Find the Address associated with this address
    *
@@ -409,8 +415,15 @@ export class Client<
    * @param {boolean} refreshFromNetwork - If you want to refresh the current state the inbox from the network or not.
    * @returns {Promise<InboxState[]>} A Promise resolving to a list of InboxState.
    */
-  async inboxStates(refreshFromNetwork: boolean, inboxIds: InboxId[]): Promise<InboxState[]> {
-    return await XMTPModule.getInboxStates(this.inboxId, refreshFromNetwork, inboxIds)
+  async inboxStates(
+    refreshFromNetwork: boolean,
+    inboxIds: InboxId[]
+  ): Promise<InboxState[]> {
+    return await XMTPModule.getInboxStates(
+      this.inboxId,
+      refreshFromNetwork,
+      inboxIds
+    )
   }
 
   /**

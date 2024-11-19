@@ -364,6 +364,15 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("signWithInstallationKey") Coroutine { inboxId: String, message: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+
+                val signature = client.signWithInstallationKey(message)
+                signature.map { it.toInt() and 0xFF }
+            }
+        }
+
         AsyncFunction("canMessage") Coroutine { inboxId: String, peerAddresses: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("canMessage")
@@ -445,7 +454,11 @@ class XMTPModule : Module() {
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
                 val consent = consentState?.let { getConsentState(it) }
-                val groups = client.conversations.listGroups(order = order, limit = limit, consentState = consent)
+                val groups = client.conversations.listGroups(
+                    order = order,
+                    limit = limit,
+                    consentState = consent
+                )
                 groups.map { group ->
                     GroupWrapper.encode(client, group, params)
                 }
@@ -459,7 +472,11 @@ class XMTPModule : Module() {
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
                 val consent = consentState?.let { getConsentState(it) }
-                val dms = client.conversations.listDms(order = order, limit = limit, consentState = consent)
+                val dms = client.conversations.listDms(
+                    order = order,
+                    limit = limit,
+                    consentState = consent
+                )
                 dms.map { dm ->
                     DmWrapper.encode(client, dm, params)
                 }
@@ -474,7 +491,8 @@ class XMTPModule : Module() {
                     ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
                 val order = getConversationSortOrder(sortOrder ?: "")
                 val consent = consentState?.let { getConsentState(it) }
-                val conversations = client.conversations.list(order = order, limit = limit, consentState = consent)
+                val conversations =
+                    client.conversations.list(order = order, limit = limit, consentState = consent)
                 conversations.map { conversation ->
                     ConversationWrapper.encode(client, conversation, params)
                 }
