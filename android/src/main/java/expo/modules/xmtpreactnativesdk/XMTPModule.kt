@@ -288,7 +288,7 @@ class XMTPModule : Module() {
                     options = options,
                     account = reactSigner
                 )
-                clients[client.inboxId] = client
+                clients[client.address] = client
                 ContentJson.Companion
                 signer = null
                 sendEvent("bundleAuthed")

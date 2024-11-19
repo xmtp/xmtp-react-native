@@ -141,7 +141,7 @@ public class XMTPModule: Module {
 
 				let options = createClientConfig(env: environment, dbEncryptionKey: encryptionKeyData, appVersion: appVersion, dbDirectory: dbDirectory)
 				let client = try await Client.from(v1Bundle: bundle.v1, options: options, signingKey: signer)
-				await clientsManager.updateClient(key: client.inboxID, client: client)
+				await clientsManager.updateClient(key: client.address, client: client)
 				self.signer = nil
 				self.sendEvent("bundleAuthed")
 			} catch {
