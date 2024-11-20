@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-extra-non-null-assertion */
-import { Client, Group } from 'xmtp-react-native-sdk'
+import { Client, Conversation, Dm, Group } from 'xmtp-react-native-sdk'
+import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
-import { Test, assert, createClients } from './test-utils'
+import { Test, assert, createClients, createV3Clients } from './test-utils'
 
 export const groupPerformanceTests: Test[] = []
 let counter = 1
@@ -34,28 +35,214 @@ async function createGroups(
   return groups
 }
 
+async function createDms(
+  client: Client,
+  peers: Client[],
+  numMessages: number
+): Promise<Dm[]> {
+  const dms = []
+  for (let i = 0; i < peers.length; i++) {
+    const dm = await peers[i].conversations.findOrCreateDm(client.address)
+    dms.push(dm)
+    for (let i = 0; i < numMessages; i++) {
+      await dm.send({ text: `Alix message ${i}` })
+    }
+  }
+  return dms
+}
+
+async function createV2Convos(
+  client: Client,
+  peers: Client[],
+  numMessages: number
+): Promise<Conversation<DefaultContentTypes>[]> {
+  const convos = []
+  for (let i = 0; i < peers.length; i++) {
+    const convo = await peers[i].conversations.newConversation(client.address)
+    convos.push(convo)
+    for (let i = 0; i < numMessages; i++) {
+      await convo.send({ text: `Alix message ${i}` })
+    }
+  }
+  return convos
+}
+
 let alixClient: Client
 let boClient: Client
+let davonV3Client: Client
 let initialPeers: Client[]
 let initialGroups: Group[]
+let initialV3Peers: Client[]
+// let initialDms: Dm[]
+// let initialV2Convos: Conversation<DefaultContentTypes>[]
 
 async function beforeAll(
   groupSize: number = 1,
-  groupMessages: number = 1,
-  peersSize: number = 1
+  messages: number = 1,
+  peersSize: number = 1,
+  includeDms: boolean = false,
+  includeV2Convos: boolean = false
 ) {
   ;[alixClient] = await createClients(1)
+  ;[davonV3Client] = await createV3Clients(1)
 
   initialPeers = await createClients(peersSize)
+  initialV3Peers = await createV3Clients(peersSize)
   boClient = initialPeers[0]
 
   initialGroups = await createGroups(
     alixClient,
     initialPeers,
     groupSize,
-    groupMessages
+    messages
   )
+
+  if (includeDms) {
+    await createDms(davonV3Client, initialV3Peers, messages)
+  }
+
+  if (includeV2Convos) {
+    await createV2Convos(alixClient, initialPeers, messages)
+  }
 }
+
+test('test compare V2 and V3 dms', async () => {
+  await beforeAll(0, 0, 50, true, true)
+  let start = Date.now()
+  let v2Convos = await alixClient.conversations.list()
+  let end = Date.now()
+  console.log(`Alix loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+
+  start = Date.now()
+  v2Convos = await alixClient.conversations.list()
+  end = Date.now()
+  console.log(`Alix 2nd loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+  const v2Load = end - start
+
+  start = Date.now()
+  await davonV3Client.conversations.syncConversations()
+  end = Date.now()
+  console.log(`Davon synced ${v2Convos.length} Dms in ${end - start}ms`)
+
+  start = Date.now()
+  let dms = await davonV3Client.conversations.listConversations()
+  end = Date.now()
+  console.log(`Davon loaded ${dms.length} Dms in ${end - start}ms`)
+  const v3Load = end - start
+
+  await createDms(davonV3Client, await createV3Clients(5), 1)
+
+  await createV2Convos(alixClient, await createClients(5), 1)
+
+  start = Date.now()
+  v2Convos = await alixClient.conversations.list()
+  end = Date.now()
+  console.log(`Alix loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+
+  start = Date.now()
+  v2Convos = await alixClient.conversations.list()
+  end = Date.now()
+  console.log(`Alix 2nd loaded ${v2Convos.length} v2Convos in ${end - start}ms`)
+
+  start = Date.now()
+  await davonV3Client.conversations.syncConversations()
+  end = Date.now()
+  console.log(`Davon synced ${v2Convos.length} Dms in ${end - start}ms`)
+
+  start = Date.now()
+  dms = await davonV3Client.conversations.listConversations()
+  end = Date.now()
+  console.log(`Davon loaded ${dms.length} Dms in ${end - start}ms`)
+
+  assert(
+    v3Load < v2Load,
+    'v3 conversations should load faster than v2 conversations'
+  )
+
+  return true
+})
+
+test('testing large group listings with ordering', async () => {
+  await beforeAll(1000, 10, 10)
+
+  let start = Date.now()
+  let groups = await alixClient.conversations.listGroups()
+  let end = Date.now()
+  console.log(`Alix loaded ${groups.length} groups in ${end - start}ms`)
+
+  await groups[5].send({ text: `Alix message` })
+  await groups[50].send({ text: `Alix message` })
+  await groups[150].send({ text: `Alix message` })
+  await groups[500].send({ text: `Alix message` })
+  await groups[700].send({ text: `Alix message` })
+  await groups[900].send({ text: `Alix message` })
+
+  let start2 = Date.now()
+  let groups2 = await alixClient.conversations.listGroups(
+    {
+      consentState: false,
+      description: false,
+      addedByInboxId: false,
+      isActive: false,
+      lastMessage: true,
+    },
+    'lastMessage'
+  )
+  let end2 = Date.now()
+  console.log(`Alix loaded ${groups2.length} groups in ${end2 - start2}ms`)
+  assert(
+    end2 - start2 < end - start,
+    'listing 1000 groups without certain fields should take less time'
+  )
+
+  start = Date.now()
+  await alixClient.conversations.syncGroups()
+  end = Date.now()
+  console.log(`Alix synced ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 100,
+    'syncing 1000 cached groups should take less than a .1 second'
+  )
+
+  start = Date.now()
+  await boClient.conversations.syncGroups()
+  end = Date.now()
+  console.log(`Bo synced ${groups.length} groups in ${end - start}ms`)
+
+  start = Date.now()
+  await boClient.conversations.syncAllGroups()
+  end = Date.now()
+  console.log(`Bo synced all ${groups.length} groups in ${end - start}ms`)
+  assert(
+    end - start < 30000,
+    'Syncing all 1000 groups should take less than a 30 second'
+  )
+
+  start = Date.now()
+  groups = await boClient.conversations.listGroups()
+  end = Date.now()
+  console.log(`Bo loaded ${groups.length} groups in ${end - start}ms`)
+
+  start2 = Date.now()
+  groups2 = await boClient.conversations.listGroups(
+    {
+      consentState: false,
+      description: false,
+      addedByInboxId: false,
+      isActive: false,
+      lastMessage: true,
+    },
+    'lastMessage'
+  )
+  end2 = Date.now()
+  console.log(`Bo loaded ${groups2.length} groups in ${end2 - start2}ms`)
+  assert(
+    end2 - start2 < end - start,
+    'listing 1000 groups without certain fields should take less time'
+  )
+
+  return true
+})
 
 test('testing large group listings', async () => {
   await beforeAll(1000)

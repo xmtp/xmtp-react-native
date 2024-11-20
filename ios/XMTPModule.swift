@@ -11,6 +11,14 @@ extension Conversation {
 	func cacheKey(_ inboxId: String) -> String {
 		return Conversation.cacheKeyForTopic(inboxId: inboxId, topic: topic)
 	}
+	
+	static func cacheKeyForV3(inboxId: String, topic: String, id: String) -> String {
+		return "\(inboxId):\(topic):\(id)"
+	}
+
+	func cacheKeyV3(_ inboxId: String) throws -> String {
+		return try Conversation.cacheKeyForV3(inboxId: inboxId, topic: topic, id: id)
+	}
 }
 
 extension XMTP.Group {
@@ -97,19 +105,23 @@ public class XMTPModule: Module {
             "sign",
             "authed",
 			"authedV3",
+			"bundleAuthed",
             "preCreateIdentityCallback",
             "preEnableIdentityCallback",
 			"preAuthenticateToInboxCallback",
-            // Conversations
+            // ConversationV2
             "conversation",
-            "group",
             "conversationContainer",
             "message",
-            "allGroupMessage",
-            // Conversation
-            "conversationMessage",
+			"conversationMessage",
+            // ConversationV3
+			"conversationV3",
+			"allConversationMessages",
+			"conversationV3Message",
             // Group
-            "groupMessage"
+			"group",
+            "groupMessage",
+			"allGroupMessage"
         )
 
 		AsyncFunction("address") { (inboxId: String) -> String in
@@ -223,6 +235,10 @@ public class XMTPModule: Module {
 		Function("receiveSignature") { (requestID: String, signature: String) in
 			try signer?.handle(id: requestID, signature: signature)
 		}
+		
+		Function("receiveSCWSignature") { (requestID: String, signature: String) in
+			try signer?.handleSCW(id: requestID, signature: signature)
+		}
 
 		// Generate a random wallet and set the client to that
 		AsyncFunction("createRandom") { (hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
@@ -262,7 +278,7 @@ public class XMTPModule: Module {
 
 		// Create a client using its serialized key bundle.
 		AsyncFunction("createFromKeyBundle") { (keyBundle: String, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
-
+			// V2 ONLY
 			do {
 				guard let keyBundleData = Data(base64Encoded: keyBundle),
 				      let bundle = try? PrivateKeyBundle(serializedData: keyBundleData)
@@ -276,6 +292,31 @@ public class XMTPModule: Module {
 				let client = try await Client.from(bundle: bundle, options: options)
 				await clientsManager.updateClient(key: client.inboxID, client: client)
 				return try ClientWrapper.encodeToObj(client)
+			} catch {
+				print("ERROR! Failed to create client: \(error)")
+				throw error
+			}
+		}
+		
+		AsyncFunction("createFromKeyBundleWithSigner") { (address: String, keyBundle: String, dbEncryptionKey: [UInt8]?, authParams: String) in
+			// V2 ONLY
+			do {
+				guard let keyBundleData = Data(base64Encoded: keyBundle),
+					  let bundle = try? PrivateKeyBundle(serializedData: keyBundleData)
+				else {
+					throw Error.invalidKeyBundle
+				}
+				let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+				let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+
+				let signer = ReactNativeSigner(module: self, address: address)
+				self.signer = signer
+
+				let options = createClientConfig(env: authOptions.environment, appVersion: authOptions.appVersion, enableV3: authOptions.enableV3, dbEncryptionKey: encryptionKeyData, dbDirectory: authOptions.dbDirectory, historySyncUrl: authOptions.historySyncUrl)
+				let client = try await Client.from(v1Bundle: bundle.v1, options: options, signingKey: signer)
+				await clientsManager.updateClient(key: client.inboxID, client: client)
+				self.signer = nil
+				self.sendEvent("bundleAuthed", try ClientWrapper.encodeToObj(client))
 			} catch {
 				print("ERROR! Failed to create client: \(error)")
 				throw error
@@ -311,14 +352,15 @@ public class XMTPModule: Module {
 				dbDirectory: authOptions.dbDirectory,
 				historySyncUrl: authOptions.historySyncUrl
 			)
-			let client = try await Client.createOrBuild(account: privateKey, options: options)
+			let client = try await Client.createV3(account: privateKey, options: options)
 
 			await clientsManager.updateClient(key: client.inboxID, client: client)
 			return try ClientWrapper.encodeToObj(client)
 		}
 		
-		AsyncFunction("createOrBuild") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
-			let signer = ReactNativeSigner(module: self, address: address)
+		AsyncFunction("createV3") { (address: String, hasCreateIdentityCallback: Bool?, hasEnableIdentityCallback: Bool?, hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8]?, authParams: String) in
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+			let signer = ReactNativeSigner(module: self, address: address, walletType: authOptions.walletType, chainId: authOptions.chainId, blockNumber: authOptions.blockNumber)
 			self.signer = signer
 			if(hasCreateIdentityCallback ?? false) {
 				self.preCreateIdentityCallbackDeferred = DispatchSemaphore(value: 0)
@@ -333,7 +375,6 @@ public class XMTPModule: Module {
 			let preEnableIdentityCallback: PreEventCallback? = hasEnableIdentityCallback ?? false ? self.preEnableIdentityCallback : nil
 			let preAuthenticateToInboxCallback: PreEventCallback? = hasAuthenticateToInboxCallback ?? false ? self.preAuthenticateToInboxCallback : nil
 			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
-			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			
 			let options = self.createClientConfig(
 				env: authOptions.environment,
@@ -346,10 +387,30 @@ public class XMTPModule: Module {
 				dbDirectory: authOptions.dbDirectory,
 				historySyncUrl: authOptions.historySyncUrl
 			)
-			let client = try await XMTP.Client.createOrBuild(account: signer, options: options)
+			let client = try await XMTP.Client.createV3(account: signer, options: options)
 			await self.clientsManager.updateClient(key: client.inboxID, client: client)
 			self.signer = nil
 			self.sendEvent("authedV3", try ClientWrapper.encodeToObj(client))
+		}
+		
+		AsyncFunction("buildV3") { (address: String, dbEncryptionKey: [UInt8]?, authParams: String) -> [String: String] in
+			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+			let encryptionKeyData = dbEncryptionKey == nil ? nil : Data(dbEncryptionKey!)
+			
+			let options = self.createClientConfig(
+				env: authOptions.environment,
+				appVersion: authOptions.appVersion,
+				preEnableIdentityCallback: preEnableIdentityCallback,
+				preCreateIdentityCallback: preCreateIdentityCallback,
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+				enableV3: authOptions.enableV3,
+				dbEncryptionKey: encryptionKeyData,
+				dbDirectory: authOptions.dbDirectory,
+				historySyncUrl: authOptions.historySyncUrl
+			)
+			let client = try await XMTP.Client.buildV3(address: address, options: options)
+			await clientsManager.updateClient(key: client.inboxID, client: client)
+			return try ClientWrapper.encodeToObj(client)
 		}
         
         // Remove a client from memory for a given inboxId
@@ -358,6 +419,7 @@ public class XMTPModule: Module {
         }
 		
 		AsyncFunction("sign") { (inboxId: String, digest: [UInt8], keyType: String, preKeyIndex: Int) -> [UInt8] in
+			// V2 ONLY
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -371,6 +433,7 @@ public class XMTPModule: Module {
 		}
 		
 		AsyncFunction("exportPublicKeyBundle") { (inboxId: String) -> [UInt8] in
+			// V2 ONLY
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -380,6 +443,7 @@ public class XMTPModule: Module {
 
 		// Export the client's serialized key bundle.
 		AsyncFunction("exportKeyBundle") { (inboxId: String) -> String in
+			// V2 ONLY
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -389,6 +453,7 @@ public class XMTPModule: Module {
 
 		// Export the conversation's serialized topic data.
 		AsyncFunction("exportConversationTopicData") { (inboxId: String, topic: String) -> String in
+			// V2 ONLY
 			guard let conversation = try await findConversation(inboxId: inboxId, topic: topic) else {
 				throw Error.conversationNotFound(topic)
 			}
@@ -406,13 +471,14 @@ public class XMTPModule: Module {
 
 		// Import a conversation from its serialized topic data.
 		AsyncFunction("importConversationTopicData") { (inboxId: String, topicData: String) -> String in
+			// V2 ONLY
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			let data = try Xmtp_KeystoreApi_V1_TopicMap.TopicData(
 				serializedData: Data(base64Encoded: Data(topicData.utf8))!
 			)
-			let conversation = await client.conversations.importTopicData(data: data)
+			let conversation = try await client.conversations.importTopicData(data: data)
 			await conversationsManager.set(conversation.cacheKey(inboxId), conversation)
 			return try ConversationWrapper.encode(conversation, client: client)
 		}
@@ -420,6 +486,7 @@ public class XMTPModule: Module {
 		//
 		// Client API
 		AsyncFunction("canMessage") { (inboxId: String, peerAddress: String) -> Bool in
+			// V2 ONLY
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -436,6 +503,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("staticCanMessage") { (peerAddress: String, environment: String, appVersion: String?) -> Bool in
+			// V2 ONLY
 			do {
 				let options = createClientConfig(env: environment, appVersion: appVersion)
 				return try await XMTP.Client.canMessage(peerAddress, options: options)
@@ -506,6 +574,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("sendEncodedContent") { (inboxId: String, topic: String, encodedContentData: [UInt8]) -> String in
+			// V2 ONLY
 			guard let conversation = try await findConversation(inboxId: inboxId, topic: topic) else {
 				throw Error.conversationNotFound("no conversation found for \(topic)")
 			}
@@ -516,6 +585,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("listConversations") { (inboxId: String) -> [String] in
+			// V2 ONLY
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -532,19 +602,62 @@ public class XMTPModule: Module {
 			return results
 		}
 		
-		AsyncFunction("listGroups") { (inboxId: String) -> [String] in
+		AsyncFunction("listGroups") { (inboxId: String, groupParams: String?, sortOrder: String?, limit: Int?) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			let groupList = try await client.conversations.groups()
-			
+
+			let params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?? "")
+			let order = getConversationSortOrder(order: sortOrder ?? "")
+
+			var groupList: [Group] = []
+
+			if order == .lastMessage {
+				let groups = try await client.conversations.groups()
+				var groupsWithMessages: [(Group, Date)] = []
+				for group in groups {
+					do {
+						let firstMessage = try await group.decryptedMessages(limit: 1).first
+						let sentAt = firstMessage?.sentAt ?? Date.distantPast
+						groupsWithMessages.append((group, sentAt))
+					} catch {
+						print("Failed to fetch messages for group: \(group.id)")
+					}
+				}
+				let sortedGroups = groupsWithMessages.sorted { $0.1 > $1.1 }.map { $0.0 }
+				
+				if let limit = limit, limit > 0 {
+					groupList = Array(sortedGroups.prefix(limit))
+				} else {
+					groupList = sortedGroups
+				}
+			} else {
+				groupList = try await client.conversations.groups(limit: limit)
+			}
+
 			var results: [String] = []
 			for group in groupList {
 				await self.groupsManager.set(group.cacheKey(inboxId), group)
-				let encodedGroup = try await GroupWrapper.encode(group, client: client)
+				let encodedGroup = try await GroupWrapper.encode(group, client: client, conversationParams: params)
 				results.append(encodedGroup)
 			}
+			return results
+		}
+		
+		AsyncFunction("listV3Conversations") { (inboxId: String, conversationParams: String?, sortOrder: String?, limit: Int?) -> [String] in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			let params = ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?? "")
+			let order = getConversationSortOrder(order: sortOrder ?? "")
+			let conversations = try await client.conversations.listConversations(limit: limit, order: order)
 			
+			var results: [String] = []
+			for conversation in conversations {
+				let encodedConversationContainer = try await ConversationContainerWrapper.encode(conversation, client: client)
+				results.append(encodedConversationContainer)
+			}
 			return results
 		}
 		
@@ -565,6 +678,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("loadMessages") { (inboxId: String, topic: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
+			// V2 ONLY
 			let beforeDate = before != nil ? Date(timeIntervalSince1970: TimeInterval(before!) / 1000) : nil
 			let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!) / 1000) : nil
 
@@ -595,7 +709,7 @@ public class XMTPModule: Module {
 			}
 		}
 		
-		AsyncFunction("groupMessages") { (inboxId: String, id: String, limit: Int?, before: Double?, after: Double?, direction: String?, deliveryStatus: String?) -> [String] in
+		AsyncFunction("conversationMessages") { (inboxId: String, conversationId: String, limit: Int?, before: Double?, after: Double?, direction: String?) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -604,18 +718,15 @@ public class XMTPModule: Module {
 			let afterDate = after != nil ? Date(timeIntervalSince1970: TimeInterval(after!) / 1000) : nil
 
 			let sortDirection: Int = (direction != nil && direction == "SORT_DIRECTION_ASCENDING") ? 1 : 2
-			
-			let status: String = (deliveryStatus != nil) ? deliveryStatus!.lowercased() : "all"
 
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
+			guard let conversation = try client.findConversation(conversationId: conversationId) else {
+				throw Error.conversationNotFound("no conversation found for \(conversationId)")
 			}
-			let decryptedMessages = try await group.decryptedMessages(
+			let decryptedMessages = try await conversation.decryptedMessages(
+				limit: limit,
 				before: beforeDate,
 				after: afterDate,
-				limit: limit,
-				direction: PagingInfoSortDirection(rawValue: sortDirection),
-				deliveryStatus: MessageDeliveryStatus(rawValue: status)
+				direction: PagingInfoSortDirection(rawValue: sortDirection)
 			)
 			
 			return decryptedMessages.compactMap { msg in
@@ -649,9 +760,43 @@ public class XMTPModule: Module {
 				return nil
 			}
 		}
+		
+		AsyncFunction("findConversation") { (inboxId: String, conversationId: String) -> String? in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
 
+			if let conversation = try client.findConversation(conversationId: conversationId) {
+				return try await ConversationContainerWrapper.encode(conversation, client: client)
+			} else {
+				return nil
+			}
+		}
+		
+		AsyncFunction("findConversationByTopic") { (inboxId: String, topic: String) -> String? in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			if let conversation = try client.findConversationByTopic(topic: topic) {
+				return try await ConversationContainerWrapper.encode(conversation, client: client)
+			} else {
+				return nil
+			}
+		}
+		
+		AsyncFunction("findDm") { (inboxId: String, peerAddress: String) -> String? in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			if let dm = try await client.findDm(address: peerAddress) {
+				return try await DmWrapper.encode(dm, client: client)
+			} else {
+				return nil
+			}
+		}
 
 		AsyncFunction("loadBatchMessages") { (inboxId: String, topics: [String]) -> [String] in
+			// V2 ONLY
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -710,6 +855,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("sendMessage") { (inboxId: String, conversationTopic: String, contentJson: String) -> String in
+			// V2 ONLY
 			guard let conversation = try await findConversation(inboxId: inboxId, topic: conversationTopic) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
@@ -721,13 +867,16 @@ public class XMTPModule: Module {
 			)
 		}
 		
-		AsyncFunction("sendMessageToGroup") { (inboxId: String, id: String, contentJson: String) -> String in
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
+		AsyncFunction("sendMessageToConversation") { (inboxId: String, id: String, contentJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			guard let conversation = try client.findConversation(conversationId: id) else {
+				throw Error.conversationNotFound("no conversation found for \(id)")
 			}
 
 			let sending = try ContentJson.fromJson(contentJson)
-			return try await group.send(
+			return try await conversation.send(
 				content: sending.content,
 				options: SendOptions(contentType: sending.type)
 			)
@@ -741,13 +890,16 @@ public class XMTPModule: Module {
 			try await group.publishMessages()
 		}
 
-		AsyncFunction("prepareGroupMessage") { (inboxId: String, id: String, contentJson: String) -> String in
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
+		AsyncFunction("prepareConversationMessage") { (inboxId: String, id: String, contentJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			guard let conversation = try client.findConversation(conversationId: id) else {
+				throw Error.conversationNotFound("no conversation found for \(id)")
 			}
 
 			let sending = try ContentJson.fromJson(contentJson)
-			return try await group.prepareMessage(
+			return try await conversation.prepareMessageV3(
 				content: sending.content,
 				options: SendOptions(contentType: sending.type)
 			)
@@ -758,6 +910,7 @@ public class XMTPModule: Module {
 			conversationTopic: String,
 			contentJson: String
 		) -> String in
+			// V2 ONLY
 			guard let conversation = try await findConversation(inboxId: inboxId, topic: conversationTopic) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
@@ -782,6 +935,7 @@ public class XMTPModule: Module {
 			conversationTopic: String,
 			encodedContentData: [UInt8]
 		) -> String in
+			// V2 ONLY
 			guard let conversation = try await findConversation(inboxId: inboxId, topic: conversationTopic) else {
 				throw Error.conversationNotFound("no conversation found for \(conversationTopic)")
 			}
@@ -802,6 +956,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("sendPreparedMessage") { (inboxId: String, preparedLocalMessageJson: String) -> String in
+			// V2 ONLY
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -825,6 +980,7 @@ public class XMTPModule: Module {
 		}
 
     AsyncFunction("createConversation") { (inboxId: String, peerAddress: String, contextJson: String, consentProofBytes: [UInt8]) -> String in
+			// V2 ONLY
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
@@ -850,6 +1006,20 @@ public class XMTPModule: Module {
                 )
 
 				return try ConversationWrapper.encode(conversation, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
+		
+		AsyncFunction("findOrCreateDm") { (inboxId: String, peerAddress: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+
+			do {
+				let dm = try await client.conversations.findOrCreateDm(with: peerAddress)
+				return try await DmWrapper.encode(dm, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
 				throw error
@@ -918,43 +1088,60 @@ public class XMTPModule: Module {
 			return try await group.members.map(\.inboxId)
 		}
 		
-		AsyncFunction("listGroupMembers") { (inboxId: String, groupId: String) -> [String] in
+		AsyncFunction("dmPeerInboxId") { (inboxId: String, dmId: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			guard let conversation = try client.findConversation(conversationId: dmId) else {
+				throw Error.conversationNotFound("no conversation found for \(dmId)")
+			}
+			if case let .dm(dm) = conversation {
+				return try await dm.peerInboxId
+			} else {
+				throw Error.conversationNotFound("no conversation found for \(dmId)")
+
+			}
+		}
+		
+		AsyncFunction("listConversationMembers") { (inboxId: String, conversationId: String) -> [String] in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 
-			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
-				throw Error.conversationNotFound("no group found for \(groupId)")
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
 			}
-			return try await group.members.compactMap { member in
+			guard let conversation = try client.findConversation(conversationId: conversationId) else {
+				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+			}
+			return try await conversation.members().compactMap { member in
 				return try MemberWrapper.encode(member)
 			}
 		}
 		
 		
-		AsyncFunction("syncGroups") { (inboxId: String) in
+		AsyncFunction("syncConversations") { (inboxId: String) in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
 			try await client.conversations.sync()
 		}
 		
-		AsyncFunction("syncAllGroups") { (inboxId: String) -> UInt32 in
+		AsyncFunction("syncAllConversations") { (inboxId: String) -> UInt32 in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-			return try await client.conversations.syncAllGroups()
+			return try await client.conversations.syncAllConversations()
 		}
 
-		AsyncFunction("syncGroup") { (inboxId: String, id: String) in
+		AsyncFunction("syncConversation") { (inboxId: String, id: String) in
 			guard let client = await clientsManager.getClient(key: inboxId) else {
 				throw Error.noClient
 			}
-
-			guard let group = try await findGroup(inboxId: inboxId, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
+			guard let conversation = try client.findConversation(conversationId: id) else {
+				throw Error.conversationNotFound("no conversation found for \(id)")
 			}
-			try await group.sync()
+			try await conversation.sync()
 		}
 
 		AsyncFunction("addGroupMembers") { (inboxId: String, id: String, peerAddresses: [String]) in
@@ -1306,20 +1493,20 @@ public class XMTPModule: Module {
         
         
         
-        AsyncFunction("processGroupMessage") { (inboxId: String, id: String, encryptedMessage: String) -> String in
+        AsyncFunction("processConversationMessage") { (inboxId: String, id: String, encryptedMessage: String) -> String in
             guard let client = await clientsManager.getClient(key: inboxId) else {
                 throw Error.noClient
             }
             
-            guard let group = try await findGroup(inboxId: inboxId, id: id) else {
-				throw Error.conversationNotFound("no group found for \(id)")
+			guard let conversation = try client.findConversation(conversationId: id) else {
+				throw Error.conversationNotFound("no conversation found for \(id)")
 			}
 			
 			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
 				throw Error.noMessage
 			}
-			let decodedMessage = try await group.processMessageDecrypted(envelopeBytes: encryptedMessageData)
-			return try DecodedMessageWrapper.encode(decodedMessage, client: client)
+			let decodedMessage = try await conversation.processMessage(envelopeBytes: encryptedMessageData)
+			return try DecodedMessageWrapper.encode(decodedMessage.decrypt(), client: client)
 		}
 
 		AsyncFunction("processWelcomeMessage") { (inboxId: String, encryptedMessage: String) -> String in
@@ -1335,8 +1522,23 @@ public class XMTPModule: Module {
 
 			return try await GroupWrapper.encode(group, client: client)
 		}
+		
+		AsyncFunction("processConversationWelcomeMessage") { (inboxId: String, encryptedMessage: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
+			}
+			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
+				throw Error.noMessage
+			}
+			guard let conversation = try await client.conversations.conversationFromWelcome(envelopeBytes: encryptedMessageData) else {
+				throw Error.conversationNotFound("no group found")
+			}
+
+			return try await ConversationContainerWrapper.encode(conversation, client: client)
+		}
 
 		AsyncFunction("subscribeToConversations") { (inboxId: String) in
+			// V2 ONLY
 			try await subscribeToConversations(inboxId: inboxId)
 		}
 
@@ -1349,6 +1551,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("subscribeToMessages") { (inboxId: String, topic: String) in
+			// V2 ONLY
 			try await subscribeToMessages(inboxId: inboxId, topic: topic)
 		}
 		
@@ -1365,6 +1568,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("unsubscribeFromConversations") { (inboxId: String) in
+			// V2 ONLY
 			await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?.cancel()
 		}
 
@@ -1378,6 +1582,7 @@ public class XMTPModule: Module {
 
 
 		AsyncFunction("unsubscribeFromMessages") { (inboxId: String, topic: String) in
+			// V2 ONLY
 			try await unsubscribeFromMessages(inboxId: inboxId, topic: topic)
 		}
 		
@@ -1427,6 +1632,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("decodeMessage") { (inboxId: String, topic: String, encryptedMessage: String) -> String in
+			// V2 ONLY
 			guard let encryptedMessageData = Data(base64Encoded: Data(encryptedMessage.utf8)) else {
 				throw Error.noMessage
 			}
@@ -1521,11 +1727,15 @@ public class XMTPModule: Module {
 			return try ConsentWrapper.consentStateToString(state: await conversation.consentState())
 		}
 		
-		AsyncFunction("groupConsentState") { (inboxId: String, groupId: String) -> String in
-			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
-				throw Error.conversationNotFound("no group found for \(groupId)")
+		AsyncFunction("conversationV3ConsentState") { (inboxId: String, conversationId: String) -> String in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
 			}
-			return try ConsentWrapper.consentStateToString(state: await group.consentState())
+			
+			guard let conversation = try client.findConversation(conversationId: conversationId) else {
+				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+			}
+			return try ConsentWrapper.consentStateToString(state: await conversation.consentState())
 		}
 
 		AsyncFunction("consentList") { (inboxId: String) -> [String] in
@@ -1588,12 +1798,16 @@ public class XMTPModule: Module {
 		  return try await client.contacts.isGroupDenied(groupId: groupId)
 		}
 		
-		AsyncFunction("updateGroupConsent") { (inboxId: String, groupId: String, state: String) in
-			guard let group = try await findGroup(inboxId: inboxId, id: groupId) else {
-				throw Error.conversationNotFound(groupId)
+		AsyncFunction("updateConversationConsent") { (inboxId: String, conversationId: String, state: String) in
+			guard let client = await clientsManager.getClient(key: inboxId) else {
+				throw Error.noClient
 			}
 			
-			try await group.updateConsentState(state: getConsentState(state: state))
+			guard let conversation = try client.findConversation(conversationId: conversationId) else {
+				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+			}
+			
+			try await conversation.updateConsentState(state: getConsentState(state: state))
 		}
         
 		AsyncFunction("exportNativeLogs") { () -> String in
@@ -1618,6 +1832,30 @@ public class XMTPModule: Module {
 			}
 			
 			return logOutput
+		}
+		
+		AsyncFunction("subscribeToV3Conversations") { (inboxId: String) in
+			try await subscribeToV3Conversations(inboxId: inboxId)
+		}
+		
+		AsyncFunction("subscribeToAllConversationMessages") { (inboxId: String) in
+			try await subscribeToAllConversationMessages(inboxId: inboxId)
+		}
+		
+		AsyncFunction("subscribeToConversationMessages") { (inboxId: String, id: String) in
+			try await subscribeToConversationMessages(inboxId: inboxId, id: id)
+		}
+		
+		AsyncFunction("unsubscribeFromAllConversationMessages") { (inboxId: String) in
+			await subscriptionsManager.get(getConversationMessagesKey(inboxId: inboxId))?.cancel()
+		}
+		
+		AsyncFunction("unsubscribeFromV3Conversations") { (inboxId: String) in
+			await subscriptionsManager.get(getV3ConversationsKey(inboxId: inboxId))?.cancel()
+		}
+		
+		AsyncFunction("unsubscribeFromConversationMessages") { (inboxId: String, id: String) in
+			try await unsubscribeFromConversationMessages(inboxId: inboxId, id: id)
 		}
 
 		OnAppBecomesActive {
@@ -1661,6 +1899,15 @@ public class XMTPModule: Module {
 			return .denied
 		default:
 			return .unknown
+		}
+	}
+	
+	private func getConversationSortOrder(order: String) -> ConversationOrder {
+		switch order {
+		case "lastMessage":
+			return .lastMessage
+		default:
+			return .createdAt
 		}
 	}
 
@@ -1822,6 +2069,27 @@ public class XMTPModule: Module {
 		})
 	}
 	
+	func subscribeToV3Conversations(inboxId: String) async throws {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
+			return
+		}
+
+		await subscriptionsManager.get(getV3ConversationsKey(inboxId: inboxId))?.cancel()
+		await subscriptionsManager.set(getV3ConversationsKey(inboxId: inboxId), Task {
+			do {
+				for try await conversation in await client.conversations.streamConversations() {
+					try await sendEvent("conversationV3", [
+						"inboxId": inboxId,
+						"conversation": ConversationContainerWrapper.encodeToObj(conversation, client: client),
+					])
+				}
+			} catch {
+				print("Error in all conversations subscription: \(error)")
+				await subscriptionsManager.get(getV3ConversationsKey(inboxId: inboxId))?.cancel()
+			}
+		})
+	}
+	
 	func subscribeToGroups(inboxId: String) async throws {
 		guard let client = await clientsManager.getClient(key: inboxId) else {
 			return
@@ -1863,6 +2131,27 @@ public class XMTPModule: Module {
 		})
 	}
 	
+	func subscribeToAllConversationMessages(inboxId: String) async throws {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
+			return
+		}
+
+		await subscriptionsManager.get(getConversationMessagesKey(inboxId: inboxId))?.cancel()
+		await subscriptionsManager.set(getConversationMessagesKey(inboxId: inboxId), Task {
+			do {
+				for try await message in await client.conversations.streamAllDecryptedConversationMessages() {
+					try sendEvent("allConversationMessages", [
+						"inboxId": inboxId,
+						"message": DecodedMessageWrapper.encodeToObj(message, client: client),
+					])
+				}
+			} catch {
+				print("Error in all conversations subscription: \(error)")
+				await subscriptionsManager.get(getConversationMessagesKey(inboxId: inboxId))?.cancel()
+			}
+		})
+	}
+	
 	func subscribeToGroupMessages(inboxId: String, id: String) async throws {
 		guard let group = try await findGroup(inboxId: inboxId, id: id) else {
 			return
@@ -1893,6 +2182,36 @@ public class XMTPModule: Module {
 		})
 	}
 	
+	func subscribeToConversationMessages(inboxId: String, id: String) async throws {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.noClient
+		}
+		
+		guard let converation = try client.findConversation(conversationId: id) else {
+			return
+		}
+
+		await subscriptionsManager.get(try converation.cacheKeyV3(client.inboxID))?.cancel()
+		await subscriptionsManager.set(try converation.cacheKeyV3(client.inboxID), Task {
+			do {
+				for try await message in converation.streamDecryptedMessages() {
+					do {
+						try sendEvent("conversationV3Message", [
+							"inboxId": inboxId,
+							"message": DecodedMessageWrapper.encodeToObj(message, client: client),
+			  "conversationId": id,
+						])
+					} catch {
+						print("discarding message, unable to encode wrapper \(message.id)")
+					}
+				}
+			} catch {
+				print("Error in group messages subscription: \(error)")
+				await subscriptionsManager.get(converation.cacheKey(inboxId))?.cancel()
+			}
+		})
+	}
+	
 
 	func unsubscribeFromMessages(inboxId: String, topic: String) async throws {
 		guard let conversation = try await findConversation(inboxId: inboxId, topic: topic) else {
@@ -1909,6 +2228,18 @@ public class XMTPModule: Module {
 
 		await subscriptionsManager.get(group.cacheKey(inboxId))?.cancel()
 	}
+	
+	func unsubscribeFromConversationMessages(inboxId: String, id: String) async throws {
+		guard let client = await clientsManager.getClient(key: inboxId) else {
+			throw Error.noClient
+		}
+		
+		guard let converation = try client.findConversation(conversationId: id) else {
+			return
+		}
+
+		await subscriptionsManager.get(try converation.cacheKeyV3(inboxId))?.cancel()
+	}
 
 	func getMessagesKey(inboxId: String) -> String {
 		return "messages:\(inboxId)"
@@ -1922,6 +2253,14 @@ public class XMTPModule: Module {
 		return "conversations:\(inboxId)"
 	}
 	
+	func getConversationMessagesKey(inboxId: String) -> String {
+		return "conversationMessages:\(inboxId)"
+	}
+	
+	func getV3ConversationsKey(inboxId: String) -> String {
+		return "conversationsV3:\(inboxId)"
+	}
+
 	func getGroupsKey(inboxId: String) -> String {
 		return "groups:\(inboxId)"
 	}

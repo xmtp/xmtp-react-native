@@ -3,6 +3,7 @@ export enum EventTypes {
   Sign = 'sign',
   Authed = 'authed',
   AuthedV3 = 'authedV3',
+  BundleAuthed = 'bundleAuthed',
   PreCreateIdentityCallback = 'preCreateIdentityCallback',
   PreEnableIdentityCallback = 'preEnableIdentityCallback',
   // Conversations Events
@@ -38,4 +39,19 @@ export enum EventTypes {
    * A new message is sent to a specific group
    */
   GroupMessage = 'groupMessage',
+  // Conversation Events
+  /**
+   * A new message is sent to a specific conversation
+   */
+  ConversationV3 = 'conversationV3',
+  // All Conversation Message Events
+  /**
+   * A new message is sent to any V3 conversation
+   */
+  AllConversationMessages = 'allConversationMessages',
+  // Conversation Events
+  /**
+   * A new V3 conversation is created
+   */
+  ConversationV3Message = 'conversationV3Message',
 }

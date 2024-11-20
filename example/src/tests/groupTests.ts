@@ -16,7 +16,6 @@ import {
   Group,
   ConversationContainer,
   ConversationVersion,
-  MessageDeliveryStatus,
   GroupUpdatedContent,
   GroupUpdatedCodec,
 } from '../../../src/index'
@@ -58,37 +57,86 @@ test('can revoke all other installations', async () => {
   ])
   const alixWallet = Wallet.createRandom()
 
+  // create a v3 client
   const alix = await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
+
   await alix.deleteLocalDatabase()
 
+  // create a v2 client
   const alix2 = await Client.create(alixWallet, {
+    env: 'local',
+  })
+
+  const keyBundle = await alix2.exportKeyBundle()
+
+  // create from keybundle a v3 client
+  const alixKeyBundle = await Client.createFromKeyBundle(
+    keyBundle,
+    {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      enableV3: true,
+      dbEncryptionKey: keyBytes,
+    },
+    alixWallet
+  )
+
+  const inboxState = await alixKeyBundle.inboxState(true)
+  assert(
+    inboxState.installations.length === 2,
+    `installations length should be 2 but was ${inboxState.installations.length}`
+  )
+
+  const alix3 = await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 
-  const inboxState = await alix2.inboxState(true)
-  assert(
-    inboxState.installations.length === 2,
-    `installations length should be 2 but was ${inboxState.installations.length}`
+  const keyBundle2 = await alix3.exportKeyBundle()
+
+  const alixKeyBundle2 = await Client.createFromKeyBundle(
+    keyBundle2,
+    {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      enableV3: true,
+      dbEncryptionKey: keyBytes,
+    },
+    alixWallet
   )
 
-  await alix2.revokeAllOtherInstallations(alixWallet)
+  await alix3.deleteLocalDatabase()
 
-  const inboxState2 = await alix2.inboxState(true)
+  const alix4 = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    enableV3: true,
+    dbEncryptionKey: keyBytes,
+  })
+
+  const inboxState2 = await alix4.inboxState(true)
   assert(
-    inboxState2.installations.length === 1,
-    `installations length should be 1 but was ${inboxState2.installations.length}`
+    inboxState2.installations.length === 3,
+    `installations length should be 3 but was ${inboxState2.installations.length}`
+  )
+
+  await alix4.revokeAllOtherInstallations(alixWallet)
+
+  const inboxState3 = await alix4.inboxState(true)
+  assert(
+    inboxState3.installations.length === 1,
+    `installations length should be 1 but was ${inboxState3.installations.length}`
   )
 
   assert(
-    inboxState2.installations[0].createdAt !== undefined,
+    inboxState3.installations[0].createdAt !== undefined,
     `installations createdAt should not be undefined`
   )
   return true
@@ -427,15 +475,6 @@ test('group message delivery status', async () => {
     `the messages length should be 2 but was ${alixMessages.length}`
   )
 
-  const alixMessagesFiltered: DecodedMessage[] = await alixGroup.messages({
-    deliveryStatus: MessageDeliveryStatus.PUBLISHED,
-  })
-
-  assert(
-    alixMessagesFiltered.length === 2,
-    `the messages length should be 2 but was ${alixMessagesFiltered.length}`
-  )
-
   await alixGroup.sync()
   const alixMessages2: DecodedMessage[] = await alixGroup.messages()
 
@@ -517,7 +556,7 @@ test('can get members of a group', async () => {
   const [alixClient, boClient] = await createClients(2)
   const group = await alixClient.conversations.newGroup([boClient.address])
 
-  const members = group.members
+  const members = await group.members()
 
   assert(members.length === 2, `Should be 2 members but was ${members.length}`)
 
@@ -686,56 +725,12 @@ test('unpublished messages handling', async () => {
     throw new Error(`Message count should be 1, but it is ${messageCount}`)
   }
 
-  // Verify the count of published and unpublished messages
-  let messageCountPublished = (
-    await alixGroup.messages({
-      deliveryStatus: MessageDeliveryStatus.PUBLISHED,
-    })
-  ).length
-  let messageCountUnpublished = (
-    await alixGroup.messages({
-      deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
-    })
-  ).length
-  if (messageCountPublished !== 0) {
-    throw new Error(
-      `Published message count should be 0, but it is ${messageCountPublished}`
-    )
-  }
-  if (messageCountUnpublished !== 1) {
-    throw new Error(
-      `Unpublished message count should be 1, but it is ${messageCountUnpublished}`
-    )
-  }
-
   // Publish the prepared message
   await alixGroup.publishPreparedMessages()
 
   // Sync the group after publishing the message
   await alixGroup.sync()
-
-  // Verify the message counts again
-  messageCountPublished = (
-    await alixGroup.messages({
-      deliveryStatus: MessageDeliveryStatus.PUBLISHED,
-    })
-  ).length
-  messageCountUnpublished = (
-    await alixGroup.messages({
-      deliveryStatus: MessageDeliveryStatus.UNPUBLISHED,
-    })
-  ).length
   messageCount = (await alixGroup.messages()).length
-  if (messageCountPublished !== 1) {
-    throw new Error(
-      `Published message count should be 1, but it is ${messageCountPublished}`
-    )
-  }
-  if (messageCountUnpublished !== 0) {
-    throw new Error(
-      `Unpublished message count should be 0, but it is ${messageCountUnpublished}`
-    )
-  }
   if (messageCount !== 1) {
     throw new Error(`Message count should be 1, but it is ${messageCount}`)
   }
@@ -1014,7 +1009,7 @@ test('can stream groups', async () => {
     throw Error('Unexpected num groups (should be 1): ' + groups.length)
   }
 
-  assert(groups[0].members.length === 2, 'should be 2')
+  assert((await groups[0].members()).length === 2, 'should be 2')
 
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1058,6 +1053,61 @@ test('can stream groups', async () => {
   if ((groups.length as number) !== 4) {
     throw Error('Unexpected num groups (should be 4): ' + groups.length)
   }
+
+  return true
+})
+
+test('can list groups with params', async () => {
+  const [alixClient, boClient] = await createClients(2)
+
+  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
+  const boGroup2 = await boClient.conversations.newGroup([alixClient.address])
+
+  await boGroup1.send({ text: `first message` })
+  await boGroup1.send({ text: `second message` })
+  await boGroup1.send({ text: `third message` })
+  await boGroup2.send({ text: `first message` })
+
+  const boGroupsOrderCreated = await boClient.conversations.listGroups()
+  const boGroupsOrderLastMessage = await boClient.conversations.listGroups(
+    { lastMessage: true },
+    'lastMessage'
+  )
+  const boGroupsLimit = await boClient.conversations.listGroups(
+    {},
+    undefined,
+    1
+  )
+
+  assert(
+    boGroupsOrderCreated.map((group: any) => group.id).toString() ===
+      [boGroup1.id, boGroup2.id].toString(),
+    `Group order should be group1 then group2 but was ${boGroupsOrderCreated.map((group: any) => group.id).toString()}`
+  )
+
+  assert(
+    boGroupsOrderLastMessage.map((group: any) => group.id).toString() ===
+      [boGroup2.id, boGroup1.id].toString(),
+    `Group order should be group2 then group1 but was ${boGroupsOrderLastMessage.map((group: any) => group.id).toString()}`
+  )
+
+  const messages = await boGroupsOrderLastMessage[0].messages()
+  assert(
+    messages[0].content() === 'first message',
+    `last message should be first message ${messages[0].content()}`
+  )
+  assert(
+    boGroupsOrderLastMessage[0].lastMessage?.content() === 'first message',
+    `last message should be last message ${boGroupsOrderLastMessage[0].lastMessage?.content()}`
+  )
+  assert(
+    boGroupsLimit.length === 1,
+    `List length should be 1 but was ${boGroupsLimit.length}`
+  )
+  assert(
+    boGroupsLimit[0].id === boGroup1.id,
+    `Group should be ${boGroup1.id} but was ${boGroupsLimit[0].id}`
+  )
 
   return true
 })
@@ -1277,7 +1327,7 @@ test('can stream group messages', async () => {
 
   // Record message stream for this group
   const groupMessages: DecodedMessage[] = []
-  const cancelGroupMessageStream = await alixGroup.streamGroupMessages(
+  const cancelGroupMessageStream = await alixGroup.streamMessages(
     async (message) => {
       groupMessages.push(message)
     }
@@ -1770,10 +1820,10 @@ test('can stream all group Messages from multiple clients - swapped', async () =
   const alixGroup = await caro.conversations.newGroup([alix.address])
   const boGroup = await caro.conversations.newGroup([bo.address])
 
-  await boGroup.streamGroupMessages(async (message) => {
+  await boGroup.streamMessages(async (message) => {
     allBoMessages.push(message)
   })
-  await alixGroup.streamGroupMessages(async (message) => {
+  await alixGroup.streamMessages(async (message) => {
     allAlixMessages.push(message)
   })
 
@@ -1844,34 +1894,25 @@ test('can group consent', async () => {
   )
 
   isAllowed = await bo.contacts.isGroupAllowed(group.id)
+  assert(isAllowed === true, `bo group should be allowed but was ${isAllowed}`)
   assert(
-    isAllowed === true,
-    `bo group should be allowed but was ${isAllowed}`
-  )
-  assert(
-    await group.state === 'allowed',
+    (await group.state) === 'allowed',
     `the group should have a consent state of allowed but was ${await group.state}`
   )
-  
+
   await bo.contacts.denyGroups([group.id])
-  let isDenied = await bo.contacts.isGroupDenied(group.id)
+  const isDenied = await bo.contacts.isGroupDenied(group.id)
+  assert(isDenied === true, `bo group should be denied but was ${isDenied}`)
   assert(
-    isDenied === true,
-    `bo group should be denied but was ${isDenied}`
-  )
-  assert(
-    await group.consentState() === 'denied',
+    (await group.consentState()) === 'denied',
     `the group should have a consent state of denied but was ${await group.consentState()}`
   )
 
   await group.updateConsent('allowed')
   isAllowed = await bo.contacts.isGroupAllowed(group.id)
+  assert(isAllowed === true, `bo group should be allowed2 but was ${isAllowed}`)
   assert(
-    isAllowed === true,
-    `bo group should be allowed2 but was ${isAllowed}`
-  )
-  assert(
-    await group.consentState() === 'allowed',
+    (await group.consentState()) === 'allowed',
     `the group should have a consent state2 of allowed but was ${await group.consentState()}`
   )
 
@@ -1895,7 +1936,7 @@ test('can allow and deny a inbox id', async () => {
 
   await bo.contacts.allowInboxes([alix.inboxId])
 
-  let alixMember = (await boGroup.membersList()).find(
+  let alixMember = (await boGroup.members()).find(
     (member) => member.inboxId === alix.inboxId
   )
   assert(
@@ -1927,7 +1968,7 @@ test('can allow and deny a inbox id', async () => {
 
   await bo.contacts.denyInboxes([alix.inboxId])
 
-  alixMember = (await boGroup.membersList()).find(
+  alixMember = (await boGroup.members()).find(
     (member) => member.inboxId === alix.inboxId
   )
   assert(
@@ -2225,11 +2266,16 @@ test('can create new installation without breaking group', async () => {
   await client1Group?.sync()
   await client2Group?.sync()
 
-  assert(client1Group?.members?.length === 2, `client 1 should see 2 members`)
-
+  const members1 = await client1Group?.members()
   assert(
-    (await client2Group?.membersList())?.length === 2,
-    `client 2 should see 2 members`
+    members1?.length === 2,
+    `client 1 should see 2 members but was ${members1?.length}`
+  )
+
+  const members2 = await client2Group?.members()
+  assert(
+    members2?.length === 2,
+    `client 2 should see 2 members but was ${members2?.length}`
   )
 
   await client2.deleteLocalDatabase()
@@ -2243,9 +2289,10 @@ test('can create new installation without breaking group', async () => {
   })
 
   await client1Group?.send('This message will break the group')
+  const members3 = await client1Group?.members()
   assert(
-    client1Group?.members?.length === 2,
-    `client 1 should still see the 2 members`
+    members3?.length === 2,
+    `client 1 should still see the 2 members but was ${members3?.length}`
   )
 
   return true
@@ -2256,13 +2303,13 @@ test('can list many groups members in parallel', async () => {
   const groups: Group[] = await createGroups(alix, [bo], 20)
 
   try {
-    await Promise.all(groups.slice(0, 10).map((g) => g.membersList()))
+    await Promise.all(groups.slice(0, 10).map((g) => g.members()))
   } catch (e) {
     throw new Error(`Failed listing 10 groups members with ${e}`)
   }
 
   try {
-    await Promise.all(groups.slice(0, 20).map((g) => g.membersList()))
+    await Promise.all(groups.slice(0, 20).map((g) => g.members()))
   } catch (e) {
     throw new Error(`Failed listing 20 groups members with ${e}`)
   }
@@ -2298,19 +2345,11 @@ test('can sync all groups', async () => {
   }
 
   // First syncAllGroups after removal will still sync each group to set group inactive
-  // For some reason on Android (RN only), first syncAllGroups already returns 0
   const numGroupsSynced2 = await bo.conversations.syncAllGroups()
-  if (Platform.OS === 'ios') {
-    assert(
-      numGroupsSynced2 === 50,
-      `should have synced 50 groups but synced ${numGroupsSynced2}`
-    )
-  } else {
-    assert(
-      numGroupsSynced2 === 0,
-      `should have synced 0 groups but synced ${numGroupsSynced2}`
-    )
-  }
+  assert(
+    numGroupsSynced2 === 50,
+    `should have synced 50 groups but synced ${numGroupsSynced2}`
+  )
 
   // Next syncAllGroups will not sync inactive groups
   const numGroupsSynced3 = await bo.conversations.syncAllGroups()

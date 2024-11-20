@@ -1,5 +1,7 @@
 import { content } from '@xmtp/proto'
 
+import { InboxId } from '../Client'
+
 export type EncodedContent = content.EncodedContent
 export type ContentTypeId = content.ContentTypeId
 
@@ -53,7 +55,7 @@ export type RemoteAttachmentContent = RemoteAttachmentMetadata & {
 }
 
 export type GroupUpdatedMemberEntry = {
-  inboxId: string
+  inboxId: InboxId
 }
 
 export type GroupUpdatedMetadatEntry = {
@@ -63,7 +65,7 @@ export type GroupUpdatedMetadatEntry = {
 }
 
 export type GroupUpdatedContent = {
-  initiatedByInboxId: string
+  initiatedByInboxId: InboxId
   membersAdded: GroupUpdatedMemberEntry[]
   membersRemoved: GroupUpdatedMemberEntry[]
   metadataFieldsChanged: GroupUpdatedMetadatEntry[]

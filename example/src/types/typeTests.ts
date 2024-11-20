@@ -2,6 +2,7 @@ import {
   Client,
   ContentTypeId,
   Conversation,
+  ConversationVersion,
   EncodedContent,
   JSContentCodec,
   ReactionCodec,
@@ -82,6 +83,7 @@ export const typeTests = async () => {
   const supportedCodecs = [new ReactionCodec()]
   const reactionClient = await Client.createRandom<typeof supportedCodecs>({
     codecs: supportedCodecs,
+    env: 'local',
   })
   const reactionConvo = (await reactionClient.conversations.list())[0]
   await reactionConvo.send({
@@ -116,6 +118,7 @@ export const typeTests = async () => {
     typeof supportedCodecs
   >(keyBundle, {
     codecs: supportedCodecs,
+    env: 'local',
   })
   const reactionKeyBundleConvo = (
     await keyBundleReactionClient.conversations.list()
@@ -181,6 +184,7 @@ export const typeTests = async () => {
   const supportedReplyCodecs = [...supportedCodecs, new ReplyCodec()]
   const replyClient = await Client.createRandom<typeof supportedReplyCodecs>({
     codecs: supportedReplyCodecs,
+    env: 'local',
   })
 
   const replyConvo = (await replyClient.conversations.list())[0]
@@ -233,5 +237,25 @@ export const typeTests = async () => {
         //
       }
     }
+  }
+
+  const convoClient = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+  })
+  const convos = await convoClient.conversations.listConversations()
+  const firstConvo = convos[0]
+  if (firstConvo.version === ConversationVersion.GROUP) {
+    const groupName = firstConvo.name
+    // @ts-expect-error
+    const peerAddress = await firstConvo.peerInboxId()
+  } else if (firstConvo.version === ConversationVersion.DM) {
+    const peerAddress = await firstConvo.peerInboxId()
+    // @ts-expect-error
+    const groupName = firstConvo.name
+  } else {
+    const peerAddress = firstConvo.peerAddress
+    // @ts-expect-error
+    const peerAddress2 = firstConvo.peerInboxId()
   }
 }

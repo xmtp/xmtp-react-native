@@ -14,11 +14,18 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 
 	var module: XMTPModule
 	var address: String
+	var type: WalletType
+	var chainId: Int64?
+	var blockNumber: Int64?
 	var continuations: [String: CheckedContinuation<XMTP.Signature, Swift.Error>] = [:]
+	var scwContinuations: [String: CheckedContinuation<Data, Swift.Error>] = [:]
 
-	init(module: XMTPModule, address: String) {
+	init(module: XMTPModule, address: String, walletType: WalletType = WalletType.EOA, chainId: Int64? = nil, blockNumber: Int64? = nil) {
 		self.module = module
 		self.address = address
+		self.type = walletType
+		self.chainId = chainId
+		self.blockNumber = blockNumber
 	}
 
 	func handle(id: String, signature: String) throws {
@@ -39,6 +46,28 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 
 		continuation.resume(returning: signature)
 		continuations.removeValue(forKey: id)
+	}
+	
+	func handleSCW(id: String, signature: String) throws {
+		guard let continuation = scwContinuations[id] else {
+			return
+		}
+
+		continuation.resume(returning: signature.hexToData)
+		scwContinuations.removeValue(forKey: id)
+	}
+	
+	func signSCW(message: String) async throws -> Data {
+		let request = SignatureRequest(message: message)
+
+		module.sendEvent("sign", [
+			"id": request.id,
+			"message": request.message,
+		])
+
+		return try await withCheckedThrowingContinuation { continuation in
+			scwContinuations[request.id] = continuation
+		}
 	}
 
 	func sign(_ data: Data) async throws -> XMTP.Signature {
