@@ -1450,12 +1450,12 @@ export async function processConversationMessage<
   id: string,
   encryptedMessage: string
 ): Promise<DecodedMessage<ContentTypes>> {
-  const obj = await XMTPModule.processConversationMessage(
+  const json = await XMTPModule.processConversationMessage(
     client.inboxId,
     id,
     encryptedMessage
   )
-  return DecodedMessage.fromObject(obj, client)
+  return DecodedMessage.from(json, client)
 }
 
 export async function processWelcomeMessage<
