@@ -46,8 +46,30 @@ public class XMTPModule: Module {
 		}
 	}
 
-	enum Error: Swift.Error {
-		case noClient, conversationNotFound(String), noMessage, invalidKeyBundle, invalidDigest, badPreparation(String)
+	enum Error: Swift.Error, LocalizedError {
+		case noClient
+		case conversationNotFound(String)
+		case noMessage
+		case invalidKeyBundle
+		case invalidDigest
+		case badPreparation(String)
+		
+		var errorDescription: String? {
+			switch self {
+			case .noClient:
+				return "Client could not be retrieved for the given address."
+			case .conversationNotFound(let id):
+				return "Conversation with ID \(id) was not found."
+			case .noMessage:
+				return "No message was provided."
+			case .invalidKeyBundle:
+				return "The key bundle is invalid."
+			case .invalidDigest:
+				return "The digest is invalid."
+			case .badPreparation(let detail):
+				return "Bad preparation: \(detail)"
+			}
+		}
 	}
 
 	public func definition() -> ModuleDefinition {
@@ -61,6 +83,14 @@ public class XMTPModule: Module {
 			} else {
 				return "No Client."
 			}
+		}
+		
+		AsyncFunction("deleteLocalDatabase") { (address: String) in
+			guard let client = await clientsManager.getClient(key: address)
+			else {
+				throw Error.noClient
+			}
+			try client.deleteLocalDatabase()
 		}
 
 		//

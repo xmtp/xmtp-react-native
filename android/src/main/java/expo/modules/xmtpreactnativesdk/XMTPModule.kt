@@ -159,6 +159,12 @@ class XMTPModule : Module() {
             client?.address ?: "No Client."
         }
 
+        AsyncFunction("deleteLocalDatabase") { address: String ->
+            logV(address)
+            logV(clients.toString())
+            val client = clients[address] ?: throw XMTPException("No client")
+            client.deleteLocalDatabase()
+        }
         //
         // Auth functions
         //

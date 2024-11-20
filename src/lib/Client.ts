@@ -33,6 +33,13 @@ export class Client<ContentTypes> {
   private static authSubscription: Subscription | null = null
 
   /**
+   * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
+   */
+  async deleteLocalDatabase() {
+    return await XMTPModule.deleteLocalDatabase(this.address)
+  }
+  
+  /**
    * Creates a new instance of the Client class using the provided signer.
    *
    * @param {Signer} signer - The signer object used for authentication and message signing.
