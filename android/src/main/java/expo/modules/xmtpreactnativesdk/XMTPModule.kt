@@ -1060,7 +1060,7 @@ class XMTPModule : Module() {
                 val conversation = client.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 val message = conversation.processMessage(Base64.decode(encryptedMessage, NO_WRAP))
-                DecodedMessageWrapper.encodeMap(message.decode())
+                DecodedMessageWrapper.encode(message.decode())
             }
         }
 

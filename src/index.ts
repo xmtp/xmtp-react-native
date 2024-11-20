@@ -857,7 +857,11 @@ export async function processMessage<
   id: ConversationId,
   encryptedMessage: string
 ): Promise<DecodedMessage<ContentTypes>> {
-  const json = XMTPModule.processMessage(client.inboxId, id, encryptedMessage)
+  const json = await XMTPModule.processMessage(
+    client.inboxId,
+    id,
+    encryptedMessage
+  )
   return DecodedMessage.from(json, client)
 }
 
