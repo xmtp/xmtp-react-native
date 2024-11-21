@@ -18,7 +18,7 @@ class ReactNativeSigner: NSObject, XMTP.SigningKey {
 
 	init(module: XMTPModule, address: String) {
 		self.module = module
-		self.address = address.lowercased()
+		self.address = address
 	}
 
 	func handle(id: String, signature: String) throws {

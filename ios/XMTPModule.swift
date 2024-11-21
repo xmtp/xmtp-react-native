@@ -3,7 +3,7 @@ import XMTP
 
 extension Conversation {
 	static func cacheKeyForTopic(clientAddress: String, topic: String) -> String {
-		return "\(clientAddress.lowercased()):\(topic)"
+		return "\(clientAddress):\(topic)"
 	}
 
 	func cacheKey(_ clientAddress: String) -> String {
@@ -37,12 +37,12 @@ public class XMTPModule: Module {
 		// A method to update the conversations
 		func updateClient(key: String, client: XMTP.Client) {
 			ContentJson.initCodecs(client: client)
-			clients[key.lowercased()] = client
+			clients[key] = client
 		}
 
 		// A method to retrieve a conversation
 		func getClient(key: String) -> XMTP.Client? {
-			return clients[key.lowercased()]
+			return clients[key]
 		}
 	}
 
@@ -79,7 +79,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("address") { (clientAddress: String) -> String in
 			if let client = await clientsManager.getClient(key: clientAddress) {
-				return client.address.lowercased()
+				return client.address
 			} else {
 				return "No Client."
 			}
@@ -813,11 +813,11 @@ public class XMTPModule: Module {
 	}
 
 	func getMessagesKey(clientAddress: String) -> String {
-		return "messages:\(clientAddress.lowercased())"
+		return "messages:\(clientAddress)"
 	}
 
 	func getConversationsKey(clientAddress: String) -> String {
-		return "conversations:\(clientAddress.lowercased())"
+		return "conversations:\(clientAddress)"
 	}
 
 	func preEnableIdentityCallback() {
