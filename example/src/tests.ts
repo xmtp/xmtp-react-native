@@ -288,7 +288,7 @@ test('can load a client from env "2k lens convos" private key', async () => {
   const keyBundle = await xmtpClient.exportKeyBundle()
   xmtpClient.deleteLocalDatabase()
 
-  await Client.createFromKeyBundle(
+  const newClient = await Client.createFromKeyBundle(
     keyBundle,
     {
       env: 'local',
@@ -296,8 +296,8 @@ test('can load a client from env "2k lens convos" private key', async () => {
     },
     signer
   )
-  const convos = await xmtpClient.conversations.list()
-console.log(xmtpClient.address)
+  const convos = await newClient.conversations.list()
+  console.log(xmtpClient.address)
   assert(
     xmtpClient.address === '0x9dbcC27ca57623D176F133a2811AdC9459d96976',
     'Address: ' + xmtpClient.address
@@ -305,38 +305,46 @@ console.log(xmtpClient.address)
   return true
 })
 
-// test('can load 1995 conversations from dev network "2k lens convos" account', async () => {
-//   if (!Config.TEST_PRIVATE_KEY) {
-//     throw new Error('Add private key to .env file')
-//   }
+test('can load 1995 conversations from dev network "2k lens convos" account', async () => {
+  if (!Config.TEST_PRIVATE_KEY) {
+    throw new Error('Add private key to .env file')
+  }
 
-//   const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
+  const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
 
-//   const signer = convertPrivateKeyAccountToSigner(
-//     privateKeyToAccount(privateKeyHex)
-//   )
-//   const xmtpClient = await Client.create(signer, {
-//     env: 'dev',
-//     dbEncryptionKey: keyBytes,
-//   })
+  const signer = convertPrivateKeyAccountToSigner(
+    privateKeyToAccount(privateKeyHex)
+  )
+  const xmtpClient = await Client.create(signer, {
+    env: 'dev',
+    dbEncryptionKey: keyBytes,
+  })
 
-//   assert(
-//     xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
-//     'Address: ' + xmtpClient.address
-//   )
-//   const start = Date.now()
-//   const conversations = await xmtpClient.conversations.list()
-//   const end = Date.now()
-//   console.log(
-//     `Loaded ${conversations.length} conversations in ${end - start}ms`
-//   )
-//   assert(
-//     conversations.length === 1995,
-//     'Conversations: ' + conversations.length
-//   )
+  const keyBundle = await xmtpClient.exportKeyBundle()
+  xmtpClient.deleteLocalDatabase()
 
-//   return true
-// })
+  const newClient = await Client.createFromKeyBundle(
+    keyBundle,
+    {
+      env: 'dev',
+      dbEncryptionKey: keyBytes,
+    },
+    signer
+  )
+
+  const start = Date.now()
+  const conversations = await newClient.conversations.list()
+  const end = Date.now()
+  console.log(
+    `Loaded ${conversations.length} conversations in ${end - start}ms`
+  )
+  assert(
+    conversations.length === 1995,
+    'Conversations: ' + conversations.length
+  )
+
+  return true
+})
 
 // test('can pass a custom filter date and receive message objects with expected dates', async () => {
 //   try {
