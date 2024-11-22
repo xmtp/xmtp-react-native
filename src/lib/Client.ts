@@ -318,8 +318,155 @@ export class Client<
     this.codecRegistry[id] = contentCodec
   }
 
+  /**
+   * Add this account to the current inboxId.
+   * @param {Signer} newAccount - The signer of the new account to be added.
+   */
+  async addAccount(newAccount: Signer | WalletClient) {
+    const signer = getSigner(newAccount)
+    if (!signer) {
+      throw new Error('Signer is not configured')
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      ;(async () => {
+        Client.signSubscription = XMTPModule.emitter.addListener(
+          'sign',
+          async (message: { id: string; message: string }) => {
+            try {
+              await Client.handleSignatureRequest(signer, message)
+            } catch (e) {
+              const errorMessage =
+                'ERROR in addAccount. User rejected signature'
+              console.info(errorMessage, e)
+              Client.signSubscription?.remove()
+              reject(errorMessage)
+            }
+          }
+        )
+
+        await XMTPModule.addAccount(
+          this.inboxId,
+          await signer.getAddress(),
+          signer.walletType?.(),
+          signer.getChainId?.(),
+          signer.getBlockNumber?.()
+        )
+        Client.signSubscription?.remove()
+        resolve()
+      })().catch((error) => {
+        Client.signSubscription?.remove()
+        reject(error)
+      })
+    })
+  }
+
+  /**
+   * Remove this account from the current inboxId.
+   * @param {Signer} wallet - The signer object used for authenticate the removal.
+   * @param {Address} addressToRemove - The address of the wallet you'd like to remove from the account.
+   */
+  async removeAccount(wallet: Signer | WalletClient, addressToRemove: Address) {
+    const signer = getSigner(wallet)
+    if (!signer) {
+      throw new Error('Signer is not configured')
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      ;(async () => {
+        Client.signSubscription = XMTPModule.emitter.addListener(
+          'sign',
+          async (message: { id: string; message: string }) => {
+            try {
+              await Client.handleSignatureRequest(signer, message)
+            } catch (e) {
+              const errorMessage =
+                'ERROR in revokeAllOtherInstallations. User rejected signature'
+              console.info(errorMessage, e)
+              Client.signSubscription?.remove()
+              reject(errorMessage)
+            }
+          }
+        )
+
+        await XMTPModule.removeAccount(
+          this.inboxId,
+          addressToRemove,
+          signer.walletType?.(),
+          signer.getChainId?.(),
+          signer.getBlockNumber?.()
+        )
+        Client.signSubscription?.remove()
+        resolve()
+      })().catch((error) => {
+        Client.signSubscription?.remove()
+        reject(error)
+      })
+    })
+  }
+
+  /**
+   * Revoke all other installations but the current one.
+   * @param {Signer} signer - The signer object used for authenticate the revoke.
+   */
+  async revokeAllOtherInstallations(wallet: Signer | WalletClient | null) {
+    const signer = getSigner(wallet)
+    if (!signer) {
+      throw new Error('Signer is not configured')
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      ;(async () => {
+        Client.signSubscription = XMTPModule.emitter.addListener(
+          'sign',
+          async (message: { id: string; message: string }) => {
+            try {
+              await Client.handleSignatureRequest(signer, message)
+            } catch (e) {
+              const errorMessage =
+                'ERROR in revokeAllOtherInstallations. User rejected signature'
+              console.info(errorMessage, e)
+              Client.signSubscription?.remove()
+              reject(errorMessage)
+            }
+          }
+        )
+
+        await XMTPModule.revokeAllOtherInstallations(
+          this.inboxId,
+          signer.walletType?.(),
+          signer.getChainId?.(),
+          signer.getBlockNumber?.()
+        )
+        Client.signSubscription?.remove()
+        resolve()
+      })().catch((error) => {
+        Client.signSubscription?.remove()
+        reject(error)
+      })
+    })
+  }
+
+  /**
+   * Sign this message with the current installation key.
+   * @param {string} message - The message to sign.
+   * @returns {Promise<Uint8Array>} A Promise resolving to the signature bytes.
+   */
   async signWithInstallationKey(message: string): Promise<Uint8Array> {
-    return XMTPModule.signWithInstallationKey(this.inboxId, message)
+    return await XMTPModule.signWithInstallationKey(this.inboxId, message)
+  }
+
+  /**
+   * Verify the signature was signed with this clients installation key.
+   * @param {string} message - The message that was signed.
+   * @param {Uint8Array} signature - The signature.
+   * @returns {Promise<boolean>} A Promise resolving to a boolean if the signature verified or not.
+   */
+  async verifySignature(
+    message: string,
+    signature: Uint8Array
+  ): Promise<boolean> {
+    return await XMTPModule.verifySignature(this.inboxId, message, signature)
   }
 
   /**
@@ -360,42 +507,6 @@ export class Client<
    */
   async requestMessageHistorySync() {
     return await XMTPModule.requestMessageHistorySync(this.inboxId)
-  }
-
-  /**
-   * Revoke all other installations but the current one.
-   */
-  async revokeAllOtherInstallations(wallet: Signer | WalletClient | null) {
-    const signer = getSigner(wallet)
-    if (!signer) {
-      throw new Error('Signer is not configured')
-    }
-
-    return new Promise<void>((resolve, reject) => {
-      ;(async () => {
-        Client.signSubscription = XMTPModule.emitter.addListener(
-          'sign',
-          async (message: { id: string; message: string }) => {
-            try {
-              await Client.handleSignatureRequest(signer, message)
-            } catch (e) {
-              const errorMessage =
-                'ERROR in revokeAllOtherInstallations. User rejected signature'
-              console.info(errorMessage, e)
-              Client.signSubscription?.remove()
-              reject(errorMessage)
-            }
-          }
-        )
-
-        await XMTPModule.revokeAllOtherInstallations(this.inboxId)
-        Client.signSubscription?.remove()
-        resolve()
-      })().catch((error) => {
-        Client.signSubscription?.remove()
-        reject(error)
-      })
-    })
   }
 
   /**
