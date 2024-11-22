@@ -414,6 +414,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("signWithInstallationKey") Coroutine { inboxId: String, message: String ->
             withContext(Dispatchers.IO) {
+                logV("signWithInstallationKey")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
 
                 val signature = client.signWithInstallationKey(message)
@@ -423,6 +424,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("verifySignature") Coroutine { inboxId: String, message: String, signature: List<Int> ->
             withContext(Dispatchers.IO) {
+                logV("verifySignature")
                 val client = clients[inboxId] ?: throw XMTPException("No client")
                 val signatureBytes =
                     signature.foldIndexed(ByteArray(signature.size)) { i, a, v ->
