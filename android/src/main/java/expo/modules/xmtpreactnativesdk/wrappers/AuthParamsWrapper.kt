@@ -8,9 +8,6 @@ class AuthParamsWrapper(
     val appVersion: String?,
     val dbDirectory: String?,
     val historySyncUrl: String?,
-    val walletType: WalletType = WalletType.EOA,
-    val chainId: Long?,
-    val blockNumber: Long?,
 ) {
     companion object {
         fun authParamsFromJson(authParams: String): AuthParamsWrapper {
@@ -20,6 +17,21 @@ class AuthParamsWrapper(
                 if (jsonOptions.has("appVersion")) jsonOptions.get("appVersion").asString else null,
                 if (jsonOptions.has("dbDirectory")) jsonOptions.get("dbDirectory").asString else null,
                 if (jsonOptions.has("historySyncUrl")) jsonOptions.get("historySyncUrl").asString else null,
+            )
+        }
+    }
+}
+
+class WalletParamsWrapper(
+    val walletType: WalletType = WalletType.EOA,
+    val chainId: Long?,
+    val blockNumber: Long?,
+
+    ) {
+    companion object {
+        fun walletParamsFromJson(walletParams: String): WalletParamsWrapper {
+            val jsonOptions = JsonParser.parseString(walletParams).asJsonObject
+            return WalletParamsWrapper(
                 if (jsonOptions.has("walletType")) {
                     when (jsonOptions.get("walletType").asString) {
                         "SCW" -> WalletType.SCW
@@ -30,7 +42,8 @@ class AuthParamsWrapper(
                 },
                 if (jsonOptions.has("chainId")) jsonOptions.get("chainId").asLong else null,
                 if (jsonOptions.has("blockNumber")) jsonOptions.get("blockNumber").asLong else null,
-                )
+            )
         }
     }
 }
+

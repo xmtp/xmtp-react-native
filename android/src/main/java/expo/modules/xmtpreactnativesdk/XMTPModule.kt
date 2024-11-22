@@ -25,6 +25,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PermissionPolicySetWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.WalletParamsWrapper
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -253,19 +254,6 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("revokeAllOtherInstallations") Coroutine { inboxId: String ->
-            withContext(Dispatchers.IO) {
-                logV("revokeAllOtherInstallations")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
-                val reactSigner =
-                    ReactNativeSigner(module = this@XMTPModule, address = client.address)
-                signer = reactSigner
-
-                client.revokeAllOtherInstallations(reactSigner)
-                signer = null
-            }
-        }
-
         AsyncFunction("getInboxState") Coroutine { inboxId: String, refreshFromNetwork: Boolean ->
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
@@ -317,16 +305,16 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("create") Coroutine { address: String, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String ->
+        AsyncFunction("create") Coroutine { address: String, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String, walletParams: String ->
             withContext(Dispatchers.IO) {
                 logV("create")
-                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+                val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
                 val reactSigner = ReactNativeSigner(
                     module = this@XMTPModule,
                     address = address,
-                    type = authOptions.walletType,
-                    chainId = authOptions.chainId,
-                    blockNumber = authOptions.blockNumber
+                    type = walletOptions.walletType,
+                    chainId = walletOptions.chainId,
+                    blockNumber = walletOptions.blockNumber
                 )
                 signer = reactSigner
                 val options = clientOptions(
@@ -356,6 +344,66 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("revokeAllOtherInstallations") Coroutine { inboxId: String, walletParams: String ->
+            withContext(Dispatchers.IO) {
+                logV("revokeAllOtherInstallations")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val reactSigner =
+                    ReactNativeSigner(
+                        module = this@XMTPModule,
+                        address = client.address,
+                        type = walletOptions.walletType,
+                        chainId = walletOptions.chainId,
+                        blockNumber = walletOptions.blockNumber
+                    )
+                signer = reactSigner
+
+                client.revokeAllOtherInstallations(reactSigner)
+                signer = null
+            }
+        }
+
+        AsyncFunction("addAccount") Coroutine { inboxId: String, newAddress: String, walletParams: String ->
+            withContext(Dispatchers.IO) {
+                logV("addAccount")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val reactSigner =
+                    ReactNativeSigner(
+                        module = this@XMTPModule,
+                        address = newAddress,
+                        type = walletOptions.walletType,
+                        chainId = walletOptions.chainId,
+                        blockNumber = walletOptions.blockNumber
+                    )
+                signer = reactSigner
+
+                client.addAccount(reactSigner)
+                signer = null
+            }
+        }
+
+        AsyncFunction("removeAccount") Coroutine { inboxId: String, addressToRemove: String, walletParams: String ->
+            withContext(Dispatchers.IO) {
+                logV("removeAccount")
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val reactSigner =
+                    ReactNativeSigner(
+                        module = this@XMTPModule,
+                        address = client.address,
+                        type = walletOptions.walletType,
+                        chainId = walletOptions.chainId,
+                        blockNumber = walletOptions.blockNumber
+                    )
+                signer = reactSigner
+
+                client.removeAccount(reactSigner, addressToRemove)
+                signer = null
+            }
+        }
+
         AsyncFunction("dropClient") Coroutine { inboxId: String ->
             withContext(Dispatchers.IO) {
                 logV("dropClient")
@@ -370,6 +418,17 @@ class XMTPModule : Module() {
 
                 val signature = client.signWithInstallationKey(message)
                 signature.map { it.toInt() and 0xFF }
+            }
+        }
+
+        AsyncFunction("verifySignature") Coroutine { inboxId: String, message: String, signature: List<Int> ->
+            withContext(Dispatchers.IO) {
+                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val signatureBytes =
+                    signature.foldIndexed(ByteArray(signature.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                client.verifySignature(message, signatureBytes)
             }
         }
 
