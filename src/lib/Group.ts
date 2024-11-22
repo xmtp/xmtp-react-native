@@ -281,7 +281,7 @@ export class Group<
   /**
    * Returns the group image url square.
    * To get the latest group image url square from the network, call sync() first.
-   * @returns {string} A Promise that resolves to the group name.
+   * @returns {string} A Promise that resolves to the group image url.
    */
   async groupImageUrlSquare(): Promise<string> {
     return XMTP.groupImageUrlSquare(this.client.inboxId, this.id)

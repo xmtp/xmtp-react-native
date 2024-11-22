@@ -149,19 +149,6 @@ public class XMTPModule: Module {
 			try await client.requestMessageHistorySync()
 		}
 
-		AsyncFunction("revokeAllOtherInstallations") { (inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
-			else {
-				throw Error.noClient
-			}
-			let signer = ReactNativeSigner(
-				module: self, address: client.address)
-			self.signer = signer
-
-			try await client.revokeAllOtherInstallations(signingKey: signer)
-			self.signer = nil
-		}
-
 		AsyncFunction("getInboxState") {
 			(inboxId: String, refreshFromNetwork: Bool) -> String in
 			guard let client = await clientsManager.getClient(key: inboxId)
@@ -219,15 +206,11 @@ public class XMTPModule: Module {
 				hasAuthenticateToInboxCallback ?? false
 				? self.preAuthenticateToInboxCallback : nil
 			let encryptionKeyData = Data(dbEncryptionKey)
-			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 
-			let options = createClientConfig(
-				env: authOptions.environment,
-				appVersion: authOptions.appVersion,
-				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+			let options = self.createClientConfig(
+				authParams: authParams,
 				dbEncryptionKey: encryptionKeyData,
-				dbDirectory: authOptions.dbDirectory,
-				historySyncUrl: authOptions.historySyncUrl
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await Client.create(
 				account: privateKey, options: options)
@@ -240,14 +223,14 @@ public class XMTPModule: Module {
 		AsyncFunction("create") {
 			(
 				address: String, hasAuthenticateToInboxCallback: Bool?,
-				dbEncryptionKey: [UInt8], authParams: String
+				dbEncryptionKey: [UInt8], authParams: String, walletParams: String
 			) in
-			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
 			let signer = ReactNativeSigner(
 				module: self, address: address,
-				walletType: authOptions.walletType,
-				chainId: authOptions.chainId,
-				blockNumber: authOptions.blockNumber)
+				walletType: walletOptions.walletType,
+				chainId: walletOptions.chainId,
+				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
 			if hasAuthenticateToInboxCallback ?? false {
 				self.preAuthenticateToInboxCallbackDeferred = DispatchSemaphore(
@@ -259,12 +242,9 @@ public class XMTPModule: Module {
 			let encryptionKeyData = Data(dbEncryptionKey)
 
 			let options = self.createClientConfig(
-				env: authOptions.environment,
-				appVersion: authOptions.appVersion,
-				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
+				authParams: authParams,
 				dbEncryptionKey: encryptionKeyData,
-				dbDirectory: authOptions.dbDirectory,
-				historySyncUrl: authOptions.historySyncUrl
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.create(
 				account: signer, options: options)
@@ -281,18 +261,66 @@ public class XMTPModule: Module {
 			let encryptionKeyData = Data(dbEncryptionKey)
 
 			let options = self.createClientConfig(
-				env: authOptions.environment,
-				appVersion: authOptions.appVersion,
-				preAuthenticateToInboxCallback: nil,
+				authParams: authParams,
 				dbEncryptionKey: encryptionKeyData,
-				dbDirectory: authOptions.dbDirectory,
-				historySyncUrl: authOptions.historySyncUrl
+				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.build(
 				address: address, options: options)
 			await clientsManager.updateClient(
 				key: client.inboxID, client: client)
 			return try ClientWrapper.encodeToObj(client)
+		}
+		
+		AsyncFunction("revokeAllOtherInstallations") { (inboxId: String, walletParams: String) in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+			let signer = ReactNativeSigner(
+				module: self, address: client.address,
+				walletType: walletOptions.walletType,
+				chainId: walletOptions.chainId,
+				blockNumber: walletOptions.blockNumber)
+			self.signer = signer
+
+			try await client.revokeAllOtherInstallations(signingKey: signer)
+			self.signer = nil
+		}
+		
+		AsyncFunction("addAccount") { (inboxId: String, newAddress: String, walletParams: String) in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+			let signer = ReactNativeSigner(
+				module: self, address: newAddress,
+				walletType: walletOptions.walletType,
+				chainId: walletOptions.chainId,
+				blockNumber: walletOptions.blockNumber)
+			self.signer = signer
+
+			try await client.addAccount(newAccount: signer)
+			self.signer = nil
+		}
+		
+		AsyncFunction("removeAccount") { (inboxId: String, addressToRemove: String, walletParams: String) in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+			let signer = ReactNativeSigner(
+				module: self, address: client.address,
+				walletType: walletOptions.walletType,
+				chainId: walletOptions.chainId,
+				blockNumber: walletOptions.blockNumber)
+			self.signer = signer
+
+			try await client.removeAccount(recoveryAccount: signer, addressToRemove: addressToRemove)
+			self.signer = nil
 		}
 
 		// Remove a client from memory for a given inboxId
@@ -308,6 +336,15 @@ public class XMTPModule: Module {
 			}
 			let signature = try client.signWithInstallationKey(message: message)
 			return [UInt8](signature)
+		}
+		
+		AsyncFunction("verifySignature") {
+			(inboxId: String, message: String, signature: [UInt8]) -> Bool in
+			guard let client = await clientsManager.getClient(key: inboxId)
+			else {
+				throw Error.noClient
+			}
+			return try client.verifySignature(message: message, signature: Data(signature))
 		}
 
 		AsyncFunction("canMessage") {
@@ -1663,17 +1700,16 @@ public class XMTPModule: Module {
 	}
 
 	func createClientConfig(
-		env: String, appVersion: String?,
-		preAuthenticateToInboxCallback: PreEventCallback? = nil,
-		dbEncryptionKey: Data, dbDirectory: String? = nil,
-		historySyncUrl: String? = nil
+		authParams: String, dbEncryptionKey: Data,
+		preAuthenticateToInboxCallback: PreEventCallback? = nil
 	) -> XMTP.ClientOptions {
+		let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 
 		return XMTP.ClientOptions(
-			api: createApiClient(env: env, appVersion: appVersion),
+			api: createApiClient(env: authOptions.environment, appVersion: authOptions.appVersion),
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
-			dbEncryptionKey: dbEncryptionKey, dbDirectory: dbDirectory,
-			historySyncUrl: historySyncUrl)
+			dbEncryptionKey: dbEncryptionKey, dbDirectory: authOptions.dbDirectory,
+			historySyncUrl: authOptions.historySyncUrl)
 	}
 
 	func subscribeToConversations(inboxId: String, type: ConversationType)

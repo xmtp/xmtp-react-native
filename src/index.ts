@@ -73,10 +73,6 @@ export async function requestMessageHistorySync(inboxId: InboxId) {
   return XMTPModule.requestMessageHistorySync(inboxId)
 }
 
-export async function revokeAllOtherInstallations(inboxId: InboxId) {
-  return XMTPModule.revokeAllOtherInstallations(inboxId)
-}
-
 export async function getInboxState(
   inboxId: InboxId,
   refreshFromNetwork: boolean
@@ -153,6 +149,8 @@ export async function create(
     appVersion,
     dbDirectory,
     historySyncUrl,
+  }
+  const walletParams: WalletParams = {
     walletType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
@@ -161,7 +159,8 @@ export async function create(
     address,
     hasPreAuthenticateToInboxCallback,
     Array.from(dbEncryptionKey),
-    JSON.stringify(authParams)
+    JSON.stringify(authParams),
+    JSON.stringify(walletParams)
   )
 }
 
@@ -186,6 +185,61 @@ export async function build(
   )
 }
 
+export async function revokeAllOtherInstallations(
+  inboxId: InboxId,
+  walletType?: WalletType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+) {
+  const walletParams: WalletParams = {
+    walletType,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
+  }
+  return XMTPModule.revokeAllOtherInstallations(
+    inboxId,
+    JSON.stringify(walletParams)
+  )
+}
+
+export async function addAccount(
+  inboxId: InboxId,
+  newAddress: Address,
+  walletType?: WalletType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+) {
+  const walletParams: WalletParams = {
+    walletType,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
+  }
+  return XMTPModule.addAccount(
+    inboxId,
+    newAddress,
+    JSON.stringify(walletParams)
+  )
+}
+
+export async function removeAccount(
+  inboxId: InboxId,
+  addressToRemove: Address,
+  walletType?: WalletType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+) {
+  const walletParams: WalletParams = {
+    walletType,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
+  }
+  return XMTPModule.removeAccount(
+    inboxId,
+    addressToRemove,
+    JSON.stringify(walletParams)
+  )
+}
+
 export async function dropClient(inboxId: InboxId) {
   return await XMTPModule.dropClient(inboxId)
 }
@@ -199,6 +253,18 @@ export async function signWithInstallationKey(
     message
   )
   return new Uint8Array(signatureArray)
+}
+
+export async function verifySignature(
+  inboxId: InboxId,
+  message: string,
+  signature: Uint8Array
+): Promise<boolean> {
+  return await XMTPModule.verifySignature(
+    inboxId,
+    message,
+    Array.from(signature)
+  )
 }
 
 export async function canMessage(
@@ -990,6 +1056,9 @@ interface AuthParams {
   appVersion?: string
   dbDirectory?: string
   historySyncUrl?: string
+}
+
+interface WalletParams {
   walletType?: string
   chainId?: number
   blockNumber?: number
