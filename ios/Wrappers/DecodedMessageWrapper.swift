@@ -220,15 +220,10 @@ struct EncryptedAttachmentMetadata {
 	}
 
 	static func fromJsonObj(_ obj: [String: Any]) throws -> EncryptedAttachmentMetadata {
-		guard let secret = (obj["secret"] as? String ?? "").web3.hexData else {
-			throw Error.badRemoteAttachmentMetadata
-		}
-		guard let salt = (obj["salt"] as? String ?? "").web3.hexData else {
-			throw Error.badRemoteAttachmentMetadata
-		}
-		guard let nonce = (obj["nonce"] as? String ?? "").web3.hexData else {
-			throw Error.badRemoteAttachmentMetadata
-		}
+		let secret = (obj["secret"] as? String ?? "").hexToData
+		let salt = (obj["salt"] as? String ?? "").hexToData
+		let nonce = (obj["nonce"] as? String ?? "").hexToData
+		
 		return EncryptedAttachmentMetadata(
 			filename: obj["filename"] as? String ?? "",
 			secret: secret,
