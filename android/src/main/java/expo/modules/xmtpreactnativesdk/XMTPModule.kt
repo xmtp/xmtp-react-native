@@ -155,14 +155,14 @@ class XMTPModule : Module() {
 
         Function("address") { clientAddress: String ->
             logV("address")
-            val client = clients[clientAddress]
+            val client = clients[clientAddress.lowercase()]
             client?.address ?: "No Client."
         }
 
         AsyncFunction("deleteLocalDatabase") { address: String ->
             logV(address)
             logV(clients.toString())
-            val client = clients[address] ?: throw XMTPException("No client")
+            val client = clients[address.lowercase()] ?: throw XMTPException("No client")
             client.deleteLocalDatabase()
         }
         //
@@ -194,7 +194,7 @@ class XMTPModule : Module() {
                 dbEncryptionKey = encryptionKeyBytes,
                 dbDirectory = dbDirectory
             )
-            clients[address] = Client().create(account = reactSigner, options = options)
+            clients[address.lowercase()] = Client().create(account = reactSigner, options = options)
             ContentJson.Companion
             signer = null
             sendEvent("authed")
@@ -234,7 +234,7 @@ class XMTPModule : Module() {
             )
             val randomClient = Client().create(account = privateKey, options = options)
             ContentJson.Companion
-            clients[randomClient.address] = randomClient
+            clients[randomClient.address.lowercase()] = randomClient
             randomClient.address
         }
 
@@ -260,7 +260,7 @@ class XMTPModule : Module() {
                     )
                 val client = Client().buildFromBundle(bundle = bundle, options = options)
                 ContentJson.Companion
-                clients[client.address] = client
+                clients[client.address.lowercase()] = client
                 client.address
             } catch (e: Exception) {
                 throw XMTPException("Failed to create client: $e")
@@ -294,7 +294,7 @@ class XMTPModule : Module() {
                     options = options,
                     account = reactSigner
                 )
-                clients[client.address] = client
+                clients[client.address.lowercase()] = client
                 ContentJson.Companion
                 signer = null
                 sendEvent("bundleAuthed")
@@ -305,7 +305,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("sign") { clientAddress: String, digest: List<Int>, keyType: String, preKeyIndex: Int ->
             logV("sign")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             val digestBytes =
                 digest.foldIndexed(ByteArray(digest.size)) { i, a, v ->
                     a.apply {
@@ -330,13 +330,13 @@ class XMTPModule : Module() {
 
         AsyncFunction("exportPublicKeyBundle") { clientAddress: String ->
             logV("exportPublicKeyBundle")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             client.keys.getPublicKeyBundle().toByteArray().map { it.toInt() and 0xFF }
         }
 
         AsyncFunction("exportKeyBundle") { clientAddress: String ->
             logV("exportKeyBundle")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             Base64.encodeToString(client.privateKeyBundle.toByteArray(), NO_WRAP)
         }
 
@@ -352,7 +352,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("getHmacKeys") { clientAddress: String ->
             logV("getHmacKeys")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             val hmacKeys = client.conversations.getHmacKeys()
             logV("$hmacKeys")
             hmacKeys.toByteArray().map { it.toInt() and 0xFF }
@@ -361,7 +361,7 @@ class XMTPModule : Module() {
         // Import a conversation from its serialized topic data.
         AsyncFunction("importConversationTopicData") { clientAddress: String, topicData: String ->
             logV("importConversationTopicData")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             val data = TopicData.parseFrom(Base64.decode(topicData, NO_WRAP))
             val conversation = client.conversations.importTopicData(data)
             conversations[conversation.cacheKey(clientAddress)] = conversation
@@ -376,7 +376,7 @@ class XMTPModule : Module() {
         AsyncFunction("canMessage") Coroutine { clientAddress: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
                 logV("canMessage")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
 
                 client.canMessage(peerAddress)
             }
@@ -396,7 +396,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("encryptAttachment") { clientAddress: String, fileJson: String ->
             logV("encryptAttachment")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             val file = DecryptedLocalAttachment.fromJson(fileJson)
             val uri = Uri.parse(file.fileUri)
             val data = appContext.reactContext?.contentResolver
@@ -423,7 +423,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("decryptAttachment") { clientAddress: String, encryptedFileJson: String ->
             logV("decryptAttachment")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             val encryptedFile = EncryptedLocalAttachment.fromJson(encryptedFileJson)
             val encryptedData = appContext.reactContext?.contentResolver
                 ?.openInputStream(Uri.parse(encryptedFile.encryptedLocalFileUri))
@@ -474,7 +474,7 @@ class XMTPModule : Module() {
         AsyncFunction("listConversations") Coroutine { clientAddress: String ->
             withContext(Dispatchers.IO) {
                 logV("listConversations")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
                 val conversationList = client.conversations.list()
                 conversationList.map { conversation ->
                     conversations[conversation.cacheKey(clientAddress)] = conversation
@@ -512,7 +512,7 @@ class XMTPModule : Module() {
         AsyncFunction("loadBatchMessages") Coroutine { clientAddress: String, topics: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("loadBatchMessages")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
                 val topicsList = mutableListOf<Pair<String, Pagination>>()
                 topics.forEach {
                     val jsonObj = JSONObject(it)
@@ -636,7 +636,7 @@ class XMTPModule : Module() {
         AsyncFunction("sendPreparedMessage") Coroutine { clientAddress: String, preparedLocalMessageJson: String ->
             withContext(Dispatchers.IO) {
                 logV("sendPreparedMessage")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
                 val local = PreparedLocalMessage.fromJson(preparedLocalMessageJson)
                 val preparedFileUrl = Uri.parse(local.preparedFileUri)
                 val contentResolver = appContext.reactContext?.contentResolver!!
@@ -656,7 +656,7 @@ class XMTPModule : Module() {
         AsyncFunction("createConversation") Coroutine { clientAddress: String, peerAddress: String, contextJson: String, consentProofPayload: List<Int> ->
             withContext(Dispatchers.IO) {
                 logV("createConversation: $contextJson")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
                 val context = JsonParser.parseString(contextJson).asJsonObject
 
                 var consentProof: ConsentProofPayload? = null
@@ -776,34 +776,34 @@ class XMTPModule : Module() {
 
         AsyncFunction("isAllowed") { clientAddress: String, address: String ->
             logV("isAllowed")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             client.contacts.isAllowed(address)
         }
 
         Function("isDenied") { clientAddress: String, address: String ->
             logV("isDenied")
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             client.contacts.isDenied(address)
         }
 
         AsyncFunction("denyContacts") Coroutine { clientAddress: String, addresses: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("denyContacts")
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
                 client.contacts.deny(addresses)
             }
         }
 
         AsyncFunction("allowContacts") Coroutine { clientAddress: String, addresses: List<String> ->
             withContext(Dispatchers.IO) {
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
                 client.contacts.allow(addresses)
             }
         }
 
         AsyncFunction("refreshConsentList") Coroutine { clientAddress: String ->
             withContext(Dispatchers.IO) {
-                val client = clients[clientAddress] ?: throw XMTPException("No client")
+                val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
                 val consentList = client.contacts.refreshConsentList()
                 consentList.entries.map { ConsentWrapper.encode(it.value) }
             }
@@ -818,7 +818,7 @@ class XMTPModule : Module() {
         }
 
         AsyncFunction("consentList") { clientAddress: String ->
-            val client = clients[clientAddress] ?: throw XMTPException("No client")
+            val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
             client.contacts.consentList.entries.map { ConsentWrapper.encode(it.value) }
         }
 
@@ -841,7 +841,7 @@ class XMTPModule : Module() {
         clientAddress: String,
         topic: String,
     ): Conversation? {
-        val client = clients[clientAddress] ?: throw XMTPException("No client")
+        val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
 
         val cacheKey = "${clientAddress}:${topic}"
         val cacheConversation = conversations[cacheKey]
@@ -859,7 +859,7 @@ class XMTPModule : Module() {
     }
 
     private fun subscribeToConversations(clientAddress: String) {
-        val client = clients[clientAddress] ?: throw XMTPException("No client")
+        val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
 
         subscriptions[getConversationsKey(clientAddress)]?.cancel()
         subscriptions[getConversationsKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
@@ -889,7 +889,7 @@ class XMTPModule : Module() {
     }
 
     private fun subscribeToAllMessages(clientAddress: String) {
-        val client = clients[clientAddress] ?: throw XMTPException("No client")
+        val client = clients[clientAddress.lowercase()] ?: throw XMTPException("No client")
 
         subscriptions[getMessagesKey(clientAddress)]?.cancel()
         subscriptions[getMessagesKey(clientAddress)] = CoroutineScope(Dispatchers.IO).launch {
