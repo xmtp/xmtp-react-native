@@ -238,70 +238,72 @@ test('can test creating from key bundle with signer', async () => {
   return true
 })
 
-// test('can make a client', async () => {
-//   const client = await Client.createRandom({
-//     env: 'local',
-//     appVersion: 'Testing/0.0.0',
-//     dbEncryptionKey: keyBytes,
-//   })
-//   client.register(new RemoteAttachmentCodec())
-//   if (Object.keys(client.codecRegistry).length !== 2) {
-//     throw new Error(
-//       `Codecs length should be 2 not ${
-//         Object.keys(client.codecRegistry).length
-//       }`
-//     )
-//   }
-//   return client.address.length > 0
-// })
+test('can make a client', async () => {
+  const client = await Client.createRandom({
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+  })
+  client.register(new RemoteAttachmentCodec())
+  if (Object.keys(client.codecRegistry).length !== 2) {
+    throw new Error(
+      `Codecs length should be 2 not ${
+        Object.keys(client.codecRegistry).length
+      }`
+    )
+  }
+  return client.address.length > 0
+})
 
-// export function convertPrivateKeyAccountToSigner(
-//   privateKeyAccount: PrivateKeyAccount
-// ): Signer {
-//   if (!privateKeyAccount.address) {
-//     throw new Error('WalletClient is not configured')
-//   }
+export function convertPrivateKeyAccountToSigner(
+  privateKeyAccount: PrivateKeyAccount
+): Signer {
+  if (!privateKeyAccount.address) {
+    throw new Error('WalletClient is not configured')
+  }
 
-//   return {
-//     getAddress: async () => privateKeyAccount.address,
-//     signMessage: async (message: string | Uint8Array) =>
-//       privateKeyAccount.signMessage({
-//         message: typeof message === 'string' ? message : { raw: message },
-//       }),
-//   }
-// }
+  return {
+    getAddress: async () => privateKeyAccount.address,
+    signMessage: async (message: string | Uint8Array) =>
+      privateKeyAccount.signMessage({
+        message: typeof message === 'string' ? message : { raw: message },
+      }),
+  }
+}
 
-// test('can load a client from env "2k lens convos" private key', async () => {
-//   if (!Config.TEST_PRIVATE_KEY) {
-//     throw new Error('Add private key to .env file')
-//   }
-//   const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
+test('can load a client from env "2k lens convos" private key', async () => {
+  if (!Config.TEST_PRIVATE_KEY) {
+    throw new Error('Add private key to .env file')
+  }
+  const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
 
-//   const signer = convertPrivateKeyAccountToSigner(
-//     privateKeyToAccount(privateKeyHex)
-//   )
-//   const xmtpClient = await Client.create(signer, {
-//     env: 'local',
-//     dbEncryptionKey: keyBytes,
-//   })
+  const signer = convertPrivateKeyAccountToSigner(
+    privateKeyToAccount(privateKeyHex)
+  )
+  const xmtpClient = await Client.create(signer, {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
 
-//   const keyBundle = await xmtpClient.exportKeyBundle()
+  const keyBundle = await xmtpClient.exportKeyBundle()
+  xmtpClient.deleteLocalDatabase()
 
-//   await Client.createFromKeyBundle(
-//     keyBundle,
-//     {
-//       env: 'local',
-//       dbEncryptionKey: keyBytes,
-//     },
-//     signer
-//   )
-
-//   assert(
-//     xmtpClient.address === '0x209fAEc92D9B072f3E03d6115002d6652ef563cd',
-//     'Address: ' + xmtpClient.address
-//   )
-//   return true
-// })
+  await Client.createFromKeyBundle(
+    keyBundle,
+    {
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+    },
+    signer
+  )
+  const convos = await xmtpClient.conversations.list()
+console.log(xmtpClient.address)
+  assert(
+    xmtpClient.address === '0x9dbcC27ca57623D176F133a2811AdC9459d96976',
+    'Address: ' + xmtpClient.address
+  )
+  return true
+})
 
 // test('can load 1995 conversations from dev network "2k lens convos" account', async () => {
 //   if (!Config.TEST_PRIVATE_KEY) {

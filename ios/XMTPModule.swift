@@ -37,12 +37,12 @@ public class XMTPModule: Module {
 		// A method to update the conversations
 		func updateClient(key: String, client: XMTP.Client) {
 			ContentJson.initCodecs(client: client)
-			clients[key] = client
+			clients[key.lowercased()] = client
 		}
 
 		// A method to retrieve a conversation
 		func getClient(key: String) -> XMTP.Client? {
-			return clients[key]
+			return clients[key.lowercased()]
 		}
 	}
 
