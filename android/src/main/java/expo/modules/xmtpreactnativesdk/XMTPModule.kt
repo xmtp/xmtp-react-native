@@ -80,6 +80,8 @@ import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.ExperimentalTime
 
 
 class ReactNativeSigner(
@@ -239,6 +241,7 @@ class XMTPModule : Module() {
     private var preAuthenticateToInboxCallbackDeferred: CompletableDeferred<Unit>? = null
 
 
+    @OptIn(ExperimentalTime::class)
     override fun definition() = ModuleDefinition {
         Name("XMTP")
         Events(
@@ -785,8 +788,8 @@ class XMTPModule : Module() {
 
                 conversation.decryptedMessages(
                     limit = limit,
-                    before = beforeDate,
-                    after = afterDate,
+                    beforeNs = beforeDate?.time?.nanoseconds?.inWholeNanoseconds,
+                    afterNs = afterDate?.time?.nanoseconds?.inWholeNanoseconds,
                     direction = MessageApiOuterClass.SortDirection.valueOf(
                         direction ?: "SORT_DIRECTION_DESCENDING"
                     )
@@ -804,8 +807,8 @@ class XMTPModule : Module() {
                 val conversation = client.findConversation(conversationId)
                 conversation?.decryptedMessages(
                     limit = limit,
-                    before = beforeDate,
-                    after = afterDate,
+                    beforeNs = beforeDate?.time?.nanoseconds?.inWholeNanoseconds,
+                    afterNs = afterDate?.time?.nanoseconds?.inWholeNanoseconds,
                     direction = MessageApiOuterClass.SortDirection.valueOf(
                         direction ?: "SORT_DIRECTION_DESCENDING"
                     )
