@@ -89,7 +89,8 @@ public class XMTPModule: Module {
 			"preAuthenticateToInboxCallback",
 			"conversation",
 			"message",
-			"conversationMessage"
+			"conversationMessage",
+			"consent"
 		)
 
 		AsyncFunction("address") { (inboxId: String) -> String in

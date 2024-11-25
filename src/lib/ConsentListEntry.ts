@@ -1,15 +1,15 @@
 export type ConsentState = 'allowed' | 'denied' | 'unknown'
 
-export type ConsentListEntryType = 'address' | 'conversation_id' | 'inbox_id'
+export type ConsentType = 'address' | 'conversation_id' | 'inbox_id'
 
-export class ConsentListEntry {
+export class ConsentRecord {
   value: string
-  entryType: ConsentListEntryType
+  entryType: ConsentType
   permissionType: ConsentState
 
   constructor(
     value: string,
-    entryType: ConsentListEntryType,
+    entryType: ConsentType,
     permissionType: ConsentState
   ) {
     this.value = value
@@ -17,8 +17,8 @@ export class ConsentListEntry {
     this.permissionType = permissionType
   }
 
-  static from(json: string): ConsentListEntry {
+  static from(json: string): ConsentRecord {
     const entry = JSON.parse(json)
-    return new ConsentListEntry(entry.value, entry.type, entry.state)
+    return new ConsentRecord(entry.value, entry.type, entry.state)
   }
 }

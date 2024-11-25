@@ -13,6 +13,7 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
@@ -35,7 +36,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.xmtp.android.library.Client
 import org.xmtp.android.library.ClientOptions
-import org.xmtp.android.library.ConsentListEntry
+import org.xmtp.android.library.ConsentRecord
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.Conversations.*
@@ -206,6 +207,7 @@ class XMTPModule : Module() {
             "conversation",
             "message",
             "conversationMessage",
+            "consent",
         )
 
         Function("address") { inboxId: String ->
@@ -1144,16 +1146,16 @@ class XMTPModule : Module() {
         AsyncFunction("syncConsent") Coroutine { inboxId: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.syncConsent()
+                client.preferences.syncConsent()
             }
         }
 
         AsyncFunction("setConsentState") Coroutine { inboxId: String, value: String, entryType: String, consentType: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                client.preferences.consentList.setConsentState(
+                client.preferences.setConsentState(
                     listOf(
-                        ConsentListEntry(
+                        ConsentRecord(
                             value,
                             getEntryType(entryType),
                             getConsentState(consentType)
@@ -1166,21 +1168,21 @@ class XMTPModule : Module() {
         AsyncFunction("consentAddressState") Coroutine { inboxId: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                consentStateToString(client.preferences.consentList.addressState(peerAddress))
+                consentStateToString(client.preferences.addressState(peerAddress))
             }
         }
 
         AsyncFunction("consentInboxIdState") Coroutine { inboxId: String, peerInboxId: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                consentStateToString(client.preferences.consentList.inboxIdState(peerInboxId))
+                consentStateToString(client.preferences.inboxIdState(peerInboxId))
             }
         }
 
         AsyncFunction("consentConversationIdState") Coroutine { inboxId: String, conversationId: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[inboxId] ?: throw XMTPException("No client")
-                consentStateToString(client.preferences.consentList.conversationState(conversationId))
+                consentStateToString(client.preferences.conversationState(conversationId))
             }
         }
 
@@ -1204,6 +1206,12 @@ class XMTPModule : Module() {
             }
         }
 
+        Function("subscribeToConsent") { inboxId: String ->
+            logV("subscribeToConsent")
+
+            subscribeToConsent(inboxId = inboxId)
+        }
+
         Function("subscribeToConversations") { inboxId: String, type: String ->
             logV("subscribeToConversations")
 
@@ -1223,6 +1231,11 @@ class XMTPModule : Module() {
                     id = id
                 )
             }
+        }
+
+        Function("unsubscribeFromConsent") { inboxId: String ->
+            logV("unsubscribeFromConsent")
+            subscriptions[getConsentKey(inboxId)]?.cancel()
         }
 
         Function("unsubscribeFromConversations") { inboxId: String ->
@@ -1341,6 +1354,29 @@ class XMTPModule : Module() {
         }
     }
 
+    private fun subscribeToConsent(inboxId: String) {
+        val client = clients[inboxId] ?: throw XMTPException("No client")
+
+        subscriptions[getConsentKey(client.inboxId)]?.cancel()
+        subscriptions[getConsentKey(client.inboxId)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    client.preferences.streamConsent().collect { consent ->
+                        sendEvent(
+                            "consent",
+                            mapOf(
+                                "inboxId" to inboxId,
+                                "consent" to ConsentWrapper.encodeMap(consent)
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e("XMTPModule", "Error in group subscription: $e")
+                    subscriptions[getConsentKey(client.inboxId)]?.cancel()
+                }
+            }
+    }
+
     private fun subscribeToConversations(inboxId: String, type: ConversationType) {
         val client = clients[inboxId] ?: throw XMTPException("No client")
 
@@ -1412,6 +1448,10 @@ class XMTPModule : Module() {
                     subscriptions[conversation.cacheKey(inboxId)]?.cancel()
                 }
             }
+    }
+
+    private fun getConsentKey(inboxId: String): String {
+        return "consent:$inboxId"
     }
 
     private fun getMessagesKey(inboxId: String): String {
