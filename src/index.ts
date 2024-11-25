@@ -3,11 +3,7 @@ import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 import { Client } from '.'
 import XMTPModule from './XMTPModule'
 import { Address, InboxId, XMTPEnvironment } from './lib/Client'
-import {
-  ConsentListEntry,
-  ConsentListEntryType,
-  ConsentState,
-} from './lib/ConsentListEntry'
+import { ConsentRecord, ConsentState, ConsentType } from './lib/ConsentRecord'
 import {
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
@@ -957,7 +953,7 @@ export async function syncConsent(inboxId: InboxId): Promise<void> {
 export async function setConsentState(
   inboxId: InboxId,
   value: string,
-  entryType: ConsentListEntryType,
+  entryType: ConsentType,
   consentType: ConsentState
 ): Promise<void> {
   return await XMTPModule.setConsentState(
@@ -1001,6 +997,10 @@ export async function updateConversationConsent(
   return XMTPModule.updateConversationConsent(inboxId, conversationId, state)
 }
 
+export function subscribeToConsent(inboxId: InboxId) {
+  return XMTPModule.subscribeToConsent(inboxId)
+}
+
 export function subscribeToConversations(
   inboxId: InboxId,
   type: ConversationType
@@ -1020,6 +1020,10 @@ export async function subscribeToMessages(
   id: ConversationId
 ) {
   return await XMTPModule.subscribeToMessages(inboxId, id)
+}
+
+export function unsubscribeFromConsent(inboxId: InboxId) {
+  return XMTPModule.unsubscribeFromConsent(inboxId)
 }
 
 export function unsubscribeFromConversations(inboxId: InboxId) {
@@ -1075,7 +1079,7 @@ export { Client } from './lib/Client'
 export * from './lib/ContentCodec'
 export { Conversation, ConversationVersion } from './lib/Conversation'
 export { XMTPPush } from './lib/XMTPPush'
-export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus, ConsentState }
+export { ConsentRecord, DecodedMessage, MessageDeliveryStatus, ConsentState }
 export { Group } from './lib/Group'
 export { Dm } from './lib/Dm'
 export { Member } from './lib/Member'

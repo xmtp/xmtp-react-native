@@ -1,5 +1,5 @@
 import { Address, Client, InboxId } from './Client'
-import { ConsentListEntry, ConsentState } from './ConsentListEntry'
+import { ConsentListEntry, ConsentState } from './ConsentRecord'
 import * as XMTPModule from '../index'
 import { ConversationId } from '../index'
 import { getAddress } from '../utils/address'

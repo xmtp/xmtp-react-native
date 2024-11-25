@@ -1,5 +1,5 @@
 import { InboxId } from './Client'
-import { ConsentState } from './ConsentListEntry'
+import { ConsentState } from './ConsentRecord'
 import { ConversationVersion, ConversationBase } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'

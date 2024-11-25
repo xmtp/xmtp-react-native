@@ -13,8 +13,8 @@ import {
   Group,
   GroupUpdatedContent,
   GroupUpdatedCodec,
-  ConsentListEntry,
   DecodedMessage,
+  ConsentRecord,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -1185,7 +1185,7 @@ test('can group consent', async () => {
   )
 
   await bo.preferences.setConsentState(
-    new ConsentListEntry(group.id, 'conversation_id', 'denied')
+    new ConsentRecord(group.id, 'conversation_id', 'denied')
   )
   const isDenied = await bo.preferences.conversationConsentState(group.id)
   assert(isDenied === 'denied', `bo group should be denied but was ${isDenied}`)
@@ -1219,7 +1219,7 @@ test('can allow and deny a inbox id', async () => {
   )
 
   await bo.preferences.setConsentState(
-    new ConsentListEntry(alix.inboxId, 'inbox_id', 'allowed')
+    new ConsentRecord(alix.inboxId, 'inbox_id', 'allowed')
   )
 
   let alixMember = (await boGroup.members()).find(
@@ -1243,7 +1243,7 @@ test('can allow and deny a inbox id', async () => {
   )
 
   await bo.preferences.setConsentState(
-    new ConsentListEntry(alix.inboxId, 'inbox_id', 'denied')
+    new ConsentRecord(alix.inboxId, 'inbox_id', 'denied')
   )
 
   alixMember = (await boGroup.members()).find(
@@ -1261,7 +1261,7 @@ test('can allow and deny a inbox id', async () => {
   )
 
   await bo.preferences.setConsentState(
-    new ConsentListEntry(alix.address, 'address', 'allowed')
+    new ConsentRecord(alix.address, 'address', 'allowed')
   )
 
   isAddressAllowed = await bo.preferences.addressConsentState(alix.address)
