@@ -5,16 +5,12 @@ export type ConsentType = 'address' | 'conversation_id' | 'inbox_id'
 export class ConsentRecord {
   value: string
   entryType: ConsentType
-  permissionType: ConsentState
+  state: ConsentState
 
-  constructor(
-    value: string,
-    entryType: ConsentType,
-    permissionType: ConsentState
-  ) {
+  constructor(value: string, entryType: ConsentType, state: ConsentState) {
     this.value = value
     this.entryType = entryType
-    this.permissionType = permissionType
+    this.state = state
   }
 
   static from(json: string): ConsentRecord {
