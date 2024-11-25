@@ -38,7 +38,7 @@ export default class PrivatePreferences {
       this.client.inboxId,
       consentRecord.value,
       consentRecord.entryType,
-      consentRecord.permissionType
+      consentRecord.state
     )
   }
 
