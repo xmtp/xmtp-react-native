@@ -441,7 +441,7 @@ PODS:
   - RNSVG (13.14.0):
     - React-Core
   - SwiftProtobuf (1.28.2)
-  - XMTP (3.0.8):
+  - XMTP (3.0.10):
     - Connect-Swift (= 1.0.0)
     - CryptoSwift (= 1.8.3)
     - CSecp256k1 (~> 0.2)
@@ -450,7 +450,7 @@ PODS:
     - CSecp256k1 (~> 0.2)
     - ExpoModulesCore
     - MessagePacker
-    - XMTP (= 3.0.8)
+    - XMTP (= 3.0.10)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -747,8 +747,8 @@ SPEC CHECKSUMS:
   RNScreens: 218801c16a2782546d30bd2026bb625c0302d70f
   RNSVG: d00c8f91c3cbf6d476451313a18f04d220d4f396
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
-  XMTP: f8ee66c4aacc5750ab0f67f5bb86c05cd2513185
-  XMTPReactNative: 8cda2ca09be81cee8c26d986db65fc6faef57bea
+  XMTP: 22bd60ccd58801953c1bbc7619b0046b2eef5b97
+  XMTPReactNative: 48e8bbbb9c1800cd507121bd9918aa4a571e8237
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 0e6fe50018f34e575d38dc6a1fdf1f99c9596cdd

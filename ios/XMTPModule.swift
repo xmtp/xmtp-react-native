@@ -223,9 +223,11 @@ public class XMTPModule: Module {
 		AsyncFunction("create") {
 			(
 				address: String, hasAuthenticateToInboxCallback: Bool?,
-				dbEncryptionKey: [UInt8], authParams: String, walletParams: String
+				dbEncryptionKey: [UInt8], authParams: String,
+				walletParams: String
 			) in
-			let walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
+				walletParams)
 			let signer = ReactNativeSigner(
 				module: self, address: address,
 				walletType: walletOptions.walletType,
@@ -271,13 +273,15 @@ public class XMTPModule: Module {
 				key: client.inboxID, client: client)
 			return try ClientWrapper.encodeToObj(client)
 		}
-		
-		AsyncFunction("revokeAllOtherInstallations") { (inboxId: String, walletParams: String) in
+
+		AsyncFunction("revokeAllOtherInstallations") {
+			(inboxId: String, walletParams: String) in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
 				throw Error.noClient
 			}
-			let walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
+				walletParams)
 			let signer = ReactNativeSigner(
 				module: self, address: client.address,
 				walletType: walletOptions.walletType,
@@ -288,13 +292,15 @@ public class XMTPModule: Module {
 			try await client.revokeAllOtherInstallations(signingKey: signer)
 			self.signer = nil
 		}
-		
-		AsyncFunction("addAccount") { (inboxId: String, newAddress: String, walletParams: String) in
+
+		AsyncFunction("addAccount") {
+			(inboxId: String, newAddress: String, walletParams: String) in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
 				throw Error.noClient
 			}
-			let walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
+				walletParams)
 			let signer = ReactNativeSigner(
 				module: self, address: newAddress,
 				walletType: walletOptions.walletType,
@@ -305,13 +311,15 @@ public class XMTPModule: Module {
 			try await client.addAccount(newAccount: signer)
 			self.signer = nil
 		}
-		
-		AsyncFunction("removeAccount") { (inboxId: String, addressToRemove: String, walletParams: String) in
+
+		AsyncFunction("removeAccount") {
+			(inboxId: String, addressToRemove: String, walletParams: String) in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
 				throw Error.noClient
 			}
-			let walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
+				walletParams)
 			let signer = ReactNativeSigner(
 				module: self, address: client.address,
 				walletType: walletOptions.walletType,
@@ -319,7 +327,8 @@ public class XMTPModule: Module {
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
 
-			try await client.removeAccount(recoveryAccount: signer, addressToRemove: addressToRemove)
+			try await client.removeAccount(
+				recoveryAccount: signer, addressToRemove: addressToRemove)
 			self.signer = nil
 		}
 
@@ -337,14 +346,15 @@ public class XMTPModule: Module {
 			let signature = try client.signWithInstallationKey(message: message)
 			return [UInt8](signature)
 		}
-		
+
 		AsyncFunction("verifySignature") {
 			(inboxId: String, message: String, signature: [UInt8]) -> Bool in
 			guard let client = await clientsManager.getClient(key: inboxId)
 			else {
 				throw Error.noClient
 			}
-			return try client.verifySignature(message: message, signature: Data(signature))
+			return try client.verifySignature(
+				message: message, signature: Data(signature))
 		}
 
 		AsyncFunction("canMessage") {
@@ -517,7 +527,8 @@ public class XMTPModule: Module {
 			for conversation in conversations {
 				let encodedConversationContainer =
 					try await ConversationWrapper.encode(
-						conversation, client: client, conversationParams: params)
+						conversation, client: client, conversationParams: params
+					)
 				results.append(encodedConversationContainer)
 			}
 			return results
@@ -1398,7 +1409,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 
-			try await client.syncConsent()
+			try await client.preferences.syncConsent()
 		}
 
 		AsyncFunction("setConsentState") {
@@ -1414,9 +1425,9 @@ public class XMTPModule: Module {
 			let resolvedEntryType = try getEntryType(type: entryType)
 			let resolvedConsentState = try getConsentState(state: consentType)
 
-			try await client.preferences.consentList.setConsentState(
+			try await client.preferences.setConsentState(
 				entries: [
-					ConsentListEntry(
+					ConsentRecord(
 						value: value,
 						entryType: resolvedEntryType,
 						consentType: resolvedConsentState
@@ -1432,7 +1443,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			return try await ConsentWrapper.consentStateToString(
-				state: client.preferences.consentList.addressState(
+				state: client.preferences.addressState(
 					address: address))
 		}
 
@@ -1443,7 +1454,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			return try await ConsentWrapper.consentStateToString(
-				state: client.preferences.consentList.inboxIdState(
+				state: client.preferences.inboxIdState(
 					inboxId: peerInboxId))
 		}
 
@@ -1454,7 +1465,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			return try await ConsentWrapper.consentStateToString(
-				state: client.preferences.consentList.conversationState(
+				state: client.preferences.conversationState(
 					conversationId:
 						conversationId))
 		}
@@ -1496,6 +1507,13 @@ public class XMTPModule: Module {
 				state: getConsentState(state: state))
 		}
 
+		AsyncFunction("subscribeToConsent") {
+			(inboxId: String) in
+
+			try await subscribeToConsent(
+				inboxId: inboxId)
+		}
+
 		AsyncFunction("subscribeToConversations") {
 			(inboxId: String, type: String) in
 
@@ -1512,6 +1530,11 @@ public class XMTPModule: Module {
 		AsyncFunction("subscribeToMessages") {
 			(inboxId: String, id: String) in
 			try await subscribeToMessages(inboxId: inboxId, id: id)
+		}
+
+		AsyncFunction("unsubscribeFromConsent") { (inboxId: String) in
+			await subscriptionsManager.get(getConsentKey(inboxId: inboxId))?
+				.cancel()
 		}
 
 		AsyncFunction("unsubscribeFromConversations") { (inboxId: String) in
@@ -1706,10 +1729,45 @@ public class XMTPModule: Module {
 		let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 
 		return XMTP.ClientOptions(
-			api: createApiClient(env: authOptions.environment, appVersion: authOptions.appVersion),
+			api: createApiClient(
+				env: authOptions.environment, appVersion: authOptions.appVersion
+			),
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
-			dbEncryptionKey: dbEncryptionKey, dbDirectory: authOptions.dbDirectory,
+			dbEncryptionKey: dbEncryptionKey,
+			dbDirectory: authOptions.dbDirectory,
 			historySyncUrl: authOptions.historySyncUrl)
+	}
+	
+	func subscribeToConsent(inboxId: String)
+		async throws
+	{
+		guard let client = await clientsManager.getClient(key: inboxId) else {
+			return
+		}
+
+		await subscriptionsManager.get(getConsentKey(inboxId: inboxId))?
+			.cancel()
+		await subscriptionsManager.set(
+			getConsentKey(inboxId: inboxId),
+			Task {
+				do {
+					for try await consent in await client.preferences
+						.streamConsent()
+					{
+						try sendEvent(
+							"consent",
+							[
+								"inboxId": inboxId,
+								"consent": ConsentWrapper.encodeToObj(
+									consent, client: client),
+							])
+					}
+				} catch {
+					print("Error in consent subscription: \(error)")
+					await subscriptionsManager.get(
+						getConsentKey(inboxId: inboxId))?.cancel()
+				}
+			})
 	}
 
 	func subscribeToConversations(inboxId: String, type: ConversationType)
@@ -1829,6 +1887,10 @@ public class XMTPModule: Module {
 
 		await subscriptionsManager.get(converation.cacheKey(inboxId))?
 			.cancel()
+	}
+	
+	func getConsentKey(inboxId: String) -> String {
+		return "consent:\(inboxId)"
 	}
 
 	func getMessagesKey(inboxId: String) -> String {
