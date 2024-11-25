@@ -1760,7 +1760,7 @@ public class XMTPModule: Module {
 							[
 								"inboxId": inboxId,
 								"consent": ConsentWrapper.encodeToObj(
-									consent, client: client),
+									consent),
 							])
 					}
 				} catch {
