@@ -70,14 +70,25 @@ public class XMTPModule: Module {
 			}
 		}
 	}
-
-	enum Error: Swift.Error {
+	
+	enum Error: Swift.Error, LocalizedError {
 		case noClient
 		case conversationNotFound(String)
-		case noMessage, invalidKeyBundle, invalidDigest
-		case badPreparation(String)
-		case mlsNotEnabled(String)
-		case invalidString, invalidPermissionOption
+		case noMessage
+		case invalidPermissionOption
+		
+		var errorDescription: String? {
+			switch self {
+			case .noClient:
+				return "No client is available."
+			case .conversationNotFound(let id):
+				return "Conversation with ID '\(id)' was not found."
+			case .noMessage:
+				return "No message was provided."
+			case .invalidPermissionOption:
+				return "The permission option is invalid."
+			}
+		}
 	}
 
 	public func definition() -> ModuleDefinition {
@@ -217,7 +228,7 @@ public class XMTPModule: Module {
 				account: privateKey, options: options)
 
 			await clientsManager.updateClient(
-				key: client.inboxID, client: client)
+				key: client.installationID, client: client)
 			return try ClientWrapper.encodeToObj(client)
 		}
 
@@ -252,7 +263,7 @@ public class XMTPModule: Module {
 			let client = try await XMTP.Client.create(
 				account: signer, options: options)
 			await self.clientsManager.updateClient(
-				key: client.inboxID, client: client)
+				key: client.installationID, client: client)
 			self.signer = nil
 			self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
 		}
@@ -271,7 +282,7 @@ public class XMTPModule: Module {
 			let client = try await XMTP.Client.build(
 				address: address, options: options)
 			await clientsManager.updateClient(
-				key: client.inboxID, client: client)
+				key: client.installationID, client: client)
 			return try ClientWrapper.encodeToObj(client)
 		}
 
