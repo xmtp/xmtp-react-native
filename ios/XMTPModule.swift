@@ -4,12 +4,12 @@ import OSLog
 import XMTP
 
 extension Conversation {
-	static func cacheKeyForTopic(inboxId: String, topic: String) -> String {
-		return "\(inboxId):\(topic)"
+	static func cacheKeyForTopic(installationId: String, topic: String) -> String {
+		return "\(installationId):\(topic)"
 	}
 
-	func cacheKey(_ inboxId: String) -> String {
-		return Conversation.cacheKeyForTopic(inboxId: inboxId, topic: topic)
+	func cacheKey(_ installationId: String) -> String {
+		return Conversation.cacheKeyForTopic(installationId: installationId, topic: topic)
 	}
 }
 
@@ -93,16 +93,16 @@ public class XMTPModule: Module {
 			"consent"
 		)
 
-		AsyncFunction("address") { (inboxId: String) -> String in
-			if let client = await clientsManager.getClient(key: inboxId) {
+		AsyncFunction("address") { (installationId: String) -> String in
+			if let client = await clientsManager.getClient(key: installationId) {
 				return client.address
 			} else {
 				return "No Client."
 			}
 		}
 
-		AsyncFunction("inboxId") { (inboxId: String) -> String in
-			if let client = await clientsManager.getClient(key: inboxId) {
+		AsyncFunction("inboxId") { (installationId: String) -> String in
+			if let client = await clientsManager.getClient(key: installationId) {
 				return client.inboxID
 			} else {
 				return "No Client."
@@ -110,40 +110,40 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findInboxIdFromAddress") {
-			(inboxId: String, address: String) -> String? in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, address: String) -> String? in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			return try await client.inboxIdFromAddress(address: address)
 		}
 
-		AsyncFunction("deleteLocalDatabase") { (inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+		AsyncFunction("deleteLocalDatabase") { (installationId: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			try client.deleteLocalDatabase()
 		}
 
-		AsyncFunction("dropLocalDatabaseConnection") { (inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+		AsyncFunction("dropLocalDatabaseConnection") { (installationId: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			try client.dropLocalDatabaseConnection()
 		}
 
-		AsyncFunction("reconnectLocalDatabase") { (inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+		AsyncFunction("reconnectLocalDatabase") { (installationId: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			try await client.reconnectLocalDatabase()
 		}
 
-		AsyncFunction("requestMessageHistorySync") { (inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+		AsyncFunction("requestMessageHistorySync") { (installationId: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -151,8 +151,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("getInboxState") {
-			(inboxId: String, refreshFromNetwork: Bool) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, refreshFromNetwork: Bool) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -162,9 +162,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("getInboxStates") {
-			(inboxId: String, refreshFromNetwork: Bool, inboxIds: [String])
+			(installationId: String, refreshFromNetwork: Bool, inboxIds: [String])
 				-> [String] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -276,8 +276,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("revokeAllOtherInstallations") {
-			(inboxId: String, walletParams: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, walletParams: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -295,8 +295,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addAccount") {
-			(inboxId: String, newAddress: String, walletParams: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, newAddress: String, walletParams: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -314,8 +314,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("removeAccount") {
-			(inboxId: String, addressToRemove: String, walletParams: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, addressToRemove: String, walletParams: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -334,13 +334,13 @@ public class XMTPModule: Module {
 		}
 
 		// Remove a client from memory for a given inboxId
-		AsyncFunction("dropClient") { (inboxId: String) in
-			await clientsManager.dropClient(key: inboxId)
+		AsyncFunction("dropClient") { (installationId: String) in
+			await clientsManager.dropClient(key: installationId)
 		}
 
 		AsyncFunction("signWithInstallationKey") {
-			(inboxId: String, message: String) -> [UInt8] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, message: String) -> [UInt8] in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -349,8 +349,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("verifySignature") {
-			(inboxId: String, message: String, signature: [UInt8]) -> Bool in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, message: String, signature: [UInt8]) -> Bool in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -359,8 +359,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("canMessage") {
-			(inboxId: String, peerAddresses: [String]) -> [String: Bool] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, peerAddresses: [String]) -> [String: Bool] in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -380,8 +380,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("encryptAttachment") {
-			(inboxId: String, fileJson: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, fileJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -410,8 +410,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("decryptAttachment") {
-			(inboxId: String, encryptedFileJson: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, encryptedFileJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -442,10 +442,10 @@ public class XMTPModule: Module {
 
 		AsyncFunction("listGroups") {
 			(
-				inboxId: String, groupParams: String?, sortOrder: String?,
+				installationId: String, groupParams: String?, sortOrder: String?,
 				limit: Int?, consentState: String?
 			) -> [String] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -473,10 +473,10 @@ public class XMTPModule: Module {
 
 		AsyncFunction("listDms") {
 			(
-				inboxId: String, groupParams: String?, sortOrder: String?,
+				installationId: String, groupParams: String?, sortOrder: String?,
 				limit: Int?, consentState: String?
 			) -> [String] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -504,10 +504,10 @@ public class XMTPModule: Module {
 
 		AsyncFunction("listConversations") {
 			(
-				inboxId: String, conversationParams: String?,
+				installationId: String, conversationParams: String?,
 				sortOrder: String?, limit: Int?, consentState: String?
 			) -> [String] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -537,10 +537,10 @@ public class XMTPModule: Module {
 
 		AsyncFunction("conversationMessages") {
 			(
-				inboxId: String, conversationId: String, limit: Int?,
+				installationId: String, conversationId: String, limit: Int?,
 				beforeNs: Double?, afterNs: Double?, direction: String?
 			) -> [String] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -573,8 +573,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findMessage") {
-			(inboxId: String, messageId: String) -> String? in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, messageId: String) -> String? in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -587,8 +587,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findGroup") {
-			(inboxId: String, groupId: String) -> String? in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, groupId: String) -> String? in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -600,8 +600,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findConversation") {
-			(inboxId: String, conversationId: String) -> String? in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, conversationId: String) -> String? in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -617,8 +617,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findConversationByTopic") {
-			(inboxId: String, topic: String) -> String? in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, topic: String) -> String? in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -633,8 +633,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findDmByInboxId") {
-			(inboxId: String, peerInboxId: String) -> String? in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, peerInboxId: String) -> String? in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -646,8 +646,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findDmByAddress") {
-			(inboxId: String, peerAddress: String) -> String? in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, peerAddress: String) -> String? in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -659,8 +659,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("sendMessage") {
-			(inboxId: String, id: String, contentJson: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, contentJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -680,8 +680,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("publishPreparedMessages") {
-			(inboxId: String, id: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -697,8 +697,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("prepareMessage") {
-			(inboxId: String, id: String, contentJson: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, contentJson: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -718,8 +718,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findOrCreateDm") {
-			(inboxId: String, peerAddress: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, peerAddress: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -736,10 +736,10 @@ public class XMTPModule: Module {
 
 		AsyncFunction("createGroup") {
 			(
-				inboxId: String, peerAddresses: [String], permission: String,
+				installationId: String, peerAddresses: [String], permission: String,
 				groupOptionsJson: String
 			) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -772,10 +772,10 @@ public class XMTPModule: Module {
 
 		AsyncFunction("createGroupCustomPermissions") {
 			(
-				inboxId: String, peerAddresses: [String],
+				installationId: String, peerAddresses: [String],
 				permissionPolicySetJson: String, groupOptionsJson: String
 			) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -803,8 +803,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("listMemberInboxIds") {
-			(inboxId: String, groupId: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, groupId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -816,8 +816,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("dmPeerInboxId") {
-			(inboxId: String, dmId: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, dmId: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -838,13 +838,13 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("listConversationMembers") {
-			(inboxId: String, conversationId: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, conversationId: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -860,24 +860,24 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("syncConversations") { (inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+		AsyncFunction("syncConversations") { (installationId: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			try await client.conversations.sync()
 		}
 
-		AsyncFunction("syncAllConversations") { (inboxId: String) -> UInt32 in
-			guard let client = await clientsManager.getClient(key: inboxId)
+		AsyncFunction("syncAllConversations") { (installationId: String) -> UInt32 in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			return try await client.conversations.syncAllConversations()
 		}
 
-		AsyncFunction("syncConversation") { (inboxId: String, id: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+		AsyncFunction("syncConversation") { (installationId: String, id: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -892,8 +892,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addGroupMembers") {
-			(inboxId: String, id: String, peerAddresses: [String]) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, peerAddresses: [String]) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -905,8 +905,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("removeGroupMembers") {
-			(inboxId: String, id: String, peerAddresses: [String]) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, peerAddresses: [String]) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -918,8 +918,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addGroupMembersByInboxId") {
-			(inboxId: String, id: String, inboxIds: [String]) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -931,8 +931,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("removeGroupMembersByInboxId") {
-			(inboxId: String, id: String, inboxIds: [String]) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, inboxIds: [String]) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -944,8 +944,8 @@ public class XMTPModule: Module {
 			try await group.removeMembersByInboxId(inboxIds: inboxIds)
 		}
 
-		AsyncFunction("groupName") { (inboxId: String, id: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+		AsyncFunction("groupName") { (installationId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -958,8 +958,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateGroupName") {
-			(inboxId: String, id: String, groupName: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, groupName: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -972,8 +972,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("groupImageUrlSquare") {
-			(inboxId: String, id: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -986,8 +986,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateGroupImageUrlSquare") {
-			(inboxId: String, id: String, groupImageUrl: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, groupImageUrl: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1001,8 +1001,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("groupDescription") {
-			(inboxId: String, id: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1015,8 +1015,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateGroupDescription") {
-			(inboxId: String, id: String, description: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, description: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1030,8 +1030,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("groupPinnedFrameUrl") {
-			(inboxId: String, id: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1044,8 +1044,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateGroupPinnedFrameUrl") {
-			(inboxId: String, id: String, pinnedFrameUrl: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, pinnedFrameUrl: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1059,8 +1059,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("isGroupActive") {
-			(inboxId: String, id: String) -> Bool in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) -> Bool in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1073,8 +1073,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addedByInboxId") {
-			(inboxId: String, id: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1087,8 +1087,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("creatorInboxId") {
-			(inboxId: String, id: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1100,9 +1100,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("isAdmin") {
-			(clientInboxId: String, id: String, inboxId: String) -> Bool in
+			(clientInstallationId: String, id: String, inboxId: String) -> Bool in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1114,9 +1114,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("isSuperAdmin") {
-			(clientInboxId: String, id: String, inboxId: String) -> Bool in
+			(clientInstallationId: String, id: String, inboxId: String) -> Bool in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1128,8 +1128,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("listAdmins") {
-			(inboxId: String, id: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1141,8 +1141,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("listSuperAdmins") {
-			(inboxId: String, id: String) -> [String] in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) -> [String] in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1154,9 +1154,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addAdmin") {
-			(clientInboxId: String, id: String, inboxId: String) in
+			(clientInstallationId: String, id: String, inboxId: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1168,9 +1168,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addSuperAdmin") {
-			(clientInboxId: String, id: String, inboxId: String) in
+			(clientInstallationId: String, id: String, inboxId: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1182,9 +1182,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("removeAdmin") {
-			(clientInboxId: String, id: String, inboxId: String) in
+			(clientInstallationId: String, id: String, inboxId: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1196,9 +1196,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("removeSuperAdmin") {
-			(clientInboxId: String, id: String, inboxId: String) in
+			(clientInstallationId: String, id: String, inboxId: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1210,9 +1210,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateAddMemberPermission") {
-			(clientInboxId: String, id: String, newPermission: String) in
+			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1226,9 +1226,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateRemoveMemberPermission") {
-			(clientInboxId: String, id: String, newPermission: String) in
+			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1242,9 +1242,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateAddAdminPermission") {
-			(clientInboxId: String, id: String, newPermission: String) in
+			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1258,9 +1258,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateRemoveAdminPermission") {
-			(clientInboxId: String, id: String, newPermission: String) in
+			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1274,9 +1274,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateGroupNamePermission") {
-			(clientInboxId: String, id: String, newPermission: String) in
+			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1290,9 +1290,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateGroupImageUrlSquarePermission") {
-			(clientInboxId: String, id: String, newPermission: String) in
+			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1306,9 +1306,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateGroupDescriptionPermission") {
-			(clientInboxId: String, id: String, newPermission: String) in
+			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1322,9 +1322,9 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateGroupPinnedFrameUrlPermission") {
-			(clientInboxId: String, id: String, newPermission: String) in
+			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
-				let client = await clientsManager.getClient(key: clientInboxId)
+				let client = await clientsManager.getClient(key: clientInstallationId)
 			else {
 				throw Error.noClient
 			}
@@ -1338,8 +1338,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("permissionPolicySet") {
-			(inboxId: String, id: String) async throws -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String) async throws -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1355,8 +1355,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("processMessage") {
-			(inboxId: String, id: String, encryptedMessage: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, id: String, encryptedMessage: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1382,8 +1382,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("processWelcomeMessage") {
-			(inboxId: String, encryptedMessage: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, encryptedMessage: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1404,8 +1404,8 @@ public class XMTPModule: Module {
 				conversation, client: client)
 		}
 
-		AsyncFunction("syncConsent") { (inboxId: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+		AsyncFunction("syncConsent") { (installationId: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1415,10 +1415,10 @@ public class XMTPModule: Module {
 
 		AsyncFunction("setConsentState") {
 			(
-				inboxId: String, value: String, entryType: String,
+				installationId: String, value: String, entryType: String,
 				consentType: String
 			) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1438,8 +1438,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("consentAddressState") {
-			(inboxId: String, address: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, address: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1449,8 +1449,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("consentInboxIdState") {
-			(inboxId: String, peerInboxId: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, peerInboxId: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1460,8 +1460,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("consentConversationIdState") {
-			(inboxId: String, conversationId: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, conversationId: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1472,8 +1472,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("conversationConsentState") {
-			(inboxId: String, conversationId: String) -> String in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, conversationId: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1490,8 +1490,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("updateConversationConsent") {
-			(inboxId: String, conversationId: String, state: String) in
-			guard let client = await clientsManager.getClient(key: inboxId)
+			(installationId: String, conversationId: String, state: String) in
+			guard let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
@@ -1509,48 +1509,48 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("subscribeToConsent") {
-			(inboxId: String) in
+			(installationId: String) in
 
 			try await subscribeToConsent(
-				inboxId: inboxId)
+				installationId: installationId)
 		}
 
 		AsyncFunction("subscribeToConversations") {
-			(inboxId: String, type: String) in
+			(installationId: String, type: String) in
 
 			try await subscribeToConversations(
-				inboxId: inboxId, type: getConversationType(type: type))
+				installationId: installationId, type: getConversationType(type: type))
 		}
 
 		AsyncFunction("subscribeToAllMessages") {
-			(inboxId: String, type: String) in
+			(installationId: String, type: String) in
 			try await subscribeToAllMessages(
-				inboxId: inboxId, type: getConversationType(type: type))
+				installationId: installationId, type: getConversationType(type: type))
 		}
 
 		AsyncFunction("subscribeToMessages") {
-			(inboxId: String, id: String) in
-			try await subscribeToMessages(inboxId: inboxId, id: id)
+			(installationId: String, id: String) in
+			try await subscribeToMessages(installationId: installationId, id: id)
 		}
 
-		AsyncFunction("unsubscribeFromConsent") { (inboxId: String) in
-			await subscriptionsManager.get(getConsentKey(inboxId: inboxId))?
+		AsyncFunction("unsubscribeFromConsent") { (installationId: String) in
+			await subscriptionsManager.get(getConsentKey(installationId: installationId))?
 				.cancel()
 		}
 
-		AsyncFunction("unsubscribeFromConversations") { (inboxId: String) in
+		AsyncFunction("unsubscribeFromConversations") { (installationId: String) in
 			await subscriptionsManager.get(
-				getConversationsKey(inboxId: inboxId))?.cancel()
+				getConversationsKey(installationId: installationId))?.cancel()
 		}
 
-		AsyncFunction("unsubscribeFromAllMessages") { (inboxId: String) in
-			await subscriptionsManager.get(getMessagesKey(inboxId: inboxId))?
+		AsyncFunction("unsubscribeFromAllMessages") { (installationId: String) in
+			await subscriptionsManager.get(getMessagesKey(installationId: installationId))?
 				.cancel()
 		}
 
 		AsyncFunction("unsubscribeFromMessages") {
-			(inboxId: String, id: String) in
-			try await unsubscribeFromMessages(inboxId: inboxId, id: id)
+			(installationId: String, id: String) in
+			try await unsubscribeFromMessages(installationId: installationId, id: id)
 		}
 
 		AsyncFunction("registerPushToken") {
@@ -1739,17 +1739,17 @@ public class XMTPModule: Module {
 			historySyncUrl: authOptions.historySyncUrl)
 	}
 	
-	func subscribeToConsent(inboxId: String)
+	func subscribeToConsent(installationId: String)
 		async throws
 	{
-		guard let client = await clientsManager.getClient(key: inboxId) else {
+		guard let client = await clientsManager.getClient(key: installationId) else {
 			return
 		}
 
-		await subscriptionsManager.get(getConsentKey(inboxId: inboxId))?
+		await subscriptionsManager.get(getConsentKey(installationId: installationId))?
 			.cancel()
 		await subscriptionsManager.set(
-			getConsentKey(inboxId: inboxId),
+			getConsentKey(installationId: installationId),
 			Task {
 				do {
 					for try await consent in await client.preferences
@@ -1758,7 +1758,7 @@ public class XMTPModule: Module {
 						try sendEvent(
 							"consent",
 							[
-								"inboxId": inboxId,
+								"installationId": installationId,
 								"consent": ConsentWrapper.encodeToObj(
 									consent),
 							])
@@ -1766,22 +1766,22 @@ public class XMTPModule: Module {
 				} catch {
 					print("Error in consent subscription: \(error)")
 					await subscriptionsManager.get(
-						getConsentKey(inboxId: inboxId))?.cancel()
+						getConsentKey(installationId: installationId))?.cancel()
 				}
 			})
 	}
 
-	func subscribeToConversations(inboxId: String, type: ConversationType)
+	func subscribeToConversations(installationId: String, type: ConversationType)
 		async throws
 	{
-		guard let client = await clientsManager.getClient(key: inboxId) else {
+		guard let client = await clientsManager.getClient(key: installationId) else {
 			return
 		}
 
-		await subscriptionsManager.get(getConversationsKey(inboxId: inboxId))?
+		await subscriptionsManager.get(getConversationsKey(installationId: installationId))?
 			.cancel()
 		await subscriptionsManager.set(
-			getConversationsKey(inboxId: inboxId),
+			getConversationsKey(installationId: installationId),
 			Task {
 				do {
 					for try await conversation in await client.conversations
@@ -1790,7 +1790,7 @@ public class XMTPModule: Module {
 						try await sendEvent(
 							"conversation",
 							[
-								"inboxId": inboxId,
+								"installationId": installationId,
 								"conversation": ConversationWrapper.encodeToObj(
 									conversation, client: client),
 							])
@@ -1798,22 +1798,22 @@ public class XMTPModule: Module {
 				} catch {
 					print("Error in all conversations subscription: \(error)")
 					await subscriptionsManager.get(
-						getConversationsKey(inboxId: inboxId))?.cancel()
+						getConversationsKey(installationId: installationId))?.cancel()
 				}
 			})
 	}
 
-	func subscribeToAllMessages(inboxId: String, type: ConversationType)
+	func subscribeToAllMessages(installationId: String, type: ConversationType)
 		async throws
 	{
-		guard let client = await clientsManager.getClient(key: inboxId) else {
+		guard let client = await clientsManager.getClient(key: installationId) else {
 			return
 		}
 
-		await subscriptionsManager.get(getMessagesKey(inboxId: inboxId))?
+		await subscriptionsManager.get(getMessagesKey(installationId: installationId))?
 			.cancel()
 		await subscriptionsManager.set(
-			getMessagesKey(inboxId: inboxId),
+			getMessagesKey(installationId: installationId),
 			Task {
 				do {
 					for try await message in await client.conversations
@@ -1822,7 +1822,7 @@ public class XMTPModule: Module {
 						try sendEvent(
 							"message",
 							[
-								"inboxId": inboxId,
+								"installationId": installationId,
 								"message": DecodedMessageWrapper.encodeToObj(
 									message, client: client),
 							])
@@ -1830,13 +1830,13 @@ public class XMTPModule: Module {
 				} catch {
 					print("Error in all messages subscription: \(error)")
 					await subscriptionsManager.get(
-						getMessagesKey(inboxId: inboxId))?.cancel()
+						getMessagesKey(installationId: installationId))?.cancel()
 				}
 			})
 	}
 
-	func subscribeToMessages(inboxId: String, id: String) async throws {
-		guard let client = await clientsManager.getClient(key: inboxId) else {
+	func subscribeToMessages(installationId: String, id: String) async throws {
+		guard let client = await clientsManager.getClient(key: installationId) else {
 			throw Error.noClient
 		}
 
@@ -1845,10 +1845,10 @@ public class XMTPModule: Module {
 			return
 		}
 
-		await subscriptionsManager.get(converation.cacheKey(client.inboxID))?
+		await subscriptionsManager.get(converation.cacheKey(installationId))?
 			.cancel()
 		await subscriptionsManager.set(
-			converation.cacheKey(client.inboxID),
+			converation.cacheKey(installationId),
 			Task {
 				do {
 					for try await message in converation.streamMessages() {
@@ -1856,7 +1856,7 @@ public class XMTPModule: Module {
 							try sendEvent(
 								"conversationMessage",
 								[
-									"inboxId": inboxId,
+									"installationId": installationId,
 									"message":
 										DecodedMessageWrapper.encodeToObj(
 											message, client: client),
@@ -1871,13 +1871,13 @@ public class XMTPModule: Module {
 				} catch {
 					print("Error in group messages subscription: \(error)")
 					await subscriptionsManager.get(
-						converation.cacheKey(inboxId))?.cancel()
+						converation.cacheKey(installationId))?.cancel()
 				}
 			})
 	}
 
-	func unsubscribeFromMessages(inboxId: String, id: String) async throws {
-		guard let client = await clientsManager.getClient(key: inboxId) else {
+	func unsubscribeFromMessages(installationId: String, id: String) async throws {
+		guard let client = await clientsManager.getClient(key: installationId) else {
 			throw Error.noClient
 		}
 
@@ -1886,24 +1886,24 @@ public class XMTPModule: Module {
 			return
 		}
 
-		await subscriptionsManager.get(converation.cacheKey(inboxId))?
+		await subscriptionsManager.get(converation.cacheKey(installationId))?
 			.cancel()
 	}
 	
-	func getConsentKey(inboxId: String) -> String {
-		return "consent:\(inboxId)"
+	func getConsentKey(installationId: String) -> String {
+		return "consent:\(installationId)"
 	}
 
-	func getMessagesKey(inboxId: String) -> String {
-		return "messages:\(inboxId)"
+	func getMessagesKey(installationId: String) -> String {
+		return "messages:\(installationId)"
 	}
 
-	func getConversationsKey(inboxId: String) -> String {
-		return "conversations:\(inboxId)"
+	func getConversationsKey(installationId: String) -> String {
+		return "conversations:\(installationId)"
 	}
 
-	func getConversationMessagesKey(inboxId: String) -> String {
-		return "conversationMessages:\(inboxId)"
+	func getConversationMessagesKey(installationId: String) -> String {
+		return "conversationMessages:\(installationId)"
 	}
 
 	func preAuthenticateToInboxCallback() {
