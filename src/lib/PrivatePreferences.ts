@@ -17,25 +17,28 @@ export default class PrivatePreferences {
     conversationId: ConversationId
   ): Promise<ConsentState> {
     return await XMTPModule.consentConversationIdState(
-      this.client.inboxId,
+      this.client.installationId,
       conversationId
     )
   }
 
   async inboxIdConsentState(inboxId: InboxId): Promise<ConsentState> {
-    return await XMTPModule.consentInboxIdState(this.client.inboxId, inboxId)
+    return await XMTPModule.consentInboxIdState(
+      this.client.installationId,
+      inboxId
+    )
   }
 
   async addressConsentState(address: Address): Promise<ConsentState> {
     return await XMTPModule.consentAddressState(
-      this.client.inboxId,
+      this.client.installationId,
       getAddress(address)
     )
   }
 
   async setConsentState(consentRecord: ConsentRecord): Promise<void> {
     return await XMTPModule.setConsentState(
-      this.client.inboxId,
+      this.client.installationId,
       consentRecord.value,
       consentRecord.entryType,
       consentRecord.state
@@ -43,7 +46,7 @@ export default class PrivatePreferences {
   }
 
   async syncConsent(): Promise<void> {
-    return await XMTPModule.syncConsent(this.client.inboxId)
+    return await XMTPModule.syncConsent(this.client.installationId)
   }
 
   /**
@@ -53,17 +56,17 @@ export default class PrivatePreferences {
   async streamConsent(
     callback: (consent: ConsentRecord) => Promise<void>
   ): Promise<void> {
-    XMTPModule.subscribeToConsent(this.client.inboxId)
+    XMTPModule.subscribeToConsent(this.client.installationId)
     const subscription = XMTPModule.emitter.addListener(
       EventTypes.Consent,
       async ({
-        inboxId,
+        installationId,
         consent,
       }: {
-        inboxId: string
+        installationId: string
         consent: ConsentRecord
       }) => {
-        if (inboxId !== this.client.inboxId) {
+        if (installationId !== this.client.installationId) {
           return
         }
         return await callback(
@@ -82,6 +85,6 @@ export default class PrivatePreferences {
       this.subscriptions[EventTypes.Consent].remove()
       delete this.subscriptions[EventTypes.Consent]
     }
-    XMTPModule.unsubscribeFromConsent(this.client.inboxId)
+    XMTPModule.unsubscribeFromConsent(this.client.installationId)
   }
 }

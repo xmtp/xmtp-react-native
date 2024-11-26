@@ -244,7 +244,7 @@ test('can drop client from memory', async () => {
   await anotherClient.dropLocalDatabaseConnection()
 
   await client.reconnectLocalDatabase()
-  await Client.dropClient(anotherClient.inboxId)
+  await Client.dropClient(anotherClient.installationId)
   try {
     await anotherClient.reconnectLocalDatabase()
     return false
