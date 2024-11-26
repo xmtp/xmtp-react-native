@@ -1298,6 +1298,54 @@ class XMTPModule : Module() {
                 }
             }
         }
+
+        // FOR TESTING ONLY
+        AsyncFunction("createRandomWalletKeyForLocalTesting") Coroutine { ->
+            withContext(Dispatchers.IO) {
+                val privateKeyBuilder = PrivateKeyBuilder()
+                val privateKey = privateKeyBuilder.getPrivateKey().toByteArray()
+                privateKey.map { it.toInt() and 0xFF }
+            }
+        }
+
+        AsyncFunction("createForLocalTesting") Coroutine { dbEncryptionKey: List<Int>, authParams: String, walletKey: List<Int>? ->
+            withContext(Dispatchers.IO) {
+                logV("createForLocalTesting")
+                val privateKey = if (walletKey != null) {
+                    val walletKeyBytes = walletKey.foldIndexed(ByteArray(walletKey.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                    val pk = PrivateKeyBuilder.buildFromPrivateKeyData(walletKeyBytes)
+                    PrivateKeyBuilder(pk)
+                } else {
+                    PrivateKeyBuilder()
+                }
+
+                val authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
+                if (authOptions.environment != "local") throw XMTPException("Only enabled on local")
+                val options = clientOptions(
+                    dbEncryptionKey,
+                    authParams,
+                )
+                val randomClient = Client().create(account = privateKey, options = options)
+
+                ContentJson.Companion
+                clients[randomClient.installationId] = randomClient
+                clients[randomClient.inboxId] = randomClient
+                ClientWrapper.encodeToObj(randomClient)
+            }
+        }
+
+        AsyncFunction("localTestingSyncAllConversations") Coroutine { installationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("localTestingSyncAllConversations")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                client.conversations.sync()
+                val numGroupsSyncedInt: Int =
+                    client.conversations.syncAllConversations().toInt()
+                numGroupsSyncedInt
+            }
+        }
     }
 
     //

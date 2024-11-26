@@ -1053,6 +1053,42 @@ export async function exportNativeLogs() {
   return XMTPModule.exportNativeLogs()
 }
 
+export async function createRandomWalletKeyForLocalTesting(): Promise<Uint8Array> {
+  const walletKey = await XMTPModule.createRandomWalletKeyForLocalTesting()
+  return new Uint8Array(walletKey)
+}
+
+export async function createForLocalTesting(
+  dbEncryptionKey: Uint8Array,
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined,
+  walletKey?: Uint8Array
+): Promise<Client<DefaultContentTypes>> {
+  const authParams: AuthParams = {
+    environment: 'local',
+    dbDirectory,
+    historySyncUrl,
+  }
+  const privateKey = walletKey ? Array.from(walletKey) : undefined
+  const client = await XMTPModule.createForLocalTesting(
+    Array.from(dbEncryptionKey),
+    JSON.stringify(authParams),
+    privateKey
+  )
+
+  return new Client(
+    client['address'],
+    client['inboxId'],
+    client['installationId'],
+    client['dbPath'],
+    []
+  )
+}
+
+export async function localTestingSyncAllConversations(installationId: string) {
+  return XMTPModule.localTestingSyncAllConversations(installationId)
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 interface AuthParams {
