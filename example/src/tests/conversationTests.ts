@@ -673,6 +673,7 @@ test('can stream consent', async () => {
   await alix2.conversations.syncAllConversations()
 
   const alix2Group = await alix2.conversations.findConversation(alixGroup.id)
+  await delayToPropogate()
 
   const consent = []
   await alix.preferences.streamConsent(async (entry: ConsentRecord) => {
@@ -685,14 +686,13 @@ test('can stream consent', async () => {
   const dm = await alix2.conversations.newConversation(bo.address)
   await dm!.updateConsent('denied')
 
+  await delayToPropogate(3000)
   await alix.conversations.syncAllConversations()
-  await delayToPropogate(2000)
   await alix2.conversations.syncAllConversations()
-  await delayToPropogate(2000)
 
   assert(
-    consent.length === 3,
-    `Expected 3 consent records, got ${consent.length}`
+    consent.length === 4,
+    `Expected 4 consent records, got ${consent.length}`
   )
   const updatedConsentState = await alixGroup.consentState()
   assert(
