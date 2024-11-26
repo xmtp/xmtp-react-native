@@ -17,23 +17,22 @@ import * as XMTPModule from '../index'
 
 declare const Buffer
 
-export type GetMessageContentTypeFromClient<C> = C extends Client<infer T>
-  ? T
-  : never
+export type GetMessageContentTypeFromClient<C> =
+  C extends Client<infer T> ? T : never
 
-export type ExtractDecodedType<C> = C extends XMTPModule.ContentCodec<infer T>
-  ? T
-  : never
+export type ExtractDecodedType<C> =
+  C extends XMTPModule.ContentCodec<infer T> ? T : never
 
-export type InboxId = string & { readonly brand: unique symbol }
+export type InstallationId = string & { readonly brand: unique symbol }
+export type InboxId = string
 export type Address = string
 
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
-  address: string
+  address: Address
   inboxId: InboxId
-  installationId: string
+  installationId: InstallationId
   dbPath: string
   conversations: Conversations<ContentTypes>
   preferences: PrivatePreferences
@@ -165,7 +164,7 @@ export class Client<
               new Client(
                 message.address,
                 message.inboxId as InboxId,
-                message.installationId,
+                message.installationId as InstallationId,
                 message.dbPath,
                 options.codecs || []
               )
@@ -231,8 +230,8 @@ export class Client<
   /**
    * Drop the client from memory. Use when you want to remove the client from memory and are done with it.
    */
-  static async dropClient(inboxId: InboxId) {
-    return await XMTPModule.dropClient(inboxId)
+  static async dropClient(installationId: InstallationId) {
+    return await XMTPModule.dropClient(installationId)
   }
 
   private static addSubscription(
@@ -294,7 +293,7 @@ export class Client<
   constructor(
     address: Address,
     inboxId: InboxId,
-    installationId: string,
+    installationId: InstallationId,
     dbPath: string,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {
@@ -346,7 +345,7 @@ export class Client<
         )
 
         await XMTPModule.addAccount(
-          this.inboxId,
+          this.installationId,
           await signer.getAddress(),
           signer.walletType?.(),
           signer.getChainId?.(),
@@ -390,7 +389,7 @@ export class Client<
         )
 
         await XMTPModule.removeAccount(
-          this.inboxId,
+          this.installationId,
           addressToRemove,
           signer.walletType?.(),
           signer.getChainId?.(),
@@ -433,7 +432,7 @@ export class Client<
         )
 
         await XMTPModule.revokeAllOtherInstallations(
-          this.inboxId,
+          this.installationId,
           signer.walletType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.()
@@ -453,7 +452,10 @@ export class Client<
    * @returns {Promise<Uint8Array>} A Promise resolving to the signature bytes.
    */
   async signWithInstallationKey(message: string): Promise<Uint8Array> {
-    return await XMTPModule.signWithInstallationKey(this.inboxId, message)
+    return await XMTPModule.signWithInstallationKey(
+      this.installationId,
+      message
+    )
   }
 
   /**
@@ -466,7 +468,11 @@ export class Client<
     message: string,
     signature: Uint8Array
   ): Promise<boolean> {
-    return await XMTPModule.verifySignature(this.inboxId, message, signature)
+    return await XMTPModule.verifySignature(
+      this.installationId,
+      message,
+      signature
+    )
   }
 
   /**
@@ -478,35 +484,38 @@ export class Client<
   async findInboxIdFromAddress(
     peerAddress: Address
   ): Promise<InboxId | undefined> {
-    return await XMTPModule.findInboxIdFromAddress(this.inboxId, peerAddress)
+    return await XMTPModule.findInboxIdFromAddress(
+      this.installationId,
+      peerAddress
+    )
   }
 
   /**
    * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
    */
   async deleteLocalDatabase() {
-    return await XMTPModule.deleteLocalDatabase(this.inboxId)
+    return await XMTPModule.deleteLocalDatabase(this.installationId)
   }
 
   /**
    * Drop the local database connection. This function is delicate and should be used with caution. App will error if database not properly reconnected. See: reconnectLocalDatabase()
    */
   async dropLocalDatabaseConnection() {
-    return await XMTPModule.dropLocalDatabaseConnection(this.inboxId)
+    return await XMTPModule.dropLocalDatabaseConnection(this.installationId)
   }
 
   /**
    * Reconnects the local database after being dropped.
    */
   async reconnectLocalDatabase() {
-    return await XMTPModule.reconnectLocalDatabase(this.inboxId)
+    return await XMTPModule.reconnectLocalDatabase(this.installationId)
   }
 
   /**
    * Make a request for a message history sync.
    */
   async requestMessageHistorySync() {
-    return await XMTPModule.requestMessageHistorySync(this.inboxId)
+    return await XMTPModule.requestMessageHistorySync(this.installationId)
   }
 
   /**
@@ -516,7 +525,10 @@ export class Client<
    * @returns {Promise<InboxState>} A Promise resolving to a InboxState.
    */
   async inboxState(refreshFromNetwork: boolean): Promise<InboxState> {
-    return await XMTPModule.getInboxState(this.inboxId, refreshFromNetwork)
+    return await XMTPModule.getInboxState(
+      this.installationId,
+      refreshFromNetwork
+    )
   }
 
   /**
@@ -531,7 +543,7 @@ export class Client<
     inboxIds: InboxId[]
   ): Promise<InboxState[]> {
     return await XMTPModule.getInboxStates(
-      this.inboxId,
+      this.installationId,
       refreshFromNetwork,
       inboxIds
     )
@@ -546,7 +558,7 @@ export class Client<
    * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the V3 network.
    */
   async canMessage(addresses: Address[]): Promise<{ [key: Address]: boolean }> {
-    return await XMTPModule.canMessage(this.inboxId, addresses)
+    return await XMTPModule.canMessage(this.installationId, addresses)
   }
 
   /**
@@ -564,7 +576,7 @@ export class Client<
     if (!file.fileUri?.startsWith('file://')) {
       throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.encryptAttachment(this.inboxId, file)
+    return await XMTPModule.encryptAttachment(this.installationId, file)
   }
 
   /**
@@ -581,7 +593,10 @@ export class Client<
     if (!encryptedFile.encryptedLocalFileUri?.startsWith('file://')) {
       throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.decryptAttachment(this.inboxId, encryptedFile)
+    return await XMTPModule.decryptAttachment(
+      this.installationId,
+      encryptedFile
+    )
   }
 }
 

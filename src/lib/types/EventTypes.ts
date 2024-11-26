@@ -17,4 +17,8 @@ export enum EventTypes {
    * A new message is sent to a specific conversation
    */
   ConversationMessage = 'conversationMessage',
+  /**
+   * A inboxId or conversation has been approved or denied
+   */
+  Consent = 'consent',
 }

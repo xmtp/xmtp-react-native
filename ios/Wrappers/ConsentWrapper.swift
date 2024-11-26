@@ -2,7 +2,7 @@ import Foundation
 import XMTP
 
 struct ConsentWrapper {
-    static func encodeToObj(_ entry: XMTP.ConsentListEntry) throws -> [String: Any] {
+    static func encodeToObj(_ entry: XMTP.ConsentRecord) throws -> [String: Any] {
         return [
             "type": entry.entryType.rawValue,
             "value": entry.value,
@@ -10,7 +10,7 @@ struct ConsentWrapper {
         ]
     }
 
-    static func encode(_ entry: XMTP.ConsentListEntry) throws -> String {
+    static func encode(_ entry: XMTP.ConsentRecord) throws -> String {
         let obj = try encodeToObj(entry)
         let data = try JSONSerialization.data(withJSONObject: obj)
         guard let result = String(data: data, encoding: .utf8) else {

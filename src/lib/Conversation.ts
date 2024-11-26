@@ -1,4 +1,4 @@
-import { ConsentState } from './ConsentListEntry'
+import { ConsentState } from './ConsentRecord'
 import { ConversationSendPayload, MessageId, MessagesOptions } from './types'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'

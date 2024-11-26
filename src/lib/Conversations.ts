@@ -270,7 +270,7 @@ export default class Conversations<
    * and save them to the local state.
    */
   async sync() {
-    await XMTPModule.syncConversations(this.client.inboxId)
+    await XMTPModule.syncConversations(this.client.installationId)
   }
 
   /**
@@ -279,7 +279,7 @@ export default class Conversations<
    * @returns {Promise<number>} A Promise that resolves to the number of conversations synced.
    */
   async syncAllConversations(): Promise<number> {
-    return await XMTPModule.syncAllConversations(this.client.inboxId)
+    return await XMTPModule.syncAllConversations(this.client.installationId)
   }
 
   /**
@@ -291,17 +291,17 @@ export default class Conversations<
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>,
     type: ConversationType = 'all'
   ): Promise<void> {
-    XMTPModule.subscribeToConversations(this.client.inboxId, type)
+    XMTPModule.subscribeToConversations(this.client.installationId, type)
     const subscription = XMTPModule.emitter.addListener(
       EventTypes.Conversation,
       async ({
-        inboxId,
+        installationId,
         conversation,
       }: {
-        inboxId: string
+        installationId: string
         conversation: Conversation<ContentTypes>
       }) => {
-        if (inboxId !== this.client.inboxId) {
+        if (installationId !== this.client.installationId) {
           return
         }
         if (conversation.version === ConversationVersion.GROUP) {
@@ -330,17 +330,17 @@ export default class Conversations<
     callback: (message: DecodedMessage<ContentTypes>) => Promise<void>,
     type: ConversationType = 'all'
   ): Promise<void> {
-    XMTPModule.subscribeToAllMessages(this.client.inboxId, type)
+    XMTPModule.subscribeToAllMessages(this.client.installationId, type)
     const subscription = XMTPModule.emitter.addListener(
       EventTypes.Message,
       async ({
-        inboxId,
+        installationId,
         message,
       }: {
-        inboxId: string
+        installationId: string
         message: DecodedMessage
       }) => {
-        if (inboxId !== this.client.inboxId) {
+        if (installationId !== this.client.installationId) {
           return
         }
         await callback(DecodedMessage.fromObject(message, this.client))
@@ -357,7 +357,7 @@ export default class Conversations<
       this.subscriptions[EventTypes.Conversation].remove()
       delete this.subscriptions[EventTypes.Conversation]
     }
-    XMTPModule.unsubscribeFromConversations(this.client.inboxId)
+    XMTPModule.unsubscribeFromConversations(this.client.installationId)
   }
 
   /**
@@ -368,6 +368,6 @@ export default class Conversations<
       this.subscriptions[EventTypes.Message].remove()
       delete this.subscriptions[EventTypes.Message]
     }
-    XMTPModule.unsubscribeFromAllMessages(this.client.inboxId)
+    XMTPModule.unsubscribeFromAllMessages(this.client.installationId)
   }
 }
