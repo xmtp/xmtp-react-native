@@ -603,8 +603,6 @@ test('can sync consent', async () => {
   // Sync conversations
   await bo.conversations.sync()
   if (boDm) await boDm.sync()
-  await alix.conversations.sync()
-  await alix2.conversations.sync()
   await alix2.preferences.syncConsent()
   await alix.conversations.syncAllConversations()
   await delayToPropogate(2000)
@@ -667,8 +665,6 @@ test('can stream consent', async () => {
   })
 
   await alixGroup.send('Hello')
-  await alix.conversations.sync()
-  await alix2.conversations.sync()
   await alix.conversations.syncAllConversations()
   await alix2.conversations.syncAllConversations()
 

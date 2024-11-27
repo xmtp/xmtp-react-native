@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-extra-non-null-assertion */
 import Config from 'react-native-config'
+import RNFS from 'react-native-fs'
 import { PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts'
-import { Client, Dm, Group, Signer } from 'xmtp-react-native-sdk'
+import { Client, Dm, Group, GroupUpdatedCodec, ReactionCodec, RemoteAttachmentCodec, ReplyCodec, Signer, StaticAttachmentCodec } from 'xmtp-react-native-sdk'
 
 import { Test, assert, createClients } from './test-utils'
+import { Wallet } from 'ethers'
 
 export const groupPerformanceTests: Test[] = []
 let counter = 1
@@ -71,70 +73,111 @@ export function convertPrivateKeyAccountToSigner(
   }
 }
 
-if (!Config.TEST_PRIVATE_KEY) {
-  throw new Error('Add private key to .env file')
-}
-const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
+// if (!Config.TEST_PRIVATE_KEY) {
+//   throw new Error('Add private key to .env file')
+// }
+// const privateKeyHex: `0x${string}` = `0x${Config.TEST_PRIVATE_KEY}`
 
-const signer = convertPrivateKeyAccountToSigner(
-  privateKeyToAccount(privateKeyHex)
-)
-const alixClient = await Client.create(signer, {
-  env: 'local',
-  dbEncryptionKey: new Uint8Array([
-    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
-  ]),
-})
+// const signer = convertPrivateKeyAccountToSigner(
+//   privateKeyToAccount(privateKeyHex)
+// )
+// const alixClient = await Client.create(signer, {
+//   env: 'local',
+//   dbEncryptionKey: new Uint8Array([
+//     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+//     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+//   ]),
+// })
 
-const initialPeers = await createClients(30)
-const boClient = initialPeers[0]
-const initialGroups = await createGroups(alixClient, initialPeers, 200, 5)
-const initialDms: Dm[] = await createDms(alixClient, initialPeers, 25)
+// const initialPeers = await createClients(30)
+// const boClient = initialPeers[0]
+// const initialGroups = await createGroups(alixClient, initialPeers, 200, 5)
+// const initialDms: Dm[] = await createDms(alixClient, initialPeers, 25)
 
 test('building and creating', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
   const alixWallet = Wallet.createRandom()
 
-  let start = Date.now()
+  let start = performance.now()
   const alix = await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+    codecs: [
+      new ReactionCodec(),
+      new ReplyCodec(),
+      new GroupUpdatedCodec(),
+      new StaticAttachmentCodec(),
+      new RemoteAttachmentCodec(),
+    ],
   })
-  let end = Date.now()
+  await alix.register(new GroupUpdatedCodec())
+  let end = performance.now()
   console.log(`Created a new client in ${end - start}ms`)
 
-  start = Date.now()
-  await Client.build(alixWallet.address, {
+  start = performance.now()
+  await alix.register(new GroupUpdatedCodec())
+  end = performance.now()
+  console.log(`Alix registered group updated codec in ${end - start}ms`)
+
+  start = performance.now()
+  const alixBuild = await Client.build(alixWallet.address, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+    codecs: [
+      new ReactionCodec(),
+      new ReplyCodec(),
+      new GroupUpdatedCodec(),
+      new StaticAttachmentCodec(),
+      new RemoteAttachmentCodec(),
+    ],
   })
-  end = Date.now()
+  await alixBuild.register(new GroupUpdatedCodec())
+  end = performance.now()
   console.log(`Built a client in ${end - start}ms`)
 
-  start = Date.now()
+  start = performance.now()
+  await alixBuild.register(new GroupUpdatedCodec())
+  end = performance.now()
+  console.log(`Alix build registered group updated codec in ${end - start}ms`)
+
+  start = performance.now()
   await alix.deleteLocalDatabase()
-  end = Date.now()
+  end = performance.now()
   console.log(`Deleted a local database in ${end - start}ms`)
 
-  start = Date.now()
+  start = performance.now()
   await Client.dropClient(alix.installationId)
-  end = Date.now()
+  end = performance.now()
   console.log(`Droped a client in ${end - start}ms`)
 
 
-  start = Date.now()
+  start = performance.now()
   await Client.create(alixWallet, {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+    codecs: [
+      new ReactionCodec(),
+      new ReplyCodec(),
+      new GroupUpdatedCodec(),
+      new StaticAttachmentCodec(),
+      new RemoteAttachmentCodec(),
+    ],
   })
-  end = Date.now()
+  end = performance.now()
   console.log(`Created the same client in ${end - start}ms`)
 
   return true
