@@ -22,6 +22,7 @@ import {
   ConversationId,
   ConversationTopic,
 } from './lib/types/ConversationOptions'
+import { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
@@ -403,7 +404,7 @@ export async function conversationMessages<
   beforeNs?: number | undefined,
   afterNs?: number | undefined,
   direction?: MessageOrder | undefined
-): Promise<DecodedMessage<ContentTypes>[]> {
+): Promise<DecodedMessageUnion<ContentTypes>[]> {
   const messages = await XMTPModule.conversationMessages(
     client.installationId,
     conversationId,
@@ -418,11 +419,12 @@ export async function conversationMessages<
 }
 
 export async function findMessage<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+  ContentType extends DefaultContentTypes[number] = DefaultContentTypes[number],
+  ContentTypes extends DefaultContentTypes = [ContentType], // Adjusted to work with arrays
 >(
   client: Client<ContentTypes>,
   messageId: MessageId
-): Promise<DecodedMessage<ContentTypes> | undefined> {
+): Promise<DecodedMessageUnion<ContentTypes> | undefined> {
   const message = await XMTPModule.findMessage(client.installationId, messageId)
   return DecodedMessage.from(message, client)
 }
@@ -958,7 +960,7 @@ export async function processMessage<
   client: Client<ContentTypes>,
   id: ConversationId,
   encryptedMessage: string
-): Promise<DecodedMessage<ContentTypes>> {
+): Promise<DecodedMessageUnion<ContentTypes>> {
   const json = await XMTPModule.processMessage(
     client.installationId,
     id,
@@ -1144,3 +1146,4 @@ export {
   ConversationType,
 } from './lib/types/ConversationOptions'
 export { MessageId, MessageOrder } from './lib/types/MessagesOptions'
+export { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
