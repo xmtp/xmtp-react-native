@@ -8,13 +8,14 @@ import {
   ConversationOptions,
 } from './types/ConversationOptions'
 import { CreateGroupOptions } from './types/CreateGroupOptions'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
+import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
 import * as XMTPModule from '../index'
 import {
   Address,
   ConsentState,
-  ContentCodec,
   Conversation,
   ConversationId,
   ConversationTopic,
@@ -24,7 +25,7 @@ import {
 import { getAddress } from '../utils/address'
 
 export default class Conversations<
-  ContentTypes extends ContentCodec<any>[] = [],
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
   client: Client<ContentTypes>
   private subscriptions: { [key: string]: { remove: () => void } } = {}
@@ -101,7 +102,7 @@ export default class Conversations<
    */
   async findMessage(
     messageId: MessageId
-  ): Promise<DecodedMessage<ContentTypes> | undefined> {
+  ): Promise<DecodedMessageUnion<ContentTypes> | undefined> {
     return await XMTPModule.findMessage(this.client, messageId)
   }
 
@@ -327,7 +328,7 @@ export default class Conversations<
    * @returns {Promise<void>} A Promise that resolves when the stream is set up.
    */
   async streamAllMessages(
-    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>,
+    callback: (message: DecodedMessageUnion<ContentTypes>) => Promise<void>,
     type: ConversationType = 'all'
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(this.client.installationId, type)
@@ -343,7 +344,12 @@ export default class Conversations<
         if (installationId !== this.client.installationId) {
           return
         }
-        await callback(DecodedMessage.fromObject(message, this.client))
+        await callback(
+          DecodedMessage.fromObject(
+            message,
+            this.client
+          ) as DecodedMessageUnion<ContentTypes>
+        )
       }
     )
     this.subscriptions[EventTypes.Message] = subscription

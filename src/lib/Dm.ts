@@ -4,6 +4,7 @@ import { ConversationVersion, ConversationBase } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { MessageId, MessagesOptions } from './types/MessagesOptions'
@@ -27,12 +28,12 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   version = ConversationVersion.DM as const
   topic: ConversationTopic
   state: ConsentState
-  lastMessage?: DecodedMessage<ContentTypes>
+  lastMessage?: DecodedMessageUnion<ContentTypes>
 
   constructor(
     client: XMTP.Client<ContentTypes>,
     params: DmParams,
-    lastMessage?: DecodedMessage<ContentTypes>
+    lastMessage?: DecodedMessageUnion<ContentTypes>
   ) {
     this.client = client
     this.id = params.id
@@ -141,7 +142,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    */
   async messages(
     opts?: MessagesOptions
-  ): Promise<DecodedMessage<ContentTypes>[]> {
+  ): Promise<DecodedMessageUnion<ContentTypes>[]> {
     return await XMTP.conversationMessages(
       this.client,
       this.id,
@@ -171,7 +172,9 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
   async streamMessages(
-    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
+    callback: (
+      message: DecodedMessage<ContentTypes[number], ContentTypes>
+    ) => Promise<void>
   ): Promise<() => void> {
     await XMTP.subscribeToMessages(this.client.installationId, this.id)
     const messageSubscription = XMTP.emitter.addListener(
@@ -182,7 +185,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         conversationId,
       }: {
         installationId: string
-        message: DecodedMessage<ContentTypes>
+        message: DecodedMessage<ContentTypes[number], ContentTypes>
         conversationId: string
       }) => {
         if (installationId !== this.client.installationId) {
@@ -204,7 +207,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
 
   async processMessage(
     encryptedMessage: string
-  ): Promise<DecodedMessage<ContentTypes>> {
+  ): Promise<DecodedMessageUnion<ContentTypes>> {
     try {
       return await XMTP.processMessage(this.client, this.id, encryptedMessage)
     } catch (e) {
