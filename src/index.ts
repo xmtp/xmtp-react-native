@@ -173,7 +173,8 @@ export async function build(
   dbEncryptionKey: Uint8Array,
   appVersion?: string | undefined,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined
+  historySyncUrl?: string | undefined,
+  inboxId?: InboxId | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -183,6 +184,7 @@ export async function build(
   }
   return await XMTPModule.build(
     address,
+    inboxId,
     Array.from(dbEncryptionKey),
     JSON.stringify(authParams)
   )

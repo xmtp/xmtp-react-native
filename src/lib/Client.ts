@@ -204,7 +204,8 @@ export class Client<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
     address: Address,
-    options: ClientOptions & { codecs?: ContentCodecs }
+    options: ClientOptions & { codecs?: ContentCodecs },
+    inboxId?: InboxId | undefined
   ): Promise<Client<ContentCodecs>> {
     if (options.dbEncryptionKey.length !== 32) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
@@ -215,7 +216,8 @@ export class Client<
       options.dbEncryptionKey,
       options.appVersion,
       options.dbDirectory,
-      options.historySyncUrl
+      options.historySyncUrl,
+      inboxId
     )
 
     return new Client(

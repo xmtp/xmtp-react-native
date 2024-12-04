@@ -2,7 +2,17 @@
 import Config from 'react-native-config'
 import RNFS from 'react-native-fs'
 import { PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts'
-import { Client, Dm, Group, GroupUpdatedCodec, ReactionCodec, RemoteAttachmentCodec, ReplyCodec, Signer, StaticAttachmentCodec } from 'xmtp-react-native-sdk'
+import {
+  Client,
+  Dm,
+  Group,
+  GroupUpdatedCodec,
+  ReactionCodec,
+  RemoteAttachmentCodec,
+  ReplyCodec,
+  Signer,
+  StaticAttachmentCodec,
+} from 'xmtp-react-native-sdk'
 
 import { Test, assert, createClients } from './test-utils'
 import { Wallet } from 'ethers'
@@ -108,7 +118,7 @@ test('building and creating', async () => {
 
   let start = performance.now()
   const alix = await Client.create(alixWallet, {
-    env: 'local',
+    env: 'dev',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
@@ -131,7 +141,7 @@ test('building and creating', async () => {
 
   start = performance.now()
   const alixBuild = await Client.build(alixWallet.address, {
-    env: 'local',
+    env: 'dev',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
@@ -153,6 +163,28 @@ test('building and creating', async () => {
   console.log(`Alix build registered group updated codec in ${end - start}ms`)
 
   start = performance.now()
+  const alixBuild2 = await Client.build(
+    alixWallet.address,
+    {
+      env: 'dev',
+      appVersion: 'Testing/0.0.0',
+      dbEncryptionKey: keyBytes,
+      dbDirectory: dbDirPath,
+      codecs: [
+        new ReactionCodec(),
+        new ReplyCodec(),
+        new GroupUpdatedCodec(),
+        new StaticAttachmentCodec(),
+        new RemoteAttachmentCodec(),
+      ],
+    },
+    alix.inboxId
+  )
+  await alixBuild2.register(new GroupUpdatedCodec())
+  end = performance.now()
+  console.log(`Built a client with inboxId in ${end - start}ms`)
+
+  start = performance.now()
   await alix.deleteLocalDatabase()
   end = performance.now()
   console.log(`Deleted a local database in ${end - start}ms`)
@@ -162,10 +194,9 @@ test('building and creating', async () => {
   end = performance.now()
   console.log(`Droped a client in ${end - start}ms`)
 
-
   start = performance.now()
   await Client.create(alixWallet, {
-    env: 'local',
+    env: 'dev',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
