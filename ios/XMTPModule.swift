@@ -269,7 +269,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("build") {
-			(address: String, dbEncryptionKey: [UInt8], authParams: String)
+			(address: String, inboxId: String?, dbEncryptionKey: [UInt8], authParams: String)
 				-> [String: String] in
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let encryptionKeyData = Data(dbEncryptionKey)
@@ -280,7 +280,7 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.build(
-				address: address, options: options)
+				address: address, options: options, inboxId: inboxId)
 			await clientsManager.updateClient(
 				key: client.installationID, client: client)
 			return try ClientWrapper.encodeToObj(client)
