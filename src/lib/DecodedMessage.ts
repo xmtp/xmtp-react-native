@@ -6,7 +6,7 @@ import {
   NativeContentCodec,
   NativeMessageContent,
 } from './ContentCodec'
-import { TextCodec } from './NativeCodecs/TextCodec'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 
 const allowEmptyProperties: (keyof NativeMessageContent)[] = [
@@ -21,6 +21,7 @@ export enum MessageDeliveryStatus {
 }
 
 export class DecodedMessage<
+  ContentType extends DefaultContentTypes[number] = DefaultContentTypes[number],
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
   client: Client<ContentTypes>
@@ -33,12 +34,16 @@ export class DecodedMessage<
   fallback: string | undefined
   deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
 
-  static from<ContentTypes extends DefaultContentTypes = DefaultContentTypes>(
+  static from<
+    ContentType extends
+      DefaultContentTypes[number] = DefaultContentTypes[number],
+    ContentTypes extends DefaultContentTypes = ContentType[],
+  >(
     json: string,
     client: Client<ContentTypes>
-  ): DecodedMessage<ContentTypes> {
+  ): DecodedMessageUnion<ContentTypes> {
     const decoded = JSON.parse(json)
-    return new DecodedMessage<ContentTypes>(
+    return new DecodedMessage<ContentType, ContentTypes>(
       client,
       decoded.id,
       decoded.topic,
@@ -48,11 +53,13 @@ export class DecodedMessage<
       decoded.content,
       decoded.fallback,
       decoded.deliveryStatus
-    )
+    ) as DecodedMessageUnion<ContentTypes>
   }
 
   static fromObject<
-    ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+    ContentType extends
+      DefaultContentTypes[number] = DefaultContentTypes[number],
+    ContentTypes extends DefaultContentTypes = [ContentType],
   >(
     object: {
       id: string
@@ -65,7 +72,7 @@ export class DecodedMessage<
       deliveryStatus: MessageDeliveryStatus | undefined
     },
     client: Client<ContentTypes>
-  ): DecodedMessage<ContentTypes> {
+  ): DecodedMessage<ContentType, ContentTypes> {
     return new DecodedMessage(
       client,
       object.id,
@@ -102,15 +109,13 @@ export class DecodedMessage<
     this.deliveryStatus = deliveryStatus
   }
 
-  content(): ExtractDecodedType<[...ContentTypes, TextCodec][number] | string> {
+  content(): ExtractDecodedType<ContentType> {
     const encodedJSON = this.nativeContent.encoded
     if (encodedJSON) {
       const encoded = JSON.parse(encodedJSON)
       const codec = this.client.codecRegistry[
         this.contentTypeId
-      ] as JSContentCodec<
-        ExtractDecodedType<[...ContentTypes, TextCodec][number]>
-      >
+      ] as JSContentCodec<ExtractDecodedType<ContentType>>
       if (!codec) {
         throw new Error(
           `no content type found ${JSON.stringify(this.contentTypeId)}`
@@ -129,9 +134,7 @@ export class DecodedMessage<
           )
         ) {
           return (
-            codec as NativeContentCodec<
-              ExtractDecodedType<[...ContentTypes, TextCodec][number]>
-            >
+            codec as NativeContentCodec<ExtractDecodedType<ContentType>>
           ).decode(this.nativeContent)
         }
       }
