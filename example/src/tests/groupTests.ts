@@ -866,12 +866,13 @@ test('canMessage', async () => {
   const canMessageV3 = await caro.canMessage([
     caro.address,
     alix.address,
-    '0x0000000000000000000000000000000000000000',
+    '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67',
   ])
 
   assert(
-    canMessageV3['0x0000000000000000000000000000000000000000'] === false,
-    `should not be able to message 0x0000000000000000000000000000000000000000`
+    canMessageV3['0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67'.toLowerCase()] ===
+      false,
+    `should not be able to message 0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67`
   )
 
   assert(

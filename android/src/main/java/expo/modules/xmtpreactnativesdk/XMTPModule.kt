@@ -332,14 +332,14 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("build") Coroutine { address: String, dbEncryptionKey: List<Int>, authParams: String ->
+        AsyncFunction("build") Coroutine { address: String, inboxId: String?, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("build")
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
                 )
-                val client = Client().build(address = address, options = options)
+                val client = Client().build(address = address, options = options, inboxId = inboxId)
                 ContentJson.Companion
                 clients[client.installationId] = client
                 ClientWrapper.encodeToObj(client)
@@ -441,6 +441,17 @@ class XMTPModule : Module() {
                 logV("canMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 client.canMessage(peerAddresses)
+            }
+        }
+
+        AsyncFunction("staticCanMessage") Coroutine { environment: String, peerAddresses: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("staticCanMessage")
+                Client.canMessage(
+                    peerAddresses,
+                    context,
+                    apiEnvironments(environment, null)
+                )
             }
         }
 
