@@ -34,6 +34,29 @@ test('can make a client', async () => {
   return true
 })
 
+test('static can message', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const addressMap = await Client.canMessage('local', [
+    alix.address,
+    'RANDOM',
+    bo.address,
+  ])
+
+  assert(addressMap['RANDOM'] === false, `should not be able to message RANDOM`)
+
+  assert(
+    addressMap[alix.address.toLowerCase()] === true,
+    `should be able to message ${alix.address}`
+  )
+
+  assert(
+    addressMap[bo.address.toLowerCase()] === true,
+    `should be able to message ${bo.address}`
+  )
+  return true
+})
+
 test('can revoke all other installations', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,

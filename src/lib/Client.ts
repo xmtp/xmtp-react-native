@@ -282,7 +282,7 @@ export class Client<
    * Static method to determine the inboxId for the address.
    *
    * @param {Address} peerAddress - The address of the peer to check for messaging eligibility.
-   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
+   * @param {XMTPEnvironment} env - Environment to get the inboxId from
    * @returns {Promise<InboxId>}
    */
   static async getOrCreateInboxId(
@@ -290,6 +290,20 @@ export class Client<
     env: XMTPEnvironment
   ): Promise<InboxId> {
     return await XMTPModule.getOrCreateInboxId(address, env)
+  }
+
+
+  /**
+   * Determines whether the current user can send messages to the specified peers.
+   *
+   * This method checks if the specified peers are using clients that are on the network.
+   *
+   * @param {Address[]} addresses - The addresses of the peers to check for messaging eligibility.
+   * @param {XMTPEnvironment} env - Environment to see if the address is on the network for
+   * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the network.
+   */
+  static async canMessage(env: XMTPEnvironment, addresses: Address[]): Promise<{ [key: Address]: boolean }> {
+    return await XMTPModule.staticCanMessage(env, addresses)
   }
 
   constructor(
@@ -552,12 +566,12 @@ export class Client<
   }
 
   /**
-   * Determines whether the current user can send messages to the specified peers over groups.
+   * Determines whether the current user can send messages to the specified peers.
    *
-   * This method checks if the specified peers are using clients that support group messaging.
+   * This method checks if the specified peers are using clients that are on the network.
    *
    * @param {Address[]} addresses - The addresses of the peers to check for messaging eligibility.
-   * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the V3 network.
+   * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the network.
    */
   async canMessage(addresses: Address[]): Promise<{ [key: Address]: boolean }> {
     return await XMTPModule.canMessage(this.installationId, addresses)

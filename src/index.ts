@@ -280,6 +280,13 @@ export async function canMessage(
   return await XMTPModule.canMessage(installationId, peerAddresses)
 }
 
+export async function staticCanMessage(
+  environment: XMTPEnvironment,
+  peerAddresses: Address[]
+): Promise<{ [key: Address]: boolean }> {
+  return await XMTPModule.canMessage(environment, peerAddresses)
+}
+
 export async function getOrCreateInboxId(
   address: Address,
   environment: XMTPEnvironment

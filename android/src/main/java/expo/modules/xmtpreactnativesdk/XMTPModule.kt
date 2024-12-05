@@ -444,6 +444,17 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("staticCanMessage") Coroutine { environment: String, peerAddresses: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("staticCanMessage")
+                Client.canMessage(
+                    peerAddresses,
+                    context,
+                    apiEnvironments(environment, null)
+                )
+            }
+        }
+
         AsyncFunction("getOrCreateInboxId") Coroutine { address: String, environment: String ->
             withContext(Dispatchers.IO) {
                 try {

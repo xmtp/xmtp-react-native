@@ -866,12 +866,12 @@ test('canMessage', async () => {
   const canMessageV3 = await caro.canMessage([
     caro.address,
     alix.address,
-    '0x0000000000000000000000000000000000000000',
+    'RANDOM',
   ])
 
   assert(
-    canMessageV3['0x0000000000000000000000000000000000000000'] === false,
-    `should not be able to message 0x0000000000000000000000000000000000000000`
+    canMessageV3['RANDOM'] === false,
+    `should not be able to message RANDOM`
   )
 
   assert(
