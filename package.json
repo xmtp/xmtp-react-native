@@ -1,6 +1,6 @@
 {
   "name": "@xmtp/react-native-sdk",
-  "version": "0.1.0",
+  "version": "3.1.1",
   "description": "Wraps for native xmtp sdks for react native",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -10,6 +10,7 @@
     "lint": "expo-module lint",
     "test": "expo-module test",
     "prepare": "expo-module prepare",
+    "publish": "expo-module build && changeset publish",
     "prepublishOnly": "expo-module prepublishOnly",
     "pretty": "npx prettier '**/*.{js,ts,tsx}' --write",
     "expo-module": "expo-module",
@@ -45,6 +46,7 @@
   "license": "MIT",
   "homepage": "https://github.com/xmtp/xmtp-react-native#readme",
   "dependencies": {
+    "@changesets/cli": "^2.27.10",
     "@ethersproject/bytes": "^5.7.0",
     "@msgpack/msgpack": "^3.0.0-beta2",
     "@noble/hashes": "^1.3.3",
