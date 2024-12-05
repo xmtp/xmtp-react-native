@@ -284,7 +284,7 @@ export async function staticCanMessage(
   environment: XMTPEnvironment,
   peerAddresses: Address[]
 ): Promise<{ [key: Address]: boolean }> {
-  return await XMTPModule.canMessage(environment, peerAddresses)
+  return await XMTPModule.staticCanMessage(environment, peerAddresses)
 }
 
 export async function getOrCreateInboxId(

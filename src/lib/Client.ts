@@ -292,7 +292,6 @@ export class Client<
     return await XMTPModule.getOrCreateInboxId(address, env)
   }
 
-
   /**
    * Determines whether the current user can send messages to the specified peers.
    *
@@ -302,7 +301,10 @@ export class Client<
    * @param {XMTPEnvironment} env - Environment to see if the address is on the network for
    * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the network.
    */
-  static async canMessage(env: XMTPEnvironment, addresses: Address[]): Promise<{ [key: Address]: boolean }> {
+  static async canMessage(
+    env: XMTPEnvironment,
+    addresses: Address[]
+  ): Promise<{ [key: Address]: boolean }> {
     return await XMTPModule.staticCanMessage(env, addresses)
   }
 

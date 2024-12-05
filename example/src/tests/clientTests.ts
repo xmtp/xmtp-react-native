@@ -39,11 +39,16 @@ test('static can message', async () => {
 
   const addressMap = await Client.canMessage('local', [
     alix.address,
-    'RANDOM',
+    '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67',
     bo.address,
   ])
 
-  assert(addressMap['RANDOM'] === false, `should not be able to message RANDOM`)
+  assert(
+    addressMap[
+      '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67'.toLocaleLowerCase()
+    ] === false,
+    `should not be able to message 0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67`
+  )
 
   assert(
     addressMap[alix.address.toLowerCase()] === true,
