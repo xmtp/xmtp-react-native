@@ -412,7 +412,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("staticCanMessage") {
 			(environment: String, peerAddresses: [String]) -> [String: Bool] in
-			return try await Client.canMessage(
+			return try await XMTP.Client.canMessage(
 				accountAddresses: peerAddresses,
 				api: createApiClient(env: environment)
 			)
