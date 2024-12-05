@@ -870,7 +870,8 @@ test('canMessage', async () => {
   ])
 
   assert(
-    canMessageV3['0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67'] === false,
+    canMessageV3['0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67'.toLowerCase()] ===
+      false,
     `should not be able to message 0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67`
   )
 
