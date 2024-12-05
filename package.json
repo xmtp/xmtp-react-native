@@ -40,7 +40,8 @@
     ]
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "author": "XMTP Labs <eng@xmtp.com>",
   "license": "MIT",
