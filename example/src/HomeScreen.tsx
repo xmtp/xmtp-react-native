@@ -1,3 +1,4 @@
+import Clipboard from '@react-native-community/clipboard'
 import { NavigationContext } from '@react-navigation/native'
 import moment from 'moment'
 import React, { useContext, useEffect, useState } from 'react'
@@ -10,7 +11,6 @@ import {
   View,
   TouchableOpacity,
 } from 'react-native'
-import Clipboard from '@react-native-community/clipboard'
 import {
   Conversation,
   Client,
@@ -93,9 +93,7 @@ function ConversationItem({
   client: Client<any> | null
 }) {
   const navigation = useContext(NavigationContext)
-  const [messages, setMessages] = useState<
-    DecodedMessage[]
-  >([])
+  const [messages, setMessages] = useState<DecodedMessage[]>([])
   const lastMessage = messages?.[0]
   const [consentState, setConsentState] = useState<string | undefined>()
 
@@ -121,15 +119,13 @@ function ConversationItem({
 
   return (
     <Pressable
-      onPress={() => 
-        {
-          console.log('conversation pressed')
-          console.log(conversation.topic)
-          navigation!.navigate('conversation', {
-            topic: conversation.topic,
-          })
-        }
-      }
+      onPress={() => {
+        console.log('conversation pressed')
+        console.log(conversation.topic)
+        navigation!.navigate('conversation', {
+          topic: conversation.topic,
+        })
+      }}
     >
       <View
         style={{

@@ -559,7 +559,7 @@ export async function getDbEncryptionKey(
   clear: boolean = false
 ): Promise<Uint8Array> {
   const key = `xmtp-${network}`
-  
+
   const result = await EncryptedStorage.getItem(key)
   if ((result && clear === true) || !result) {
     if (result) {
