@@ -94,10 +94,10 @@ export function useMessages({
   topic,
 }: {
   topic: string
-}): UseQueryResult<DecodedMessage<SupportedContentTypes>[]> {
+}): UseQueryResult<DecodedMessage[]> {
   const { client } = useXmtp()
   const { data: conversation } = useConversation({ topic })
-  return useQuery<DecodedMessage<SupportedContentTypes>[]>(
+  return useQuery<DecodedMessage[]>(
     ['xmtp', 'messages', client?.address, conversation?.topic],
     () => conversation!.messages(),
     {
@@ -110,10 +110,10 @@ export function useGroupMessages({
   id,
 }: {
   id: string
-}): UseQueryResult<DecodedMessage<SupportedContentTypes>[]> {
+}): UseQueryResult<DecodedMessage[]> {
   const { client } = useXmtp()
   const { data: group } = useGroup({ groupId: id })
-  return useQuery<DecodedMessage<SupportedContentTypes>[]>(
+  return useQuery<DecodedMessage[]>(
     ['xmtp', 'groupMessages', client?.address, group?.id],
     async () => {
       await group!.sync()
@@ -139,7 +139,7 @@ export function useMessage({
   topic: string
   messageId: string
 }): {
-  message: DecodedMessage<SupportedContentTypes> | undefined
+  message: DecodedMessage | undefined
   isSenderMe: boolean
   performReaction:
     | undefined
@@ -183,7 +183,7 @@ export function useGroupMessage({
   groupId: string
   messageId: string
 }): {
-  message: DecodedMessage<SupportedContentTypes> | undefined
+  message: DecodedMessage | undefined
   isSenderMe: boolean
   performReaction:
     | undefined

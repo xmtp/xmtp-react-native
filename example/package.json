@@ -5,6 +5,7 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:clean": "expo run:ios --no-build-cache",
     "web": "expo start --web"
   },
   "dependencies": {

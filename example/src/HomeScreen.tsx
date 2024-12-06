@@ -18,7 +18,6 @@ import {
   DecodedMessage,
 } from 'xmtp-react-native-sdk'
 
-import { SupportedContentTypes } from './contentTypes/contentTypes'
 import { useConversationList } from './hooks'
 
 /// Show the user's list of conversations.
@@ -95,7 +94,7 @@ function ConversationItem({
 }) {
   const navigation = useContext(NavigationContext)
   const [messages, setMessages] = useState<
-    DecodedMessage<SupportedContentTypes>[]
+    DecodedMessage[]
   >([])
   const lastMessage = messages?.[0]
   const [consentState, setConsentState] = useState<string | undefined>()
@@ -122,10 +121,14 @@ function ConversationItem({
 
   return (
     <Pressable
-      onPress={() =>
-        navigation!.navigate('conversation', {
-          id: conversation.id,
-        })
+      onPress={() => 
+        {
+          console.log('conversation pressed')
+          console.log(conversation.topic)
+          navigation!.navigate('conversation', {
+            topic: conversation.topic,
+          })
+        }
       }
     >
       <View
