@@ -8,7 +8,9 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
 } from 'react-native'
+import Clipboard from '@react-native-community/clipboard'
 import {
   Conversation,
   Client,
@@ -56,9 +58,26 @@ export default function HomeScreen() {
               }}
             >
               <Text style={{ fontSize: 14 }}>Connected as</Text>
-              <Text selectable style={{ fontSize: 14, fontWeight: 'bold' }}>
-                {client?.address}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, fontWeight: 'bold', flex: 1 }}>
+                  {client?.address}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (client?.address) {
+                      Clipboard.setString(client.address)
+                    }
+                  }}
+                  style={{
+                    padding: 8,
+                    backgroundColor: '#ddd',
+                    borderRadius: 4,
+                    marginLeft: 8,
+                  }}
+                >
+                  <Text>Copy</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           }
         />
