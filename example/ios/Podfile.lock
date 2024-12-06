@@ -433,6 +433,8 @@ PODS:
     - React-perflogger (= 0.71.14)
   - RNCAsyncStorage (1.21.0):
     - React-Core
+  - RNCClipboard (1.5.1):
+    - React-Core
   - RNFS (2.20.0):
     - React-Core
   - RNScreens (3.20.0):
@@ -452,7 +454,7 @@ PODS:
     - CSecp256k1 (~> 0.2)
     - LibXMTP (= 3.0.10)
     - SQLCipher (= 4.5.7)
-  - XMTPReactNative (0.1.0):
+  - XMTPReactNative (3.1.1):
     - CSecp256k1 (~> 0.2)
     - ExpoModulesCore
     - MessagePacker
@@ -524,6 +526,7 @@ DEPENDENCIES:
   - React-runtimeexecutor (from `../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
+  - "RNCClipboard (from `../node_modules/@react-native-community/clipboard`)"
   - RNFS (from `../node_modules/react-native-fs`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
@@ -668,6 +671,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNCAsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
+  RNCClipboard:
+    :path: "../node_modules/@react-native-community/clipboard"
   RNFS:
     :path: "../node_modules/react-native-fs"
   RNScreens:
@@ -751,13 +756,14 @@ SPEC CHECKSUMS:
   React-runtimeexecutor: ffe826b7b1cfbc32a35ed5b64d5886c0ff75f501
   ReactCommon: 7f3dd5e98a9ec627c6b03d26c062bf37ea9fc888
   RNCAsyncStorage: 618d03a5f52fbccb3d7010076bc54712844c18ef
+  RNCClipboard: 41d8d918092ae8e676f18adada19104fa3e68495
   RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
   RNScreens: 218801c16a2782546d30bd2026bb625c0302d70f
   RNSVG: d00c8f91c3cbf6d476451313a18f04d220d4f396
   SQLCipher: 5e6bfb47323635c8b657b1b27d25c5f1baf63bf5
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
   XMTP: 3b586fa3703640bb5fec8a64daba9e157d9e5fdc
-  XMTPReactNative: ab20c0030e2092fb7201c42d6ec17a7055ec6bf8
+  XMTPReactNative: f3e1cbf80b7278b817bd42982703a95a9250497d
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 0e6fe50018f34e575d38dc6a1fdf1f99c9596cdd

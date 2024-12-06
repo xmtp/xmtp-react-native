@@ -1,3 +1,4 @@
+import Clipboard from '@react-native-community/clipboard'
 import { NavigationContext } from '@react-navigation/native'
 import moment from 'moment'
 import React, { useContext, useEffect, useState } from 'react'
@@ -8,6 +9,7 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
 } from 'react-native'
 import {
   Conversation,
@@ -16,7 +18,6 @@ import {
   DecodedMessage,
 } from 'xmtp-react-native-sdk'
 
-import { SupportedContentTypes } from './contentTypes/contentTypes'
 import { useConversationList } from './hooks'
 
 /// Show the user's list of conversations.
@@ -56,9 +57,26 @@ export default function HomeScreen() {
               }}
             >
               <Text style={{ fontSize: 14 }}>Connected as</Text>
-              <Text selectable style={{ fontSize: 14, fontWeight: 'bold' }}>
-                {client?.address}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, fontWeight: 'bold', flex: 1 }}>
+                  {client?.address}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (client?.address) {
+                      Clipboard.setString(client.address)
+                    }
+                  }}
+                  style={{
+                    padding: 8,
+                    backgroundColor: '#ddd',
+                    borderRadius: 4,
+                    marginLeft: 8,
+                  }}
+                >
+                  <Text>Copy</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           }
         />
@@ -75,9 +93,7 @@ function ConversationItem({
   client: Client<any> | null
 }) {
   const navigation = useContext(NavigationContext)
-  const [messages, setMessages] = useState<
-    DecodedMessage<SupportedContentTypes>[]
-  >([])
+  const [messages, setMessages] = useState<DecodedMessage[]>([])
   const lastMessage = messages?.[0]
   const [consentState, setConsentState] = useState<string | undefined>()
 
@@ -103,11 +119,13 @@ function ConversationItem({
 
   return (
     <Pressable
-      onPress={() =>
+      onPress={() => {
+        console.log('conversation pressed')
+        console.log(conversation.topic)
         navigation!.navigate('conversation', {
-          id: conversation.id,
+          topic: conversation.topic,
         })
-      }
+      }}
     >
       <View
         style={{

@@ -94,12 +94,15 @@ export function useMessages({
   topic,
 }: {
   topic: string
-}): UseQueryResult<DecodedMessage<SupportedContentTypes>[]> {
+}): UseQueryResult<DecodedMessage[]> {
   const { client } = useXmtp()
   const { data: conversation } = useConversation({ topic })
-  return useQuery<DecodedMessage<SupportedContentTypes>[]>(
+  return useQuery<DecodedMessage[]>(
     ['xmtp', 'messages', client?.address, conversation?.topic],
-    () => conversation!.messages(),
+    async () => {
+      await conversation!.sync()
+      return conversation!.messages()
+    },
     {
       enabled: !!client && !!topic && !!conversation,
     }
@@ -110,10 +113,10 @@ export function useGroupMessages({
   id,
 }: {
   id: string
-}): UseQueryResult<DecodedMessage<SupportedContentTypes>[]> {
+}): UseQueryResult<DecodedMessage[]> {
   const { client } = useXmtp()
   const { data: group } = useGroup({ groupId: id })
-  return useQuery<DecodedMessage<SupportedContentTypes>[]>(
+  return useQuery<DecodedMessage[]>(
     ['xmtp', 'groupMessages', client?.address, group?.id],
     async () => {
       await group!.sync()
@@ -139,7 +142,7 @@ export function useMessage({
   topic: string
   messageId: string
 }): {
-  message: DecodedMessage<SupportedContentTypes> | undefined
+  message: DecodedMessage | undefined
   isSenderMe: boolean
   performReaction:
     | undefined
@@ -183,7 +186,7 @@ export function useGroupMessage({
   groupId: string
   messageId: string
 }): {
-  message: DecodedMessage<SupportedContentTypes> | undefined
+  message: DecodedMessage | undefined
   isSenderMe: boolean
   performReaction:
     | undefined
@@ -551,29 +554,26 @@ export function useSavedAddress(): {
   }
 }
 
-export function getDbEncryptionKey(
+export async function getDbEncryptionKey(
   network: string,
   clear: boolean = false
-): Uint8Array {
+): Promise<Uint8Array> {
   const key = `xmtp-${network}`
-  // eslint-disable-next-line no-unused-expressions
-  ;async () => {
-    const result = await EncryptedStorage.getItem(key)
-    if ((result && clear === true) || !result) {
-      if (result) {
-        await EncryptedStorage.removeItem(key)
-      }
 
-      const randomBytes = crypto.getRandomValues(new Uint8Array(32))
-      const randomBytesString = uint8ArrayToHexString(randomBytes)
-      await EncryptedStorage.setItem(key, randomBytesString)
-      return randomBytes
-    } else {
-      return hexStringToUint8Array(result)
+  const result = await EncryptedStorage.getItem(key)
+  if ((result && clear === true) || !result) {
+    if (result) {
+      console.log('Removing existing dbEncryptionKey', key)
+      await EncryptedStorage.removeItem(key)
     }
+
+    const randomBytes = crypto.getRandomValues(new Uint8Array(32))
+    const randomBytesString = uint8ArrayToHexString(randomBytes)
+    await EncryptedStorage.setItem(key, randomBytesString)
+    return randomBytes
+  } else {
+    return hexStringToUint8Array(result)
   }
-  const randomBytes = crypto.getRandomValues(new Uint8Array(32))
-  return randomBytes
 }
 
 function uint8ArrayToHexString(byteArray: Uint8Array): string {

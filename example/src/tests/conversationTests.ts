@@ -1,4 +1,6 @@
+import { Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
+
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
   Client,
@@ -7,7 +9,6 @@ import {
   ConversationId,
   ConversationVersion,
 } from '../../../src/index'
-import { Wallet } from 'ethers'
 
 export const conversationTests: Test[] = []
 let counter = 1
