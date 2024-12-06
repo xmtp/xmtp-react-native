@@ -99,7 +99,10 @@ export function useMessages({
   const { data: conversation } = useConversation({ topic })
   return useQuery<DecodedMessage[]>(
     ['xmtp', 'messages', client?.address, conversation?.topic],
-    () => conversation!.messages(),
+    async () => {
+      await conversation!.sync()
+      return conversation!.messages()
+    },
     {
       enabled: !!client && !!topic && !!conversation,
     }
