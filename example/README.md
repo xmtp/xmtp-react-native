@@ -27,6 +27,12 @@ If running on andoid also run:
 adb reverse tcp:8443 tcp:8443
 ```
 
+To clean up after testing you can run:
+
+```bash
+yarn run upload:down
+```
+
 ### Configure ThirdWeb Client API
 
 > Note - The connect wallet button will still work without adding a client id, you just may see some extra network errors when viewing account info in the Thirdweb button after connecting.
