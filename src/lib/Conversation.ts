@@ -1,5 +1,11 @@
-import { ConsentState } from './ConsentListEntry'
-import { ConversationSendPayload, MessageId, MessagesOptions, SendOptions } from './types'
+import { ConsentState } from './ConsentRecord'
+import {
+  ConversationSendPayload,
+  MessageId,
+  MessagesOptions,
+  SendOptions,
+} from './types'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import * as XMTP from '../index'
 import { DecodedMessage, Member, Dm, Group } from '../index'
@@ -16,22 +22,24 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   version: ConversationVersion
   id: string
   state: ConsentState
-  lastMessage?: DecodedMessage<ContentTypes>
+  lastMessage?: DecodedMessage<ContentTypes[number], ContentTypes>
 
   send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
     content: ConversationSendPayload<SendContentTypes>,
     opts?: SendOptions
   ): Promise<MessageId>
   sync()
-  messages(opts?: MessagesOptions): Promise<DecodedMessage<ContentTypes>[]>
+  messages(opts?: MessagesOptions): Promise<DecodedMessageUnion<ContentTypes>[]>
   streamMessages(
-    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
+    callback: (
+      message: DecodedMessage<ContentTypes[number], ContentTypes>
+    ) => Promise<void>
   ): Promise<() => void>
   consentState(): Promise<ConsentState>
   updateConsent(state: ConsentState): Promise<void>
   processMessage(
     encryptedMessage: string
-  ): Promise<DecodedMessage<ContentTypes>>
+  ): Promise<DecodedMessage<ContentTypes[number], ContentTypes>>
   members(): Promise<Member[]>
 }
 

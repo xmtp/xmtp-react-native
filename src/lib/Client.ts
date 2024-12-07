@@ -23,15 +23,16 @@ export type GetMessageContentTypeFromClient<C> =
 export type ExtractDecodedType<C> =
   C extends XMTPModule.ContentCodec<infer T> ? T : never
 
-export type InboxId = string & { readonly brand: unique symbol }
+export type InstallationId = string & { readonly brand: unique symbol }
+export type InboxId = string
 export type Address = string
 
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
-  address: string
+  address: Address
   inboxId: InboxId
-  installationId: string
+  installationId: InstallationId
   dbPath: string
   conversations: Conversations<ContentTypes>
   preferences: PrivatePreferences
@@ -163,7 +164,7 @@ export class Client<
               new Client(
                 message.address,
                 message.inboxId as InboxId,
-                message.installationId,
+                message.installationId as InstallationId,
                 message.dbPath,
                 options.codecs || []
               )
@@ -203,7 +204,8 @@ export class Client<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
     address: Address,
-    options: ClientOptions & { codecs?: ContentCodecs }
+    options: ClientOptions & { codecs?: ContentCodecs },
+    inboxId?: InboxId | undefined
   ): Promise<Client<ContentCodecs>> {
     if (options.dbEncryptionKey.length !== 32) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
@@ -214,7 +216,8 @@ export class Client<
       options.dbEncryptionKey,
       options.appVersion,
       options.dbDirectory,
-      options.historySyncUrl
+      options.historySyncUrl,
+      inboxId
     )
 
     return new Client(
@@ -229,8 +232,8 @@ export class Client<
   /**
    * Drop the client from memory. Use when you want to remove the client from memory and are done with it.
    */
-  static async dropClient(inboxId: InboxId) {
-    return await XMTPModule.dropClient(inboxId)
+  static async dropClient(installationId: InstallationId) {
+    return await XMTPModule.dropClient(installationId)
   }
 
   private static addSubscription(
@@ -279,7 +282,7 @@ export class Client<
    * Static method to determine the inboxId for the address.
    *
    * @param {Address} peerAddress - The address of the peer to check for messaging eligibility.
-   * @param {Partial<ClientOptions>} opts - Optional configuration options for the Client.
+   * @param {XMTPEnvironment} env - Environment to get the inboxId from
    * @returns {Promise<InboxId>}
    */
   static async getOrCreateInboxId(
@@ -289,10 +292,26 @@ export class Client<
     return await XMTPModule.getOrCreateInboxId(address, env)
   }
 
+  /**
+   * Determines whether the current user can send messages to the specified peers.
+   *
+   * This method checks if the specified peers are using clients that are on the network.
+   *
+   * @param {Address[]} addresses - The addresses of the peers to check for messaging eligibility.
+   * @param {XMTPEnvironment} env - Environment to see if the address is on the network for
+   * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the network.
+   */
+  static async canMessage(
+    env: XMTPEnvironment,
+    addresses: Address[]
+  ): Promise<{ [key: Address]: boolean }> {
+    return await XMTPModule.staticCanMessage(env, addresses)
+  }
+
   constructor(
     address: Address,
     inboxId: InboxId,
-    installationId: string,
+    installationId: InstallationId,
     dbPath: string,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {
@@ -317,47 +336,95 @@ export class Client<
   }
 
   /**
-   * Find the Address associated with this address
-   *
-   * @param {string} peerAddress - The address of the peer to check for inboxId.
-   * @returns {Promise<InboxId>} A Promise resolving to the InboxId.
+   * Add this account to the current inboxId.
+   * @param {Signer} newAccount - The signer of the new account to be added.
    */
-  async findInboxIdFromAddress(
-    peerAddress: Address
-  ): Promise<InboxId | undefined> {
-    return await XMTPModule.findInboxIdFromAddress(this.inboxId, peerAddress)
+  async addAccount(newAccount: Signer | WalletClient) {
+    const signer = getSigner(newAccount)
+    if (!signer) {
+      throw new Error('Signer is not configured')
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      ;(async () => {
+        Client.signSubscription = XMTPModule.emitter.addListener(
+          'sign',
+          async (message: { id: string; message: string }) => {
+            try {
+              await Client.handleSignatureRequest(signer, message)
+            } catch (e) {
+              const errorMessage =
+                'ERROR in addAccount. User rejected signature'
+              console.info(errorMessage, e)
+              Client.signSubscription?.remove()
+              reject(errorMessage)
+            }
+          }
+        )
+
+        await XMTPModule.addAccount(
+          this.installationId,
+          await signer.getAddress(),
+          signer.walletType?.(),
+          signer.getChainId?.(),
+          signer.getBlockNumber?.()
+        )
+        Client.signSubscription?.remove()
+        resolve()
+      })().catch((error) => {
+        Client.signSubscription?.remove()
+        reject(error)
+      })
+    })
   }
 
   /**
-   * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
+   * Remove this account from the current inboxId.
+   * @param {Signer} wallet - The signer object used for authenticate the removal.
+   * @param {Address} addressToRemove - The address of the wallet you'd like to remove from the account.
    */
-  async deleteLocalDatabase() {
-    return await XMTPModule.deleteLocalDatabase(this.inboxId)
-  }
+  async removeAccount(wallet: Signer | WalletClient, addressToRemove: Address) {
+    const signer = getSigner(wallet)
+    if (!signer) {
+      throw new Error('Signer is not configured')
+    }
 
-  /**
-   * Drop the local database connection. This function is delicate and should be used with caution. App will error if database not properly reconnected. See: reconnectLocalDatabase()
-   */
-  async dropLocalDatabaseConnection() {
-    return await XMTPModule.dropLocalDatabaseConnection(this.inboxId)
-  }
+    return new Promise<void>((resolve, reject) => {
+      ;(async () => {
+        Client.signSubscription = XMTPModule.emitter.addListener(
+          'sign',
+          async (message: { id: string; message: string }) => {
+            try {
+              await Client.handleSignatureRequest(signer, message)
+            } catch (e) {
+              const errorMessage =
+                'ERROR in revokeAllOtherInstallations. User rejected signature'
+              console.info(errorMessage, e)
+              Client.signSubscription?.remove()
+              reject(errorMessage)
+            }
+          }
+        )
 
-  /**
-   * Reconnects the local database after being dropped.
-   */
-  async reconnectLocalDatabase() {
-    return await XMTPModule.reconnectLocalDatabase(this.inboxId)
-  }
-
-  /**
-   * Make a request for a message history sync.
-   */
-  async requestMessageHistorySync() {
-    return await XMTPModule.requestMessageHistorySync(this.inboxId)
+        await XMTPModule.removeAccount(
+          this.installationId,
+          addressToRemove,
+          signer.walletType?.(),
+          signer.getChainId?.(),
+          signer.getBlockNumber?.()
+        )
+        Client.signSubscription?.remove()
+        resolve()
+      })().catch((error) => {
+        Client.signSubscription?.remove()
+        reject(error)
+      })
+    })
   }
 
   /**
    * Revoke all other installations but the current one.
+   * @param {Signer} signer - The signer object used for authenticate the revoke.
    */
   async revokeAllOtherInstallations(wallet: Signer | WalletClient | null) {
     const signer = getSigner(wallet)
@@ -382,7 +449,12 @@ export class Client<
           }
         )
 
-        await XMTPModule.revokeAllOtherInstallations(this.inboxId)
+        await XMTPModule.revokeAllOtherInstallations(
+          this.installationId,
+          signer.walletType?.(),
+          signer.getChainId?.(),
+          signer.getBlockNumber?.()
+        )
         Client.signSubscription?.remove()
         resolve()
       })().catch((error) => {
@@ -393,13 +465,88 @@ export class Client<
   }
 
   /**
+   * Sign this message with the current installation key.
+   * @param {string} message - The message to sign.
+   * @returns {Promise<Uint8Array>} A Promise resolving to the signature bytes.
+   */
+  async signWithInstallationKey(message: string): Promise<Uint8Array> {
+    return await XMTPModule.signWithInstallationKey(
+      this.installationId,
+      message
+    )
+  }
+
+  /**
+   * Verify the signature was signed with this clients installation key.
+   * @param {string} message - The message that was signed.
+   * @param {Uint8Array} signature - The signature.
+   * @returns {Promise<boolean>} A Promise resolving to a boolean if the signature verified or not.
+   */
+  async verifySignature(
+    message: string,
+    signature: Uint8Array
+  ): Promise<boolean> {
+    return await XMTPModule.verifySignature(
+      this.installationId,
+      message,
+      signature
+    )
+  }
+
+  /**
+   * Find the Address associated with this address
+   *
+   * @param {string} peerAddress - The address of the peer to check for inboxId.
+   * @returns {Promise<InboxId>} A Promise resolving to the InboxId.
+   */
+  async findInboxIdFromAddress(
+    peerAddress: Address
+  ): Promise<InboxId | undefined> {
+    return await XMTPModule.findInboxIdFromAddress(
+      this.installationId,
+      peerAddress
+    )
+  }
+
+  /**
+   * Deletes the local database. This cannot be undone and these stored messages will not be refetched from the network.
+   */
+  async deleteLocalDatabase() {
+    return await XMTPModule.deleteLocalDatabase(this.installationId)
+  }
+
+  /**
+   * Drop the local database connection. This function is delicate and should be used with caution. App will error if database not properly reconnected. See: reconnectLocalDatabase()
+   */
+  async dropLocalDatabaseConnection() {
+    return await XMTPModule.dropLocalDatabaseConnection(this.installationId)
+  }
+
+  /**
+   * Reconnects the local database after being dropped.
+   */
+  async reconnectLocalDatabase() {
+    return await XMTPModule.reconnectLocalDatabase(this.installationId)
+  }
+
+  /**
+   * Make a request for a message history sync.
+   */
+  async requestMessageHistorySync() {
+    return await XMTPModule.requestMessageHistorySync(this.installationId)
+  }
+
+  /**
    * Make a request for your inbox state.
    *
    * @param {boolean} refreshFromNetwork - If you want to refresh the current state of in the inbox from the network or not.
    * @returns {Promise<InboxState>} A Promise resolving to a InboxState.
    */
   async inboxState(refreshFromNetwork: boolean): Promise<InboxState> {
-    return await XMTPModule.getInboxState(this.inboxId, refreshFromNetwork)
+    return await XMTPModule.getInboxState(
+      this.installationId,
+      refreshFromNetwork
+    )
   }
 
   /**
@@ -409,20 +556,27 @@ export class Client<
    * @param {boolean} refreshFromNetwork - If you want to refresh the current state the inbox from the network or not.
    * @returns {Promise<InboxState[]>} A Promise resolving to a list of InboxState.
    */
-  async inboxStates(refreshFromNetwork: boolean, inboxIds: InboxId[]): Promise<InboxState[]> {
-    return await XMTPModule.getInboxStates(this.inboxId, refreshFromNetwork, inboxIds)
+  async inboxStates(
+    refreshFromNetwork: boolean,
+    inboxIds: InboxId[]
+  ): Promise<InboxState[]> {
+    return await XMTPModule.getInboxStates(
+      this.installationId,
+      refreshFromNetwork,
+      inboxIds
+    )
   }
 
   /**
-   * Determines whether the current user can send messages to the specified peers over groups.
+   * Determines whether the current user can send messages to the specified peers.
    *
-   * This method checks if the specified peers are using clients that support group messaging.
+   * This method checks if the specified peers are using clients that are on the network.
    *
    * @param {Address[]} addresses - The addresses of the peers to check for messaging eligibility.
-   * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the V3 network.
+   * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the network.
    */
   async canMessage(addresses: Address[]): Promise<{ [key: Address]: boolean }> {
-    return await XMTPModule.canMessage(this.inboxId, addresses)
+    return await XMTPModule.canMessage(this.installationId, addresses)
   }
 
   /**
@@ -440,7 +594,7 @@ export class Client<
     if (!file.fileUri?.startsWith('file://')) {
       throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.encryptAttachment(this.inboxId, file)
+    return await XMTPModule.encryptAttachment(this.installationId, file)
   }
 
   /**
@@ -457,7 +611,10 @@ export class Client<
     if (!encryptedFile.encryptedLocalFileUri?.startsWith('file://')) {
       throw new Error('the attachment must be a local file:// uri')
     }
-    return await XMTPModule.decryptAttachment(this.inboxId, encryptedFile)
+    return await XMTPModule.decryptAttachment(
+      this.installationId,
+      encryptedFile
+    )
   }
 }
 

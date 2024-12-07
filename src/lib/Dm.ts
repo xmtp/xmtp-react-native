@@ -1,9 +1,10 @@
 import { InboxId } from './Client'
-import { ConsentState } from './ConsentListEntry'
+import { ConsentState } from './ConsentRecord'
 import { ConversationVersion, ConversationBase } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { MessageId, MessagesOptions } from './types/MessagesOptions'
@@ -28,12 +29,12 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   version = ConversationVersion.DM as const
   topic: ConversationTopic
   state: ConsentState
-  lastMessage?: DecodedMessage<ContentTypes>
+  lastMessage?: DecodedMessageUnion<ContentTypes>
 
   constructor(
     client: XMTP.Client<ContentTypes>,
     params: DmParams,
-    lastMessage?: DecodedMessage<ContentTypes>
+    lastMessage?: DecodedMessageUnion<ContentTypes>
   ) {
     this.client = client
     this.id = params.id
@@ -71,7 +72,11 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         content = { text: content }
       }
 
-      return await XMTP.sendMessage(this.client.inboxId, this.id, content)
+      return await XMTP.sendMessage(
+        this.client.installationId,
+        this.id,
+        content
+      )
     } catch (e) {
       console.info('ERROR in send()', e.message)
       throw e
@@ -119,7 +124,11 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         content = { text: content }
       }
 
-      return await XMTP.prepareMessage(this.client.inboxId, this.id, content)
+      return await XMTP.prepareMessage(
+        this.client.installationId,
+        this.id,
+        content
+      )
     } catch (e) {
       console.info('ERROR in prepareMessage()', e.message)
       throw e
@@ -133,7 +142,10 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    */
   async publishPreparedMessages() {
     try {
-      return await XMTP.publishPreparedMessages(this.client.inboxId, this.id)
+      return await XMTP.publishPreparedMessages(
+        this.client.installationId,
+        this.id
+      )
     } catch (e) {
       console.info('ERROR in publishPreparedMessages()', e.message)
       throw e
@@ -152,7 +164,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    */
   async messages(
     opts?: MessagesOptions
-  ): Promise<DecodedMessage<ContentTypes>[]> {
+  ): Promise<DecodedMessageUnion<ContentTypes>[]> {
     return await XMTP.conversationMessages(
       this.client,
       this.id,
@@ -168,7 +180,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * associated with the dm and saves them to the local state.
    */
   async sync() {
-    await XMTP.syncConversation(this.client.inboxId, this.id)
+    await XMTP.syncConversation(this.client.installationId, this.id)
   }
 
   /**
@@ -182,21 +194,23 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
   async streamMessages(
-    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
+    callback: (
+      message: DecodedMessage<ContentTypes[number], ContentTypes>
+    ) => Promise<void>
   ): Promise<() => void> {
-    await XMTP.subscribeToMessages(this.client.inboxId, this.id)
+    await XMTP.subscribeToMessages(this.client.installationId, this.id)
     const messageSubscription = XMTP.emitter.addListener(
       EventTypes.ConversationMessage,
       async ({
-        inboxId,
+        installationId,
         message,
         conversationId,
       }: {
-        inboxId: string
-        message: DecodedMessage<ContentTypes>
+        installationId: string
+        message: DecodedMessage<ContentTypes[number], ContentTypes>
         conversationId: string
       }) => {
-        if (inboxId !== this.client.inboxId) {
+        if (installationId !== this.client.installationId) {
           return
         }
         if (conversationId !== this.id) {
@@ -209,13 +223,13 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     )
     return async () => {
       messageSubscription.remove()
-      await XMTP.unsubscribeFromMessages(this.client.inboxId, this.id)
+      await XMTP.unsubscribeFromMessages(this.client.installationId, this.id)
     }
   }
 
   async processMessage(
     encryptedMessage: string
-  ): Promise<DecodedMessage<ContentTypes>> {
+  ): Promise<DecodedMessageUnion<ContentTypes>> {
     try {
       return await XMTP.processMessage(this.client, this.id, encryptedMessage)
     } catch (e) {
@@ -225,12 +239,15 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   }
 
   async consentState(): Promise<ConsentState> {
-    return await XMTP.conversationConsentState(this.client.inboxId, this.id)
+    return await XMTP.conversationConsentState(
+      this.client.installationId,
+      this.id
+    )
   }
 
   async updateConsent(state: ConsentState): Promise<void> {
     return await XMTP.updateConversationConsent(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       state
     )
@@ -242,6 +259,9 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * To get the latest member list from the network, call sync() first.
    */
   async members(): Promise<Member[]> {
-    return await XMTP.listConversationMembers(this.client.inboxId, this.id)
+    return await XMTP.listConversationMembers(
+      this.client.installationId,
+      this.id
+    )
   }
 }

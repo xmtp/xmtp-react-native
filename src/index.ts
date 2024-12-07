@@ -2,12 +2,8 @@ import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import { Client } from '.'
 import XMTPModule from './XMTPModule'
-import { Address, InboxId, XMTPEnvironment } from './lib/Client'
-import {
-  ConsentListEntry,
-  ConsentListEntryType,
-  ConsentState,
-} from './lib/ConsentListEntry'
+import { Address, InboxId, InstallationId, XMTPEnvironment } from './lib/Client'
+import { ConsentRecord, ConsentState, ConsentType } from './lib/ConsentRecord'
 import {
   ContentCodec,
   DecryptedLocalAttachment,
@@ -27,6 +23,7 @@ import {
   ConversationId,
   ConversationTopic,
 } from './lib/types/ConversationOptions'
+import { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
@@ -53,46 +50,53 @@ export function inboxId(): InboxId {
 }
 
 export async function findInboxIdFromAddress(
-  inboxId: InboxId,
+  installationId: InstallationId,
   address: string
 ): Promise<InboxId | undefined> {
-  return XMTPModule.findInboxIdFromAddress(inboxId, address)
+  return XMTPModule.findInboxIdFromAddress(installationId, address)
 }
 
-export async function deleteLocalDatabase(inboxId: InboxId) {
-  return XMTPModule.deleteLocalDatabase(inboxId)
+export async function deleteLocalDatabase(installationId: InstallationId) {
+  return XMTPModule.deleteLocalDatabase(installationId)
 }
 
-export async function dropLocalDatabaseConnection(inboxId: InboxId) {
-  return XMTPModule.dropLocalDatabaseConnection(inboxId)
+export async function dropLocalDatabaseConnection(
+  installationId: InstallationId
+) {
+  return XMTPModule.dropLocalDatabaseConnection(installationId)
 }
 
-export async function reconnectLocalDatabase(inboxId: InboxId) {
-  return XMTPModule.reconnectLocalDatabase(inboxId)
+export async function reconnectLocalDatabase(installationId: InstallationId) {
+  return XMTPModule.reconnectLocalDatabase(installationId)
 }
 
-export async function requestMessageHistorySync(inboxId: InboxId) {
-  return XMTPModule.requestMessageHistorySync(inboxId)
-}
-
-export async function revokeAllOtherInstallations(inboxId: InboxId) {
-  return XMTPModule.revokeAllOtherInstallations(inboxId)
+export async function requestMessageHistorySync(
+  installationId: InstallationId
+) {
+  return XMTPModule.requestMessageHistorySync(installationId)
 }
 
 export async function getInboxState(
-  inboxId: InboxId,
+  installationId: InstallationId,
   refreshFromNetwork: boolean
 ): Promise<InboxState> {
-  const inboxState = await XMTPModule.getInboxState(inboxId, refreshFromNetwork)
+  const inboxState = await XMTPModule.getInboxState(
+    installationId,
+    refreshFromNetwork
+  )
   return InboxState.from(inboxState)
 }
 
 export async function getInboxStates(
-  inboxId: InboxId,
+  installationId: InstallationId,
   refreshFromNetwork: boolean,
-  inboxIds: InboxId[],
+  inboxIds: InboxId[]
 ): Promise<InboxState[]> {
-  const inboxStates = await XMTPModule.getInboxStates(inboxId, refreshFromNetwork, inboxIds)
+  const inboxStates = await XMTPModule.getInboxStates(
+    installationId,
+    refreshFromNetwork,
+    inboxIds
+  )
   return inboxStates.map((json: string) => {
     return InboxState.from(json)
   })
@@ -151,6 +155,8 @@ export async function create(
     appVersion,
     dbDirectory,
     historySyncUrl,
+  }
+  const walletParams: WalletParams = {
     walletType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
@@ -159,7 +165,8 @@ export async function create(
     address,
     hasPreAuthenticateToInboxCallback,
     Array.from(dbEncryptionKey),
-    JSON.stringify(authParams)
+    JSON.stringify(authParams),
+    JSON.stringify(walletParams)
   )
 }
 
@@ -169,7 +176,8 @@ export async function build(
   dbEncryptionKey: Uint8Array,
   appVersion?: string | undefined,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined
+  historySyncUrl?: string | undefined,
+  inboxId?: InboxId | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -179,20 +187,106 @@ export async function build(
   }
   return await XMTPModule.build(
     address,
+    inboxId,
     Array.from(dbEncryptionKey),
     JSON.stringify(authParams)
   )
 }
 
-export async function dropClient(inboxId: InboxId) {
-  return await XMTPModule.dropClient(inboxId)
+export async function revokeAllOtherInstallations(
+  installationId: InstallationId,
+  walletType?: WalletType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+) {
+  const walletParams: WalletParams = {
+    walletType,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
+  }
+  return XMTPModule.revokeAllOtherInstallations(
+    installationId,
+    JSON.stringify(walletParams)
+  )
+}
+
+export async function addAccount(
+  installationId: InstallationId,
+  newAddress: Address,
+  walletType?: WalletType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+) {
+  const walletParams: WalletParams = {
+    walletType,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
+  }
+  return XMTPModule.addAccount(
+    installationId,
+    newAddress,
+    JSON.stringify(walletParams)
+  )
+}
+
+export async function removeAccount(
+  installationId: InstallationId,
+  addressToRemove: Address,
+  walletType?: WalletType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+) {
+  const walletParams: WalletParams = {
+    walletType,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
+  }
+  return XMTPModule.removeAccount(
+    installationId,
+    addressToRemove,
+    JSON.stringify(walletParams)
+  )
+}
+
+export async function dropClient(installationId: InstallationId) {
+  return await XMTPModule.dropClient(installationId)
+}
+
+export async function signWithInstallationKey(
+  installationId: InstallationId,
+  message: string
+): Promise<Uint8Array> {
+  const signatureArray = await XMTPModule.signWithInstallationKey(
+    installationId,
+    message
+  )
+  return new Uint8Array(signatureArray)
+}
+
+export async function verifySignature(
+  installationId: InstallationId,
+  message: string,
+  signature: Uint8Array
+): Promise<boolean> {
+  return await XMTPModule.verifySignature(
+    installationId,
+    message,
+    Array.from(signature)
+  )
 }
 
 export async function canMessage(
-  inboxId: InboxId,
+  installationId: InstallationId,
   peerAddresses: Address[]
 ): Promise<{ [key: Address]: boolean }> {
-  return await XMTPModule.canMessage(inboxId, peerAddresses)
+  return await XMTPModule.canMessage(installationId, peerAddresses)
+}
+
+export async function staticCanMessage(
+  environment: XMTPEnvironment,
+  peerAddresses: Address[]
+): Promise<{ [key: Address]: boolean }> {
+  return await XMTPModule.staticCanMessage(environment, peerAddresses)
 }
 
 export async function getOrCreateInboxId(
@@ -203,24 +297,24 @@ export async function getOrCreateInboxId(
 }
 
 export async function encryptAttachment(
-  inboxId: InboxId,
+  installationId: InstallationId,
   file: DecryptedLocalAttachment
 ): Promise<EncryptedLocalAttachment> {
   const fileJson = JSON.stringify(file)
   const encryptedFileJson = await XMTPModule.encryptAttachment(
-    inboxId,
+    installationId,
     fileJson
   )
   return JSON.parse(encryptedFileJson)
 }
 
 export async function decryptAttachment(
-  inboxId: InboxId,
+  installationId: InstallationId,
   encryptedFile: EncryptedLocalAttachment
 ): Promise<DecryptedLocalAttachment> {
   const encryptedFileJson = JSON.stringify(encryptedFile)
   const fileJson = await XMTPModule.decryptAttachment(
-    inboxId,
+    installationId,
     encryptedFileJson
   )
   return JSON.parse(fileJson)
@@ -232,14 +326,16 @@ export async function listGroups<
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
   order?: ConversationOrder | undefined,
-  limit?: number | undefined
+  limit?: number | undefined,
+  consentState?: ConsentState | undefined
 ): Promise<Group<ContentTypes>[]> {
   return (
     await XMTPModule.listGroups(
-      client.inboxId,
+      client.installationId,
       JSON.stringify(opts),
       order,
-      limit
+      limit,
+      consentState
     )
   ).map((json: string) => {
     const group = JSON.parse(json)
@@ -257,10 +353,17 @@ export async function listDms<
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
   order?: ConversationOrder | undefined,
-  limit?: number | undefined
+  limit?: number | undefined,
+  consentState?: ConsentState | undefined
 ): Promise<Dm<ContentTypes>[]> {
   return (
-    await XMTPModule.listDms(client.inboxId, JSON.stringify(opts), order, limit)
+    await XMTPModule.listDms(
+      client.installationId,
+      JSON.stringify(opts),
+      order,
+      limit,
+      consentState
+    )
   ).map((json: string) => {
     const group = JSON.parse(json)
 
@@ -277,14 +380,16 @@ export async function listConversations<
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
   order?: ConversationOrder | undefined,
-  limit?: number | undefined
+  limit?: number | undefined,
+  consentState?: ConsentState | undefined
 ): Promise<Conversation<ContentTypes>[]> {
   return (
     await XMTPModule.listConversations(
-      client.inboxId,
+      client.installationId,
       JSON.stringify(opts),
       order,
-      limit
+      limit,
+      consentState
     )
   ).map((json: string) => {
     const jsonObj = JSON.parse(json)
@@ -310,9 +415,9 @@ export async function conversationMessages<
   beforeNs?: number | undefined,
   afterNs?: number | undefined,
   direction?: MessageOrder | undefined
-): Promise<DecodedMessage<ContentTypes>[]> {
+): Promise<DecodedMessageUnion<ContentTypes>[]> {
   const messages = await XMTPModule.conversationMessages(
-    client.inboxId,
+    client.installationId,
     conversationId,
     limit,
     beforeNs,
@@ -325,12 +430,13 @@ export async function conversationMessages<
 }
 
 export async function findMessage<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+  ContentType extends DefaultContentTypes[number] = DefaultContentTypes[number],
+  ContentTypes extends DefaultContentTypes = [ContentType], // Adjusted to work with arrays
 >(
   client: Client<ContentTypes>,
   messageId: MessageId
-): Promise<DecodedMessage<ContentTypes> | undefined> {
-  const message = await XMTPModule.findMessage(client.inboxId, messageId)
+): Promise<DecodedMessageUnion<ContentTypes> | undefined> {
+  const message = await XMTPModule.findMessage(client.installationId, messageId)
   return DecodedMessage.from(message, client)
 }
 
@@ -340,7 +446,7 @@ export async function findGroup<
   client: Client<ContentTypes>,
   groupId: ConversationId
 ): Promise<Group<ContentTypes> | undefined> {
-  const json = await XMTPModule.findGroup(client.inboxId, groupId)
+  const json = await XMTPModule.findGroup(client.installationId, groupId)
   const group = JSON.parse(json)
   if (!group || Object.keys(group).length === 0) {
     return undefined
@@ -355,7 +461,10 @@ export async function findConversation<
   client: Client<ContentTypes>,
   conversationId: ConversationId
 ): Promise<Conversation<ContentTypes> | undefined> {
-  const json = await XMTPModule.findConversation(client.inboxId, conversationId)
+  const json = await XMTPModule.findConversation(
+    client.installationId,
+    conversationId
+  )
   const conversation = JSON.parse(json)
   if (!conversation || Object.keys(conversation).length === 0) {
     return undefined
@@ -374,7 +483,10 @@ export async function findConversationByTopic<
   client: Client<ContentTypes>,
   topic: ConversationTopic
 ): Promise<Conversation<ContentTypes> | undefined> {
-  const json = await XMTPModule.findConversationByTopic(client.inboxId, topic)
+  const json = await XMTPModule.findConversationByTopic(
+    client.installationId,
+    topic
+  )
   const conversation = JSON.parse(json)
   if (!conversation || Object.keys(conversation).length === 0) {
     return undefined
@@ -393,7 +505,10 @@ export async function findDmByInboxId<
   client: Client<ContentTypes>,
   peerInboxId: InboxId
 ): Promise<Dm<ContentTypes> | undefined> {
-  const json = await XMTPModule.findDmByInboxId(client.inboxId, peerInboxId)
+  const json = await XMTPModule.findDmByInboxId(
+    client.installationId,
+    peerInboxId
+  )
   const dm = JSON.parse(json)
   if (!dm || Object.keys(dm).length === 0) {
     return undefined
@@ -408,7 +523,7 @@ export async function findDmByAddress<
   client: Client<ContentTypes>,
   address: Address
 ): Promise<Dm<ContentTypes> | undefined> {
-  const json = await XMTPModule.findDmByAddress(client.inboxId, address)
+  const json = await XMTPModule.findDmByAddress(client.installationId, address)
   const dm = JSON.parse(json)
   if (!dm || Object.keys(dm).length === 0) {
     return undefined
@@ -440,28 +555,39 @@ export async function sendWithContentType<T>(
 }
 
 export async function sendMessage(
-  inboxId: InboxId,
+  installationId: InstallationId,
   conversationId: ConversationId,
   content: any
 ): Promise<MessageId> {
   const contentJson = JSON.stringify(content)
-  return await XMTPModule.sendMessage(inboxId, conversationId, contentJson)
+  return await XMTPModule.sendMessage(
+    installationId,
+    conversationId,
+    contentJson
+  )
 }
 
 export async function publishPreparedMessages(
-  inboxId: InboxId,
+  installationId: InstallationId,
   conversationId: ConversationId
 ) {
-  return await XMTPModule.publishPreparedMessages(inboxId, conversationId)
+  return await XMTPModule.publishPreparedMessages(
+    installationId,
+    conversationId
+  )
 }
 
 export async function prepareMessage(
-  inboxId: InboxId,
+  installationId: InstallationId,
   conversationId: ConversationId,
   content: any
 ): Promise<MessageId> {
   const contentJson = JSON.stringify(content)
-  return await XMTPModule.prepareMessage(inboxId, conversationId, contentJson)
+  return await XMTPModule.prepareMessage(
+    installationId,
+    conversationId,
+    contentJson
+  )
 }
 
 export async function findOrCreateDm<
@@ -471,7 +597,7 @@ export async function findOrCreateDm<
   peerAddress: Address
 ): Promise<Dm<ContentTypes>> {
   const dm = JSON.parse(
-    await XMTPModule.findOrCreateDm(client.inboxId, peerAddress)
+    await XMTPModule.findOrCreateDm(client.installationId, peerAddress)
   )
   return new Dm(client, dm)
 }
@@ -495,7 +621,7 @@ export async function createGroup<
   }
   const group = JSON.parse(
     await XMTPModule.createGroup(
-      client.inboxId,
+      client.installationId,
       peerAddresses,
       permissionLevel,
       JSON.stringify(options)
@@ -524,7 +650,7 @@ export async function createGroupCustomPermissions<
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissions(
-      client.inboxId,
+      client.installationId,
       peerAddresses,
       JSON.stringify(permissionPolicySet),
       JSON.stringify(options)
@@ -537,314 +663,327 @@ export async function createGroupCustomPermissions<
 export async function listMemberInboxIds<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(client: Client<ContentTypes>, id: ConversationId): Promise<InboxId[]> {
-  return XMTPModule.listMemberInboxIds(client.inboxId, id)
+  return XMTPModule.listMemberInboxIds(client.installationId, id)
 }
 
 export async function dmPeerInboxId<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(client: Client<ContentTypes>, dmId: ConversationId): Promise<InboxId> {
-  return XMTPModule.dmPeerInboxId(client.inboxId, dmId)
+  return XMTPModule.dmPeerInboxId(client.installationId, dmId)
 }
 
 export async function listConversationMembers(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): Promise<Member[]> {
-  const members = await XMTPModule.listConversationMembers(inboxId, id)
+  const members = await XMTPModule.listConversationMembers(installationId, id)
 
   return members.map((json: string) => {
     return Member.from(json)
   })
 }
 
-export async function syncConversations(inboxId: InboxId) {
-  await XMTPModule.syncConversations(inboxId)
+export async function syncConversations(installationId: InstallationId) {
+  await XMTPModule.syncConversations(installationId)
 }
 
-export async function syncAllConversations(inboxId: InboxId): Promise<number> {
-  return await XMTPModule.syncAllConversations(inboxId)
+export async function syncAllConversations(
+  installationId: InstallationId
+): Promise<number> {
+  return await XMTPModule.syncAllConversations(installationId)
 }
 
-export async function syncConversation(inboxId: InboxId, id: ConversationId) {
-  await XMTPModule.syncConversation(inboxId, id)
+export async function syncConversation(
+  installationId: InstallationId,
+  id: ConversationId
+) {
+  await XMTPModule.syncConversation(installationId, id)
 }
 
 export async function addGroupMembers(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId,
   addresses: Address[]
 ): Promise<void> {
-  return XMTPModule.addGroupMembers(inboxId, id, addresses)
+  return XMTPModule.addGroupMembers(installationId, id, addresses)
 }
 
 export async function removeGroupMembers(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId,
   addresses: Address[]
 ): Promise<void> {
-  return XMTPModule.removeGroupMembers(inboxId, id, addresses)
+  return XMTPModule.removeGroupMembers(installationId, id, addresses)
 }
 
 export async function addGroupMembersByInboxId(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId,
   inboxIds: InboxId[]
 ): Promise<void> {
-  return XMTPModule.addGroupMembersByInboxId(inboxId, id, inboxIds)
+  return XMTPModule.addGroupMembersByInboxId(installationId, id, inboxIds)
 }
 
 export async function removeGroupMembersByInboxId(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId,
   inboxIds: InboxId[]
 ): Promise<void> {
-  return XMTPModule.removeGroupMembersByInboxId(inboxId, id, inboxIds)
+  return XMTPModule.removeGroupMembersByInboxId(installationId, id, inboxIds)
 }
 
 export function groupName(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): string | PromiseLike<string> {
-  return XMTPModule.groupName(inboxId, id)
+  return XMTPModule.groupName(installationId, id)
 }
 
 export function updateGroupName(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId,
   groupName: string
 ): Promise<void> {
-  return XMTPModule.updateGroupName(inboxId, id, groupName)
+  return XMTPModule.updateGroupName(installationId, id, groupName)
 }
 
 export function groupImageUrlSquare(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): string | PromiseLike<string> {
-  return XMTPModule.groupImageUrlSquare(inboxId, id)
+  return XMTPModule.groupImageUrlSquare(installationId, id)
 }
 
 export function updateGroupImageUrlSquare(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId,
   imageUrlSquare: string
 ): Promise<void> {
-  return XMTPModule.updateGroupImageUrlSquare(inboxId, id, imageUrlSquare)
+  return XMTPModule.updateGroupImageUrlSquare(
+    installationId,
+    id,
+    imageUrlSquare
+  )
 }
 
 export function groupDescription(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): string | PromiseLike<string> {
-  return XMTPModule.groupDescription(inboxId, id)
+  return XMTPModule.groupDescription(installationId, id)
 }
 
 export function updateGroupDescription(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId,
   description: string
 ): Promise<void> {
-  return XMTPModule.updateGroupDescription(inboxId, id, description)
+  return XMTPModule.updateGroupDescription(installationId, id, description)
 }
 
 export function groupPinnedFrameUrl(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): string | PromiseLike<string> {
-  return XMTPModule.groupPinnedFrameUrl(inboxId, id)
+  return XMTPModule.groupPinnedFrameUrl(installationId, id)
 }
 
 export function updateGroupPinnedFrameUrl(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId,
   pinnedFrameUrl: string
 ): Promise<void> {
-  return XMTPModule.updateGroupPinnedFrameUrl(inboxId, id, pinnedFrameUrl)
+  return XMTPModule.updateGroupPinnedFrameUrl(
+    installationId,
+    id,
+    pinnedFrameUrl
+  )
 }
 
 export function isGroupActive(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): Promise<boolean> {
-  return XMTPModule.isGroupActive(inboxId, id)
+  return XMTPModule.isGroupActive(installationId, id)
 }
 
 export async function addedByInboxId(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): Promise<InboxId> {
-  return XMTPModule.addedByInboxId(inboxId, id) as InboxId
+  return XMTPModule.addedByInboxId(installationId, id) as InboxId
 }
 
 export async function creatorInboxId(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): Promise<InboxId> {
-  return XMTPModule.creatorInboxId(inboxId, id) as InboxId
+  return XMTPModule.creatorInboxId(installationId, id) as InboxId
 }
 
 export async function isAdmin(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   inboxId: InboxId
 ): Promise<boolean> {
-  return XMTPModule.isAdmin(clientInboxId, id, inboxId)
+  return XMTPModule.isAdmin(clientInstallationId, id, inboxId)
 }
 
 export async function isSuperAdmin(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   inboxId: InboxId
 ): Promise<boolean> {
-  return XMTPModule.isSuperAdmin(clientInboxId, id, inboxId)
+  return XMTPModule.isSuperAdmin(clientInstallationId, id, inboxId)
 }
 
 export async function listAdmins(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): Promise<InboxId[]> {
-  return XMTPModule.listAdmins(inboxId, id)
+  return XMTPModule.listAdmins(installationId, id)
 }
 
 export async function listSuperAdmins(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ): Promise<InboxId[]> {
-  return XMTPModule.listSuperAdmins(inboxId, id)
+  return XMTPModule.listSuperAdmins(installationId, id)
 }
 
 export async function addAdmin(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   inboxId: InboxId
 ): Promise<void> {
-  return XMTPModule.addAdmin(clientInboxId, id, inboxId)
+  return XMTPModule.addAdmin(clientInstallationId, id, inboxId)
 }
 
 export async function addSuperAdmin(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   inboxId: InboxId
 ): Promise<void> {
-  return XMTPModule.addSuperAdmin(clientInboxId, id, inboxId)
+  return XMTPModule.addSuperAdmin(clientInstallationId, id, inboxId)
 }
 
 export async function removeAdmin(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   inboxId: InboxId
 ): Promise<void> {
-  return XMTPModule.removeAdmin(clientInboxId, id, inboxId)
+  return XMTPModule.removeAdmin(clientInstallationId, id, inboxId)
 }
 
 export async function removeSuperAdmin(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   inboxId: InboxId
 ): Promise<void> {
-  return XMTPModule.removeSuperAdmin(clientInboxId, id, inboxId)
+  return XMTPModule.removeSuperAdmin(clientInstallationId, id, inboxId)
 }
 
 export async function updateAddMemberPermission(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
   return XMTPModule.updateAddMemberPermission(
-    clientInboxId,
+    clientInstallationId,
     id,
     permissionOption
   )
 }
 
 export async function updateRemoveMemberPermission(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
   return XMTPModule.updateRemoveMemberPermission(
-    clientInboxId,
+    clientInstallationId,
     id,
     permissionOption
   )
 }
 
 export async function updateAddAdminPermission(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
   return XMTPModule.updateAddAdminPermission(
-    clientInboxId,
+    clientInstallationId,
     id,
     permissionOption
   )
 }
 
 export async function updateRemoveAdminPermission(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
   return XMTPModule.updateRemoveAdminPermission(
-    clientInboxId,
+    clientInstallationId,
     id,
     permissionOption
   )
 }
 
 export async function updateGroupNamePermission(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
   return XMTPModule.updateGroupNamePermission(
-    clientInboxId,
+    clientInstallationId,
     id,
     permissionOption
   )
 }
 
 export async function updateGroupImageUrlSquarePermission(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
   return XMTPModule.updateGroupImageUrlSquarePermission(
-    clientInboxId,
+    clientInstallationId,
     id,
     permissionOption
   )
 }
 
 export async function updateGroupDescriptionPermission(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
   return XMTPModule.updateGroupDescriptionPermission(
-    clientInboxId,
+    clientInstallationId,
     id,
     permissionOption
   )
 }
 
 export async function updateGroupPinnedFrameUrlPermission(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
   return XMTPModule.updateGroupPinnedFrameUrlPermission(
-    clientInboxId,
+    clientInstallationId,
     id,
     permissionOption
   )
 }
 
 export async function permissionPolicySet(
-  clientInboxId: InboxId,
+  clientInstallationId: InstallationId,
   id: ConversationId
 ): Promise<PermissionPolicySet> {
-  const json = await XMTPModule.permissionPolicySet(clientInboxId, id)
+  const json = await XMTPModule.permissionPolicySet(clientInstallationId, id)
   return JSON.parse(json)
 }
 
@@ -854,8 +993,12 @@ export async function processMessage<
   client: Client<ContentTypes>,
   id: ConversationId,
   encryptedMessage: string
-): Promise<DecodedMessage<ContentTypes>> {
-  const json = XMTPModule.processMessage(client.inboxId, id, encryptedMessage)
+): Promise<DecodedMessageUnion<ContentTypes>> {
+  const json = await XMTPModule.processMessage(
+    client.installationId,
+    id,
+    encryptedMessage
+  )
   return DecodedMessage.from(json, client)
 }
 
@@ -866,7 +1009,7 @@ export async function processWelcomeMessage<
   encryptedMessage: string
 ): Promise<Promise<Conversation<ContentTypes>>> {
   const json = await XMTPModule.processWelcomeMessage(
-    client.inboxId,
+    client.installationId,
     encryptedMessage
   )
   const conversation = JSON.parse(json)
@@ -878,14 +1021,20 @@ export async function processWelcomeMessage<
   }
 }
 
+export async function syncConsent(
+  installationId: InstallationId
+): Promise<void> {
+  return await XMTPModule.syncConsent(installationId)
+}
+
 export async function setConsentState(
-  inboxId: InboxId,
+  installationId: InstallationId,
   value: string,
-  entryType: ConsentListEntryType,
+  entryType: ConsentType,
   consentType: ConsentState
 ): Promise<void> {
   return await XMTPModule.setConsentState(
-    inboxId,
+    installationId,
     value,
     entryType,
     consentType
@@ -893,72 +1042,90 @@ export async function setConsentState(
 }
 
 export async function consentAddressState(
-  inboxId: InboxId,
+  installationId: InstallationId,
   address: Address
 ): Promise<ConsentState> {
-  return await XMTPModule.consentAddressState(inboxId, address)
+  return await XMTPModule.consentAddressState(installationId, address)
 }
 export async function consentInboxIdState(
-  inboxId: InboxId,
+  installationId: InstallationId,
   peerInboxId: InboxId
 ): Promise<ConsentState> {
-  return await XMTPModule.consentInboxIdState(inboxId, peerInboxId)
+  return await XMTPModule.consentInboxIdState(installationId, peerInboxId)
 }
 export async function consentConversationIdState(
-  inboxId: InboxId,
+  installationId: InstallationId,
   conversationId: ConversationId
 ): Promise<ConsentState> {
-  return await XMTPModule.consentConversationIdState(inboxId, conversationId)
+  return await XMTPModule.consentConversationIdState(
+    installationId,
+    conversationId
+  )
 }
 export async function conversationConsentState(
-  inboxId: InboxId,
+  installationId: InstallationId,
   conversationId: ConversationId
 ): Promise<ConsentState> {
-  return await XMTPModule.conversationConsentState(inboxId, conversationId)
+  return await XMTPModule.conversationConsentState(
+    installationId,
+    conversationId
+  )
 }
 
 export async function updateConversationConsent(
-  inboxId: InboxId,
+  installationId: InstallationId,
   conversationId: ConversationId,
   state: ConsentState
 ): Promise<void> {
-  return XMTPModule.updateConversationConsent(inboxId, conversationId, state)
+  return XMTPModule.updateConversationConsent(
+    installationId,
+    conversationId,
+    state
+  )
+}
+
+export function subscribeToConsent(installationId: InstallationId) {
+  return XMTPModule.subscribeToConsent(installationId)
 }
 
 export function subscribeToConversations(
-  inboxId: InboxId,
+  installationId: InstallationId,
   type: ConversationType
 ) {
-  return XMTPModule.subscribeToConversations(inboxId, type)
+  return XMTPModule.subscribeToConversations(installationId, type)
 }
 
 export function subscribeToAllMessages(
-  inboxId: InboxId,
+  installationId: InstallationId,
   type: ConversationType
 ) {
-  return XMTPModule.subscribeToAllMessages(inboxId, type)
+  return XMTPModule.subscribeToAllMessages(installationId, type)
 }
 
 export async function subscribeToMessages(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ) {
-  return await XMTPModule.subscribeToMessages(inboxId, id)
+  return await XMTPModule.subscribeToMessages(installationId, id)
 }
 
-export function unsubscribeFromConversations(inboxId: InboxId) {
-  return XMTPModule.unsubscribeFromConversations(inboxId)
+export function unsubscribeFromConsent(installationId: InstallationId) {
+  return XMTPModule.unsubscribeFromConsent(installationId)
 }
 
-export function unsubscribeFromAllMessages(inboxId: InboxId) {
-  return XMTPModule.unsubscribeFromAllMessages(inboxId)
+export function unsubscribeFromConversations(installationId: InstallationId) {
+  return XMTPModule.unsubscribeFromConversations(installationId)
+}
+
+export function unsubscribeFromAllMessages(installationId: InstallationId) {
+  return XMTPModule.unsubscribeFromAllMessages(installationId)
 }
 
 export async function unsubscribeFromMessages(
-  inboxId: InboxId,
+  installationId: InstallationId,
   id: ConversationId
 ) {
-  return await XMTPModule.unsubscribeFromMessages(inboxId, id)
+  return await XMTPModule.unsubscribeFromMessages(installationId, id)
 }
 
 export function registerPushToken(pushServer: string, token: string) {
@@ -980,6 +1147,9 @@ interface AuthParams {
   appVersion?: string
   dbDirectory?: string
   historySyncUrl?: string
+}
+
+interface WalletParams {
   walletType?: string
   chainId?: number
   blockNumber?: number
@@ -996,7 +1166,7 @@ export { Client } from './lib/Client'
 export * from './lib/ContentCodec'
 export { Conversation, ConversationVersion } from './lib/Conversation'
 export { XMTPPush } from './lib/XMTPPush'
-export { ConsentListEntry, DecodedMessage, MessageDeliveryStatus, ConsentState }
+export { ConsentRecord, DecodedMessage, MessageDeliveryStatus, ConsentState }
 export { Group } from './lib/Group'
 export { Dm } from './lib/Dm'
 export { Member } from './lib/Member'
@@ -1009,3 +1179,4 @@ export {
   ConversationType,
 } from './lib/types/ConversationOptions'
 export { MessageId, MessageOrder } from './lib/types/MessagesOptions'
+export { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'

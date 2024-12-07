@@ -5,10 +5,12 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:clean": "expo run:ios --no-build-cache",
     "web": "expo start --web"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.21.0",
+    "@react-native-community/clipboard": "^1.5.1",
     "@react-native-community/netinfo": "^11.2.0",
     "@react-navigation/native": "^6.1.6",
     "@react-navigation/native-stack": "^6.9.12",

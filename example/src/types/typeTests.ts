@@ -2,6 +2,7 @@ import {
   Client,
   ContentTypeId,
   ConversationVersion,
+  DecodedMessage,
   Dm,
   EncodedContent,
   JSContentCodec,
@@ -9,6 +10,7 @@ import {
   ReplyCodec,
   sendMessage,
   TextCodec,
+  DecodedMessageUnion,
 } from 'xmtp-react-native-sdk'
 
 const ContentTypeNumber: ContentTypeId = {
@@ -169,8 +171,8 @@ export const typeTests = async () => {
       topNumber: {
         bottomNumber: 12,
       },
-    },
-    { contentType: ContentTypeNumber }
+    }
+    // { contentType: ContentTypeNumber }
   )
 
   const customContentGroup = (await customContentClient.conversations.list())[0]
@@ -180,8 +182,8 @@ export const typeTests = async () => {
       topNumber: {
         bottomNumber: 12,
       },
-    },
-    { contentType: ContentTypeNumber }
+    }
+    // { contentType: ContentTypeNumber }
   )
   const customContentMessages = await customContentConvo.messages()
   customContentMessages[0].content()
@@ -268,4 +270,56 @@ export const typeTests = async () => {
     // @ts-expect-error
     const peerAddress2 = firstConvo.peerInboxId()
   }
+
+  const multiCodecClient = await Client.createRandom({
+    env: 'local',
+    codecs: [new TextCodec(), new ReactionCodec(), new ReplyCodec()] as const,
+    dbEncryptionKey: keyBytes,
+  })
+  const multiCodecConvo = (await multiCodecClient.conversations.list())[0]
+  const decodedMessageClient = await multiCodecConvo.messages()
+
+  for (const message of decodedMessageClient) {
+    if (isReactionMessage(message)) {
+      const { content, action, reference, schema } = message.content()
+    } else if (isReplyMessage(message)) {
+      const { content } = message.content()
+    } else if (isTextMessage(message)) {
+      const text = message.content()
+      text.toLowerCase()
+    }
+  }
+  const textMessage = decodedMessageClient[0] as DecodedMessage<TextCodec>
+  const text = textMessage.content()
+  text.toLowerCase()
+
+  // Message Can infer additional codecs
+  const message = DecodedMessage.fromObject<TextCodec>(
+    decodedMessageClient[0],
+    textClient
+  )
+  if (isTextMessage(message)) {
+    const text = message.content()
+  } else {
+    // @ts-expect-error
+    message.content()
+  }
+}
+
+const isTextMessage = (
+  message: DecodedMessageUnion
+): message is DecodedMessage<TextCodec> => {
+  return message.contentTypeId.includes('text')
+}
+
+const isReactionMessage = (
+  message: DecodedMessageUnion
+): message is DecodedMessage<ReactionCodec> => {
+  return message.contentTypeId.includes('reaction')
+}
+
+const isReplyMessage = (
+  message: DecodedMessageUnion
+): message is DecodedMessage<ReplyCodec> => {
+  return message.contentTypeId.includes('reply')
 }

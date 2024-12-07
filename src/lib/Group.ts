@@ -1,9 +1,10 @@
 import { InboxId } from './Client'
-import { ConsentState } from './ConsentListEntry'
+import { ConsentState } from './ConsentRecord'
 import { ConversationBase, ConversationVersion } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { MessageId, MessagesOptions } from './types/MessagesOptions'
@@ -42,12 +43,12 @@ export class Group<
   imageUrlSquare: string
   description: string
   state: ConsentState
-  lastMessage?: DecodedMessage<ContentTypes>
+  lastMessage?: DecodedMessageUnion<ContentTypes>
 
   constructor(
     client: XMTP.Client<ContentTypes>,
     params: GroupParams,
-    lastMessage?: DecodedMessage<ContentTypes>
+    lastMessage?: DecodedMessageUnion<ContentTypes>
   ) {
     this.client = client
     this.id = params.id
@@ -76,7 +77,7 @@ export class Group<
    * @returns {Promise<InboxId>} A Promise that resolves to a InboxId.
    */
   async creatorInboxId(): Promise<InboxId> {
-    return XMTP.creatorInboxId(this.client.inboxId, this.id)
+    return XMTP.creatorInboxId(this.client.installationId, this.id)
   }
 
   /**
@@ -99,7 +100,11 @@ export class Group<
         content = { text: content }
       }
 
-      return await XMTP.sendMessage(this.client.inboxId, this.id, content)
+      return await XMTP.sendMessage(
+        this.client.installationId,
+        this.id,
+        content
+      )
     } catch (e) {
       console.info('ERROR in send()', e.message)
       throw e
@@ -147,7 +152,11 @@ export class Group<
         content = { text: content }
       }
 
-      return await XMTP.prepareMessage(this.client.inboxId, this.id, content)
+      return await XMTP.prepareMessage(
+        this.client.installationId,
+        this.id,
+        content
+      )
     } catch (e) {
       console.info('ERROR in prepareGroupMessage()', e.message)
       throw e
@@ -161,7 +170,10 @@ export class Group<
    */
   async publishPreparedMessages() {
     try {
-      return await XMTP.publishPreparedMessages(this.client.inboxId, this.id)
+      return await XMTP.publishPreparedMessages(
+        this.client.installationId,
+        this.id
+      )
     } catch (e) {
       console.info('ERROR in publishPreparedMessages()', e.message)
       throw e
@@ -178,9 +190,10 @@ export class Group<
    * @param direction - Optional parameter to specify the time ordering of the messages to return.
    * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
    */
+
   async messages(
     opts?: MessagesOptions
-  ): Promise<DecodedMessage<ContentTypes>[]> {
+  ): Promise<DecodedMessageUnion<ContentTypes>[]> {
     return await XMTP.conversationMessages(
       this.client,
       this.id,
@@ -196,7 +209,7 @@ export class Group<
    * associated with the group and saves them to the local state.
    */
   async sync() {
-    await XMTP.syncConversation(this.client.inboxId, this.id)
+    await XMTP.syncConversation(this.client.installationId, this.id)
   }
 
   /**
@@ -210,21 +223,23 @@ export class Group<
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
   async streamMessages(
-    callback: (message: DecodedMessage<ContentTypes>) => Promise<void>
+    callback: (
+      message: DecodedMessage<ContentTypes[number], ContentTypes>
+    ) => Promise<void>
   ): Promise<() => void> {
-    await XMTP.subscribeToMessages(this.client.inboxId, this.id)
+    await XMTP.subscribeToMessages(this.client.installationId, this.id)
     const messageSubscription = XMTP.emitter.addListener(
       EventTypes.ConversationMessage,
       async ({
-        inboxId,
+        installationId,
         message,
         conversationId,
       }: {
-        inboxId: string
-        message: DecodedMessage<ContentTypes>
+        installationId: string
+        message: DecodedMessage<ContentTypes[number], ContentTypes>
         conversationId: string
       }) => {
-        if (inboxId !== this.client.inboxId) {
+        if (installationId !== this.client.installationId) {
           return
         }
         if (conversationId !== this.id) {
@@ -237,7 +252,7 @@ export class Group<
     )
     return async () => {
       messageSubscription.remove()
-      await XMTP.unsubscribeFromMessages(this.client.inboxId, this.id)
+      await XMTP.unsubscribeFromMessages(this.client.installationId, this.id)
     }
   }
   /**
@@ -246,7 +261,7 @@ export class Group<
    * @returns
    */
   async addMembers(addresses: Address[]): Promise<void> {
-    return XMTP.addGroupMembers(this.client.inboxId, this.id, addresses)
+    return XMTP.addGroupMembers(this.client.installationId, this.id, addresses)
   }
 
   /**
@@ -255,7 +270,11 @@ export class Group<
    * @returns
    */
   async removeMembers(addresses: Address[]): Promise<void> {
-    return XMTP.removeGroupMembers(this.client.inboxId, this.id, addresses)
+    return XMTP.removeGroupMembers(
+      this.client.installationId,
+      this.id,
+      addresses
+    )
   }
 
   /**
@@ -264,7 +283,11 @@ export class Group<
    * @returns
    */
   async addMembersByInboxId(inboxIds: InboxId[]): Promise<void> {
-    return XMTP.addGroupMembersByInboxId(this.client.inboxId, this.id, inboxIds)
+    return XMTP.addGroupMembersByInboxId(
+      this.client.installationId,
+      this.id,
+      inboxIds
+    )
   }
 
   /**
@@ -274,7 +297,7 @@ export class Group<
    */
   async removeMembersByInboxId(inboxIds: InboxId[]): Promise<void> {
     return XMTP.removeGroupMembersByInboxId(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       inboxIds
     )
@@ -286,7 +309,7 @@ export class Group<
    * @returns {string} A Promise that resolves to the group name.
    */
   async groupName(): Promise<string> {
-    return XMTP.groupName(this.client.inboxId, this.id)
+    return XMTP.groupName(this.client.installationId, this.id)
   }
 
   /**
@@ -297,16 +320,16 @@ export class Group<
    */
 
   async updateGroupName(groupName: string): Promise<void> {
-    return XMTP.updateGroupName(this.client.inboxId, this.id, groupName)
+    return XMTP.updateGroupName(this.client.installationId, this.id, groupName)
   }
 
   /**
    * Returns the group image url square.
    * To get the latest group image url square from the network, call sync() first.
-   * @returns {string} A Promise that resolves to the group name.
+   * @returns {string} A Promise that resolves to the group image url.
    */
   async groupImageUrlSquare(): Promise<string> {
-    return XMTP.groupImageUrlSquare(this.client.inboxId, this.id)
+    return XMTP.groupImageUrlSquare(this.client.installationId, this.id)
   }
 
   /**
@@ -318,7 +341,7 @@ export class Group<
 
   async updateGroupImageUrlSquare(imageUrlSquare: string): Promise<void> {
     return XMTP.updateGroupImageUrlSquare(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       imageUrlSquare
     )
@@ -330,7 +353,7 @@ export class Group<
    * @returns {string} A Promise that resolves to the group description.
    */
   async groupDescription(): Promise<string> {
-    return XMTP.groupDescription(this.client.inboxId, this.id)
+    return XMTP.groupDescription(this.client.installationId, this.id)
   }
 
   /**
@@ -342,7 +365,7 @@ export class Group<
 
   async updateGroupDescription(description: string): Promise<void> {
     return XMTP.updateGroupDescription(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       description
     )
@@ -354,7 +377,7 @@ export class Group<
    * @returns {string} A Promise that resolves to the group pinned frame url.
    */
   async groupPinnedFrameUrl(): Promise<string> {
-    return XMTP.groupPinnedFrameUrl(this.client.inboxId, this.id)
+    return XMTP.groupPinnedFrameUrl(this.client.installationId, this.id)
   }
 
   /**
@@ -366,7 +389,7 @@ export class Group<
 
   async updateGroupPinnedFrameUrl(pinnedFrameUrl: string): Promise<void> {
     return XMTP.updateGroupPinnedFrameUrl(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       pinnedFrameUrl
     )
@@ -379,7 +402,7 @@ export class Group<
    */
 
   async isActive(): Promise<boolean> {
-    return XMTP.isGroupActive(this.client.inboxId, this.id)
+    return XMTP.isGroupActive(this.client.installationId, this.id)
   }
 
   /**
@@ -389,7 +412,7 @@ export class Group<
    * To get the latest admin status from the network, call sync() first.
    */
   async isAdmin(inboxId: InboxId): Promise<boolean> {
-    return XMTP.isAdmin(this.client.inboxId, this.id, inboxId)
+    return XMTP.isAdmin(this.client.installationId, this.id, inboxId)
   }
 
   /**
@@ -399,7 +422,7 @@ export class Group<
    * To get the latest super admin status from the network, call sync() first.
    */
   async isSuperAdmin(inboxId: InboxId): Promise<boolean> {
-    return XMTP.isSuperAdmin(this.client.inboxId, this.id, inboxId)
+    return XMTP.isSuperAdmin(this.client.installationId, this.id, inboxId)
   }
 
   /**
@@ -408,7 +431,7 @@ export class Group<
    * To get the latest admin list from the network, call sync() first.
    */
   async listAdmins(): Promise<InboxId[]> {
-    return XMTP.listAdmins(this.client.inboxId, this.id)
+    return XMTP.listAdmins(this.client.installationId, this.id)
   }
 
   /**
@@ -417,7 +440,7 @@ export class Group<
    * To get the latest super admin list from the network, call sync() first.
    */
   async listSuperAdmins(): Promise<InboxId[]> {
-    return XMTP.listSuperAdmins(this.client.inboxId, this.id)
+    return XMTP.listSuperAdmins(this.client.installationId, this.id)
   }
 
   /**
@@ -427,7 +450,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async addAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.addAdmin(this.client.inboxId, this.id, inboxId)
+    return XMTP.addAdmin(this.client.installationId, this.id, inboxId)
   }
 
   /**
@@ -437,7 +460,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async addSuperAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.addSuperAdmin(this.client.inboxId, this.id, inboxId)
+    return XMTP.addSuperAdmin(this.client.installationId, this.id, inboxId)
   }
 
   /**
@@ -447,7 +470,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async removeAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.removeAdmin(this.client.inboxId, this.id, inboxId)
+    return XMTP.removeAdmin(this.client.installationId, this.id, inboxId)
   }
 
   /**
@@ -457,7 +480,7 @@ export class Group<
    * Will throw if the user does not have the required permissions.
    */
   async removeSuperAdmin(inboxId: InboxId): Promise<void> {
-    return XMTP.removeSuperAdmin(this.client.inboxId, this.id, inboxId)
+    return XMTP.removeSuperAdmin(this.client.installationId, this.id, inboxId)
   }
 
   /**
@@ -470,7 +493,7 @@ export class Group<
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateAddMemberPermission(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       permissionOption
     )
@@ -486,7 +509,7 @@ export class Group<
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateRemoveMemberPermission(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       permissionOption
     )
@@ -502,7 +525,7 @@ export class Group<
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateAddAdminPermission(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       permissionOption
     )
@@ -518,7 +541,7 @@ export class Group<
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateRemoveAdminPermission(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       permissionOption
     )
@@ -534,7 +557,7 @@ export class Group<
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateGroupNamePermission(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       permissionOption
     )
@@ -550,7 +573,7 @@ export class Group<
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateGroupImageUrlSquarePermission(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       permissionOption
     )
@@ -566,7 +589,7 @@ export class Group<
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateGroupDescriptionPermission(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       permissionOption
     )
@@ -582,7 +605,7 @@ export class Group<
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateGroupPinnedFrameUrlPermission(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       permissionOption
     )
@@ -593,12 +616,12 @@ export class Group<
    * @returns {Promise<PermissionPolicySet>} A {PermissionPolicySet} object representing the group's permission policy set.
    */
   async permissionPolicySet(): Promise<PermissionPolicySet> {
-    return XMTP.permissionPolicySet(this.client.inboxId, this.id)
+    return XMTP.permissionPolicySet(this.client.installationId, this.id)
   }
 
   async processMessage(
     encryptedMessage: string
-  ): Promise<DecodedMessage<ContentTypes>> {
+  ): Promise<DecodedMessage<ContentTypes[number], ContentTypes>> {
     try {
       return await XMTP.processMessage(this.client, this.id, encryptedMessage)
     } catch (e) {
@@ -608,12 +631,15 @@ export class Group<
   }
 
   async consentState(): Promise<ConsentState> {
-    return await XMTP.conversationConsentState(this.client.inboxId, this.id)
+    return await XMTP.conversationConsentState(
+      this.client.installationId,
+      this.id
+    )
   }
 
   async updateConsent(state: ConsentState): Promise<void> {
     return await XMTP.updateConversationConsent(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       state
     )
@@ -625,6 +651,9 @@ export class Group<
    * To get the latest member list from the network, call sync() first.
    */
   async members(): Promise<Member[]> {
-    return await XMTP.listConversationMembers(this.client.inboxId, this.id)
+    return await XMTP.listConversationMembers(
+      this.client.installationId,
+      this.id
+    )
   }
 }
