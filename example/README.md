@@ -15,6 +15,18 @@ npx pod-install
 yarn run [ios or android]
 ```
 
+### If testing the remote attachment content type, run (from example directory):
+
+```bash
+yarn run upload:up
+```
+
+If running on andoid also run:
+
+```bash
+adb reverse tcp:8443 tcp:8443
+```
+
 ### Configure ThirdWeb Client API
 
 > Note - The connect wallet button will still work without adding a client id, you just may see some extra network errors when viewing account info in the Thirdweb button after connecting.

@@ -1,3 +1,4 @@
+import { Platform } from 'expo-modules-core'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 
 // This contains a naive storage implementation.
@@ -7,7 +8,7 @@ import ReactNativeBlobUtil from 'react-native-blob-util'
 
 const useLocalServer = !process.env.REACT_APP_USE_LOCAL_SERVER
 const storageUrl = useLocalServer
-  ? 'https://localhost'
+  ? 'https://localhost:8443'
   : process.env.REACT_APP_STORAGE_URL
 const headers = {
   'Content-Type': 'application/octet-stream',
@@ -19,15 +20,26 @@ export async function uploadFile(
 ): Promise<string> {
   const url = `${storageUrl}/${fileId}`
   console.log('uploading to', url)
-  await ReactNativeBlobUtil.config({
-    fileCache: true,
-    trusty: useLocalServer,
-  }).fetch(
-    'POST',
-    url,
-    headers,
-    ReactNativeBlobUtil.wrap(localFileUri.slice('file://'.length))
-  )
+
+  try {
+    await ReactNativeBlobUtil.config({
+      fileCache: true,
+      trusty: useLocalServer,
+    }).fetch(
+      'POST',
+      url,
+      headers,
+      ReactNativeBlobUtil.wrap(localFileUri.slice('file://'.length))
+    )
+  } catch (error) {
+    console.error(
+      'Error during file upload:',
+      error,
+      'Did you run the `yarn run upload:up` command from the xmtp-react-native/example directory?',
+      'Did you run `adb reverse tcp:8443 tcp:8443` if testing on Android?'
+    )
+    throw error
+  }
 
   return url
 }
