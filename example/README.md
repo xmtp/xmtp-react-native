@@ -56,19 +56,21 @@ Running tests locally is useful when updating GitHub actions, or locally testing
 
 1. [Install Docker](https://docs.docker.com/get-docker/)
 
-2. Start a local XMTP server (from example directory)
+2. Start a local XMTP server
     ```bash
-    docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
+    git clone https://github.com/xmtp/libxmtp.git
+    cd libxmtp
+    dev/up
     ```
 3. Verify the XMTP server is running
     ```bash
     docker-compose ls
 
     NAME                STATUS              CONFIG FILES
-    xmtp                running(3)          <REPO_DIRECTORY>/xmtp-react-native/example/dev/local/docker-compose.yml
+    libxmtp             running(9)          /Users/<REPO_DIRECTORY>/libxmtp/dev/docker/docker-compose.yml
     ```
 4. You can now run unit tests on your local emulators
 5. You can stop the XMTP server with the following command:
     ```bash
-    docker-compose -p xmtp -f dev/local/docker-compose.yml down
+    dev/down
     ```
