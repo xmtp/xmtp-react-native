@@ -5,6 +5,7 @@ import XMTPModule from './XMTPModule'
 import { Address, InboxId, InstallationId, XMTPEnvironment } from './lib/Client'
 import { ConsentRecord, ConsentState, ConsentType } from './lib/ConsentRecord'
 import {
+  ContentCodec,
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
 } from './lib/ContentCodec'
@@ -27,6 +28,7 @@ import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
+import { EncodedContent } from '@xmtp/proto/ts/dist/types/message_contents/content.pb'
 
 export * from './context'
 export * from './hooks'
@@ -528,6 +530,28 @@ export async function findDmByAddress<
   }
 
   return new Dm(client, dm)
+}
+
+export async function sendWithContentType<T>(
+  inboxId: InboxId,
+  conversationId: ConversationId,
+  content: T,
+  codec: ContentCodec<T>
+): Promise<MessageId> {
+  if ('contentKey' in codec) {
+    const contentJson = JSON.stringify(content)
+    return await XMTPModule.sendMessage(inboxId, conversationId, contentJson)
+  } else {
+    const encodedContent = codec.encode(content)
+    encodedContent.fallback = codec.fallback(content)
+    const encodedContentData = EncodedContent.encode(encodedContent).finish()
+
+    return await XMTPModule.sendEncodedContent(
+      inboxId,
+      conversationId,
+      Array.from(encodedContentData)
+    )
+  }
 }
 
 export async function sendMessage(
