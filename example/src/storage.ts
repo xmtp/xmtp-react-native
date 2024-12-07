@@ -1,4 +1,3 @@
-import { Platform } from 'expo-modules-core'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 
 // This contains a naive storage implementation.
