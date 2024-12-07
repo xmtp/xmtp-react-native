@@ -6,7 +6,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "ios:clean": "expo run:ios --no-build-cache",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "upload:up": "docker-compose -p xmtp -f dev/local/docker-compose.yml up -d",
+    "upload:down": "docker-compose -p xmtp -f dev/local/docker-compose.yml down"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.21.0",
