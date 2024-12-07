@@ -67,7 +67,7 @@ Running tests locally is useful when updating GitHub actions, or locally testing
     docker-compose ls
 
     NAME                STATUS              CONFIG FILES
-    libxmtp             running(9)          /Users/<REPO_DIRECTORY>/libxmtp/dev/docker/docker-compose.yml
+    libxmtp             running(9)          <REPO_DIRECTORY>/libxmtp/dev/docker/docker-compose.yml
     ```
 4. You can now run unit tests on your local emulators
 5. You can stop the XMTP server with the following command:
