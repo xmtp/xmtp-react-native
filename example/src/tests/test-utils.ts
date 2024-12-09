@@ -1,5 +1,10 @@
 import { Platform } from 'expo-modules-core'
-import { Client, GroupUpdatedCodec, Group } from 'xmtp-react-native-sdk'
+import {
+  Client,
+  GroupUpdatedCodec,
+  Group,
+  RemoteAttachmentCodec,
+} from 'xmtp-react-native-sdk'
 
 export type Test = {
   name: string
@@ -34,6 +39,7 @@ export async function createClients(numClients: number): Promise<Client[]> {
       dbEncryptionKey: keyBytes,
     })
     client.register(new GroupUpdatedCodec())
+    client.register(new RemoteAttachmentCodec())
     clients.push(client)
   }
   return clients
