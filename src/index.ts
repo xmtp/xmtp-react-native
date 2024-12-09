@@ -542,7 +542,11 @@ export async function sendWithContentType<T>(
 ): Promise<MessageId> {
   if ('contentKey' in codec) {
     const contentJson = JSON.stringify(content)
-    return await XMTPModule.sendMessage(inboxId, conversationId, contentJson)
+    return await XMTPModule.sendMessage(
+      installationId,
+      conversationId,
+      contentJson
+    )
   } else {
     const encodedContent = codec.encode(content)
     encodedContent.fallback = codec.fallback(content)
