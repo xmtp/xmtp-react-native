@@ -721,6 +721,29 @@ public class XMTPModule: Module {
 				return nil
 			}
 		}
+		
+		AsyncFunction("sendEncodedContent") {
+			(
+				installationId: String, conversationId: String,
+				encodedContentData: [UInt8]
+			) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let conversation = try client.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
+			}
+			let encodedContent = try EncodedContent(
+				serializedBytes: Data(encodedContentData))
+
+			return try await conversation.send(encodedContent: encodedContent)
+		}
 
 		AsyncFunction("sendMessage") {
 			(installationId: String, id: String, contentJson: String) -> String

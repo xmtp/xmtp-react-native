@@ -1,3 +1,4 @@
+import { content } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import { Client } from '.'
@@ -5,6 +6,7 @@ import XMTPModule from './XMTPModule'
 import { Address, InboxId, InstallationId, XMTPEnvironment } from './lib/Client'
 import { ConsentRecord, ConsentState, ConsentType } from './lib/ConsentRecord'
 import {
+  ContentCodec,
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
 } from './lib/ContentCodec'
@@ -38,6 +40,8 @@ export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
 export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
 export { TextCodec } from './lib/NativeCodecs/TextCodec'
 export * from './lib/Signer'
+
+const EncodedContent = content.EncodedContent
 
 export function address(): string {
   return XMTPModule.address()
@@ -528,6 +532,32 @@ export async function findDmByAddress<
   }
 
   return new Dm(client, dm)
+}
+
+export async function sendWithContentType<T>(
+  installationId: InboxId,
+  conversationId: ConversationId,
+  content: T,
+  codec: ContentCodec<T>
+): Promise<MessageId> {
+  if ('contentKey' in codec) {
+    const contentJson = JSON.stringify(content)
+    return await XMTPModule.sendMessage(
+      installationId,
+      conversationId,
+      contentJson
+    )
+  } else {
+    const encodedContent = codec.encode(content)
+    encodedContent.fallback = codec.fallback(content)
+    const encodedContentData = EncodedContent.encode(encodedContent).finish()
+
+    return await XMTPModule.sendEncodedContent(
+      installationId,
+      conversationId,
+      Array.from(encodedContentData)
+    )
+  }
 }
 
 export async function sendMessage(
