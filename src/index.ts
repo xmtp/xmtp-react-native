@@ -1,3 +1,4 @@
+import { content } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import { Client } from '.'
@@ -28,7 +29,6 @@ import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
-import { EncodedContent } from '@xmtp/proto/ts/dist/types/message_contents/content.pb'
 
 export * from './context'
 export * from './hooks'
@@ -40,6 +40,8 @@ export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
 export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
 export { TextCodec } from './lib/NativeCodecs/TextCodec'
 export * from './lib/Signer'
+
+const EncodedContent = content.EncodedContent
 
 export function address(): string {
   return XMTPModule.address()
