@@ -535,7 +535,7 @@ export async function findDmByAddress<
 }
 
 export async function sendWithContentType<T>(
-  inboxId: InboxId,
+  installationId: InboxId,
   conversationId: ConversationId,
   content: T,
   codec: ContentCodec<T>
@@ -549,7 +549,7 @@ export async function sendWithContentType<T>(
     const encodedContentData = EncodedContent.encode(encodedContent).finish()
 
     return await XMTPModule.sendEncodedContent(
-      inboxId,
+      installationId,
       conversationId,
       Array.from(encodedContentData)
     )

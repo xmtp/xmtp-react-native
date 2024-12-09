@@ -97,7 +97,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     }
 
     return await XMTP.sendWithContentType(
-      this.client.inboxId,
+      this.client.installationId,
       this.id,
       content,
       codec
