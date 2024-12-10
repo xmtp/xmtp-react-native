@@ -146,7 +146,7 @@ test('can stream all dm messages', async () => {
   // }, 'dms')
 
   const group = await alix.conversations.newGroup([bo.address])
-  // But if setting up the stream after the group is created, it will not work
+  // But if setting up the stream after the group is created, it will work
   // await alix.conversations.streamAllMessages(async () => {
   //   alixMessageCallbacks++
   // }, 'dms')
