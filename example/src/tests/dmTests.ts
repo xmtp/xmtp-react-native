@@ -131,6 +131,8 @@ test('can stream all dm messages', async () => {
 
   let conversationCallbacks = 0
   let messageCallbacks = 0
+  // eslint-disable-next-line prefer-const
+  let alixMessageCallbacks: number = 0
   await bo.conversations.stream(async () => {
     conversationCallbacks++
   }, 'dms')
@@ -138,10 +140,19 @@ test('can stream all dm messages', async () => {
   await bo.conversations.streamAllMessages(async () => {
     messageCallbacks++
   }, 'dms')
+  // Enabling this will cause the test to fail
+  // await alix.conversations.streamAllMessages(async () => {
+  //   alixMessageCallbacks++
+  // }, 'dms')
 
   const group = await alix.conversations.newGroup([bo.address])
+  // But if setting up the stream after the group is created, it will not work
+  // await alix.conversations.streamAllMessages(async () => {
+  //   alixMessageCallbacks++
+  // }, 'dms')
   const dm = await alix.conversations.findOrCreateDm(bo.address)
   await delayToPropogate()
+
   await group.send('hello')
   await dm.send('hello')
   await delayToPropogate()
@@ -153,6 +164,10 @@ test('can stream all dm messages', async () => {
   assert(
     messageCallbacks === 1,
     'message stream should have received 1 message'
+  )
+  assert(
+    alixMessageCallbacks === 1,
+    'alix message stream should have received 1 message'
   )
 
   return true
