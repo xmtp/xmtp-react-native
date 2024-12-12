@@ -1,4 +1,6 @@
+import { content } from '@xmtp/proto'
 import { Wallet } from 'ethers'
+import ReactNativeBlobUtil from 'react-native-blob-util'
 import RNFS from 'react-native-fs'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
@@ -8,6 +10,7 @@ import {
   Conversation,
   ConversationId,
   ConversationVersion,
+  JSContentCodec,
 } from '../../../src/index'
 
 export const conversationTests: Test[] = []
@@ -18,6 +21,194 @@ function test(name: string, perform: () => Promise<boolean>) {
     run: perform,
   })
 }
+
+type EncodedContent = content.EncodedContent
+type ContentTypeId = content.ContentTypeId
+
+const { fs } = ReactNativeBlobUtil
+
+const ContentTypeNumber: ContentTypeId = {
+  authorityId: 'org',
+  typeId: 'number',
+  versionMajor: 1,
+  versionMinor: 0,
+}
+
+const ContentTypeNumberWithUndefinedFallback: ContentTypeId = {
+  authorityId: 'org',
+  typeId: 'number_undefined_fallback',
+  versionMajor: 1,
+  versionMinor: 0,
+}
+
+const ContentTypeNumberWithEmptyFallback: ContentTypeId = {
+  authorityId: 'org',
+  typeId: 'number_empty_fallback',
+  versionMajor: 1,
+  versionMinor: 0,
+}
+
+export type NumberRef = {
+  topNumber: {
+    bottomNumber: number
+  }
+}
+
+class NumberCodec implements JSContentCodec<NumberRef> {
+  contentType = ContentTypeNumber
+
+  // a completely absurd way of encoding number values
+  encode(content: NumberRef): EncodedContent {
+    return {
+      type: ContentTypeNumber,
+      parameters: {
+        test: 'test',
+      },
+      content: new TextEncoder().encode(JSON.stringify(content)),
+    }
+  }
+
+  decode(encodedContent: EncodedContent): NumberRef {
+    if (encodedContent.parameters.test !== 'test') {
+      throw new Error(`parameters should parse ${encodedContent.parameters}`)
+    }
+    const contentReceived = JSON.parse(
+      new TextDecoder().decode(encodedContent.content)
+    ) as NumberRef
+    return contentReceived
+  }
+
+  fallback(content: NumberRef): string | undefined {
+    return 'a billion'
+  }
+}
+
+class NumberCodecUndefinedFallback extends NumberCodec {
+  contentType = ContentTypeNumberWithUndefinedFallback
+  fallback(content: NumberRef): string | undefined {
+    return undefined
+  }
+}
+
+class NumberCodecEmptyFallback extends NumberCodec {
+  contentType = ContentTypeNumberWithEmptyFallback
+  fallback(content: NumberRef): string | undefined {
+    return ''
+  }
+}
+
+test('register and use custom content types', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+    dbEncryptionKey: keyBytes,
+  })
+  const alice = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+    dbEncryptionKey: keyBytes,
+  })
+
+  bob.register(new NumberCodec())
+  alice.register(new NumberCodec())
+
+  await delayToPropogate()
+
+  const bobConvo = await bob.conversations.newConversation(alice.address)
+  await delayToPropogate()
+  await bobConvo.send(
+    { topNumber: { bottomNumber: 12 } },
+    { contentType: ContentTypeNumber }
+  )
+
+  await alice.conversations.syncAllConversations()
+  const aliceConvo = await alice.conversations.findConversation(bobConvo.id)
+
+  const messages = await aliceConvo!.messages()
+  assert(messages.length === 1, 'did not get messages')
+
+  const message = messages[0]
+  const messageContent = message.content()
+
+  assert(
+    typeof messageContent === 'object' &&
+      'topNumber' in messageContent &&
+      messageContent.topNumber.bottomNumber === 12,
+    'did not get content properly: ' + JSON.stringify(messageContent)
+  )
+
+  return true
+})
+
+test('handle fallback types appropriately', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [
+      new NumberCodecEmptyFallback(),
+      new NumberCodecUndefinedFallback(),
+    ],
+    dbEncryptionKey: keyBytes,
+  })
+  const alice = await Client.createRandom({
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
+  bob.register(new NumberCodecEmptyFallback())
+  bob.register(new NumberCodecUndefinedFallback())
+  const bobConvo = await bob.conversations.newConversation(alice.address)
+
+  // @ts-ignore
+  await bobConvo.send(12, { contentType: ContentTypeNumberWithEmptyFallback })
+
+  // @ts-ignore
+  await bobConvo.send(12, {
+    contentType: ContentTypeNumberWithUndefinedFallback,
+  })
+
+  await alice.conversations.syncAllConversations()
+  const aliceConvo = await alice.conversations.findConversation(bobConvo.id)
+
+  const messages = await aliceConvo!.messages()
+  assert(messages.length === 2, 'did not get messages')
+
+  const messageUndefinedFallback = messages[0]
+  const messageWithDefinedFallback = messages[1]
+
+  let message1Content = undefined
+  try {
+    message1Content = messageUndefinedFallback.content()
+  } catch {
+    message1Content = messageUndefinedFallback.fallback
+  }
+
+  assert(
+    message1Content === undefined,
+    'did not get content properly when empty fallback: ' +
+      JSON.stringify(message1Content)
+  )
+
+  let message2Content = undefined
+  try {
+    message2Content = messageWithDefinedFallback.content()
+  } catch {
+    message2Content = messageWithDefinedFallback.fallback
+  }
+
+  assert(
+    message2Content === '',
+    'did not get content properly: ' + JSON.stringify(message2Content)
+  )
+
+  return true
+})
 
 test('can find a conversations by id', async () => {
   const [alixClient, boClient] = await createClients(2)
