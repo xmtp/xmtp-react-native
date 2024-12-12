@@ -120,14 +120,15 @@ test('register and use custom content types', async () => {
 
   const bobConvo = await bob.conversations.newConversation(alice.address)
   await delayToPropogate()
-  const aliceConvo = await alice.conversations.newConversation(bob.address)
-
   await bobConvo.send(
     { topNumber: { bottomNumber: 12 } },
     { contentType: ContentTypeNumber }
   )
 
-  const messages = await aliceConvo.messages()
+  await alice.conversations.syncAllConversations()
+  const aliceConvo = await alice.conversations.findConversation(bobConvo.id)
+
+  const messages = await aliceConvo!.messages()
   assert(messages.length === 1, 'did not get messages')
 
   const message = messages[0]
@@ -163,15 +164,19 @@ test('handle fallback types appropriately', async () => {
   bob.register(new NumberCodecEmptyFallback())
   bob.register(new NumberCodecUndefinedFallback())
   const bobConvo = await bob.conversations.newConversation(alice.address)
-  const aliceConvo = await alice.conversations.newConversation(bob.address)
 
+  // @ts-ignore
   await bobConvo.send(12, { contentType: ContentTypeNumberWithEmptyFallback })
 
+  // @ts-ignore
   await bobConvo.send(12, {
     contentType: ContentTypeNumberWithUndefinedFallback,
   })
 
-  const messages = await aliceConvo.messages()
+  await alice.conversations.syncAllConversations()
+  const aliceConvo = await alice.conversations.findConversation(bobConvo.id)
+
+  const messages = await aliceConvo!.messages()
   assert(messages.length === 2, 'did not get messages')
 
   const messageUndefinedFallback = messages[0]
