@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, Button, ScrollView } from 'react-native'
 
 import { clientTests } from './tests/clientTests'
+import { contentTypeTests } from './tests/contentTypeTests'
 import { conversationTests } from './tests/conversationTests'
 import { dmTests } from './tests/dmTests'
 import { groupPerformanceTests } from './tests/groupPerformanceTests'
@@ -10,7 +11,6 @@ import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
 import { Test } from './tests/test-utils'
-
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
 function TestView({
@@ -114,6 +114,7 @@ export enum TestCategory {
   restartStreans = 'restartStreams',
   groupPermissions = 'groupPermissions',
   groupPerformance = 'groupPerformance',
+  contentType = 'contentType',
 }
 
 export default function TestScreen(): JSX.Element {
@@ -129,6 +130,7 @@ export default function TestScreen(): JSX.Element {
     ...conversationTests,
     ...restartStreamTests,
     ...groupPermissionsTests,
+    ...contentTypeTests,
   ]
   let activeTests, title
   switch (params.testSelection) {
@@ -163,6 +165,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.groupPerformance:
       activeTests = groupPerformanceTests
       title = 'Group Performance Unit Tests'
+      break
+    case TestCategory.contentType:
+      activeTests = contentTypeTests
+      title = 'Content Type Unit Tests'
       break
   }
 
