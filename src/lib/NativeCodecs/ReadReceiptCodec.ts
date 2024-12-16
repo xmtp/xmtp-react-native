@@ -24,7 +24,7 @@ export class ReadReceiptCodec
   }
 
   decode(nativeContent: NativeMessageContent): ReadReceiptContent {
-    return nativeContent.reply!
+    return nativeContent.readReceipt!
   }
 
   fallback(content: object): string | undefined {
