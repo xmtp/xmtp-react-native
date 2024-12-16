@@ -721,7 +721,7 @@ public class XMTPModule: Module {
 				return nil
 			}
 		}
-		
+
 		AsyncFunction("sendEncodedContent") {
 			(
 				installationId: String, conversationId: String,
@@ -807,6 +807,30 @@ public class XMTPModule: Module {
 				content: sending.content,
 				options: SendOptions(contentType: sending.type)
 			)
+		}
+
+		AsyncFunction("prepareEncodedMessage") {
+			(
+				installationId: String,
+				conversationId: String,
+				encodedContentData: [UInt8]
+			) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let conversation = try client.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
+			}
+			let encodedContent = try EncodedContent(
+				serializedBytes: Data(encodedContentData))
+			return try await conversation.prepareMessage(
+				encodedContent: encodedContent)
 		}
 
 		AsyncFunction("findOrCreateDm") {
