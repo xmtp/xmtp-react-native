@@ -113,11 +113,13 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    */
   async prepareMessage<
     SendContentTypes extends DefaultContentTypes = ContentTypes,
-  >(content: ConversationSendPayload<SendContentTypes>): Promise<string> {
-    // TODO: Enable other content types
-    // if (opts && opts.contentType) {
-    // return await this._sendWithJSCodec(content, opts.contentType)
-    // }
+  >(
+    content: ConversationSendPayload<SendContentTypes>,
+    opts?: SendOptions
+  ): Promise<MessageId> {
+    if (opts && opts.contentType) {
+      return await this._prepareWithJSCodec(content, opts.contentType)
+    }
 
     try {
       if (typeof content === 'string') {
@@ -133,6 +135,27 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
       console.info('ERROR in prepareMessage()', e.message)
       throw e
     }
+  }
+
+  private async _prepareWithJSCodec<T>(
+    content: T,
+    contentType: XMTP.ContentTypeId
+  ): Promise<MessageId> {
+    const codec =
+      this.client.codecRegistry[
+        `${contentType.authorityId}/${contentType.typeId}:${contentType.versionMajor}.${contentType.versionMinor}`
+      ]
+
+    if (!codec) {
+      throw new Error(`no codec found for: ${contentType}`)
+    }
+
+    return await XMTP.prepareMessageWithContentType(
+      this.client.installationId,
+      this.id,
+      content,
+      codec
+    )
   }
 
   /**
