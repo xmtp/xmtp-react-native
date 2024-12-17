@@ -84,7 +84,7 @@ export class Group<
    * Sends a message to the current group.
    *
    * @param {string | MessageContent} content - The content of the message. It can be either a string or a structured MessageContent object.
-   * @returns {Promise<string>} A Promise that resolves to a string identifier for the sent message.
+   * @returns {Promise<MessageId>} A Promise that resolves to a string identifier for the sent message.
    * @throws {Error} Throws an error if there is an issue with sending the message.
    */
   async send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
@@ -136,16 +136,18 @@ export class Group<
    * Prepare a group message to be sent.
    *
    * @param {string | MessageContent} content - The content of the message. It can be either a string or a structured MessageContent object.
-   * @returns {Promise<string>} A Promise that resolves to a string identifier for the prepared message to be sent.
+   * @returns {Promise<MessageId>} A Promise that resolves to a string identifier for the prepared message to be sent.
    * @throws {Error} Throws an error if there is an issue with sending the message.
    */
   async prepareMessage<
     SendContentTypes extends DefaultContentTypes = ContentTypes,
-  >(content: ConversationSendPayload<SendContentTypes>): Promise<string> {
-    // TODO: Enable other content types
-    // if (opts && opts.contentType) {
-    // return await this._sendWithJSCodec(content, opts.contentType)
-    // }
+  >(
+    content: ConversationSendPayload<SendContentTypes>,
+    opts?: SendOptions
+  ): Promise<MessageId> {
+    if (opts && opts.contentType) {
+      return await this._prepareWithJSCodec(content, opts.contentType)
+    }
 
     try {
       if (typeof content === 'string') {
@@ -161,6 +163,27 @@ export class Group<
       console.info('ERROR in prepareGroupMessage()', e.message)
       throw e
     }
+  }
+
+  private async _prepareWithJSCodec<T>(
+    content: T,
+    contentType: XMTP.ContentTypeId
+  ): Promise<MessageId> {
+    const codec =
+      this.client.codecRegistry[
+        `${contentType.authorityId}/${contentType.typeId}:${contentType.versionMajor}.${contentType.versionMinor}`
+      ]
+
+    if (!codec) {
+      throw new Error(`no codec found for: ${contentType}`)
+    }
+
+    return await XMTP.prepareMessageWithContentType(
+      this.client.installationId,
+      this.id,
+      content,
+      codec
+    )
   }
 
   /**

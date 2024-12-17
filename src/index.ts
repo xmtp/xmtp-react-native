@@ -596,6 +596,25 @@ export async function prepareMessage(
   )
 }
 
+export async function prepareMessageWithContentType<T>(
+  installationId: InstallationId,
+  conversationId: ConversationId,
+  content: any,
+  codec: ContentCodec<T>
+): Promise<MessageId> {
+  if ('contentKey' in codec) {
+    return prepareMessage(installationId, conversationId, content)
+  }
+  const encodedContent = codec.encode(content)
+  encodedContent.fallback = codec.fallback(content)
+  const encodedContentData = EncodedContent.encode(encodedContent).finish()
+  return await XMTPModule.prepareEncodedMessage(
+    installationId,
+    conversationId,
+    Array.from(encodedContentData)
+  )
+}
+
 export async function findOrCreateDm<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(

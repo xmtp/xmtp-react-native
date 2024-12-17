@@ -28,6 +28,10 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
     content: ConversationSendPayload<SendContentTypes>,
     opts?: SendOptions
   ): Promise<MessageId>
+  prepareMessage<SendContentTypes extends DefaultContentTypes = ContentTypes>(
+    content: ConversationSendPayload<SendContentTypes>,
+    opts?: SendOptions
+  ): Promise<MessageId>
   sync()
   messages(opts?: MessagesOptions): Promise<DecodedMessageUnion<ContentTypes>[]>
   streamMessages(
