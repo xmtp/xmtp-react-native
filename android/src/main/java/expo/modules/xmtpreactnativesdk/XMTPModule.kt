@@ -713,6 +713,26 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("prepareEncodedMessage") Coroutine { installationId: String, conversationId: String, encodedContentData: List<Int> ->
+            withContext(Dispatchers.IO) {
+                logV("prepareEncodedMessage")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                val encodedContentDataBytes =
+                    encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
+                        a.apply {
+                            set(
+                                i,
+                                v.toByte()
+                            )
+                        }
+                    }
+                val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
+                conversation.prepareMessage(encodedContent = encodedContent)
+            }
+        }
+
         AsyncFunction("findOrCreateDm") Coroutine { installationId: String, peerAddress: String ->
             withContext(Dispatchers.IO) {
                 logV("findOrCreateDm")

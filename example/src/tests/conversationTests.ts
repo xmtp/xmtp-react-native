@@ -144,6 +144,54 @@ test('register and use custom content types', async () => {
   return true
 })
 
+test('register and use custom content types with prepare', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const bob = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+    dbEncryptionKey: keyBytes,
+  })
+  const alice = await Client.createRandom({
+    env: 'local',
+    codecs: [new NumberCodec()],
+    dbEncryptionKey: keyBytes,
+  })
+
+  bob.register(new NumberCodec())
+  alice.register(new NumberCodec())
+
+  await delayToPropogate()
+
+  const bobConvo = await bob.conversations.newConversation(alice.address)
+  await delayToPropogate()
+  await bobConvo.prepareMessage(
+    { topNumber: { bottomNumber: 12 } },
+    { contentType: ContentTypeNumber }
+  )
+  await bobConvo.publishPreparedMessages()
+
+  await alice.conversations.syncAllConversations()
+  const aliceConvo = await alice.conversations.findConversation(bobConvo.id)
+
+  const messages = await aliceConvo!.messages()
+  assert(messages.length === 1, 'did not get messages')
+
+  const message = messages[0]
+  const messageContent = message.content()
+
+  assert(
+    typeof messageContent === 'object' &&
+      'topNumber' in messageContent &&
+      messageContent.topNumber.bottomNumber === 12,
+    'did not get content properly: ' + JSON.stringify(messageContent)
+  )
+
+  return true
+})
+
 test('handle fallback types appropriately', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
