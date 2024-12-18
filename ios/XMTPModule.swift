@@ -1006,7 +1006,8 @@ public class XMTPModule: Module {
 			} else {
 				consent = nil
 			}
-			return try await client.conversations.syncAllConversations(consentState: consent)
+			return try await client.conversations.syncAllConversations(
+				consentState: consent)
 		}
 
 		AsyncFunction("syncConversation") {
@@ -2039,7 +2040,9 @@ public class XMTPModule: Module {
 			throw Error.noClient
 		}
 
-		guard let converation = try await client.findConversation(conversationId: id)
+		guard
+			let converation = try await client.findConversation(
+				conversationId: id)
 		else {
 			return
 		}
@@ -2083,7 +2086,9 @@ public class XMTPModule: Module {
 			throw Error.noClient
 		}
 
-		guard let converation = try await client.findConversation(conversationId: id)
+		guard
+			let converation = try await client.findConversation(
+				conversationId: id)
 		else {
 			return
 		}
