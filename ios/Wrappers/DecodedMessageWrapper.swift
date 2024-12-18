@@ -13,7 +13,7 @@ struct DecodedMessageWrapper {
 			"topic": model.topic,
 			"contentTypeId": model.encodedContent.type.description,
 			"content": try ContentJson.fromEncoded(model.encodedContent, client: client).toJsonMap() as Any,
-			"senderAddress": model.senderAddress,
+			"senderInboxId": model.senderInboxId,
 			"sentNs": model.sentNs,
 			"fallback": fallback,
 			"deliveryStatus": model.deliveryStatus.rawValue.uppercased(),

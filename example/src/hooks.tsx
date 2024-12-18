@@ -171,7 +171,7 @@ export function useMessage({
             console.log('Error refreshing messages', err)
           )
         }))
-  const isSenderMe = message?.senderAddress === client?.address
+  const isSenderMe = message?.senderInboxId === client?.address
   return {
     message,
     performReaction,
@@ -217,7 +217,7 @@ export function useGroupMessage({
             console.log('Error refreshing messages', err)
           )
         }))
-  const isSenderMe = message?.senderAddress === client?.address
+  const isSenderMe = message?.senderInboxId === client?.address
   return {
     message,
     performReaction,
@@ -245,7 +245,7 @@ export function useConversationReactions({ topic }: { topic: string }) {
   }>(
     ['xmtp', 'reactions', client?.address, topic, reactions.length],
     () => {
-      // SELECT messageId, reaction, senderAddress FROM reactions GROUP BY messageId, reaction
+      // SELECT messageId, reaction, senderInboxId FROM reactions GROUP BY messageId, reaction
       const byId = {} as {
         [messageId: string]: { [reaction: string]: string[] }
       }
@@ -254,23 +254,23 @@ export function useConversationReactions({ topic }: { topic: string }) {
         .slice()
         .reverse()
         .forEach((message) => {
-          const { senderAddress } = message
+          const { senderInboxId } = message
           const reaction = message.content() as ReactionContent
           const messageId = reaction!.reference
           const reactionText = reaction!.content
           const v = byId[messageId] || ({} as { [reaction: string]: string[] })
-          // DELETE FROM reactions WHERE messageId = ? AND reaction = ? AND senderAddress = ?
+          // DELETE FROM reactions WHERE messageId = ? AND reaction = ? AND senderInboxId = ?
           let prior = (v[reactionText] || [])
             // This removes any prior instances of the sender using this reaction.
-            .filter((address) => address !== senderAddress)
+            .filter((address) => address !== senderInboxId)
           if (reaction!.action === 'added') {
-            // INSERT INTO reactions (messageId, reaction, senderAddress) VALUES (?, ?, ?)
-            prior = prior.concat([senderAddress])
+            // INSERT INTO reactions (messageId, reaction, senderInboxId) VALUES (?, ?, ?)
+            prior = prior.concat([senderInboxId])
           }
           v[reactionText] = prior
           byId[messageId] = v
         })
-      // SELECT messageId, reaction, COUNT(*) AS count, COUNT(senderAddress = ?) AS includesMe
+      // SELECT messageId, reaction, COUNT(*) AS count, COUNT(senderInboxId = ?) AS includesMe
       // FROM reactions
       // GROUP BY messageId, reaction
       // ORDER BY count DESC
@@ -318,7 +318,7 @@ export function useGroupReactions({ groupId }: { groupId: string }) {
   }>(
     ['xmtp', 'reactions', client?.address, groupId, reactions.length],
     () => {
-      // SELECT messageId, reaction, senderAddress FROM reactions GROUP BY messageId, reaction
+      // SELECT messageId, reaction, senderInboxId FROM reactions GROUP BY messageId, reaction
       const byId = {} as {
         [messageId: string]: { [reaction: string]: string[] }
       }
@@ -327,23 +327,23 @@ export function useGroupReactions({ groupId }: { groupId: string }) {
         .slice()
         .reverse()
         .forEach((message) => {
-          const { senderAddress } = message
+          const { senderInboxId } = message
           const reaction = message.content() as ReactionContent
           const messageId = reaction!.reference
           const reactionText = reaction!.content
           const v = byId[messageId] || ({} as { [reaction: string]: string[] })
-          // DELETE FROM reactions WHERE messageId = ? AND reaction = ? AND senderAddress = ?
+          // DELETE FROM reactions WHERE messageId = ? AND reaction = ? AND senderInboxId = ?
           let prior = (v[reactionText] || [])
             // This removes any prior instances of the sender using this reaction.
-            .filter((address) => address !== senderAddress)
+            .filter((address) => address !== senderInboxId)
           if (reaction!.action === 'added') {
-            // INSERT INTO reactions (messageId, reaction, senderAddress) VALUES (?, ?, ?)
-            prior = prior.concat([senderAddress])
+            // INSERT INTO reactions (messageId, reaction, senderInboxId) VALUES (?, ?, ?)
+            prior = prior.concat([senderInboxId])
           }
           v[reactionText] = prior
           byId[messageId] = v
         })
-      // SELECT messageId, reaction, COUNT(*) AS count, COUNT(senderAddress = ?) AS includesMe
+      // SELECT messageId, reaction, COUNT(*) AS count, COUNT(senderInboxId = ?) AS includesMe
       // FROM reactions
       // GROUP BY messageId, reaction
       // ORDER BY count DESC

@@ -180,8 +180,8 @@ export default function GroupScreen({
                 showSender={
                   index === (filteredMessages || []).length - 1 ||
                   (index + 1 < (filteredMessages || []).length &&
-                    filteredMessages![index + 1].senderAddress !==
-                      message.senderAddress)
+                    filteredMessages![index + 1].senderInboxId !==
+                      message.senderInboxId)
                 }
               />
             )}
@@ -469,8 +469,8 @@ function ReplyInputHeader({
             }}
           />
           <Text style={{ fontSize: 12, fontWeight: 'bold' }}>
-            {message?.senderAddress.slice(0, 6)}…
-            {message?.senderAddress.slice(-4)}
+            {message?.senderInboxId.slice(0, 6)}…
+            {message?.senderInboxId.slice(-4)}
           </Text>
         </View>
       </TouchableHighlight>
@@ -864,8 +864,8 @@ function ReplyMessageHeader({
             }}
           />
           <Text style={{ fontSize: 12, fontWeight: 'bold' }}>
-            {message.senderAddress.slice(0, 6)}…
-            {message.senderAddress.slice(-4)}
+            {message.senderInboxId.slice(0, 6)}…
+            {message.senderInboxId.slice(-4)}
           </Text>
           {typeof content !== 'string' && 'text' in content && content.text ? (
             <Text
@@ -955,8 +955,8 @@ function MessageItem({
                 }}
               >
                 <Text style={{ fontWeight: 'bold' }}>
-                  {message.senderAddress.slice(0, 6)}…
-                  {message.senderAddress.slice(-4)}
+                  {message.senderInboxId.slice(0, 6)}…
+                  {message.senderInboxId.slice(-4)}
                 </Text>
                 <Text style={{ fontWeight: '300' }}>
                   {moment(message.sentNs / 1000000).fromNow()}

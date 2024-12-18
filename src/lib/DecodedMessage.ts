@@ -1,11 +1,12 @@
 import { Buffer } from 'buffer'
 
-import { Client, ExtractDecodedType } from './Client'
+import { Client, ExtractDecodedType, InboxId } from './Client'
 import {
   JSContentCodec,
   NativeContentCodec,
   NativeMessageContent,
 } from './ContentCodec'
+import { ConversationTopic, MessageId } from './types'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 
@@ -25,10 +26,10 @@ export class DecodedMessage<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
   client: Client<ContentTypes>
-  id: string
-  topic: string
+  id: MessageId
+  topic: ConversationTopic
   contentTypeId: string
-  senderAddress: string
+  senderInboxId: InboxId
   sentNs: number // timestamp in nanoseconds
   nativeContent: NativeMessageContent
   fallback: string | undefined
@@ -48,7 +49,7 @@ export class DecodedMessage<
       decoded.id,
       decoded.topic,
       decoded.contentTypeId,
-      decoded.senderAddress,
+      decoded.senderInboxId,
       decoded.sentNs,
       decoded.content,
       decoded.fallback,
@@ -62,10 +63,10 @@ export class DecodedMessage<
     ContentTypes extends DefaultContentTypes = [ContentType],
   >(
     object: {
-      id: string
-      topic: string
+      id: MessageId
+      topic: ConversationTopic
       contentTypeId: string
-      senderAddress: string
+      senderInboxId: InboxId
       sentNs: number // timestamp in nanoseconds
       content: any
       fallback: string | undefined
@@ -78,7 +79,7 @@ export class DecodedMessage<
       object.id,
       object.topic,
       object.contentTypeId,
-      object.senderAddress,
+      object.senderInboxId,
       object.sentNs,
       object.content,
       object.fallback,
@@ -88,10 +89,10 @@ export class DecodedMessage<
 
   constructor(
     client: Client<ContentTypes>,
-    id: string,
-    topic: string,
+    id: MessageId,
+    topic: ConversationTopic,
     contentTypeId: string,
-    senderAddress: string,
+    senderInboxId: InboxId,
     sentNs: number,
     content: any,
     fallback: string | undefined,
@@ -101,7 +102,7 @@ export class DecodedMessage<
     this.id = id
     this.topic = topic
     this.contentTypeId = contentTypeId
-    this.senderAddress = senderAddress
+    this.senderInboxId = senderInboxId
     this.sentNs = sentNs
     this.nativeContent = content
     // undefined comes back as null when bridged, ensure undefined so integrators don't have to add a new check for null as well

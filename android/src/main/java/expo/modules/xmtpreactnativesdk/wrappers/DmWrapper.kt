@@ -6,7 +6,7 @@ import org.xmtp.android.library.Dm
 
 class DmWrapper {
     companion object {
-        fun encodeToObj(
+        suspend fun encodeToObj(
             client: Client,
             dm: Dm,
             dmParams: ConversationParamsWrapper = ConversationParamsWrapper(),
@@ -30,7 +30,7 @@ class DmWrapper {
             }
         }
 
-        fun encode(
+        suspend fun encode(
             client: Client,
             dm: Dm,
             dmParams: ConversationParamsWrapper = ConversationParamsWrapper(),

@@ -7,7 +7,7 @@ import org.xmtp.android.library.Conversation
 class ConversationWrapper {
 
     companion object {
-        fun encodeToObj(
+        suspend fun encodeToObj(
             client: Client,
             conversation: Conversation,
             conversationParams: ConversationParamsWrapper = ConversationParamsWrapper(),
@@ -25,7 +25,7 @@ class ConversationWrapper {
             }
         }
 
-        fun encode(
+        suspend fun encode(
             client: Client,
             conversation: Conversation,
             conversationParams: ConversationParamsWrapper = ConversationParamsWrapper(),
