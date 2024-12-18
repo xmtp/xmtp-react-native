@@ -88,6 +88,26 @@ test('building and creating', async () => {
   const end3 = performance.now()
   console.log(`Built a client with inboxId in ${end3 - start3}ms`)
 
+  await Client.connectToApiBackend('dev')
+  const start4 = performance.now()
+  await Client.createRandom({
+    env: 'dev',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+    codecs: [
+      new ReactionCodec(),
+      new ReplyCodec(),
+      new GroupUpdatedCodec(),
+      new StaticAttachmentCodec(),
+      new RemoteAttachmentCodec(),
+    ],
+  })
+  const end4 = performance.now()
+  console.log(
+    `Created a client after connecting to backend in ${end4 - start4}ms`
+  )
+
   assert(
     end2 - start2 < end1 - start1,
     'building a client should be faster than creating one'
@@ -99,6 +119,10 @@ test('building and creating', async () => {
   assert(
     end3 - start3 < end2 - start2,
     'building a client with an inboxId should be faster than building without'
+  )
+  assert(
+    end4 - start4 < end1 - start1,
+    'creating a client with an apiClient cached should be faster than creating one without'
   )
 
   return true

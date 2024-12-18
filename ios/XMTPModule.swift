@@ -31,6 +31,7 @@ actor IsolatedManager<T> {
 public class XMTPModule: Module {
 	var signer: ReactNativeSigner?
 	let clientsManager = ClientsManager()
+	var apiClient: XmtpApiClient?
 	let subscriptionsManager = IsolatedManager<Task<Void, Never>>()
 	private var preAuthenticateToInboxCallbackDeferred: DispatchSemaphore?
 
@@ -219,6 +220,14 @@ public class XMTPModule: Module {
 			try signer?.handleSCW(id: requestID, signature: signature)
 		}
 
+		AsyncFunction("connectToApiBackend") {
+			(environment: String) in
+			let xmtpApiClient = try await XMTP.Client.connectToApiBackend(
+				api: createApiClient(env: environment)
+			)
+			apiClient = xmtpApiClient
+		}
+
 		AsyncFunction("createRandom") {
 			(
 				hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8],
@@ -241,8 +250,8 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await Client.create(
-				account: privateKey, options: options)
-
+				account: privateKey, options: options, apiClient: apiClient)
+			apiClient = client.apiClient
 			await clientsManager.updateClient(
 				key: client.installationID, client: client)
 			return try ClientWrapper.encodeToObj(client)
@@ -277,9 +286,10 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.create(
-				account: signer, options: options)
+				account: signer, options: options, apiClient: apiClient)
 			await self.clientsManager.updateClient(
 				key: client.installationID, client: client)
+			apiClient = client.apiClient
 			self.signer = nil
 			self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
 		}
@@ -299,9 +309,11 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.build(
-				address: address, options: options, inboxId: inboxId)
+				address: address, options: options, inboxId: inboxId,
+				apiClient: apiClient)
 			await clientsManager.updateClient(
 				key: client.installationID, client: client)
+			apiClient = client.apiClient
 			return try ClientWrapper.encodeToObj(client)
 		}
 
