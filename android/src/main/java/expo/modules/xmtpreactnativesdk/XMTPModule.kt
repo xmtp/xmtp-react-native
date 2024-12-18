@@ -296,7 +296,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("connectToApiBackend")
                 val api = apiEnvironments(environment, null)
-                val xmtpApiClient = Client().connectToApiBackend(api)
+                val xmtpApiClient = Client.connectToApiBackend(api)
                 apiClient = xmtpApiClient
             }
         }
@@ -310,7 +310,8 @@ class XMTPModule : Module() {
                     authParams,
                     hasPreAuthenticateToInboxCallback,
                 )
-                val randomClient = Client().create(account = privateKey, options = options, apiClient = apiClient)
+                val randomClient =
+                    Client().create(account = privateKey, options = options, apiClient = apiClient)
 
                 ContentJson.Companion
                 clients[randomClient.installationId] = randomClient
@@ -336,7 +337,8 @@ class XMTPModule : Module() {
                     authParams,
                     hasAuthInboxCallback,
                 )
-                val client = Client().create(account = reactSigner, options = options, apiClient = apiClient)
+                val client =
+                    Client().create(account = reactSigner, options = options, apiClient = apiClient)
                 clients[client.installationId] = client
                 apiClient = client.apiClient
                 ContentJson.Companion
@@ -352,7 +354,12 @@ class XMTPModule : Module() {
                     dbEncryptionKey,
                     authParams,
                 )
-                val client = Client().build(address = address, options = options, inboxId = inboxId, apiClient = apiClient)
+                val client = Client().build(
+                    address = address,
+                    options = options,
+                    inboxId = inboxId,
+                    apiClient = apiClient
+                )
                 ContentJson.Companion
                 clients[client.installationId] = client
                 apiClient = client.apiClient
@@ -464,7 +471,8 @@ class XMTPModule : Module() {
                 Client.canMessage(
                     peerAddresses,
                     context,
-                    apiEnvironments(environment, null)
+                    apiEnvironments(environment, null),
+                    apiClient = apiClient
                 )
             }
         }
