@@ -826,12 +826,13 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("syncAllConversations") Coroutine { installationId: String ->
+        AsyncFunction("syncAllConversations") Coroutine { installationId: String, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("syncAllConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
+                val consent = consentState?.let { getConsentState(it) }
                 val numGroupsSyncedInt: Int =
-                    client.conversations.syncAllConversations().toInt()
+                    client.conversations.syncAllConversations(consent).toInt()
                 numGroupsSyncedInt
             }
         }
@@ -1513,7 +1514,7 @@ class XMTPModule : Module() {
         return "conversations:$installationId"
     }
 
-    private fun unsubscribeFromMessages(
+    private suspend fun unsubscribeFromMessages(
         installationId: String,
         id: String,
     ) {

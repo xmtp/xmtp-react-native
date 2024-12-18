@@ -398,6 +398,36 @@ test('can filter conversations by consent', async () => {
   return true
 })
 
+test('can filter sync all by consent', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3)
+
+  await boClient.conversations.newGroup([alixClient.address])
+  const otherGroup = await alixClient.conversations.newGroup([boClient.address])
+  await boClient.conversations.findOrCreateDm(alixClient.address)
+  await caroClient.conversations.findOrCreateDm(boClient.address)
+  await boClient.conversations.sync()
+  await boClient.conversations.findDmByInboxId(caroClient.inboxId)
+  await boClient.conversations.findGroup(otherGroup.id)
+
+  const boConvos = await boClient.conversations.syncAllConversations()
+  const boConvosFilteredAllowed =
+    await boClient.conversations.syncAllConversations('allowed')
+  const boConvosFilteredUnknown =
+    await boClient.conversations.syncAllConversations('unknown')
+
+  assert(boConvos === 4, `Conversation length should be 4 but was ${boConvos}`)
+  assert(
+    boConvosFilteredAllowed === 2,
+    `Conversation length should be 2 but was ${boConvosFilteredAllowed}`
+  )
+  assert(
+    boConvosFilteredUnknown === 2,
+    `Conversation length should be 2 but was ${boConvosFilteredUnknown}`
+  )
+
+  return true
+})
+
 test('can list conversations with params', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 

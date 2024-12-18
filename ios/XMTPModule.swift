@@ -604,7 +604,7 @@ public class XMTPModule: Module {
 			}
 
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
@@ -667,7 +667,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 
-			if let conversation = try client.findConversation(
+			if let conversation = try await client.findConversation(
 				conversationId: conversationId)
 			{
 				return try await ConversationWrapper.encode(
@@ -684,7 +684,7 @@ public class XMTPModule: Module {
 			else {
 				throw Error.noClient
 			}
-			if let conversation = try client.findConversationByTopic(
+			if let conversation = try await client.findConversationByTopic(
 				topic: topic)
 			{
 				return try await ConversationWrapper.encode(
@@ -733,7 +733,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
@@ -754,7 +754,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
@@ -776,7 +776,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
@@ -795,7 +795,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
@@ -821,7 +821,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
@@ -944,7 +944,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: dmId)
 			else {
 				throw Error.conversationNotFound(
@@ -973,7 +973,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
@@ -994,13 +994,20 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("syncAllConversations") {
-			(installationId: String) -> UInt32 in
+			(installationId: String, consentState: String?) -> UInt32 in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			return try await client.conversations.syncAllConversations()
+			let consent: ConsentState?
+			if let state = consentState {
+				consent = try getConsentState(state: state)
+			} else {
+				consent = nil
+			}
+			return try await client.conversations.syncAllConversations(
+				consentState: consent)
 		}
 
 		AsyncFunction("syncConversation") {
@@ -1011,7 +1018,7 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
@@ -1241,7 +1248,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			return try group.creatorInboxId()
+			return try await group.creatorInboxId()
 		}
 
 		AsyncFunction("isAdmin") {
@@ -1528,7 +1535,7 @@ public class XMTPModule: Module {
 			}
 
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
@@ -1652,7 +1659,7 @@ public class XMTPModule: Module {
 			}
 
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
@@ -1671,7 +1678,7 @@ public class XMTPModule: Module {
 			}
 
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
@@ -2033,7 +2040,9 @@ public class XMTPModule: Module {
 			throw Error.noClient
 		}
 
-		guard let converation = try client.findConversation(conversationId: id)
+		guard
+			let converation = try await client.findConversation(
+				conversationId: id)
 		else {
 			return
 		}
@@ -2077,7 +2086,9 @@ public class XMTPModule: Module {
 			throw Error.noClient
 		}
 
-		guard let converation = try client.findConversation(conversationId: id)
+		guard
+			let converation = try await client.findConversation(
+				conversationId: id)
 		else {
 			return
 		}

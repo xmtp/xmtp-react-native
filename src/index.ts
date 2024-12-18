@@ -713,9 +713,10 @@ export async function syncConversations(installationId: InstallationId) {
 }
 
 export async function syncAllConversations(
-  installationId: InstallationId
+  installationId: InstallationId,
+  consentState?: ConsentState | undefined
 ): Promise<number> {
-  return await XMTPModule.syncAllConversations(installationId)
+  return await XMTPModule.syncAllConversations(installationId, consentState)
 }
 
 export async function syncConversation(
