@@ -279,8 +279,13 @@ export default class Conversations<
    *
    * @returns {Promise<number>} A Promise that resolves to the number of conversations synced.
    */
-  async syncAllConversations(): Promise<number> {
-    return await XMTPModule.syncAllConversations(this.client.installationId)
+  async syncAllConversations(
+    consentState: ConsentState | undefined = undefined
+  ): Promise<number> {
+    return await XMTPModule.syncAllConversations(
+      this.client.installationId,
+      consentState
+    )
   }
 
   /**
