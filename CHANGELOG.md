@@ -1,5 +1,14 @@
 # @xmtp/react-native-sdk
 
+## 3.1.4
+
+### Patch Changes
+
+- 5dbd79e: Speed up build client performance
+  Adds ability to filter syncAllConversations by consent state
+  Fixes potential forked group issues
+  Renames senderAddress to senderInboxId
+
 ## 3.1.3
 
 ### Patch Changes
