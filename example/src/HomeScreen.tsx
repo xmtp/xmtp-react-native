@@ -150,7 +150,7 @@ function ConversationItem({
           <Text numberOfLines={1} ellipsizeMode="tail">
             {lastMessage?.fallback}
           </Text>
-          <Text>{lastMessage?.senderAddress}:</Text>
+          <Text>{lastMessage?.senderInboxId}:</Text>
           <Text>{moment(lastMessage?.sentNs / 1000000).fromNow()}</Text>
         </View>
       </View>

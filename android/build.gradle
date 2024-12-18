@@ -98,7 +98,7 @@ repositories {
 dependencies {
   implementation project(':expo-modules-core')
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${getKotlinVersion()}"
-  implementation "org.xmtp:android:3.0.17"
+  implementation "org.xmtp:android:3.0.18"
   implementation 'com.google.code.gson:gson:2.10.1'
   implementation 'com.facebook.react:react-native:0.71.3'
   implementation "com.daveanthonythomas.moshipack:moshipack:1.0.1"

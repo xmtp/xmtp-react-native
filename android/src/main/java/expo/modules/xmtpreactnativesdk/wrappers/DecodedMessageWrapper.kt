@@ -22,7 +22,7 @@ class DecodedMessageWrapper {
                 "topic" to model.topic,
                 "contentTypeId" to model.encodedContent.type.description,
                 "content" to ContentJson(model.encodedContent).toJsonMap(),
-                "senderAddress" to model.senderAddress,
+                "senderInboxId" to model.senderInboxId,
                 "sentNs" to model.sentNs,
                 "fallback" to fallback,
                 "deliveryStatus" to model.deliveryStatus.toString()

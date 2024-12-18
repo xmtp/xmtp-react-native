@@ -9,7 +9,7 @@ import org.xmtp.android.library.Group
 class GroupWrapper {
 
     companion object {
-        fun encodeToObj(
+        suspend fun encodeToObj(
             client: Client,
             group: Group,
             groupParams: ConversationParamsWrapper = ConversationParamsWrapper(),
@@ -37,7 +37,7 @@ class GroupWrapper {
             }
         }
 
-        fun encode(
+        suspend fun encode(
             client: Client,
             group: Group,
             groupParams: ConversationParamsWrapper = ConversationParamsWrapper(),
