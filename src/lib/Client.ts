@@ -80,6 +80,16 @@ export class Client<
   }
 
   /**
+   * Connects to the XMTP api backend to speed up creating and building future clients.
+   *
+   * @param {XMTPEnvironment} env - Environment to connect to
+   * @returns {Promise<void>} A Promise to let you know the api has been connected
+   */
+  static async connectToApiBackend(env: XMTPEnvironment): Promise<void> {
+    return await XMTPModule.connectToApiBackend(env)
+  }
+
+  /**
    * Creates a new instance of the XMTP Client with a randomly generated address.
    *
    * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include encryption key.
