@@ -192,7 +192,6 @@ class XMTPModule : Module() {
     }
 
     private var clients: MutableMap<String, Client> = mutableMapOf()
-    private var apiClient: XmtpApiClient? = null
     private var xmtpPush: XMTPPush? = null
     private var signer: ReactNativeSigner? = null
     private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
@@ -296,8 +295,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("connectToApiBackend")
                 val api = apiEnvironments(environment, null)
-                val xmtpApiClient = Client.connectToApiBackend(api)
-                apiClient = xmtpApiClient
+                Client.connectToApiBackend(api)
             }
         }
 
@@ -311,11 +309,10 @@ class XMTPModule : Module() {
                     hasPreAuthenticateToInboxCallback,
                 )
                 val randomClient =
-                    Client().create(account = privateKey, options = options, apiClient = apiClient)
+                    Client().create(account = privateKey, options = options)
 
                 ContentJson.Companion
                 clients[randomClient.installationId] = randomClient
-                apiClient = randomClient.apiClient
                 ClientWrapper.encodeToObj(randomClient)
             }
         }
@@ -338,9 +335,8 @@ class XMTPModule : Module() {
                     hasAuthInboxCallback,
                 )
                 val client =
-                    Client().create(account = reactSigner, options = options, apiClient = apiClient)
+                    Client().create(account = reactSigner, options = options)
                 clients[client.installationId] = client
-                apiClient = client.apiClient
                 ContentJson.Companion
                 signer = null
                 sendEvent("authed", ClientWrapper.encodeToObj(client))
@@ -358,11 +354,9 @@ class XMTPModule : Module() {
                     address = address,
                     options = options,
                     inboxId = inboxId,
-                    apiClient = apiClient
                 )
                 ContentJson.Companion
                 clients[client.installationId] = client
-                apiClient = client.apiClient
                 ClientWrapper.encodeToObj(client)
             }
         }
@@ -472,7 +466,6 @@ class XMTPModule : Module() {
                     peerAddresses,
                     context,
                     apiEnvironments(environment, null),
-                    apiClient = apiClient
                 )
             }
         }
@@ -482,7 +475,7 @@ class XMTPModule : Module() {
                 try {
                     logV("getOrCreateInboxId")
                     Client.getOrCreateInboxId(
-                        environment = apiEnvironments(environment, null),
+                        api = apiEnvironments(environment, null),
                         address = address
                     )
                 } catch (e: Exception) {
