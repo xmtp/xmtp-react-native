@@ -31,7 +31,6 @@ actor IsolatedManager<T> {
 public class XMTPModule: Module {
 	var signer: ReactNativeSigner?
 	let clientsManager = ClientsManager()
-	var apiClient: XmtpApiClient?
 	let subscriptionsManager = IsolatedManager<Task<Void, Never>>()
 	private var preAuthenticateToInboxCallbackDeferred: DispatchSemaphore?
 
@@ -164,15 +163,6 @@ public class XMTPModule: Module {
 			try await client.reconnectLocalDatabase()
 		}
 
-		AsyncFunction("requestMessageHistorySync") { (installationId: String) in
-			guard
-				let client = await clientsManager.getClient(key: installationId)
-			else {
-				throw Error.noClient
-			}
-			try await client.requestMessageHistorySync()
-		}
-
 		AsyncFunction("getInboxState") {
 			(installationId: String, refreshFromNetwork: Bool) -> String in
 			guard
@@ -222,10 +212,9 @@ public class XMTPModule: Module {
 
 		AsyncFunction("connectToApiBackend") {
 			(environment: String) in
-			let xmtpApiClient = try await XMTP.Client.connectToApiBackend(
+			try await XMTP.Client.connectToApiBackend(
 				api: createApiClient(env: environment)
 			)
-			apiClient = xmtpApiClient
 		}
 
 		AsyncFunction("createRandom") {
@@ -250,8 +239,7 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await Client.create(
-				account: privateKey, options: options, apiClient: apiClient)
-			apiClient = client.apiClient
+				account: privateKey, options: options)
 			await clientsManager.updateClient(
 				key: client.installationID, client: client)
 			return try ClientWrapper.encodeToObj(client)
@@ -286,10 +274,9 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.create(
-				account: signer, options: options, apiClient: apiClient)
+				account: signer, options: options)
 			await self.clientsManager.updateClient(
 				key: client.installationID, client: client)
-			apiClient = client.apiClient
 			self.signer = nil
 			self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
 		}
@@ -309,11 +296,9 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.build(
-				address: address, options: options, inboxId: inboxId,
-				apiClient: apiClient)
+				address: address, options: options, inboxId: inboxId)
 			await clientsManager.updateClient(
 				key: client.installationID, client: client)
-			apiClient = client.apiClient
 			return try ClientWrapper.encodeToObj(client)
 		}
 
