@@ -283,14 +283,6 @@ class XMTPModule : Module() {
             signer?.handleSCW(id = requestID, signature = signature)
         }
 
-        AsyncFunction("connectToApiBackend") Coroutine { environment: String ->
-            withContext(Dispatchers.IO) {
-                logV("connectToApiBackend")
-                val api = apiEnvironments(environment, null)
-                Client.connectToApiBackend(api)
-            }
-        }
-
         AsyncFunction("createRandom") Coroutine { hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("createRandom")

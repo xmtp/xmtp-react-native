@@ -113,12 +113,6 @@ export async function receiveSCWSignature(
   return await XMTPModule.receiveSCWSignature(requestID, signature)
 }
 
-export async function connectToApiBackend(
-  environment: XMTPEnvironment
-): Promise<void> {
-  return await XMTPModule.connectToApiBackend(environment)
-}
-
 export async function createRandom(
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,

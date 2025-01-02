@@ -210,13 +210,6 @@ public class XMTPModule: Module {
 			try signer?.handleSCW(id: requestID, signature: signature)
 		}
 
-		AsyncFunction("connectToApiBackend") {
-			(environment: String) in
-			try await XMTP.Client.connectToApiBackend(
-				api: createApiClient(env: environment)
-			)
-		}
-
 		AsyncFunction("createRandom") {
 			(
 				hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8],
