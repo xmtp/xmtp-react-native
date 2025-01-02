@@ -72,12 +72,6 @@ export async function reconnectLocalDatabase(installationId: InstallationId) {
   return XMTPModule.reconnectLocalDatabase(installationId)
 }
 
-export async function requestMessageHistorySync(
-  installationId: InstallationId
-) {
-  return XMTPModule.requestMessageHistorySync(installationId)
-}
-
 export async function getInboxState(
   installationId: InstallationId,
   refreshFromNetwork: boolean

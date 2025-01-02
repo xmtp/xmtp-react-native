@@ -540,13 +540,6 @@ export class Client<
   }
 
   /**
-   * Make a request for a message history sync.
-   */
-  async requestMessageHistorySync() {
-    return await XMTPModule.requestMessageHistorySync(this.installationId)
-  }
-
-  /**
    * Make a request for your inbox state.
    *
    * @param {boolean} refreshFromNetwork - If you want to refresh the current state of in the inbox from the network or not.

@@ -10,7 +10,7 @@ import {
   StaticAttachmentCodec,
 } from 'xmtp-react-native-sdk'
 
-import { Test, assert } from './test-utils'
+import { Test, assert, createClients } from './test-utils'
 
 export const groupPerformanceTests: Test[] = []
 let counter = 1
@@ -125,5 +125,61 @@ test('building and creating', async () => {
     'creating a client with an apiClient cached should be faster than creating one without'
   )
 
+  return true
+})
+
+test('creating a new group', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3, 'dev')
+
+  const start1 = performance.now()
+  await alixClient.conversations.newConversation(boClient.address)
+  const end1 = performance.now()
+  console.log(`Alix created a dm with Bo in ${end1 - start1}ms`)
+
+  await boClient.conversations.syncAllConversations()
+  const start2 = performance.now()
+  await boClient.conversations.newConversation(alixClient.address)
+  const end2 = performance.now()
+  console.log(`Bo found a dm with Alix in ${end2 - start2}ms`)
+
+  const start3 = performance.now()
+  await alixClient.conversations.newGroup([
+    boClient.address,
+    caroClient.address,
+  ])
+  const end3 = performance.now()
+  console.log(`Alix created a group with Bo and Caro in ${end3 - start3}ms`)
+
+  const start4 = performance.now()
+  await alixClient.conversations.newGroup(
+    [boClient.address, caroClient.address],
+    {
+      permissionLevel: 'admin_only',
+      name: 'Group Name',
+      imageUrlSquare: 'imageurl.com',
+      description: 'group description',
+      pinnedFrameUrl: 'pinnedframe.com',
+    }
+  )
+  const end4 = performance.now()
+  console.log(
+    `Alix created a group with Bo and Caro with metadata in ${end4 - start4}ms`
+  )
+  assert(
+    end1 - start1 < 1000,
+    `Creating a new dm should be less than a second but was ${end1 - start1}`
+  )
+  assert(
+    end2 - start2 < 1000,
+    `Finding a existing dm should be less than a second but was ${end2 - start2}`
+  )
+  assert(
+    end3 - start3 < 1000,
+    `Creating a new group without metadata should be less than a second but was ${end3 - start3}`
+  )
+  assert(
+    end4 - start4 < 1000,
+    `Creating a new group with metadata should be less than a second but was ${end4 - start4}`
+  )
   return true
 })

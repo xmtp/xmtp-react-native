@@ -249,13 +249,6 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("requestMessageHistorySync") Coroutine { installationId: String ->
-            withContext(Dispatchers.IO) {
-                val client = clients[installationId] ?: throw XMTPException("No client")
-                client.requestMessageHistorySync()
-            }
-        }
-
         AsyncFunction("getInboxState") Coroutine { installationId: String, refreshFromNetwork: Boolean ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
