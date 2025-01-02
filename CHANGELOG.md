@@ -1,5 +1,12 @@
 # @xmtp/react-native-sdk
 
+## 3.1.5
+
+### Patch Changes
+
+- db4e926: - Re-Enable History Sync
+  - Continued Performance improvements
+
 ## 3.1.4
 
 ### Patch Changes
