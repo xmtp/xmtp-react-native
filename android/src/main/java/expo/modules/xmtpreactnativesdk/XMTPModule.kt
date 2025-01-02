@@ -59,7 +59,6 @@ import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
-import uniffi.xmtpv3.XmtpApiClient
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
 import java.io.BufferedReader
@@ -192,7 +191,6 @@ class XMTPModule : Module() {
     }
 
     private var clients: MutableMap<String, Client> = mutableMapOf()
-    private var apiClient: XmtpApiClient? = null
     private var xmtpPush: XMTPPush? = null
     private var signer: ReactNativeSigner? = null
     private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
@@ -251,13 +249,6 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("requestMessageHistorySync") Coroutine { installationId: String ->
-            withContext(Dispatchers.IO) {
-                val client = clients[installationId] ?: throw XMTPException("No client")
-                client.requestMessageHistorySync()
-            }
-        }
-
         AsyncFunction("getInboxState") Coroutine { installationId: String, refreshFromNetwork: Boolean ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -292,15 +283,6 @@ class XMTPModule : Module() {
             signer?.handleSCW(id = requestID, signature = signature)
         }
 
-        AsyncFunction("connectToApiBackend") Coroutine { environment: String ->
-            withContext(Dispatchers.IO) {
-                logV("connectToApiBackend")
-                val api = apiEnvironments(environment, null)
-                val xmtpApiClient = Client.connectToApiBackend(api)
-                apiClient = xmtpApiClient
-            }
-        }
-
         AsyncFunction("createRandom") Coroutine { hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("createRandom")
@@ -311,11 +293,10 @@ class XMTPModule : Module() {
                     hasPreAuthenticateToInboxCallback,
                 )
                 val randomClient =
-                    Client().create(account = privateKey, options = options, apiClient = apiClient)
+                    Client().create(account = privateKey, options = options)
 
                 ContentJson.Companion
                 clients[randomClient.installationId] = randomClient
-                apiClient = randomClient.apiClient
                 ClientWrapper.encodeToObj(randomClient)
             }
         }
@@ -338,9 +319,8 @@ class XMTPModule : Module() {
                     hasAuthInboxCallback,
                 )
                 val client =
-                    Client().create(account = reactSigner, options = options, apiClient = apiClient)
+                    Client().create(account = reactSigner, options = options)
                 clients[client.installationId] = client
-                apiClient = client.apiClient
                 ContentJson.Companion
                 signer = null
                 sendEvent("authed", ClientWrapper.encodeToObj(client))
@@ -358,11 +338,9 @@ class XMTPModule : Module() {
                     address = address,
                     options = options,
                     inboxId = inboxId,
-                    apiClient = apiClient
                 )
                 ContentJson.Companion
                 clients[client.installationId] = client
-                apiClient = client.apiClient
                 ClientWrapper.encodeToObj(client)
             }
         }
@@ -472,7 +450,6 @@ class XMTPModule : Module() {
                     peerAddresses,
                     context,
                     apiEnvironments(environment, null),
-                    apiClient = apiClient
                 )
             }
         }
@@ -482,7 +459,7 @@ class XMTPModule : Module() {
                 try {
                     logV("getOrCreateInboxId")
                     Client.getOrCreateInboxId(
-                        environment = apiEnvironments(environment, null),
+                        api = apiEnvironments(environment, null),
                         address = address
                     )
                 } catch (e: Exception) {

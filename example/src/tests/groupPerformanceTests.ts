@@ -10,7 +10,7 @@ import {
   StaticAttachmentCodec,
 } from 'xmtp-react-native-sdk'
 
-import { Test, assert } from './test-utils'
+import { Test, assert, createClients } from './test-utils'
 
 export const groupPerformanceTests: Test[] = []
 let counter = 1
@@ -88,26 +88,6 @@ test('building and creating', async () => {
   const end3 = performance.now()
   console.log(`Built a client with inboxId in ${end3 - start3}ms`)
 
-  await Client.connectToApiBackend('dev')
-  const start4 = performance.now()
-  await Client.createRandom({
-    env: 'dev',
-    appVersion: 'Testing/0.0.0',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath,
-    codecs: [
-      new ReactionCodec(),
-      new ReplyCodec(),
-      new GroupUpdatedCodec(),
-      new StaticAttachmentCodec(),
-      new RemoteAttachmentCodec(),
-    ],
-  })
-  const end4 = performance.now()
-  console.log(
-    `Created a client after connecting to backend in ${end4 - start4}ms`
-  )
-
   assert(
     end2 - start2 < end1 - start1,
     'building a client should be faster than creating one'
@@ -120,10 +100,125 @@ test('building and creating', async () => {
     end3 - start3 < end2 - start2,
     'building a client with an inboxId should be faster than building without'
   )
+
+  return true
+})
+
+test('creating a new conversation', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3, 'dev')
+
+  const start1 = performance.now()
+  await alixClient.conversations.newConversation(boClient.address)
+  const end1 = performance.now()
+  console.log(`Alix created a dm with Bo in ${end1 - start1}ms`)
+
+  await boClient.conversations.syncAllConversations()
+  const start2 = performance.now()
+  await boClient.conversations.newConversation(alixClient.address)
+  const end2 = performance.now()
+  console.log(`Bo found a dm with Alix in ${end2 - start2}ms`)
+
+  const start3 = performance.now()
+  await alixClient.conversations.newGroup([
+    boClient.address,
+    caroClient.address,
+  ])
+  const end3 = performance.now()
+  console.log(`Alix created a group with Bo and Caro in ${end3 - start3}ms`)
+
+  const start4 = performance.now()
+  await alixClient.conversations.newGroup(
+    [boClient.address, caroClient.address],
+    {
+      permissionLevel: 'admin_only',
+      name: 'Group Name',
+      imageUrlSquare: 'imageurl.com',
+      description: 'group description',
+      pinnedFrameUrl: 'pinnedframe.com',
+    }
+  )
+  const end4 = performance.now()
+  console.log(
+    `Alix created a group with Bo and Caro with metadata in ${end4 - start4}ms`
+  )
   assert(
-    end4 - start4 < end1 - start1,
-    'creating a client with an apiClient cached should be faster than creating one without'
+    end1 - start1 < 1000,
+    `Creating a new dm should be less than a second but was ${end1 - start1}`
+  )
+  assert(
+    end2 - start2 < 1000,
+    `Finding a existing dm should be less than a second but was ${end2 - start2}`
+  )
+  assert(
+    end3 - start3 < 1000,
+    `Creating a new group without metadata should be less than a second but was ${end3 - start3}`
+  )
+  assert(
+    end4 - start4 < 1000,
+    `Creating a new group with metadata should be less than a second but was ${end4 - start4}`
+  )
+  return true
+})
+
+test('sending messages in conversations', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(10, 'local')
+  const alixDm = await alixClient.conversations.newConversation(
+    boClient.address
+  )
+  const alixGroup = await alixClient.conversations.newGroup([
+    boClient.address,
+    caroClient.address,
+  ])
+  await boClient.conversations.syncAllConversations()
+  await caroClient.conversations.syncAllConversations()
+  const boDm = await alixClient.conversations.findConversation(alixDm.id)
+  const boGroup = await alixClient.conversations.findGroup(alixGroup.id)
+  const caroGroup = await alixClient.conversations.findConversation(
+    alixGroup.id
   )
 
+  const start1 = performance.now()
+  await boDm?.send('message 1')
+  const end1 = performance.now()
+  console.log(`Bo sent message to dm in ${end1 - start1}ms`)
+
+  const start2 = performance.now()
+  await alixDm.send('message 2')
+  const end2 = performance.now()
+  console.log(`Alix sent message to dm in ${end2 - start2}ms`)
+
+  const start3 = performance.now()
+  await alixGroup.send('message 1')
+  const end3 = performance.now()
+  console.log(`Alix sent message to group in ${end3 - start3}ms`)
+
+  const start4 = performance.now()
+  await caroGroup?.send('message 2')
+  const end4 = performance.now()
+  console.log(`Caro sent message to group in ${end4 - start4}ms`)
+  const start5 = performance.now()
+  await boGroup?.send('message 3')
+  const end5 = performance.now()
+  console.log(`Bo sent message to group in ${end5 - start5}ms`)
+  assert(
+    end1 - start1 < 500,
+    `Sending message to dm should take less than .5s but was ${end1 - start1}`
+  )
+  assert(
+    end2 - start2 < 500,
+    `Sending message to dm should take less than .5s but was ${end2 - start2}`
+  )
+  assert(
+    end3 - start3 < 500,
+    `Sending message to group should take less than .5s but was ${end3 - start3}`
+  )
+  assert(
+    end4 - start4 < 500,
+    `Sending message to grop should take less than .5s but was ${end4 - start4}`
+  )
+  assert(
+    end5 - start5 < 500,
+    `Sending message to grop should take less than .5s but was ${end5 - start5}`
+  )
   return true
 })

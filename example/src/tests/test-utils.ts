@@ -4,6 +4,7 @@ import {
   GroupUpdatedCodec,
   Group,
   RemoteAttachmentCodec,
+  XMTPEnvironment,
 } from 'xmtp-react-native-sdk'
 
 export type Test = {
@@ -26,7 +27,10 @@ export function assert(condition: boolean, msg: string) {
   }
 }
 
-export async function createClients(numClients: number): Promise<Client[]> {
+export async function createClients(
+  numClients: number,
+  env?: XMTPEnvironment | undefined
+): Promise<Client[]> {
   const clients = []
   for (let i = 0; i < numClients; i++) {
     const keyBytes = new Uint8Array([
@@ -35,7 +39,7 @@ export async function createClients(numClients: number): Promise<Client[]> {
       145,
     ])
     const client = await Client.createRandom({
-      env: 'local',
+      env: env ?? 'local',
       dbEncryptionKey: keyBytes,
     })
     client.register(new GroupUpdatedCodec())

@@ -415,14 +415,14 @@ test('can filter sync all by consent', async () => {
   const boConvosFilteredUnknown =
     await boClient.conversations.syncAllConversations('unknown')
 
-  assert(boConvos === 4, `Conversation length should be 4 but was ${boConvos}`)
+  assert(boConvos === 5, `Conversation length should be 5 but was ${boConvos}`)
   assert(
-    boConvosFilteredAllowed === 2,
-    `Conversation length should be 2 but was ${boConvosFilteredAllowed}`
+    boConvosFilteredAllowed === 3,
+    `Conversation length should be 3 but was ${boConvosFilteredAllowed}`
   )
   assert(
-    boConvosFilteredUnknown === 2,
-    `Conversation length should be 2 but was ${boConvosFilteredUnknown}`
+    boConvosFilteredUnknown === 3,
+    `Conversation length should be 3 but was ${boConvosFilteredUnknown}`
   )
 
   return true

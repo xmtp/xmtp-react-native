@@ -72,12 +72,6 @@ export async function reconnectLocalDatabase(installationId: InstallationId) {
   return XMTPModule.reconnectLocalDatabase(installationId)
 }
 
-export async function requestMessageHistorySync(
-  installationId: InstallationId
-) {
-  return XMTPModule.requestMessageHistorySync(installationId)
-}
-
 export async function getInboxState(
   installationId: InstallationId,
   refreshFromNetwork: boolean
@@ -117,12 +111,6 @@ export async function receiveSCWSignature(
   signature: string
 ) {
   return await XMTPModule.receiveSCWSignature(requestID, signature)
-}
-
-export async function connectToApiBackend(
-  environment: XMTPEnvironment
-): Promise<void> {
-  return await XMTPModule.connectToApiBackend(environment)
 }
 
 export async function createRandom(
