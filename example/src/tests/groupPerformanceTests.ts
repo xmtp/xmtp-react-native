@@ -104,7 +104,7 @@ test('building and creating', async () => {
   return true
 })
 
-test('creating a new group', async () => {
+test('creating a new conversation', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3, 'dev')
 
   const start1 = performance.now()
@@ -156,6 +156,69 @@ test('creating a new group', async () => {
   assert(
     end4 - start4 < 1000,
     `Creating a new group with metadata should be less than a second but was ${end4 - start4}`
+  )
+  return true
+})
+
+test('sending messages in conversations', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(10, 'local')
+  const alixDm = await alixClient.conversations.newConversation(
+    boClient.address
+  )
+  const alixGroup = await alixClient.conversations.newGroup([
+    boClient.address,
+    caroClient.address,
+  ])
+  await boClient.conversations.syncAllConversations()
+  await caroClient.conversations.syncAllConversations()
+  const boDm = await alixClient.conversations.findConversation(alixDm.id)
+  const boGroup = await alixClient.conversations.findGroup(alixGroup.id)
+  const caroGroup = await alixClient.conversations.findConversation(
+    alixGroup.id
+  )
+
+  const start1 = performance.now()
+  await boDm?.send('message 1')
+  const end1 = performance.now()
+  console.log(`Bo sent message to dm in ${end1 - start1}ms`)
+
+  const start2 = performance.now()
+  await alixDm.send('message 2')
+  const end2 = performance.now()
+  console.log(`Alix sent message to dm in ${end2 - start2}ms`)
+
+  const start3 = performance.now()
+  await alixGroup.send('message 1')
+  const end3 = performance.now()
+  console.log(`Alix sent message to group in ${end3 - start3}ms`)
+
+  const start4 = performance.now()
+  await caroGroup?.send('message 2')
+  const end4 = performance.now()
+  console.log(`Caro sent message to group in ${end4 - start4}ms`)
+  const start5 = performance.now()
+  await boGroup?.send('message 3')
+  const end5 = performance.now()
+  console.log(`Bo sent message to group in ${end5 - start5}ms`)
+  assert(
+    end1 - start1 < 500,
+    `Sending message to dm should take less than .5s but was ${end1 - start1}`
+  )
+  assert(
+    end2 - start2 < 500,
+    `Sending message to dm should take less than .5s but was ${end2 - start2}`
+  )
+  assert(
+    end3 - start3 < 500,
+    `Sending message to group should take less than .5s but was ${end3 - start3}`
+  )
+  assert(
+    end4 - start4 < 500,
+    `Sending message to grop should take less than .5s but was ${end4 - start4}`
+  )
+  assert(
+    end5 - start5 < 500,
+    `Sending message to grop should take less than .5s but was ${end5 - start5}`
   )
   return true
 })
