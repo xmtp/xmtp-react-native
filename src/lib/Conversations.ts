@@ -23,6 +23,7 @@ import {
   MessageId,
 } from '../index'
 import { getAddress } from '../utils/address'
+import { keystore } from '@xmtp/proto'
 
 export default class Conversations<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
@@ -264,6 +265,13 @@ export default class Conversations<
       limit,
       consentState
     )
+  }
+
+  /**
+   * This method returns a list of hmac keys for the conversation to help filter self push notifications
+   */
+  async getHmacKeys(): Promise<keystore.GetConversationHmacKeysResponse> {
+    return await XMTPModule.getHmacKeys(this.client.installationId)
   }
 
   /**

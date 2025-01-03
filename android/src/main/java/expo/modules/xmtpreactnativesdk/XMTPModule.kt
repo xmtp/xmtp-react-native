@@ -572,6 +572,14 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("getHmacKeys") { inboxId: String ->
+            logV("getHmacKeys")
+            val client = clients[inboxId] ?: throw XMTPException("No client")
+            val hmacKeys = client.conversations.getHmacKeys()
+            logV("$hmacKeys")
+            hmacKeys.toByteArray().map { it.toInt() and 0xFF }
+        }
+
         AsyncFunction("conversationMessages") Coroutine { installationId: String, conversationId: String, limit: Int?, beforeNs: Long?, afterNs: Long?, direction: String? ->
             withContext(Dispatchers.IO) {
                 logV("conversationMessages")
@@ -1315,15 +1323,29 @@ class XMTPModule : Module() {
             xmtpPush?.register(token)
         }
 
-        Function("subscribePushTopics") { topics: List<String> ->
+        Function("subscribePushTopics") { installationId: String, topics: List<String> ->
             logV("subscribePushTopics")
             if (topics.isNotEmpty()) {
                 if (xmtpPush == null) {
                     throw XMTPException("Push server not registered")
                 }
+                val client = clients[installationId] ?: throw XMTPException("No client")
 
+                val hmacKeysResult = client.conversations.getHmacKeys()
                 val subscriptions = topics.map {
+                    val hmacKeys = hmacKeysResult.hmacKeysMap
+                    val result = hmacKeys[it]?.valuesList?.map { hmacKey ->
+                        Service.Subscription.HmacKey.newBuilder().also { sub_key ->
+                            sub_key.key = hmacKey.hmacKey
+                            sub_key.thirtyDayPeriodsSinceEpoch = hmacKey.thirtyDayPeriodsSinceEpoch
+                        }.build()
+                    }
+
                     Service.Subscription.newBuilder().also { sub ->
+                        sub.addAllHmacKeys(result)
+                        if (!result.isNullOrEmpty()) {
+                            sub.addAllHmacKeys(result)
+                        }
                         sub.topic = it
                     }.build()
                 }
