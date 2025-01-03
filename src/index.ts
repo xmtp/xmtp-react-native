@@ -1,4 +1,4 @@
-import { content } from '@xmtp/proto'
+import { content, keystore } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import { Client } from '.'
@@ -400,6 +400,14 @@ export async function listConversations<
       return new Dm(client, jsonObj, lastMessage)
     }
   })
+}
+
+export async function getHmacKeys(
+  installationId: InstallationId
+): Promise<keystore.GetConversationHmacKeysResponse> {
+  const hmacKeysArray = await XMTPModule.getHmacKeys(installationId)
+  const array = new Uint8Array(hmacKeysArray)
+  return keystore.GetConversationHmacKeysResponse.decode(array)
 }
 
 export async function conversationMessages<
@@ -1152,8 +1160,11 @@ export function registerPushToken(pushServer: string, token: string) {
   return XMTPModule.registerPushToken(pushServer, token)
 }
 
-export function subscribePushTopics(topics: ConversationTopic[]) {
-  return XMTPModule.subscribePushTopics(topics)
+export function subscribePushTopics(
+  installationId: InstallationId,
+  topics: ConversationTopic[]
+) {
+  return XMTPModule.subscribePushTopics(installationId, topics)
 }
 
 export async function exportNativeLogs() {

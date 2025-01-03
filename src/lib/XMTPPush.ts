@@ -13,6 +13,6 @@ export class XMTPPush {
   }
 
   subscribe(topics: ConversationTopic[]) {
-    XMTPModule.subscribePushTopics(topics)
+    XMTPModule.subscribePushTopics(this.client.installationId, topics)
   }
 }
