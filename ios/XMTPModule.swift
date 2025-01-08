@@ -1981,7 +1981,7 @@ public class XMTPModule: Module {
 						.streamPreferenceUpdates()
 					{
 						try sendEvent(
-							"consent",
+							"preferences",
 							[
 								"installationId": installationId,
 								"type": getPreferenceUpdatesType(type: pref),

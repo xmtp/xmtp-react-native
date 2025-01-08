@@ -476,8 +476,8 @@ test('can list conversations with params', async () => {
     `List length should be 1 but was ${boGroupsLimit.length}`
   )
   assert(
-    boGroupsLimit[0].id === boGroup2.id,
-    `Group should be ${boGroup2.id} but was ${boGroupsLimit[0].id}`
+    boGroupsLimit[0].id === boDm1.id,
+    `Group should be ${boDm1.id} but was ${boGroupsLimit[0].id}`
   )
 
   return true
@@ -491,8 +491,8 @@ test('can list groups', async () => {
     caroClient.address,
     alixClient.address,
   ])
-  const boDm = await boClient.conversations.findOrCreateDm(caroClient.address)
-  await boClient.conversations.findOrCreateDm(alixClient.address)
+  await boClient.conversations.findOrCreateDm(caroClient.address)
+  const boDm = await boClient.conversations.findOrCreateDm(alixClient.address)
 
   const boConversations = await boClient.conversations.list()
   await alixClient.conversations.sync()
@@ -509,8 +509,8 @@ test('can list groups', async () => {
   )
 
   if (
-    boConversations[2].topic !== boGroup.topic ||
-    boConversations[2].version !== ConversationVersion.GROUP ||
+    boConversations[3].topic !== boGroup.topic ||
+    boConversations[3].version !== ConversationVersion.GROUP ||
     boConversations[0].version !== ConversationVersion.DM ||
     boConversations[0].createdAt !== boDm.createdAt
   ) {
@@ -999,8 +999,8 @@ test('can preference updates', async () => {
   await delayToPropogate(2000)
 
   assert(
-    types.length === 1,
-    `Expected 1 preference update, got ${types.length}`
+    types.length === 2,
+    `Expected 2 preference update, got ${types.length}`
   )
 
   alix.preferences.cancelStreamConsent()
