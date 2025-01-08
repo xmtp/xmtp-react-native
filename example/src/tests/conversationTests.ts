@@ -2,6 +2,7 @@ import { content } from '@xmtp/proto'
 import { Wallet } from 'ethers'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import RNFS from 'react-native-fs'
+import { PreferenceUpdates } from 'xmtp-react-native-sdk/lib/PrivatePreferences'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
@@ -12,7 +13,6 @@ import {
   ConversationVersion,
   JSContentCodec,
 } from '../../../src/index'
-import { PreferenceUpdates } from 'xmtp-react-native-sdk/lib/PrivatePreferences'
 
 export const conversationTests: Test[] = []
 let counter = 1
@@ -476,8 +476,8 @@ test('can list conversations with params', async () => {
     `List length should be 1 but was ${boGroupsLimit.length}`
   )
   assert(
-    boGroupsLimit[0].id === boGroup1.id,
-    `Group should be ${boGroup1.id} but was ${boGroupsLimit[0].id}`
+    boGroupsLimit[0].id === boGroup2.id,
+    `Group should be ${boGroup2.id} but was ${boGroupsLimit[0].id}`
   )
 
   return true
@@ -509,10 +509,10 @@ test('can list groups', async () => {
   )
 
   if (
-    boConversations[0].topic !== boGroup.topic ||
-    boConversations[0].version !== ConversationVersion.GROUP ||
-    boConversations[2].version !== ConversationVersion.DM ||
-    boConversations[2].createdAt !== boDm.createdAt
+    boConversations[2].topic !== boGroup.topic ||
+    boConversations[2].version !== ConversationVersion.GROUP ||
+    boConversations[0].version !== ConversationVersion.DM ||
+    boConversations[0].createdAt !== boDm.createdAt
   ) {
     throw Error('Listed containers should match streamed containers')
   }
@@ -981,8 +981,9 @@ test('can preference updates', async () => {
   })
 
   const types = []
-  await alix.preferences.streamPreferenceUpdates(async (entry: PreferenceUpdates) => {
-    types.push(entry)
+  await alix.preferences.streamPreferenceUpdates(
+    async (entry: PreferenceUpdates) => {
+      types.push(entry)
   })
 
   const alix2 = await Client.create(alixWallet, {
@@ -992,8 +993,10 @@ test('can preference updates', async () => {
     dbDirectory: dbDirPath2,
   })
 
-  await alix.conversations.syncAllConversations()
   await alix2.conversations.syncAllConversations()
+  await delayToPropogate(2000)
+  await alix.conversations.syncAllConversations()
+  await delayToPropogate(2000)
 
   assert(
     types.length === 1,

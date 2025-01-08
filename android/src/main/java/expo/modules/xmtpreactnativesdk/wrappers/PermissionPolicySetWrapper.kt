@@ -2,8 +2,8 @@ package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionPolicySet
+import org.xmtp.android.library.libxmtp.PermissionOption
+import org.xmtp.android.library.libxmtp.PermissionPolicySet
 
 class PermissionPolicySetWrapper {
 

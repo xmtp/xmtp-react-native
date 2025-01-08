@@ -486,7 +486,6 @@ public class XMTPModule: Module {
 		AsyncFunction("listGroups") {
 			(
 				installationId: String, groupParams: String?,
-				sortOrder: String?,
 				limit: Int?, consentState: String?
 			) -> [String] in
 			guard
@@ -518,7 +517,6 @@ public class XMTPModule: Module {
 		AsyncFunction("listDms") {
 			(
 				installationId: String, groupParams: String?,
-				sortOrder: String?,
 				limit: Int?, consentState: String?
 			) -> [String] in
 			guard
@@ -550,7 +548,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listConversations") {
 			(
 				installationId: String, conversationParams: String?,
-				sortOrder: String?, limit: Int?, consentState: String?
+				limit: Int?, consentState: String?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -586,7 +584,7 @@ public class XMTPModule: Module {
 			else {
 				throw Error.noClient
 			}
-			let hmacKeys = await client.conversations.getHmacKeys()
+			let hmacKeys = try await client.conversations.getHmacKeys()
 
 			return try [UInt8](hmacKeys.serializedData())
 		}
@@ -1778,7 +1776,7 @@ public class XMTPModule: Module {
 				else {
 					throw Error.noClient
 				}
-				let hmacKeysResult = await client.conversations.getHmacKeys()
+				let hmacKeysResult = try await client.conversations.getHmacKeys()
 				let subscriptions = topics.map {
 					topic -> NotificationSubscription in
 					let hmacKeys = hmacKeysResult.hmacKeys
