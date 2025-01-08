@@ -42,6 +42,7 @@ import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.Conversations.*
 import org.xmtp.android.library.EntryType
 import org.xmtp.android.library.PreEventCallback
+import org.xmtp.android.library.PreferenceType
 import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
 import org.xmtp.android.library.WalletType
@@ -208,6 +209,7 @@ class XMTPModule : Module() {
             "message",
             "conversationMessage",
             "consent",
+            "preferences",
         )
 
         Function("address") { installationId: String ->
@@ -1262,6 +1264,12 @@ class XMTPModule : Module() {
             }
         }
 
+        Function("subscribeToPreferenceUpdates") { installationId: String ->
+            logV("subscribeToPreferenceUpdates")
+
+            subscribeToPreferenceUpdates(installationId = installationId)
+        }
+
         Function("subscribeToConsent") { installationId: String ->
             logV("subscribeToConsent")
 
@@ -1287,6 +1295,11 @@ class XMTPModule : Module() {
                     id = id
                 )
             }
+        }
+
+        Function("unsubscribeFromPreferenceUpdates") { installationId: String ->
+            logV("unsubscribeFromPreferenceUpdates")
+            subscriptions[getPreferenceUpdatesKey(installationId)]?.cancel()
         }
 
         Function("unsubscribeFromConsent") { installationId: String ->
@@ -1417,6 +1430,35 @@ class XMTPModule : Module() {
         }
     }
 
+    private fun preferenceTypeToString(type: PreferenceType): String {
+        return when (type) {
+            PreferenceType.HMAC_KEYS -> "hmac_keys"
+        }
+    }
+
+    private fun subscribeToPreferenceUpdates(installationId: String) {
+        val client = clients[installationId] ?: throw XMTPException("No client")
+
+        subscriptions[getPreferenceUpdatesKey(installationId)]?.cancel()
+        subscriptions[getPreferenceUpdatesKey(installationId)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    client.preferences.streamPreferenceUpdates().collect { type ->
+                        sendEvent(
+                            "preferences",
+                            mapOf(
+                                "installationId" to installationId,
+                                "preferenceType" to preferenceTypeToString(type)
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e("XMTPModule", "Error in preference subscription: $e")
+                    subscriptions[getPreferenceUpdatesKey(installationId)]?.cancel()
+                }
+            }
+    }
+
     private fun subscribeToConsent(installationId: String) {
         val client = clients[installationId] ?: throw XMTPException("No client")
 
@@ -1434,7 +1476,7 @@ class XMTPModule : Module() {
                         )
                     }
                 } catch (e: Exception) {
-                    Log.e("XMTPModule", "Error in group subscription: $e")
+                    Log.e("XMTPModule", "Error in consent subscription: $e")
                     subscriptions[getConsentKey(installationId)]?.cancel()
                 }
             }
@@ -1511,6 +1553,10 @@ class XMTPModule : Module() {
                     subscriptions[conversation.cacheKey(installationId)]?.cancel()
                 }
             }
+    }
+
+    private fun getPreferenceUpdatesKey(installationId: String): String {
+        return "preferences:$installationId"
     }
 
     private fun getConsentKey(installationId: String): String {
