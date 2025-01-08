@@ -1,12 +1,11 @@
+import { keystore } from '@xmtp/proto'
+
 import { Client, InboxId } from './Client'
 import { ConversationVersion } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Dm, DmParams } from './Dm'
 import { Group, GroupParams } from './Group'
-import {
-  ConversationOrder,
-  ConversationOptions,
-} from './types/ConversationOptions'
+import { ConversationOptions } from './types/ConversationOptions'
 import { CreateGroupOptions } from './types/CreateGroupOptions'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
@@ -201,48 +200,32 @@ export default class Conversations<
    * This method returns a list of all groups that the client is a member of.
    * To get the latest list of groups from the network, call syncGroups() first.
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the groups in the list.
-   * @param {ConversationOrder} order - The order to specify if you want groups listed by last message or by created at.
    * @param {number} limit - Limit the number of groups returned in the list.
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
   async listGroups(
     opts?: ConversationOptions | undefined,
-    order?: ConversationOrder | undefined,
     limit?: number | undefined,
     consentState?: ConsentState | undefined
   ): Promise<Group<ContentTypes>[]> {
-    return await XMTPModule.listGroups(
-      this.client,
-      opts,
-      order,
-      limit,
-      consentState
-    )
+    return await XMTPModule.listGroups(this.client, opts, limit, consentState)
   }
 
   /**
    * This method returns a list of all dms that the client is a member of.
    * To get the latest list of dms from the network, call sync() first.
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the dms in the list.
-   * @param {ConversationOrder} order - The order to specify if you want dms listed by last message or by created at.
    * @param {number} limit - Limit the number of dms returned in the list.
    *
    * @returns {Promise<Dm[]>} A Promise that resolves to an array of Dms objects.
    */
   async listDms(
     opts?: ConversationOptions | undefined,
-    order?: ConversationOrder | undefined,
     limit?: number | undefined,
     consentState?: ConsentState | undefined
   ): Promise<Dm<ContentTypes>[]> {
-    return await XMTPModule.listDms(
-      this.client,
-      opts,
-      order,
-      limit,
-      consentState
-    )
+    return await XMTPModule.listDms(this.client, opts, limit, consentState)
   }
 
   /**
@@ -253,17 +236,22 @@ export default class Conversations<
    */
   async list(
     opts?: ConversationOptions | undefined,
-    order?: ConversationOrder | undefined,
     limit?: number | undefined,
     consentState?: ConsentState | undefined
   ): Promise<Conversation<ContentTypes>[]> {
     return await XMTPModule.listConversations(
       this.client,
       opts,
-      order,
       limit,
       consentState
     )
+  }
+
+  /**
+   * This method returns a list of hmac keys for the conversation to help filter self push notifications
+   */
+  async getHmacKeys(): Promise<keystore.GetConversationHmacKeysResponse> {
+    return await XMTPModule.getHmacKeys(this.client.installationId)
   }
 
   /**

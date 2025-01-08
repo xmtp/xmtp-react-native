@@ -21,4 +21,8 @@ export enum EventTypes {
    * A inboxId or conversation has been approved or denied
    */
   Consent = 'consent',
+  /**
+   * A new installation has been added making new hmac keys
+   */
+  PreferenceUpdates = 'preferences',
 }

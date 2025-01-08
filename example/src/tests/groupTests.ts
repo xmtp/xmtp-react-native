@@ -140,7 +140,7 @@ test('groups cannot fork', async () => {
   let forkCount = 0
   const tryCount = 5
   for (let i = 0; i < tryCount; i++) {
-    console.log(`Checking fork status ${i+1}/${tryCount}`)
+    console.log(`Checking fork status ${i + 1}/${tryCount}`)
     try {
       await syncClientAndGroup(alix)
       await syncClientAndGroup(bo)
@@ -171,18 +171,25 @@ test('groups cannot fork short version', async () => {
   // sync clients
   await alix.conversations.sync()
   await bo.conversations.sync()
-  const boGroup: Group<DefaultContentTypes> = (await bo.conversations.findGroup(alixGroup.id))!
+  const boGroup: Group<DefaultContentTypes> = (await bo.conversations.findGroup(
+    alixGroup.id
+  ))!
 
   // Remove two members in parallel
   // NB => if we don't use Promise.all but a loop, we don't get a fork
-  console.log('*************libxmtp*********************: Removing members in parallel')
+  console.log(
+    '*************libxmtp*********************: Removing members in parallel'
+  )
   await Promise.all([
     alixGroup.removeMembers([new_one.address]),
-    alixGroup.removeMembers([new_two.address])
+    alixGroup.removeMembers([new_two.address]),
   ])
 
   // Helper to send a message from a bunch of senders and make sure it is received by all receivers
-  const testMessageSending = async (senderGroup: Group<DefaultContentTypes>, receiverGroup: Group<DefaultContentTypes>) => {
+  const testMessageSending = async (
+    senderGroup: Group<DefaultContentTypes>,
+    receiverGroup: Group<DefaultContentTypes>
+  ) => {
     const messageContent = Math.random().toString(36)
     await senderGroup.sync()
     await alixGroup.send(messageContent)
@@ -209,7 +216,7 @@ test('groups cannot fork short version', async () => {
   let forkCount = 0
   const tryCount = 5
   for (let i = 0; i < tryCount; i++) {
-    console.log(`Checking fork status ${i+1}/${tryCount}`)
+    console.log(`Checking fork status ${i + 1}/${tryCount}`)
     try {
       await alixGroup.sync()
       await boGroup.sync()
@@ -228,7 +235,8 @@ test('groups cannot fork short version', async () => {
 })
 
 test('groups cannot fork short version - update metadata', async () => {
-  const [alix, bo, new_one, new_two, new_three, new_four] = await createClients(6)
+  const [alix, bo, new_one, new_two, new_three, new_four] =
+    await createClients(6)
   // Create group with 2 users
   const alixGroup = await alix.conversations.newGroup([
     bo.address,
@@ -239,18 +247,25 @@ test('groups cannot fork short version - update metadata', async () => {
   // sync clients
   await alix.conversations.sync()
   await bo.conversations.sync()
-  const boGroup: Group<DefaultContentTypes> = (await bo.conversations.findGroup(alixGroup.id))!
+  const boGroup: Group<DefaultContentTypes> = (await bo.conversations.findGroup(
+    alixGroup.id
+  ))!
 
   // Remove two members in parallel
   // NB => if we don't use Promise.all but a loop, we don't get a fork
-  console.log('*************libxmtp*********************: Updating metadata in parallel')
+  console.log(
+    '*************libxmtp*********************: Updating metadata in parallel'
+  )
   await Promise.all([
     alixGroup.updateGroupName('new name'),
-    alixGroup.updateGroupName('new name 2')
+    alixGroup.updateGroupName('new name 2'),
   ])
 
   // Helper to send a message from a bunch of senders and make sure it is received by all receivers
-  const testMessageSending = async (senderGroup: Group<DefaultContentTypes>, receiverGroup: Group<DefaultContentTypes>) => {
+  const testMessageSending = async (
+    senderGroup: Group<DefaultContentTypes>,
+    receiverGroup: Group<DefaultContentTypes>
+  ) => {
     const messageContent = Math.random().toString(36)
     await senderGroup.sync()
     await alixGroup.send(messageContent)
@@ -277,7 +292,7 @@ test('groups cannot fork short version - update metadata', async () => {
   let forkCount = 0
   const tryCount = 5
   for (let i = 0; i < tryCount; i++) {
-    console.log(`Checking fork status ${i+1}/${tryCount}`)
+    console.log(`Checking fork status ${i + 1}/${tryCount}`)
     try {
       await alixGroup.sync()
       await boGroup.sync()
@@ -958,12 +973,10 @@ test('can filter groups by consent', async () => {
   const boConvosFilteredAllowed = await boClient.conversations.listGroups(
     {},
     undefined,
-    undefined,
     'allowed'
   )
   const boConvosFilteredUnknown = await boClient.conversations.listGroups(
     {},
-    undefined,
     undefined,
     'unknown'
   )
@@ -1009,24 +1022,10 @@ test('can list groups with params', async () => {
   await boGroup1.send({ text: `third message` })
   await boGroup2.send({ text: `first message` })
 
-  const boGroupsOrderCreated = await boClient.conversations.listGroups()
-  const boGroupsOrderLastMessage = await boClient.conversations.listGroups(
-    { lastMessage: true },
-    'lastMessage'
-  )
-  const boGroupsLimit = await boClient.conversations.listGroups(
-    {},
-    undefined,
-    1
-  )
-
-  assert(
-    boGroupsOrderCreated.map((group: any) => group.id).toString() ===
-      [boGroup1.id, boGroup2.id].toString(),
-    `Group order should be group1 then group2 but was ${boGroupsOrderCreated
-      .map((group: any) => group.id)
-      .toString()}`
-  )
+  const boGroupsOrderLastMessage = await boClient.conversations.listGroups({
+    lastMessage: true,
+  })
+  const boGroupsLimit = await boClient.conversations.listGroups({}, 1)
 
   assert(
     boGroupsOrderLastMessage.map((group: any) => group.id).toString() ===

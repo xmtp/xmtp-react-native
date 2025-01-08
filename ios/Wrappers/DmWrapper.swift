@@ -24,8 +24,8 @@ struct DmWrapper {
 			result["consentState"] = ConsentWrapper.consentStateToString(state: try dm.consentState())
 		}
 		if conversationParams.lastMessage {
-			if let lastMessage = try await dm.messages(limit: 1).first {
-				result["lastMessage"] = try DecodedMessageWrapper.encode(lastMessage, client: client)
+			if let lastMessage = try await dm.lastMessage() {
+				result["lastMessage"] = try MessageWrapper.encode(lastMessage, client: client)
 			}
 		}
 		

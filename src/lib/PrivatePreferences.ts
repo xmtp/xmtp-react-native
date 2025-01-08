@@ -5,6 +5,8 @@ import * as XMTPModule from '../index'
 import { ConversationId } from '../index'
 import { getAddress } from '../utils/address'
 
+export type PreferenceUpdates = 'hmac_keys'
+
 export default class PrivatePreferences {
   client: Client<any>
   private subscriptions: { [key: string]: { remove: () => void } } = {}
@@ -50,6 +52,32 @@ export default class PrivatePreferences {
   }
 
   /**
+   * This method streams private preference updates.
+   * @returns {Promise<PreferenceUpdates[]>} A Promise that resolves to an array of PreferenceUpdates objects.
+   */
+  async streamPreferenceUpdates(
+    callback: (preferenceUpdates: PreferenceUpdates) => Promise<void>
+  ): Promise<void> {
+    XMTPModule.subscribeToPreferenceUpdates(this.client.installationId)
+    const subscription = XMTPModule.emitter.addListener(
+      EventTypes.PreferenceUpdates,
+      async ({
+        installationId,
+        type,
+      }: {
+        installationId: string
+        type: PreferenceUpdates
+      }) => {
+        if (installationId !== this.client.installationId) {
+          return
+        }
+        return await callback(type)
+      }
+    )
+    this.subscriptions[EventTypes.PreferenceUpdates] = subscription
+  }
+
+  /**
    * This method streams consent.
    * @returns {Promise<ConsentRecord[]>} A Promise that resolves to an array of ConsentRecord objects.
    */
@@ -86,5 +114,16 @@ export default class PrivatePreferences {
       delete this.subscriptions[EventTypes.Consent]
     }
     XMTPModule.unsubscribeFromConsent(this.client.installationId)
+  }
+
+  /**
+   * Cancels the stream for preference updates.
+   */
+  cancelStreamPreferenceUpdates() {
+    if (this.subscriptions[EventTypes.PreferenceUpdates]) {
+      this.subscriptions[EventTypes.PreferenceUpdates].remove()
+      delete this.subscriptions[EventTypes.PreferenceUpdates]
+    }
+    XMTPModule.unsubscribeFromPreferenceUpdates(this.client.installationId)
   }
 }

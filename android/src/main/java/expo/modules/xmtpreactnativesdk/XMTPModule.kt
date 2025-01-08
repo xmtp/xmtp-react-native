@@ -18,7 +18,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
@@ -42,6 +42,7 @@ import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.Conversations.*
 import org.xmtp.android.library.EntryType
 import org.xmtp.android.library.PreEventCallback
+import org.xmtp.android.library.PreferenceType
 import org.xmtp.android.library.SendOptions
 import org.xmtp.android.library.SigningKey
 import org.xmtp.android.library.WalletType
@@ -54,13 +55,13 @@ import org.xmtp.android.library.codecs.EncryptedEncodedContent
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.hexToByteArray
+import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import org.xmtp.android.library.libxmtp.Message
+import org.xmtp.android.library.libxmtp.PermissionOption
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -208,6 +209,7 @@ class XMTPModule : Module() {
             "message",
             "conversationMessage",
             "consent",
+            "preferences",
         )
 
         Function("address") { installationId: String ->
@@ -520,15 +522,13 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("listGroups") Coroutine { installationId: String, groupParams: String?, sortOrder: String?, limit: Int?, consentState: String? ->
+        AsyncFunction("listGroups") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val order = getConversationSortOrder(sortOrder ?: "")
                 val consent = consentState?.let { getConsentState(it) }
                 val groups = client.conversations.listGroups(
-                    order = order,
                     limit = limit,
                     consentState = consent
                 )
@@ -538,15 +538,13 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listDms") Coroutine { installationId: String, groupParams: String?, sortOrder: String?, limit: Int?, consentState: String? ->
+        AsyncFunction("listDms") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("listDms")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val order = getConversationSortOrder(sortOrder ?: "")
                 val consent = consentState?.let { getConsentState(it) }
                 val dms = client.conversations.listDms(
-                    order = order,
                     limit = limit,
                     consentState = consent
                 )
@@ -556,20 +554,27 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listConversations") Coroutine { installationId: String, conversationParams: String?, sortOrder: String?, limit: Int?, consentState: String? ->
+        AsyncFunction("listConversations") Coroutine { installationId: String, conversationParams: String?, limit: Int?, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("listConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params =
                     ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
-                val order = getConversationSortOrder(sortOrder ?: "")
                 val consent = consentState?.let { getConsentState(it) }
                 val conversations =
-                    client.conversations.list(order = order, limit = limit, consentState = consent)
+                    client.conversations.list(limit = limit, consentState = consent)
                 conversations.map { conversation ->
                     ConversationWrapper.encode(client, conversation, params)
                 }
             }
+        }
+
+        AsyncFunction("getHmacKeys") { inboxId: String ->
+            logV("getHmacKeys")
+            val client = clients[inboxId] ?: throw XMTPException("No client")
+            val hmacKeys = client.conversations.getHmacKeys()
+            logV("$hmacKeys")
+            hmacKeys.toByteArray().map { it.toInt() and 0xFF }
         }
 
         AsyncFunction("conversationMessages") Coroutine { installationId: String, conversationId: String, limit: Int?, beforeNs: Long?, afterNs: Long?, direction: String? ->
@@ -584,7 +589,7 @@ class XMTPModule : Module() {
                     direction = Message.SortDirection.valueOf(
                         direction ?: "DESCENDING"
                     )
-                )?.map { DecodedMessageWrapper.encode(it) }
+                )?.map { MessageWrapper.encode(it) }
             }
         }
 
@@ -594,7 +599,7 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val message = client.findMessage(messageId)
                 message?.let {
-                    DecodedMessageWrapper.encode(it.decode())
+                    MessageWrapper.encode(it)
                 }
             }
         }
@@ -1174,7 +1179,9 @@ class XMTPModule : Module() {
                 val conversation = client.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 val message = conversation.processMessage(Base64.decode(encryptedMessage, NO_WRAP))
-                DecodedMessageWrapper.encode(message.decode())
+                message?.let {
+                    MessageWrapper.encode(it)
+                }
             }
         }
 
@@ -1257,6 +1264,12 @@ class XMTPModule : Module() {
             }
         }
 
+        Function("subscribeToPreferenceUpdates") { installationId: String ->
+            logV("subscribeToPreferenceUpdates")
+
+            subscribeToPreferenceUpdates(installationId = installationId)
+        }
+
         Function("subscribeToConsent") { installationId: String ->
             logV("subscribeToConsent")
 
@@ -1282,6 +1295,11 @@ class XMTPModule : Module() {
                     id = id
                 )
             }
+        }
+
+        Function("unsubscribeFromPreferenceUpdates") { installationId: String ->
+            logV("unsubscribeFromPreferenceUpdates")
+            subscriptions[getPreferenceUpdatesKey(installationId)]?.cancel()
         }
 
         Function("unsubscribeFromConsent") { installationId: String ->
@@ -1315,15 +1333,29 @@ class XMTPModule : Module() {
             xmtpPush?.register(token)
         }
 
-        Function("subscribePushTopics") { topics: List<String> ->
+        Function("subscribePushTopics") { installationId: String, topics: List<String> ->
             logV("subscribePushTopics")
             if (topics.isNotEmpty()) {
                 if (xmtpPush == null) {
                     throw XMTPException("Push server not registered")
                 }
+                val client = clients[installationId] ?: throw XMTPException("No client")
 
+                val hmacKeysResult = client.conversations.getHmacKeys()
                 val subscriptions = topics.map {
+                    val hmacKeys = hmacKeysResult.hmacKeysMap
+                    val result = hmacKeys[it]?.valuesList?.map { hmacKey ->
+                        Service.Subscription.HmacKey.newBuilder().also { sub_key ->
+                            sub_key.key = hmacKey.hmacKey
+                            sub_key.thirtyDayPeriodsSinceEpoch = hmacKey.thirtyDayPeriodsSinceEpoch
+                        }.build()
+                    }
+
                     Service.Subscription.newBuilder().also { sub ->
+                        sub.addAllHmacKeys(result)
+                        if (!result.isNullOrEmpty()) {
+                            sub.addAllHmacKeys(result)
+                        }
                         sub.topic = it
                     }.build()
                 }
@@ -1390,19 +1422,41 @@ class XMTPModule : Module() {
         }
     }
 
-    private fun getConversationSortOrder(order: String): ConversationOrder {
-        return when (order) {
-            "lastMessage" -> ConversationOrder.LAST_MESSAGE
-            else -> ConversationOrder.CREATED_AT
-        }
-    }
-
     private fun consentStateToString(state: ConsentState): String {
         return when (state) {
             ConsentState.ALLOWED -> "allowed"
             ConsentState.DENIED -> "denied"
             ConsentState.UNKNOWN -> "unknown"
         }
+    }
+
+    private fun preferenceTypeToString(type: PreferenceType): String {
+        return when (type) {
+            PreferenceType.HMAC_KEYS -> "hmac_keys"
+        }
+    }
+
+    private fun subscribeToPreferenceUpdates(installationId: String) {
+        val client = clients[installationId] ?: throw XMTPException("No client")
+
+        subscriptions[getPreferenceUpdatesKey(installationId)]?.cancel()
+        subscriptions[getPreferenceUpdatesKey(installationId)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    client.preferences.streamPreferenceUpdates().collect { type ->
+                        sendEvent(
+                            "preferences",
+                            mapOf(
+                                "installationId" to installationId,
+                                "preferenceType" to preferenceTypeToString(type)
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e("XMTPModule", "Error in preference subscription: $e")
+                    subscriptions[getPreferenceUpdatesKey(installationId)]?.cancel()
+                }
+            }
     }
 
     private fun subscribeToConsent(installationId: String) {
@@ -1422,7 +1476,7 @@ class XMTPModule : Module() {
                         )
                     }
                 } catch (e: Exception) {
-                    Log.e("XMTPModule", "Error in group subscription: $e")
+                    Log.e("XMTPModule", "Error in consent subscription: $e")
                     subscriptions[getConsentKey(installationId)]?.cancel()
                 }
             }
@@ -1465,7 +1519,7 @@ class XMTPModule : Module() {
                         "message",
                         mapOf(
                             "installationId" to installationId,
-                            "message" to DecodedMessageWrapper.encodeMap(message),
+                            "message" to MessageWrapper.encodeMap(message),
                         )
                     )
                 }
@@ -1489,7 +1543,7 @@ class XMTPModule : Module() {
                             "conversationMessage",
                             mapOf(
                                 "installationId" to installationId,
-                                "message" to DecodedMessageWrapper.encodeMap(message),
+                                "message" to MessageWrapper.encodeMap(message),
                                 "conversationId" to id,
                             )
                         )
@@ -1499,6 +1553,10 @@ class XMTPModule : Module() {
                     subscriptions[conversation.cacheKey(installationId)]?.cancel()
                 }
             }
+    }
+
+    private fun getPreferenceUpdatesKey(installationId: String): String {
+        return "preferences:$installationId"
     }
 
     private fun getConsentKey(installationId: String): String {

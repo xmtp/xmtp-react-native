@@ -22,9 +22,9 @@ class DmWrapper {
                     put("consentState", consentStateToString(dm.consentState()))
                 }
                 if (dmParams.lastMessage) {
-                    val lastMessage = dm.messages(limit = 1).firstOrNull()
+                    val lastMessage = dm.lastMessage()
                     if (lastMessage != null) {
-                        put("lastMessage", DecodedMessageWrapper.encode(lastMessage))
+                        put("lastMessage", MessageWrapper.encode(lastMessage))
                     }
                 }
             }

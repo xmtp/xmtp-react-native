@@ -2,6 +2,7 @@ import { content } from '@xmtp/proto'
 import { Wallet } from 'ethers'
 import ReactNativeBlobUtil from 'react-native-blob-util'
 import RNFS from 'react-native-fs'
+import { PreferenceUpdates } from 'xmtp-react-native-sdk/lib/PrivatePreferences'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
@@ -356,12 +357,10 @@ test('can filter conversations by consent', async () => {
   const boConvosFilteredAllowed = await boClient.conversations.list(
     {},
     undefined,
-    undefined,
     'allowed'
   )
   const boConvosFilteredUnknown = await boClient.conversations.list(
     {},
-    undefined,
     undefined,
     'unknown'
   )
@@ -445,25 +444,10 @@ test('can list conversations with params', async () => {
   // Order should be [Dm1, Group2, Dm2, Group1]
 
   await boClient.conversations.syncAllConversations()
-  const boConvosOrderCreated = await boClient.conversations.list()
-  const boConvosOrderLastMessage = await boClient.conversations.list(
-    { lastMessage: true },
-    'lastMessage'
-  )
-  const boGroupsLimit = await boClient.conversations.list({}, undefined, 1)
-
-  assert(
-    boConvosOrderCreated.map((group: any) => group.id).toString() ===
-      [boGroup1.id, boGroup2.id, boDm1.id, boDm2.id].toString(),
-    `Conversation created at order should be ${[
-      boGroup1.id,
-      boGroup2.id,
-      boDm1.id,
-      boDm2.id,
-    ].toString()} but was ${boConvosOrderCreated
-      .map((group: any) => group.id)
-      .toString()}`
-  )
+  const boConvosOrderLastMessage = await boClient.conversations.list({
+    lastMessage: true,
+  })
+  const boGroupsLimit = await boClient.conversations.list({}, 1)
 
   assert(
     boConvosOrderLastMessage.map((group: any) => group.id).toString() ===
@@ -483,17 +467,17 @@ test('can list conversations with params', async () => {
     messages[0].content() === 'dm message',
     `last message 1 should be dm message ${messages[0].content()}`
   )
-  // assert(
-  //   boConvosOrderLastMessage[0].lastMessage?.content() === 'dm message',
-  //   `last message 2 should be dm message ${boConvosOrderLastMessage[0].lastMessage?.content()}`
-  // )
+  assert(
+    boConvosOrderLastMessage[0].lastMessage?.content() === 'dm message',
+    `last message 2 should be dm message ${boConvosOrderLastMessage[0].lastMessage?.content()}`
+  )
   assert(
     boGroupsLimit.length === 1,
     `List length should be 1 but was ${boGroupsLimit.length}`
   )
   assert(
-    boGroupsLimit[0].id === boGroup1.id,
-    `Group should be ${boGroup1.id} but was ${boGroupsLimit[0].id}`
+    boGroupsLimit[0].id === boDm1.id,
+    `Group should be ${boDm1.id} but was ${boGroupsLimit[0].id}`
   )
 
   return true
@@ -507,8 +491,8 @@ test('can list groups', async () => {
     caroClient.address,
     alixClient.address,
   ])
-  const boDm = await boClient.conversations.findOrCreateDm(caroClient.address)
-  await boClient.conversations.findOrCreateDm(alixClient.address)
+  await boClient.conversations.findOrCreateDm(caroClient.address)
+  const boDm = await boClient.conversations.findOrCreateDm(alixClient.address)
 
   const boConversations = await boClient.conversations.list()
   await alixClient.conversations.sync()
@@ -525,10 +509,10 @@ test('can list groups', async () => {
   )
 
   if (
-    boConversations[0].topic !== boGroup.topic ||
-    boConversations[0].version !== ConversationVersion.GROUP ||
-    boConversations[2].version !== ConversationVersion.DM ||
-    boConversations[2].createdAt !== boDm.createdAt
+    boConversations[3].topic !== boGroup.topic ||
+    boConversations[3].version !== ConversationVersion.GROUP ||
+    boConversations[0].version !== ConversationVersion.DM ||
+    boConversations[0].createdAt !== boDm.createdAt
   ) {
     throw Error('Listed containers should match streamed containers')
   }
@@ -967,6 +951,80 @@ test('can stream consent', async () => {
   )
 
   alix.preferences.cancelStreamConsent()
+
+  return true
+})
+
+test('can preference updates', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
+
+  // Ensure the directories exist
+  if (!(await RNFS.exists(dbDirPath))) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  if (!(await RNFS.exists(dbDirPath2))) {
+    await RNFS.mkdir(dbDirPath2)
+  }
+
+  const alixWallet = Wallet.createRandom()
+
+  const alix = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+  })
+
+  const types = []
+  await alix.preferences.streamPreferenceUpdates(
+    async (entry: PreferenceUpdates) => {
+      types.push(entry)
+  })
+
+  const alix2 = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath2,
+  })
+
+  await alix2.conversations.syncAllConversations()
+  await delayToPropogate(2000)
+  await alix.conversations.syncAllConversations()
+  await delayToPropogate(2000)
+
+  assert(
+    types.length === 2,
+    `Expected 2 preference update, got ${types.length}`
+  )
+
+  alix.preferences.cancelStreamConsent()
+
+  return true
+})
+
+test('get all HMAC keys', async () => {
+  const [alix] = await createClients(1)
+
+  const conversations: Conversation<any>[] = []
+
+  for (let i = 0; i < 5; i++) {
+    const [client] = await createClients(1)
+    const convo = await alix.conversations.newConversation(client.address)
+    conversations.push(convo)
+  }
+
+  const { hmacKeys } = await alix.conversations.getHmacKeys()
+
+  const topics = Object.keys(hmacKeys)
+  conversations.forEach((conversation) => {
+    assert(topics.includes(conversation.topic), 'topic not found')
+  })
 
   return true
 })
