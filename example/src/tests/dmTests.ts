@@ -25,12 +25,10 @@ test('can filter dms by consent', async () => {
   const boConvosFilteredAllowed = await boClient.conversations.listDms(
     {},
     undefined,
-    undefined,
     'allowed'
   )
   const boConvosFilteredUnknown = await boClient.conversations.listDms(
     {},
-    undefined,
     undefined,
     'unknown'
   )
@@ -81,24 +79,10 @@ test('can list dms with params', async () => {
   await boDm1.send({ text: `dm message` })
 
   await boClient.conversations.syncAllConversations()
-  const boConvosOrderCreated = await boClient.conversations.listDms()
-  const boConvosOrderLastMessage = await boClient.conversations.listDms(
-    { lastMessage: true },
-    'lastMessage'
-  )
-  const boDmsLimit = await boClient.conversations.listDms({}, undefined, 1)
-
-  assert(
-    boConvosOrderCreated
-      .map((conversation: any) => conversation.id)
-      .toString() === [boDm1.id, boDm2.id].toString(),
-    `Conversation created at order should be ${[
-      boDm1.id,
-      boDm2.id,
-    ].toString()} but was ${boConvosOrderCreated
-      .map((convo: any) => convo.id)
-      .toString()}`
-  )
+  const boConvosOrderLastMessage = await boClient.conversations.listDms({
+    lastMessage: true,
+  })
+  const boDmsLimit = await boClient.conversations.listDms({}, 1)
 
   assert(
     boConvosOrderLastMessage
