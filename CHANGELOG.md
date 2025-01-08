@@ -1,5 +1,12 @@
 # @xmtp/react-native-sdk
 
+## 3.1.6
+
+### Patch Changes
+
+- fb1f351: V3 HMAC key support for self push notifications
+  Streaming preference updates
+
 ## 3.1.5
 
 ### Patch Changes
