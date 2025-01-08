@@ -1879,15 +1879,6 @@ public class XMTPModule: Module {
 		}
 	}
 
-	private func getConversationSortOrder(order: String) -> ConversationOrder {
-		switch order {
-		case "lastMessage":
-			return .lastMessage
-		default:
-			return .createdAt
-		}
-	}
-
 	private func getSortDirection(direction: String) throws -> SortDirection {
 		switch direction {
 		case "ASCENDING":

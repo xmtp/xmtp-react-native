@@ -18,7 +18,6 @@ import { InboxState } from './lib/InboxState'
 import { Member } from './lib/Member'
 import { WalletType } from './lib/Signer'
 import {
-  ConversationOrder,
   ConversationOptions,
   ConversationType,
   ConversationId,
@@ -321,7 +320,6 @@ export async function listGroups<
 >(
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
-  order?: ConversationOrder | undefined,
   limit?: number | undefined,
   consentState?: ConsentState | undefined
 ): Promise<Group<ContentTypes>[]> {
@@ -329,7 +327,6 @@ export async function listGroups<
     await XMTPModule.listGroups(
       client.installationId,
       JSON.stringify(opts),
-      order,
       limit,
       consentState
     )
@@ -348,7 +345,6 @@ export async function listDms<
 >(
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
-  order?: ConversationOrder | undefined,
   limit?: number | undefined,
   consentState?: ConsentState | undefined
 ): Promise<Dm<ContentTypes>[]> {
@@ -356,7 +352,6 @@ export async function listDms<
     await XMTPModule.listDms(
       client.installationId,
       JSON.stringify(opts),
-      order,
       limit,
       consentState
     )
@@ -375,7 +370,6 @@ export async function listConversations<
 >(
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
-  order?: ConversationOrder | undefined,
   limit?: number | undefined,
   consentState?: ConsentState | undefined
 ): Promise<Conversation<ContentTypes>[]> {
@@ -383,7 +377,6 @@ export async function listConversations<
     await XMTPModule.listConversations(
       client.installationId,
       JSON.stringify(opts),
-      order,
       limit,
       consentState
     )
@@ -1112,6 +1105,10 @@ export async function updateConversationConsent(
   )
 }
 
+export function subscribeToPreferenceUpdates(installationId: InstallationId) {
+  return XMTPModule.subscribeToPreferenceUpdates(installationId)
+}
+
 export function subscribeToConsent(installationId: InstallationId) {
   return XMTPModule.subscribeToConsent(installationId)
 }
@@ -1135,6 +1132,12 @@ export async function subscribeToMessages(
   id: ConversationId
 ) {
   return await XMTPModule.subscribeToMessages(installationId, id)
+}
+
+export function unsubscribeFromPreferenceUpdates(
+  installationId: InstallationId
+) {
+  return XMTPModule.unsubscribeFromPreferenceUpdates(installationId)
 }
 
 export function unsubscribeFromConsent(installationId: InstallationId) {
@@ -1204,7 +1207,6 @@ export { Member } from './lib/Member'
 export { Address, InboxId, XMTPEnvironment } from './lib/Client'
 export {
   ConversationOptions,
-  ConversationOrder,
   ConversationId,
   ConversationTopic,
   ConversationType,
