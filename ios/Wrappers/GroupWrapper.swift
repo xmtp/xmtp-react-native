@@ -38,8 +38,8 @@ struct GroupWrapper {
 			result["consentState"] = ConsentWrapper.consentStateToString(state: try group.consentState())
 		}
 		if conversationParams.lastMessage {
-			if let lastMessage = try await group.messages(limit: 1).first {
-				result["lastMessage"] = try DecodedMessageWrapper.encode(lastMessage, client: client)
+			if let lastMessage = try await group.lastMessage() {
+				result["lastMessage"] = try MessageWrapper.encode(lastMessage, client: client)
 			}
 		}
 		

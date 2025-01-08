@@ -104,7 +104,8 @@ public class XMTPModule: Module {
 			"conversation",
 			"message",
 			"conversationMessage",
-			"consent"
+			"consent",
+			"preferences"
 		)
 
 		AsyncFunction("address") { (installationId: String) -> String in
@@ -496,7 +497,6 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
-			let order = getConversationSortOrder(order: sortOrder ?? "")
 			let consent: ConsentState?
 			if let state = consentState {
 				consent = try getConsentState(state: state)
@@ -504,7 +504,7 @@ public class XMTPModule: Module {
 				consent = nil
 			}
 			var groupList: [Group] = try await client.conversations.listGroups(
-				limit: limit, order: order, consentState: consent)
+				limit: limit, consentState: consent)
 
 			var results: [String] = []
 			for group in groupList {
@@ -529,7 +529,6 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
-			let order = getConversationSortOrder(order: sortOrder ?? "")
 			let consent: ConsentState?
 			if let state = consentState {
 				consent = try getConsentState(state: state)
@@ -537,7 +536,7 @@ public class XMTPModule: Module {
 				consent = nil
 			}
 			var dmList: [Dm] = try await client.conversations.listDms(
-				limit: limit, order: order, consentState: consent)
+				limit: limit, consentState: consent)
 
 			var results: [String] = []
 			for dm in dmList {
@@ -561,7 +560,6 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				conversationParams ?? "")
-			let order = getConversationSortOrder(order: sortOrder ?? "")
 			let consent: ConsentState?
 			if let state = consentState {
 				consent = try getConsentState(state: state)
@@ -569,7 +567,7 @@ public class XMTPModule: Module {
 				consent = nil
 			}
 			let conversations = try await client.conversations.list(
-				limit: limit, order: order, consentState: consent)
+				limit: limit, consentState: consent)
 
 			var results: [String] = []
 			for conversation in conversations {
@@ -621,7 +619,7 @@ public class XMTPModule: Module {
 
 			return messages.compactMap { msg in
 				do {
-					return try DecodedMessageWrapper.encode(msg, client: client)
+					return try MessageWrapper.encode(msg, client: client)
 				} catch {
 					print(
 						"discarding message, unable to encode wrapper \(msg.id)"
@@ -639,8 +637,8 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			if let message = try client.findMessage(messageId: messageId) {
-				return try DecodedMessageWrapper.encode(
-					message.decode(), client: client)
+				return try MessageWrapper.encode(
+					message, client: client)
 			} else {
 				return nil
 			}
@@ -1528,7 +1526,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("processMessage") {
 			(installationId: String, id: String, encryptedMessage: String)
-				-> String in
+				-> String? in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1549,10 +1547,14 @@ public class XMTPModule: Module {
 			else {
 				throw Error.noMessage
 			}
-			let decodedMessage = try await conversation.processMessage(
+			if let decodedMessage = try await conversation.processMessage(
 				messageBytes: encryptedMessageData)
-			return try DecodedMessageWrapper.encode(
-				decodedMessage.decode(), client: client)
+			{
+				return try MessageWrapper.encode(
+					decodedMessage, client: client)
+			} else {
+				return nil
+			}
 		}
 
 		AsyncFunction("processWelcomeMessage") {
@@ -1690,6 +1692,13 @@ public class XMTPModule: Module {
 				state: getConsentState(state: state))
 		}
 
+		AsyncFunction("subscribeToPreferenceUpdates") {
+			(installationId: String) in
+
+			try await subscribeToPreferenceUpdates(
+				installationId: installationId)
+		}
+
 		AsyncFunction("subscribeToConsent") {
 			(installationId: String) in
 
@@ -1716,6 +1725,13 @@ public class XMTPModule: Module {
 			(installationId: String, id: String) in
 			try await subscribeToMessages(
 				installationId: installationId, id: id)
+		}
+
+		AsyncFunction("unsubscribeFromPreferenceUpdates") {
+			(installationId: String) in
+			await subscriptionsManager.get(
+				getPreferenceUpdatesKey(installationId: installationId))?
+				.cancel()
 		}
 
 		AsyncFunction("unsubscribeFromConsent") { (installationId: String) in
@@ -1899,6 +1915,14 @@ public class XMTPModule: Module {
 		}
 	}
 
+	private func getPreferenceUpdatesType(type: PreferenceType) throws -> String
+	{
+		switch type {
+		case .hmac_keys:
+			return "hmac_keys"
+		}
+	}
+
 	func createApiClient(env: String, appVersion: String? = nil)
 		-> XMTP.ClientOptions.Api
 	{
@@ -1938,6 +1962,40 @@ public class XMTPModule: Module {
 			dbEncryptionKey: dbEncryptionKey,
 			dbDirectory: authOptions.dbDirectory,
 			historySyncUrl: authOptions.historySyncUrl)
+	}
+
+	func subscribeToPreferenceUpdates(installationId: String)
+		async throws
+	{
+		guard let client = await clientsManager.getClient(key: installationId)
+		else {
+			return
+		}
+
+		await subscriptionsManager.get(
+			getPreferenceUpdatesKey(installationId: installationId))?
+			.cancel()
+		await subscriptionsManager.set(
+			getPreferenceUpdatesKey(installationId: installationId),
+			Task {
+				do {
+					for try await pref in await client.preferences
+						.streamPreferenceUpdates()
+					{
+						try sendEvent(
+							"consent",
+							[
+								"installationId": installationId,
+								"type": getPreferenceUpdatesType(type: pref),
+							])
+					}
+				} catch {
+					print("Error in preference subscription: \(error)")
+					await subscriptionsManager.get(
+						getPreferenceUpdatesKey(installationId: installationId))?
+						.cancel()
+				}
+			})
 	}
 
 	func subscribeToConsent(installationId: String)
@@ -2033,7 +2091,7 @@ public class XMTPModule: Module {
 							"message",
 							[
 								"installationId": installationId,
-								"message": DecodedMessageWrapper.encodeToObj(
+								"message": MessageWrapper.encodeToObj(
 									message, client: client),
 							])
 					}
@@ -2072,7 +2130,7 @@ public class XMTPModule: Module {
 								[
 									"installationId": installationId,
 									"message":
-										DecodedMessageWrapper.encodeToObj(
+										MessageWrapper.encodeToObj(
 											message, client: client),
 									"conversationId": id,
 								])
@@ -2107,6 +2165,10 @@ public class XMTPModule: Module {
 
 		await subscriptionsManager.get(converation.cacheKey(installationId))?
 			.cancel()
+	}
+
+	func getPreferenceUpdatesKey(installationId: String) -> String {
+		return "preferences:\(installationId)"
 	}
 
 	func getConsentKey(installationId: String) -> String {
