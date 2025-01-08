@@ -31,7 +31,7 @@ class GroupWrapper {
                 if (groupParams.lastMessage) {
                     val lastMessage = group.messages(limit = 1).firstOrNull()
                     if (lastMessage != null) {
-                        put("lastMessage", DecodedMessageWrapper.encode(lastMessage))
+                        put("lastMessage", MessageWrapper.encode(lastMessage))
                     }
                 }
             }

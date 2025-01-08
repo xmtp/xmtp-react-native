@@ -582,6 +582,17 @@ public class XMTPModule: Module {
 			return results
 		}
 
+		AsyncFunction("getHmacKeys") { (installationId: String) -> [UInt8] in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			let hmacKeys = await client.conversations.getHmacKeys()
+
+			return try [UInt8](hmacKeys.serializedData())
+		}
+
 		AsyncFunction("conversationMessages") {
 			(
 				installationId: String, conversationId: String, limit: Int?,
@@ -1742,11 +1753,31 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("subscribePushTopics") { (topics: [String]) in
+		AsyncFunction("subscribePushTopics") {
+			(installationId: String, topics: [String]) in
 			do {
+				guard
+					let client = await clientsManager.getClient(
+						key: installationId)
+				else {
+					throw Error.noClient
+				}
+				let hmacKeysResult = await client.conversations.getHmacKeys()
 				let subscriptions = topics.map {
 					topic -> NotificationSubscription in
+					let hmacKeys = hmacKeysResult.hmacKeys
+
+					let result = hmacKeys[topic]?.values.map {
+						hmacKey -> NotificationSubscriptionHmacKey in
+						NotificationSubscriptionHmacKey.with { sub_key in
+							sub_key.key = hmacKey.hmacKey
+							sub_key.thirtyDayPeriodsSinceEpoch = UInt32(
+								hmacKey.thirtyDayPeriodsSinceEpoch)
+						}
+					}
+
 					return NotificationSubscription.with { sub in
+						sub.hmacKeys = result ?? []
 						sub.topic = topic
 					}
 				}

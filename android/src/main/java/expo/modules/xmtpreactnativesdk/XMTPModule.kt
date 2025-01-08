@@ -18,7 +18,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.DecodedMessageWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
@@ -54,13 +54,13 @@ import org.xmtp.android.library.codecs.EncryptedEncodedContent
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.hexToByteArray
+import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import org.xmtp.android.library.libxmtp.Message
+import org.xmtp.android.library.libxmtp.PermissionOption
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.PermissionOption
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -520,15 +520,13 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("listGroups") Coroutine { installationId: String, groupParams: String?, sortOrder: String?, limit: Int?, consentState: String? ->
+        AsyncFunction("listGroups") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val order = getConversationSortOrder(sortOrder ?: "")
                 val consent = consentState?.let { getConsentState(it) }
                 val groups = client.conversations.listGroups(
-                    order = order,
                     limit = limit,
                     consentState = consent
                 )
@@ -538,15 +536,13 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listDms") Coroutine { installationId: String, groupParams: String?, sortOrder: String?, limit: Int?, consentState: String? ->
+        AsyncFunction("listDms") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("listDms")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val order = getConversationSortOrder(sortOrder ?: "")
                 val consent = consentState?.let { getConsentState(it) }
                 val dms = client.conversations.listDms(
-                    order = order,
                     limit = limit,
                     consentState = consent
                 )
@@ -556,16 +552,15 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listConversations") Coroutine { installationId: String, conversationParams: String?, sortOrder: String?, limit: Int?, consentState: String? ->
+        AsyncFunction("listConversations") Coroutine { installationId: String, conversationParams: String?, limit: Int?, consentState: String? ->
             withContext(Dispatchers.IO) {
                 logV("listConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params =
                     ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
-                val order = getConversationSortOrder(sortOrder ?: "")
                 val consent = consentState?.let { getConsentState(it) }
                 val conversations =
-                    client.conversations.list(order = order, limit = limit, consentState = consent)
+                    client.conversations.list(limit = limit, consentState = consent)
                 conversations.map { conversation ->
                     ConversationWrapper.encode(client, conversation, params)
                 }
@@ -592,7 +587,7 @@ class XMTPModule : Module() {
                     direction = Message.SortDirection.valueOf(
                         direction ?: "DESCENDING"
                     )
-                )?.map { DecodedMessageWrapper.encode(it) }
+                )?.map { MessageWrapper.encode(it) }
             }
         }
 
@@ -602,7 +597,7 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val message = client.findMessage(messageId)
                 message?.let {
-                    DecodedMessageWrapper.encode(it.decode())
+                    MessageWrapper.encode(it)
                 }
             }
         }
@@ -1182,7 +1177,9 @@ class XMTPModule : Module() {
                 val conversation = client.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 val message = conversation.processMessage(Base64.decode(encryptedMessage, NO_WRAP))
-                DecodedMessageWrapper.encode(message.decode())
+                message?.let {
+                    MessageWrapper.encode(it)
+                }
             }
         }
 
@@ -1412,13 +1409,6 @@ class XMTPModule : Module() {
         }
     }
 
-    private fun getConversationSortOrder(order: String): ConversationOrder {
-        return when (order) {
-            "lastMessage" -> ConversationOrder.LAST_MESSAGE
-            else -> ConversationOrder.CREATED_AT
-        }
-    }
-
     private fun consentStateToString(state: ConsentState): String {
         return when (state) {
             ConsentState.ALLOWED -> "allowed"
@@ -1487,7 +1477,7 @@ class XMTPModule : Module() {
                         "message",
                         mapOf(
                             "installationId" to installationId,
-                            "message" to DecodedMessageWrapper.encodeMap(message),
+                            "message" to MessageWrapper.encodeMap(message),
                         )
                     )
                 }
@@ -1511,7 +1501,7 @@ class XMTPModule : Module() {
                             "conversationMessage",
                             mapOf(
                                 "installationId" to installationId,
-                                "message" to DecodedMessageWrapper.encodeMap(message),
+                                "message" to MessageWrapper.encodeMap(message),
                                 "conversationId" to id,
                             )
                         )

@@ -24,7 +24,7 @@ class DmWrapper {
                 if (dmParams.lastMessage) {
                     val lastMessage = dm.messages(limit = 1).firstOrNull()
                     if (lastMessage != null) {
-                        put("lastMessage", DecodedMessageWrapper.encode(lastMessage))
+                        put("lastMessage", MessageWrapper.encode(lastMessage))
                     }
                 }
             }
