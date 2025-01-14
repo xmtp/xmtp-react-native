@@ -1,5 +1,13 @@
 # @xmtp/react-native-sdk
 
+## 3.1.7
+
+### Patch Changes
+
+- e5839cd: - Remove client from serializable objects
+  - Ability to revoke installations
+  - Static inboxStates for inboxIds
+
 ## 3.1.6
 
 ### Patch Changes
