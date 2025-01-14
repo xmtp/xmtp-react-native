@@ -36,7 +36,7 @@ export class Client<
   dbPath: string
   conversations: Conversations<ContentTypes>
   preferences: PrivatePreferences
-  codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
+  static codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
   private static signSubscription: Subscription | null = null
   private static authSubscription: Subscription | null = null
 
@@ -321,16 +321,18 @@ export class Client<
     this.dbPath = dbPath
     this.conversations = new Conversations(this)
     this.preferences = new PrivatePreferences(this)
-    this.codecRegistry = {}
+    Client.codecRegistry = {}
 
-    this.register(new TextCodec())
+    Client.register(new TextCodec())
 
     for (const codec of codecs) {
-      this.register(codec)
+      Client.register(codec)
     }
   }
 
-  register<T, Codec extends XMTPModule.ContentCodec<T>>(contentCodec: Codec) {
+  static register<T, Codec extends XMTPModule.ContentCodec<T>>(
+    contentCodec: Codec
+  ) {
     const id = `${contentCodec.contentType.authorityId}/${contentCodec.contentType.typeId}:${contentCodec.contentType.versionMajor}.${contentCodec.contentType.versionMinor}`
     this.codecRegistry[id] = contentCodec
   }

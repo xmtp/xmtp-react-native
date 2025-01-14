@@ -42,8 +42,8 @@ export async function createClients(
       env: env ?? 'local',
       dbEncryptionKey: keyBytes,
     })
-    client.register(new GroupUpdatedCodec())
-    client.register(new RemoteAttachmentCodec())
+    Client.register(new GroupUpdatedCodec())
+    Client.register(new RemoteAttachmentCodec())
     clients.push(client)
   }
   return clients
