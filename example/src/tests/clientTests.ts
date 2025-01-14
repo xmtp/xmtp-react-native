@@ -1,7 +1,12 @@
 import { Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
 
-import { Test, assert, createClients } from './test-utils'
+import {
+  Test,
+  assert,
+  createClients,
+  adaptEthersWalletToSigner,
+} from './test-utils'
 import { Client } from '../../../src/index'
 
 export const clientTests: Test[] = []
@@ -91,7 +96,7 @@ test('can revoke installations', async () => {
   const alixWallet = Wallet.createRandom()
 
   // create a v3 client
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -99,7 +104,7 @@ test('can revoke installations', async () => {
 
   await alix.deleteLocalDatabase()
 
-  const alix2 = await Client.create(alixWallet, {
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -115,7 +120,7 @@ test('can revoke installations', async () => {
 
   await alix2.deleteLocalDatabase()
 
-  const alix3 = await Client.create(alixWallet, {
+  const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -127,7 +132,9 @@ test('can revoke installations', async () => {
     `installations length should be 3 but was ${inboxState2.installations.length}`
   )
 
-  await alix3.revokeInstallations(alixWallet, [alix2InstallationId])
+  await alix3.revokeInstallations(adaptEthersWalletToSigner(alixWallet), [
+    alix2InstallationId,
+  ])
 
   const inboxState3 = await alix3.inboxState(true)
   assert(
@@ -146,7 +153,7 @@ test('can revoke all other installations', async () => {
   const alixWallet = Wallet.createRandom()
 
   // create a v3 client
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -154,7 +161,7 @@ test('can revoke all other installations', async () => {
 
   await alix.deleteLocalDatabase()
 
-  const alix2 = await Client.create(alixWallet, {
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -168,7 +175,7 @@ test('can revoke all other installations', async () => {
 
   await alix2.deleteLocalDatabase()
 
-  const alix3 = await Client.create(alixWallet, {
+  const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -180,7 +187,7 @@ test('can revoke all other installations', async () => {
     `installations length should be 3 but was ${inboxState2.installations.length}`
   )
 
-  await alix3.revokeAllOtherInstallations(alixWallet)
+  await alix3.revokeAllOtherInstallations(adaptEthersWalletToSigner(alixWallet))
 
   const inboxState3 = await alix3.inboxState(true)
   assert(
@@ -434,14 +441,14 @@ test('can add and remove accounts', async () => {
   const alixWallet2 = Wallet.createRandom()
   const alixWallet3 = Wallet.createRandom()
 
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
-  await alix.addAccount(alixWallet2)
-  await alix.addAccount(alixWallet3)
+  await alix.addAccount(adaptEthersWalletToSigner(alixWallet2))
+  await alix.addAccount(adaptEthersWalletToSigner(alixWallet3))
 
   const inboxState = await alix.inboxState(true)
   assert(
@@ -457,7 +464,10 @@ test('can add and remove accounts', async () => {
     `recovery address should be ${alix.address} but was ${inboxState.recoveryAddress}`
   )
 
-  await alix.removeAccount(alixWallet, await alixWallet3.getAddress())
+  await alix.removeAccount(
+    adaptEthersWalletToSigner(alixWallet),
+    await alixWallet3.getAddress()
+  )
   const inboxState2 = await alix.inboxState(true)
   assert(
     inboxState2.addresses.length === 2,

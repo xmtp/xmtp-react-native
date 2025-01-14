@@ -4,7 +4,13 @@ import ReactNativeBlobUtil from 'react-native-blob-util'
 import RNFS from 'react-native-fs'
 import { PreferenceUpdates } from 'xmtp-react-native-sdk/lib/PrivatePreferences'
 
-import { Test, assert, createClients, delayToPropogate } from './test-utils'
+import {
+  Test,
+  assert,
+  createClients,
+  delayToPropogate,
+  adaptEthersWalletToSigner,
+} from './test-utils'
 import {
   Client,
   ConsentRecord,
@@ -823,7 +829,7 @@ test('can sync consent', async () => {
   }
   const alixWallet = Wallet.createRandom()
 
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -839,7 +845,7 @@ test('can sync consent', async () => {
   await bo.conversations.sync()
   const boDm = await bo.conversations.findConversation(dm.id)
 
-  const alix2 = await Client.create(alixWallet, {
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -900,7 +906,7 @@ test('can stream consent', async () => {
 
   const alixWallet = Wallet.createRandom()
 
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -909,7 +915,7 @@ test('can stream consent', async () => {
 
   const alixGroup = await alix.conversations.newGroup([bo.address])
 
-  const alix2 = await Client.create(alixWallet, {
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -971,7 +977,7 @@ test('can preference updates', async () => {
 
   const alixWallet = Wallet.createRandom()
 
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -984,7 +990,7 @@ test('can preference updates', async () => {
       types.push(entry)
   })
 
-  const alix2 = await Client.create(alixWallet, {
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,

@@ -7,6 +7,7 @@ import {
   createClients,
   createGroups,
   delayToPropogate,
+  adaptEthersWalletToSigner,
 } from './test-utils'
 import {
   Client,
@@ -1872,16 +1873,14 @@ test('can create new installation without breaking group', async () => {
   const wallet1 = Wallet.createRandom()
   const wallet2 = Wallet.createRandom()
 
-  const client1 = await Client.create(wallet1, {
+  const client1 = await Client.create(adaptEthersWalletToSigner(wallet1), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableV3: true,
     dbEncryptionKey: keyBytes,
   })
-  const client2 = await Client.create(wallet2, {
+  const client2 = await Client.create(adaptEthersWalletToSigner(wallet2), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 
@@ -1911,10 +1910,9 @@ test('can create new installation without breaking group', async () => {
   await client2.deleteLocalDatabase()
 
   // Recreating a client with wallet 2 (new installation!)
-  await Client.create(wallet2, {
+  await Client.create(adaptEthersWalletToSigner(wallet2), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 

@@ -1,3 +1,4 @@
+import { Wallet } from 'ethers'
 import { Platform } from 'expo-modules-core'
 import {
   Client,
@@ -5,6 +6,7 @@ import {
   Group,
   RemoteAttachmentCodec,
   XMTPEnvironment,
+  Signer,
 } from 'xmtp-react-native-sdk'
 
 export type Test = {
@@ -65,4 +67,14 @@ export async function createGroups(
     groups.push(group)
   }
   return groups
+}
+
+export function adaptEthersWalletToSigner(wallet: Wallet): Signer {
+  return {
+    getAddress: async () => wallet.address,
+    getChainId: () => undefined, // Provide a chain ID if available or return undefined
+    getBlockNumber: () => undefined, // Block number is typically not available in Wallet, return undefined
+    walletType: () => 'EOA', // "EOA" indicates an externally owned account
+    signMessage: async (message: string) => wallet.signMessage(message),
+  }
 }

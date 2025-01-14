@@ -10,7 +10,12 @@ import {
   StaticAttachmentCodec,
 } from 'xmtp-react-native-sdk'
 
-import { Test, assert, createClients } from './test-utils'
+import {
+  Test,
+  assert,
+  createClients,
+  adaptEthersWalletToSigner,
+} from './test-utils'
 
 export const groupPerformanceTests: Test[] = []
 let counter = 1
@@ -34,7 +39,7 @@ test('building and creating', async () => {
   const alixWallet = Wallet.createRandom()
 
   const start1 = performance.now()
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'dev',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
