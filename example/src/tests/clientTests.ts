@@ -62,6 +62,82 @@ test('static can message', async () => {
   return true
 })
 
+test('static inboxStates for inboxIds', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const inboxStates = await Client.inboxStatesForInboxIds('local', [
+    alix.inboxId,
+    bo.inboxId,
+  ])
+
+  assert(
+    inboxStates[0].recoveryAddress.toLowerCase === alix.address.toLowerCase,
+    `inbox state should be ${alix.address.toLowerCase} but was ${inboxStates[0].recoveryAddress.toLowerCase}`
+  )
+
+  assert(
+    inboxStates[1].recoveryAddress.toLowerCase === bo.address.toLowerCase,
+    `inbox state should be ${bo.address.toLowerCase} but was ${inboxStates[1].recoveryAddress.toLowerCase}`
+  )
+
+  return true
+})
+
+test('can revoke installations', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const alixWallet = Wallet.createRandom()
+
+  // create a v3 client
+  const alix = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+  })
+
+  await alix.deleteLocalDatabase()
+
+  const alix2 = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+  })
+
+  await Client.build(alix2.address, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+  })
+
+  const alix2InstallationId = alix2.installationId
+
+  await alix2.deleteLocalDatabase()
+
+  const alix3 = await Client.create(alixWallet, {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+  })
+
+  const inboxState2 = await alix3.inboxState(true)
+  assert(
+    inboxState2.installations.length === 3,
+    `installations length should be 3 but was ${inboxState2.installations.length}`
+  )
+
+  await alix3.revokeInstallations(alixWallet, [alix2InstallationId])
+
+  const inboxState3 = await alix3.inboxState(true)
+  assert(
+    inboxState3.installations.length === 2,
+    `installations length should be 2 but was ${inboxState3.installations.length}`
+  )
+
+  return true
+})
+
 test('can revoke all other installations', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
