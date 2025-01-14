@@ -187,6 +187,25 @@ export async function build(
   )
 }
 
+export async function revokeInstallations(
+  installationId: InstallationId,
+  installationIds: InstallationId[],
+  walletType?: WalletType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+) {
+  const walletParams: WalletParams = {
+    walletType,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
+  }
+  return XMTPModule.revokeInstallations(
+    installationId,
+    JSON.stringify(walletParams),
+    installationIds
+  )
+}
+
 export async function revokeAllOtherInstallations(
   installationId: InstallationId,
   walletType?: WalletType | undefined,
@@ -281,6 +300,19 @@ export async function staticCanMessage(
   peerAddresses: Address[]
 ): Promise<{ [key: Address]: boolean }> {
   return await XMTPModule.staticCanMessage(environment, peerAddresses)
+}
+
+export async function staticInboxStatesForInboxIds(
+  environment: XMTPEnvironment,
+  inboxIds: InboxId[]
+): Promise<InboxState[]> {
+  const inboxStates = await XMTPModule.staticInboxStatesForInboxIds(
+    environment,
+    inboxIds
+  )
+  return inboxStates.map((json: string) => {
+    return InboxState.from(json)
+  })
 }
 
 export async function getOrCreateInboxId(
