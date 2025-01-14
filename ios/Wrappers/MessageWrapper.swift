@@ -4,7 +4,7 @@ import XMTP
 // Wrapper around XMTP.DecodedMessage to allow passing these objects back
 // into react native.
 struct MessageWrapper {
-	static func encodeToObj(_ model: XMTP.Message, client: Client) throws -> [String: Any] {
+	static func encodeToObj(_ model: XMTP.Message) throws -> [String: Any] {
     // Swift Protos don't support null values and will always put the default ""
     // Check if there is a fallback, if there is then make it the set fallback, if not null
 		let fallback = try model.encodedContent.hasFallback ? model.encodedContent.fallback : nil
@@ -12,7 +12,7 @@ struct MessageWrapper {
 			"id": model.id,
 			"topic": model.topic,
 			"contentTypeId": try model.encodedContent.type.description,
-			"content": try ContentJson.fromEncoded(model.encodedContent, client: client).toJsonMap() as Any,
+			"content": try ContentJson.fromEncoded(model.encodedContent).toJsonMap() as Any,
 			"senderInboxId": model.senderInboxId,
 			"sentNs": model.sentAtNs,
 			"fallback": fallback,
@@ -20,8 +20,8 @@ struct MessageWrapper {
 		]
 	}
 
-	static func encode(_ model: XMTP.Message, client: Client) throws -> String {
-		let obj = try encodeToObj(model, client: client)
+	static func encode(_ model: XMTP.Message) throws -> String {
+		let obj = try encodeToObj(model)
 		return try obj.toJson()
 	}
 }
@@ -48,16 +48,16 @@ struct ContentJson {
 		GroupUpdatedCodec(),
 	]
 
-	static func initCodecs(client: Client) {
-		codecs.forEach { codec in client.register(codec: codec) }
+	static func initCodecs() {
+		codecs.forEach { codec in Client.register(codec: codec) }
 	}
 
 	enum Error: Swift.Error {
 		case unknownContentType, badAttachmentData, badReplyContent, badRemoteAttachmentMetadata
 	}
 
-	static func fromEncoded(_ encoded: XMTP.EncodedContent, client: Client) throws -> ContentJson {
-		return try ContentJson(type: encoded.type, content: encoded.decoded(with: client), encodedContent: encoded)
+	static func fromEncoded(_ encoded: XMTP.EncodedContent) throws -> ContentJson {
+		return try ContentJson(type: encoded.type, content: encoded.decoded(), encodedContent: encoded)
 	}
 
 	static func fromJsonObj(_ obj: [String: Any]) throws -> ContentJson {

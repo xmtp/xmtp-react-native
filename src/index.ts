@@ -1,7 +1,6 @@
 import { content, keystore } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
-import { Client } from '.'
 import XMTPModule from './XMTPModule'
 import { Address, InboxId, InstallationId, XMTPEnvironment } from './lib/Client'
 import { ConsentRecord, ConsentState, ConsentType } from './lib/ConsentRecord'
@@ -188,6 +187,25 @@ export async function build(
   )
 }
 
+export async function revokeInstallations(
+  installationId: InstallationId,
+  installationIds: InstallationId[],
+  walletType?: WalletType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+) {
+  const walletParams: WalletParams = {
+    walletType,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
+  }
+  return XMTPModule.revokeInstallations(
+    installationId,
+    JSON.stringify(walletParams),
+    installationIds
+  )
+}
+
 export async function revokeAllOtherInstallations(
   installationId: InstallationId,
   walletType?: WalletType | undefined,
@@ -284,6 +302,19 @@ export async function staticCanMessage(
   return await XMTPModule.staticCanMessage(environment, peerAddresses)
 }
 
+export async function staticInboxStatesForInboxIds(
+  environment: XMTPEnvironment,
+  inboxIds: InboxId[]
+): Promise<InboxState[]> {
+  const inboxStates = await XMTPModule.staticInboxStatesForInboxIds(
+    environment,
+    inboxIds
+  )
+  return inboxStates.map((json: string) => {
+    return InboxState.from(json)
+  })
+}
+
 export async function getOrCreateInboxId(
   address: Address,
   environment: XMTPEnvironment
@@ -318,14 +349,14 @@ export async function decryptAttachment(
 export async function listGroups<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   opts?: ConversationOptions | undefined,
   limit?: number | undefined,
   consentState?: ConsentState | undefined
 ): Promise<Group<ContentTypes>[]> {
   return (
     await XMTPModule.listGroups(
-      client.installationId,
+      clientInstallationId,
       JSON.stringify(opts),
       limit,
       consentState
@@ -334,23 +365,23 @@ export async function listGroups<
     const group = JSON.parse(json)
 
     const lastMessage = group['lastMessage']
-      ? DecodedMessage.from(group['lastMessage'], client)
+      ? DecodedMessage.from(group['lastMessage'])
       : undefined
-    return new Group(client, group, lastMessage)
+    return new Group(clientInstallationId, group, lastMessage)
   })
 }
 
 export async function listDms<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   opts?: ConversationOptions | undefined,
   limit?: number | undefined,
   consentState?: ConsentState | undefined
 ): Promise<Dm<ContentTypes>[]> {
   return (
     await XMTPModule.listDms(
-      client.installationId,
+      clientInstallationId,
       JSON.stringify(opts),
       limit,
       consentState
@@ -359,23 +390,23 @@ export async function listDms<
     const group = JSON.parse(json)
 
     const lastMessage = group['lastMessage']
-      ? DecodedMessage.from(group['lastMessage'], client)
+      ? DecodedMessage.from(group['lastMessage'])
       : undefined
-    return new Dm(client, group, lastMessage)
+    return new Dm(clientInstallationId, group, lastMessage)
   })
 }
 
 export async function listConversations<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   opts?: ConversationOptions | undefined,
   limit?: number | undefined,
   consentState?: ConsentState | undefined
 ): Promise<Conversation<ContentTypes>[]> {
   return (
     await XMTPModule.listConversations(
-      client.installationId,
+      clientInstallationId,
       JSON.stringify(opts),
       limit,
       consentState
@@ -384,13 +415,13 @@ export async function listConversations<
     const jsonObj = JSON.parse(json)
 
     const lastMessage = jsonObj['lastMessage']
-      ? DecodedMessage.from(jsonObj['lastMessage'], client)
+      ? DecodedMessage.from(jsonObj['lastMessage'])
       : undefined
 
     if (jsonObj.version === ConversationVersion.GROUP) {
-      return new Group(client, jsonObj, lastMessage)
+      return new Group(clientInstallationId, jsonObj, lastMessage)
     } else {
-      return new Dm(client, jsonObj, lastMessage)
+      return new Dm(clientInstallationId, jsonObj, lastMessage)
     }
   })
 }
@@ -406,7 +437,7 @@ export async function getHmacKeys(
 export async function conversationMessages<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   conversationId: ConversationId,
   limit?: number | undefined,
   beforeNs?: number | undefined,
@@ -414,7 +445,7 @@ export async function conversationMessages<
   direction?: MessageOrder | undefined
 ): Promise<DecodedMessageUnion<ContentTypes>[]> {
   const messages = await XMTPModule.conversationMessages(
-    client.installationId,
+    clientInstallationId,
     conversationId,
     limit,
     beforeNs,
@@ -422,7 +453,7 @@ export async function conversationMessages<
     direction
   )
   return messages.map((json: string) => {
-    return DecodedMessage.from(json, client)
+    return DecodedMessage.from(json)
   })
 }
 
@@ -430,36 +461,36 @@ export async function findMessage<
   ContentType extends DefaultContentTypes[number] = DefaultContentTypes[number],
   ContentTypes extends DefaultContentTypes = [ContentType], // Adjusted to work with arrays
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   messageId: MessageId
 ): Promise<DecodedMessageUnion<ContentTypes> | undefined> {
-  const message = await XMTPModule.findMessage(client.installationId, messageId)
-  return DecodedMessage.from(message, client)
+  const message = await XMTPModule.findMessage(clientInstallationId, messageId)
+  return DecodedMessage.from(message)
 }
 
 export async function findGroup<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   groupId: ConversationId
 ): Promise<Group<ContentTypes> | undefined> {
-  const json = await XMTPModule.findGroup(client.installationId, groupId)
+  const json = await XMTPModule.findGroup(clientInstallationId, groupId)
   const group = JSON.parse(json)
   if (!group || Object.keys(group).length === 0) {
     return undefined
   }
 
-  return new Group(client, group)
+  return new Group(clientInstallationId, group)
 }
 
 export async function findConversation<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   conversationId: ConversationId
 ): Promise<Conversation<ContentTypes> | undefined> {
   const json = await XMTPModule.findConversation(
-    client.installationId,
+    clientInstallationId,
     conversationId
   )
   const conversation = JSON.parse(json)
@@ -468,20 +499,20 @@ export async function findConversation<
   }
 
   if (conversation.version === ConversationVersion.GROUP) {
-    return new Group(client, conversation)
+    return new Group(clientInstallationId, conversation)
   } else {
-    return new Dm(client, conversation)
+    return new Dm(clientInstallationId, conversation)
   }
 }
 
 export async function findConversationByTopic<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   topic: ConversationTopic
 ): Promise<Conversation<ContentTypes> | undefined> {
   const json = await XMTPModule.findConversationByTopic(
-    client.installationId,
+    clientInstallationId,
     topic
   )
   const conversation = JSON.parse(json)
@@ -490,20 +521,20 @@ export async function findConversationByTopic<
   }
 
   if (conversation.version === ConversationVersion.GROUP) {
-    return new Group(client, conversation)
+    return new Group(clientInstallationId, conversation)
   } else {
-    return new Dm(client, conversation)
+    return new Dm(clientInstallationId, conversation)
   }
 }
 
 export async function findDmByInboxId<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   peerInboxId: InboxId
 ): Promise<Dm<ContentTypes> | undefined> {
   const json = await XMTPModule.findDmByInboxId(
-    client.installationId,
+    clientInstallationId,
     peerInboxId
   )
   const dm = JSON.parse(json)
@@ -511,22 +542,22 @@ export async function findDmByInboxId<
     return undefined
   }
 
-  return new Dm(client, dm)
+  return new Dm(clientInstallationId, dm)
 }
 
 export async function findDmByAddress<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   address: Address
 ): Promise<Dm<ContentTypes> | undefined> {
-  const json = await XMTPModule.findDmByAddress(client.installationId, address)
+  const json = await XMTPModule.findDmByAddress(clientInstallationId, address)
   const dm = JSON.parse(json)
   if (!dm || Object.keys(dm).length === 0) {
     return undefined
   }
 
-  return new Dm(client, dm)
+  return new Dm(clientInstallationId, dm)
 }
 
 export async function sendWithContentType<T>(
@@ -613,19 +644,19 @@ export async function prepareMessageWithContentType<T>(
 export async function findOrCreateDm<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   peerAddress: Address
 ): Promise<Dm<ContentTypes>> {
   const dm = JSON.parse(
-    await XMTPModule.findOrCreateDm(client.installationId, peerAddress)
+    await XMTPModule.findOrCreateDm(clientInstallationId, peerAddress)
   )
-  return new Dm(client, dm)
+  return new Dm(clientInstallationId, dm)
 }
 
 export async function createGroup<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   peerAddresses: Address[],
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
@@ -641,20 +672,20 @@ export async function createGroup<
   }
   const group = JSON.parse(
     await XMTPModule.createGroup(
-      client.installationId,
+      clientInstallationId,
       peerAddresses,
       permissionLevel,
       JSON.stringify(options)
     )
   )
 
-  return new Group(client, group)
+  return new Group(clientInstallationId, group)
 }
 
 export async function createGroupCustomPermissions<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   peerAddresses: Address[],
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
@@ -670,26 +701,28 @@ export async function createGroupCustomPermissions<
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissions(
-      client.installationId,
+      clientInstallationId,
       peerAddresses,
       JSON.stringify(permissionPolicySet),
       JSON.stringify(options)
     )
   )
 
-  return new Group(client, group)
+  return new Group(clientInstallationId, group)
 }
 
-export async function listMemberInboxIds<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(client: Client<ContentTypes>, id: ConversationId): Promise<InboxId[]> {
-  return XMTPModule.listMemberInboxIds(client.installationId, id)
+export async function listMemberInboxIds(
+  clientInstallationId: InstallationId,
+  id: ConversationId
+): Promise<InboxId[]> {
+  return XMTPModule.listMemberInboxIds(clientInstallationId, id)
 }
 
-export async function dmPeerInboxId<
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
->(client: Client<ContentTypes>, dmId: ConversationId): Promise<InboxId> {
-  return XMTPModule.dmPeerInboxId(client.installationId, dmId)
+export async function dmPeerInboxId(
+  clientInstallationId: InstallationId,
+  dmId: ConversationId
+): Promise<InboxId> {
+  return XMTPModule.dmPeerInboxId(clientInstallationId, dmId)
 }
 
 export async function listConversationMembers(
@@ -1011,34 +1044,34 @@ export async function permissionPolicySet(
 export async function processMessage<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   id: ConversationId,
   encryptedMessage: string
 ): Promise<DecodedMessageUnion<ContentTypes>> {
   const json = await XMTPModule.processMessage(
-    client.installationId,
+    clientInstallationId,
     id,
     encryptedMessage
   )
-  return DecodedMessage.from(json, client)
+  return DecodedMessage.from(json)
 }
 
 export async function processWelcomeMessage<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
-  client: Client<ContentTypes>,
+  clientInstallationId: InstallationId,
   encryptedMessage: string
 ): Promise<Promise<Conversation<ContentTypes>>> {
   const json = await XMTPModule.processWelcomeMessage(
-    client.installationId,
+    clientInstallationId,
     encryptedMessage
   )
   const conversation = JSON.parse(json)
 
   if (conversation.version === ConversationVersion.GROUP) {
-    return new Group(client, conversation)
+    return new Group(clientInstallationId, conversation)
   } else {
-    return new Dm(client, conversation)
+    return new Dm(clientInstallationId, conversation)
   }
 }
 

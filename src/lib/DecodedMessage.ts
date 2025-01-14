@@ -23,9 +23,7 @@ export enum MessageDeliveryStatus {
 
 export class DecodedMessage<
   ContentType extends DefaultContentTypes[number] = DefaultContentTypes[number],
-  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
-  client: Client<ContentTypes>
   id: MessageId
   topic: ConversationTopic
   contentTypeId: string
@@ -39,13 +37,9 @@ export class DecodedMessage<
     ContentType extends
       DefaultContentTypes[number] = DefaultContentTypes[number],
     ContentTypes extends DefaultContentTypes = ContentType[],
-  >(
-    json: string,
-    client: Client<ContentTypes>
-  ): DecodedMessageUnion<ContentTypes> {
+  >(json: string): DecodedMessageUnion<ContentTypes> {
     const decoded = JSON.parse(json)
-    return new DecodedMessage<ContentType, ContentTypes>(
-      client,
+    return new DecodedMessage<ContentType>(
       decoded.id,
       decoded.topic,
       decoded.contentTypeId,
@@ -60,22 +54,17 @@ export class DecodedMessage<
   static fromObject<
     ContentType extends
       DefaultContentTypes[number] = DefaultContentTypes[number],
-    ContentTypes extends DefaultContentTypes = [ContentType],
-  >(
-    object: {
-      id: MessageId
-      topic: ConversationTopic
-      contentTypeId: string
-      senderInboxId: InboxId
-      sentNs: number // timestamp in nanoseconds
-      content: any
-      fallback: string | undefined
-      deliveryStatus: MessageDeliveryStatus | undefined
-    },
-    client: Client<ContentTypes>
-  ): DecodedMessage<ContentType, ContentTypes> {
+  >(object: {
+    id: MessageId
+    topic: ConversationTopic
+    contentTypeId: string
+    senderInboxId: InboxId
+    sentNs: number // timestamp in nanoseconds
+    content: any
+    fallback: string | undefined
+    deliveryStatus: MessageDeliveryStatus | undefined
+  }): DecodedMessage<ContentType> {
     return new DecodedMessage(
-      client,
       object.id,
       object.topic,
       object.contentTypeId,
@@ -88,7 +77,6 @@ export class DecodedMessage<
   }
 
   constructor(
-    client: Client<ContentTypes>,
     id: MessageId,
     topic: ConversationTopic,
     contentTypeId: string,
@@ -98,7 +86,6 @@ export class DecodedMessage<
     fallback: string | undefined,
     deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
   ) {
-    this.client = client
     this.id = id
     this.topic = topic
     this.contentTypeId = contentTypeId
@@ -114,9 +101,9 @@ export class DecodedMessage<
     const encodedJSON = this.nativeContent.encoded
     if (encodedJSON) {
       const encoded = JSON.parse(encodedJSON)
-      const codec = this.client.codecRegistry[
-        this.contentTypeId
-      ] as JSContentCodec<ExtractDecodedType<ContentType>>
+      const codec = Client.codecRegistry[this.contentTypeId] as JSContentCodec<
+        ExtractDecodedType<ContentType>
+      >
       if (!codec) {
         throw new Error(
           `no content type found ${JSON.stringify(this.contentTypeId)}`
@@ -127,7 +114,7 @@ export class DecodedMessage<
       }
       return codec.decode(encoded)
     } else {
-      for (const codec of Object.values(this.client.codecRegistry)) {
+      for (const codec of Object.values(Client.codecRegistry)) {
         if (
           ('contentKey' in codec && this.nativeContent[codec.contentKey]) ||
           allowEmptyProperties.some((prop) =>

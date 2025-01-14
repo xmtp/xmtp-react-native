@@ -42,7 +42,7 @@ export default class Conversations<
   async findGroup(
     groupId: ConversationId
   ): Promise<Group<ContentTypes> | undefined> {
-    return await XMTPModule.findGroup(this.client, groupId)
+    return await XMTPModule.findGroup(this.client.installationId, groupId)
   }
 
   /**
@@ -54,7 +54,7 @@ export default class Conversations<
   async findDmByInboxId(
     inboxId: InboxId
   ): Promise<Dm<ContentTypes> | undefined> {
-    return await XMTPModule.findDmByInboxId(this.client, inboxId)
+    return await XMTPModule.findDmByInboxId(this.client.installationId, inboxId)
   }
 
   /**
@@ -66,7 +66,7 @@ export default class Conversations<
   async findDmByAddress(
     address: Address
   ): Promise<Dm<ContentTypes> | undefined> {
-    return await XMTPModule.findDmByAddress(this.client, address)
+    return await XMTPModule.findDmByAddress(this.client.installationId, address)
   }
 
   /**
@@ -78,7 +78,10 @@ export default class Conversations<
   async findConversationByTopic(
     topic: ConversationTopic
   ): Promise<Conversation<ContentTypes> | undefined> {
-    return await XMTPModule.findConversationByTopic(this.client, topic)
+    return await XMTPModule.findConversationByTopic(
+      this.client.installationId,
+      topic
+    )
   }
 
   /**
@@ -90,7 +93,10 @@ export default class Conversations<
   async findConversation(
     conversationId: ConversationId
   ): Promise<Conversation<ContentTypes> | undefined> {
-    return await XMTPModule.findConversation(this.client, conversationId)
+    return await XMTPModule.findConversation(
+      this.client.installationId,
+      conversationId
+    )
   }
 
   /**
@@ -102,7 +108,7 @@ export default class Conversations<
   async findMessage(
     messageId: MessageId
   ): Promise<DecodedMessageUnion<ContentTypes> | undefined> {
-    return await XMTPModule.findMessage(this.client, messageId)
+    return await XMTPModule.findMessage(this.client.installationId, messageId)
   }
 
   async fromWelcome(
@@ -110,7 +116,7 @@ export default class Conversations<
   ): Promise<Conversation<ContentTypes>> {
     try {
       return await XMTPModule.processWelcomeMessage(
-        this.client,
+        this.client.installationId,
         encryptedMessage
       )
     } catch (e) {
@@ -131,7 +137,10 @@ export default class Conversations<
     peerAddress: Address
   ): Promise<Conversation<ContentTypes>> {
     const checksumAddress = getAddress(peerAddress)
-    return await XMTPModule.findOrCreateDm(this.client, checksumAddress)
+    return await XMTPModule.findOrCreateDm(
+      this.client.installationId,
+      checksumAddress
+    )
   }
 
   /**
@@ -143,7 +152,10 @@ export default class Conversations<
    * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
    */
   async findOrCreateDm(peerAddress: Address): Promise<Dm<ContentTypes>> {
-    return await XMTPModule.findOrCreateDm(this.client, peerAddress)
+    return await XMTPModule.findOrCreateDm(
+      this.client.installationId,
+      peerAddress
+    )
   }
 
   /**
@@ -160,7 +172,7 @@ export default class Conversations<
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroup(
-      this.client,
+      this.client.installationId,
       peerAddresses,
       opts?.permissionLevel,
       opts?.name,
@@ -186,7 +198,7 @@ export default class Conversations<
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroupCustomPermissions(
-      this.client,
+      this.client.installationId,
       peerAddresses,
       permissionPolicySet,
       opts?.name,
@@ -209,7 +221,12 @@ export default class Conversations<
     limit?: number | undefined,
     consentState?: ConsentState | undefined
   ): Promise<Group<ContentTypes>[]> {
-    return await XMTPModule.listGroups(this.client, opts, limit, consentState)
+    return await XMTPModule.listGroups(
+      this.client.installationId,
+      opts,
+      limit,
+      consentState
+    )
   }
 
   /**
@@ -225,7 +242,12 @@ export default class Conversations<
     limit?: number | undefined,
     consentState?: ConsentState | undefined
   ): Promise<Dm<ContentTypes>[]> {
-    return await XMTPModule.listDms(this.client, opts, limit, consentState)
+    return await XMTPModule.listDms(
+      this.client.installationId,
+      opts,
+      limit,
+      consentState
+    )
   }
 
   /**
@@ -240,7 +262,7 @@ export default class Conversations<
     consentState?: ConsentState | undefined
   ): Promise<Conversation<ContentTypes>[]> {
     return await XMTPModule.listConversations(
-      this.client,
+      this.client.installationId,
       opts,
       limit,
       consentState
@@ -300,11 +322,17 @@ export default class Conversations<
         }
         if (conversation.version === ConversationVersion.GROUP) {
           return await callback(
-            new Group(this.client, conversation as unknown as GroupParams)
+            new Group(
+              this.client.installationId,
+              conversation as unknown as GroupParams
+            )
           )
         } else if (conversation.version === ConversationVersion.DM) {
           return await callback(
-            new Dm(this.client, conversation as unknown as DmParams)
+            new Dm(
+              this.client.installationId,
+              conversation as unknown as DmParams
+            )
           )
         }
       }
@@ -339,8 +367,7 @@ export default class Conversations<
         }
         await callback(
           DecodedMessage.fromObject(
-            message,
-            this.client
+            message
           ) as DecodedMessageUnion<ContentTypes>
         )
       }

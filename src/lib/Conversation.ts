@@ -7,7 +7,6 @@ import {
 } from './types'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
-import * as XMTP from '../index'
 import { DecodedMessage, Member, Dm, Group } from '../index'
 
 export enum ConversationVersion {
@@ -16,13 +15,12 @@ export enum ConversationVersion {
 }
 
 export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
-  client: XMTP.Client<ContentTypes>
   createdAt: number
   topic: string
   version: ConversationVersion
   id: string
   state: ConsentState
-  lastMessage?: DecodedMessage<ContentTypes[number], ContentTypes>
+  lastMessage?: DecodedMessage<ContentTypes[number]>
 
   send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
     content: ConversationSendPayload<SendContentTypes>,
@@ -35,15 +33,13 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   sync()
   messages(opts?: MessagesOptions): Promise<DecodedMessageUnion<ContentTypes>[]>
   streamMessages(
-    callback: (
-      message: DecodedMessage<ContentTypes[number], ContentTypes>
-    ) => Promise<void>
+    callback: (message: DecodedMessage<ContentTypes[number]>) => Promise<void>
   ): Promise<() => void>
   consentState(): Promise<ConsentState>
   updateConsent(state: ConsentState): Promise<void>
   processMessage(
     encryptedMessage: string
-  ): Promise<DecodedMessage<ContentTypes[number], ContentTypes>>
+  ): Promise<DecodedMessage<ContentTypes[number]>>
   members(): Promise<Member[]>
 }
 

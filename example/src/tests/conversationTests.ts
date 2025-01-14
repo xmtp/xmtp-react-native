@@ -4,7 +4,13 @@ import ReactNativeBlobUtil from 'react-native-blob-util'
 import RNFS from 'react-native-fs'
 import { PreferenceUpdates } from 'xmtp-react-native-sdk/lib/PrivatePreferences'
 
-import { Test, assert, createClients, delayToPropogate } from './test-utils'
+import {
+  Test,
+  assert,
+  createClients,
+  delayToPropogate,
+  adaptEthersWalletToSigner,
+} from './test-utils'
 import {
   Client,
   ConsentRecord,
@@ -103,33 +109,32 @@ test('register and use custom content types', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const bob = await Client.createRandom({
+  const bo = await Client.createRandom({
     env: 'local',
     codecs: [new NumberCodec()],
     dbEncryptionKey: keyBytes,
   })
-  const alice = await Client.createRandom({
+  const alix = await Client.createRandom({
     env: 'local',
     codecs: [new NumberCodec()],
     dbEncryptionKey: keyBytes,
   })
 
-  bob.register(new NumberCodec())
-  alice.register(new NumberCodec())
+  Client.register(new NumberCodec())
 
   await delayToPropogate()
 
-  const bobConvo = await bob.conversations.newConversation(alice.address)
+  const boConvo = await bo.conversations.newConversation(alix.address)
   await delayToPropogate()
-  await bobConvo.send(
+  await boConvo.send(
     { topNumber: { bottomNumber: 12 } },
     { contentType: ContentTypeNumber }
   )
 
-  await alice.conversations.syncAllConversations()
-  const aliceConvo = await alice.conversations.findConversation(bobConvo.id)
+  await alix.conversations.syncAllConversations()
+  const alixConvo = await alix.conversations.findConversation(boConvo.id)
 
-  const messages = await aliceConvo!.messages()
+  const messages = await alixConvo!.messages()
   assert(messages.length === 1, 'did not get messages')
 
   const message = messages[0]
@@ -150,34 +155,33 @@ test('register and use custom content types with prepare', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const bob = await Client.createRandom({
+  const bo = await Client.createRandom({
     env: 'local',
     codecs: [new NumberCodec()],
     dbEncryptionKey: keyBytes,
   })
-  const alice = await Client.createRandom({
+  const alix = await Client.createRandom({
     env: 'local',
     codecs: [new NumberCodec()],
     dbEncryptionKey: keyBytes,
   })
 
-  bob.register(new NumberCodec())
-  alice.register(new NumberCodec())
+  Client.register(new NumberCodec())
 
   await delayToPropogate()
 
-  const bobConvo = await bob.conversations.newConversation(alice.address)
+  const boConvo = await bo.conversations.newConversation(alix.address)
   await delayToPropogate()
-  await bobConvo.prepareMessage(
+  await boConvo.prepareMessage(
     { topNumber: { bottomNumber: 12 } },
     { contentType: ContentTypeNumber }
   )
-  await bobConvo.publishPreparedMessages()
+  await boConvo.publishPreparedMessages()
 
-  await alice.conversations.syncAllConversations()
-  const aliceConvo = await alice.conversations.findConversation(bobConvo.id)
+  await alix.conversations.syncAllConversations()
+  const alixConvo = await alix.conversations.findConversation(boConvo.id)
 
-  const messages = await aliceConvo!.messages()
+  const messages = await alixConvo!.messages()
   assert(messages.length === 1, 'did not get messages')
 
   const message = messages[0]
@@ -210,8 +214,8 @@ test('handle fallback types appropriately', async () => {
     env: 'local',
     dbEncryptionKey: keyBytes,
   })
-  bob.register(new NumberCodecEmptyFallback())
-  bob.register(new NumberCodecUndefinedFallback())
+  Client.register(new NumberCodecEmptyFallback())
+  Client.register(new NumberCodecUndefinedFallback())
   const bobConvo = await bob.conversations.newConversation(alice.address)
 
   // @ts-ignore
@@ -825,7 +829,7 @@ test('can sync consent', async () => {
   }
   const alixWallet = Wallet.createRandom()
 
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -841,7 +845,7 @@ test('can sync consent', async () => {
   await bo.conversations.sync()
   const boDm = await bo.conversations.findConversation(dm.id)
 
-  const alix2 = await Client.create(alixWallet, {
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -902,7 +906,7 @@ test('can stream consent', async () => {
 
   const alixWallet = Wallet.createRandom()
 
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -911,7 +915,7 @@ test('can stream consent', async () => {
 
   const alixGroup = await alix.conversations.newGroup([bo.address])
 
-  const alix2 = await Client.create(alixWallet, {
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -973,7 +977,7 @@ test('can preference updates', async () => {
 
   const alixWallet = Wallet.createRandom()
 
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -986,7 +990,7 @@ test('can preference updates', async () => {
       types.push(entry)
   })
 
-  const alix2 = await Client.create(alixWallet, {
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,

@@ -32,6 +32,7 @@ import {
   ReplyContent,
   useClient,
   GroupUpdatedContent,
+  Client,
 } from 'xmtp-react-native-sdk'
 import { ConversationSendPayload } from 'xmtp-react-native-sdk/lib/types'
 
@@ -1155,8 +1156,7 @@ function MessageContents({
 
   if (contentTypeId === 'xmtp.org/reply:1.0') {
     const replyContent: ReplyContent = content
-    const replyContentType = replyContent.contentType
-    const codec = client?.codecRegistry[replyContentType]
+    const codec = Client.codecRegistry[contentTypeId]
     const actualReplyContent = codec?.decode(replyContent.content)
 
     return (

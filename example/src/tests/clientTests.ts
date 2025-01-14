@@ -1,7 +1,12 @@
 import { Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
 
-import { Test, assert, createClients } from './test-utils'
+import {
+  Test,
+  assert,
+  createClients,
+  adaptEthersWalletToSigner,
+} from './test-utils'
 import { Client } from '../../../src/index'
 
 export const clientTests: Test[] = []
@@ -62,6 +67,94 @@ test('static can message', async () => {
   return true
 })
 
+test('static inboxStates for inboxIds', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const inboxStates = await Client.inboxStatesForInboxIds('local', [
+    alix.inboxId,
+    bo.inboxId,
+  ])
+
+  assert(
+    inboxStates[0].recoveryAddress.toLowerCase === alix.address.toLowerCase,
+    `inbox state should be ${alix.address.toLowerCase} but was ${inboxStates[0].recoveryAddress.toLowerCase}`
+  )
+
+  assert(
+    inboxStates[1].recoveryAddress.toLowerCase === bo.address.toLowerCase,
+    `inbox state should be ${bo.address.toLowerCase} but was ${inboxStates[1].recoveryAddress.toLowerCase}`
+  )
+
+  return true
+})
+
+test('can revoke installations', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
+  const dbDirPath3 = `${RNFS.DocumentDirectoryPath}/xmtp_db3`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  const directoryExists2 = await RNFS.exists(dbDirPath2)
+  if (!directoryExists2) {
+    await RNFS.mkdir(dbDirPath2)
+  }
+  const directoryExists3 = await RNFS.exists(dbDirPath3)
+  if (!directoryExists3) {
+    await RNFS.mkdir(dbDirPath3)
+  }
+  const alixWallet = Wallet.createRandom()
+
+  // create a v3 client
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+  })
+
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath2,
+  })
+
+  const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath3,
+  })
+
+  const inboxState2 = await alix3.inboxState(true)
+  assert(
+    inboxState2.installations.length === 3,
+    `installations length should be 3 but was ${inboxState2.installations.length}`
+  )
+
+  await alix3.revokeInstallations(adaptEthersWalletToSigner(alixWallet), [
+    alix2.installationId,
+  ])
+
+  const inboxState3 = await alix3.inboxState(true)
+  assert(
+    inboxState3.installations.length === 2,
+    `installations length should be 2 but was ${inboxState3.installations.length}`
+  )
+  await alix.deleteLocalDatabase()
+  await alix2.deleteLocalDatabase()
+  await alix3.deleteLocalDatabase()
+
+  return true
+})
+
 test('can revoke all other installations', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -70,7 +163,7 @@ test('can revoke all other installations', async () => {
   const alixWallet = Wallet.createRandom()
 
   // create a v3 client
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -78,13 +171,7 @@ test('can revoke all other installations', async () => {
 
   await alix.deleteLocalDatabase()
 
-  const alix2 = await Client.create(alixWallet, {
-    env: 'local',
-    appVersion: 'Testing/0.0.0',
-    dbEncryptionKey: keyBytes,
-  })
-
-  await Client.build(alix2.address, {
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -92,7 +179,7 @@ test('can revoke all other installations', async () => {
 
   await alix2.deleteLocalDatabase()
 
-  const alix3 = await Client.create(alixWallet, {
+  const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
@@ -104,7 +191,7 @@ test('can revoke all other installations', async () => {
     `installations length should be 3 but was ${inboxState2.installations.length}`
   )
 
-  await alix3.revokeAllOtherInstallations(alixWallet)
+  await alix3.revokeAllOtherInstallations(adaptEthersWalletToSigner(alixWallet))
 
   const inboxState3 = await alix3.inboxState(true)
   assert(
@@ -358,14 +445,14 @@ test('can add and remove accounts', async () => {
   const alixWallet2 = Wallet.createRandom()
   const alixWallet3 = Wallet.createRandom()
 
-  const alix = await Client.create(alixWallet, {
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
-  await alix.addAccount(alixWallet2)
-  await alix.addAccount(alixWallet3)
+  await alix.addAccount(adaptEthersWalletToSigner(alixWallet2))
+  await alix.addAccount(adaptEthersWalletToSigner(alixWallet3))
 
   const inboxState = await alix.inboxState(true)
   assert(
@@ -381,7 +468,10 @@ test('can add and remove accounts', async () => {
     `recovery address should be ${alix.address} but was ${inboxState.recoveryAddress}`
   )
 
-  await alix.removeAccount(alixWallet, await alixWallet3.getAddress())
+  await alix.removeAccount(
+    adaptEthersWalletToSigner(alixWallet),
+    await alixWallet3.getAddress()
+  )
   const inboxState2 = await alix.inboxState(true)
   assert(
     inboxState2.addresses.length === 2,

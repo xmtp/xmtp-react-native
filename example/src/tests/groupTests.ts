@@ -1,4 +1,5 @@
 import { Wallet } from 'ethers'
+import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
 import {
   Test,
@@ -6,6 +7,7 @@ import {
   createClients,
   createGroups,
   delayToPropogate,
+  adaptEthersWalletToSigner,
 } from './test-utils'
 import {
   Client,
@@ -16,7 +18,6 @@ import {
   DecodedMessage,
   ConsentRecord,
 } from '../../../src/index'
-import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
 
 export const groupTests: Test[] = []
 let counter = 1
@@ -84,12 +85,12 @@ test('groups cannot fork', async () => {
     const lastMessage = messages[0]
     // console.log(lastMessage);
     console.log(
-      `${receiverGroupToCheck.client.address} sees ${messages.length} messages in group`
+      `${receiverGroupToCheck.clientInstallationId} sees ${messages.length} messages in group`
     )
     assert(
       lastMessage !== undefined &&
         lastMessage.nativeContent.text === messageContent,
-      `${receiverGroupToCheck.client.address} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
+      `${receiverGroupToCheck.clientInstallationId} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
     )
     // }
   }
@@ -203,12 +204,12 @@ test('groups cannot fork short version', async () => {
     })
     const lastMessage = messages[0]
     console.log(
-      `${receiverGroup.client.address} sees ${messages.length} messages in group`
+      `${receiverGroup.clientInstallationId} sees ${messages.length} messages in group`
     )
     assert(
       lastMessage !== undefined &&
         lastMessage.nativeContent.text === messageContent,
-      `${receiverGroup.client.address} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
+      `${receiverGroup.clientInstallationId} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
     )
   }
   // When forked, it stays forked even if we try 5 times
@@ -279,12 +280,12 @@ test('groups cannot fork short version - update metadata', async () => {
     })
     const lastMessage = messages[0]
     console.log(
-      `${receiverGroup.client.address} sees ${messages.length} messages in group`
+      `${receiverGroup.clientInstallationId} sees ${messages.length} messages in group`
     )
     assert(
       lastMessage !== undefined &&
         lastMessage.nativeContent.text === messageContent,
-      `${receiverGroup.client.address} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
+      `${receiverGroup.clientInstallationId} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
     )
   }
   // When forked, it stays forked even if we try 5 times
@@ -1211,7 +1212,7 @@ test('can stream group messages', async () => {
 
 test('can make a group with metadata', async () => {
   const [alix, bo] = await createClients(2)
-  bo.register(new GroupUpdatedCodec())
+  Client.register(new GroupUpdatedCodec())
 
   const alixGroup = await alix.conversations.newGroup([bo.address], {
     name: 'Start Name',
@@ -1872,16 +1873,14 @@ test('can create new installation without breaking group', async () => {
   const wallet1 = Wallet.createRandom()
   const wallet2 = Wallet.createRandom()
 
-  const client1 = await Client.create(wallet1, {
+  const client1 = await Client.create(adaptEthersWalletToSigner(wallet1), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableV3: true,
     dbEncryptionKey: keyBytes,
   })
-  const client2 = await Client.create(wallet2, {
+  const client2 = await Client.create(adaptEthersWalletToSigner(wallet2), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 
@@ -1911,10 +1910,9 @@ test('can create new installation without breaking group', async () => {
   await client2.deleteLocalDatabase()
 
   // Recreating a client with wallet 2 (new installation!)
-  await Client.create(wallet2, {
+  await Client.create(adaptEthersWalletToSigner(wallet2), {
     env: 'local',
     appVersion: 'Testing/0.0.0',
-    enableV3: true,
     dbEncryptionKey: keyBytes,
   })
 

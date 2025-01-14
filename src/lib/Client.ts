@@ -36,7 +36,7 @@ export class Client<
   dbPath: string
   conversations: Conversations<ContentTypes>
   preferences: PrivatePreferences
-  codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
+  static codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
   private static signSubscription: Subscription | null = null
   private static authSubscription: Subscription | null = null
 
@@ -308,6 +308,22 @@ export class Client<
     return await XMTPModule.staticCanMessage(env, addresses)
   }
 
+  /**
+   * Determines whether the current user can send messages to the specified peers.
+   *
+   * This method checks if the specified peers are using clients that are on the network.
+   *
+   * @param {InboxId[]} inboxIds - The inboxIds to get the associated inbox states for.
+   * @param {XMTPEnvironment} env - Environment to see if the address is on the network for
+   * @returns {Promise<InboxState[]>} A Promise resolving to a list of inbox states.
+   */
+  static async inboxStatesForInboxIds(
+    env: XMTPEnvironment,
+    inboxIds: InboxId[]
+  ): Promise<InboxState[]> {
+    return await XMTPModule.staticInboxStatesForInboxIds(env, inboxIds)
+  }
+
   constructor(
     address: Address,
     inboxId: InboxId,
@@ -321,16 +337,18 @@ export class Client<
     this.dbPath = dbPath
     this.conversations = new Conversations(this)
     this.preferences = new PrivatePreferences(this)
-    this.codecRegistry = {}
+    Client.codecRegistry = {}
 
-    this.register(new TextCodec())
+    Client.register(new TextCodec())
 
     for (const codec of codecs) {
-      this.register(codec)
+      Client.register(codec)
     }
   }
 
-  register<T, Codec extends XMTPModule.ContentCodec<T>>(contentCodec: Codec) {
+  static register<T, Codec extends XMTPModule.ContentCodec<T>>(
+    contentCodec: Codec
+  ) {
     const id = `${contentCodec.contentType.authorityId}/${contentCodec.contentType.typeId}:${contentCodec.contentType.versionMajor}.${contentCodec.contentType.versionMinor}`
     this.codecRegistry[id] = contentCodec
   }
@@ -398,7 +416,7 @@ export class Client<
               await Client.handleSignatureRequest(signer, message)
             } catch (e) {
               const errorMessage =
-                'ERROR in revokeAllOtherInstallations. User rejected signature'
+                'ERROR in removeAccount. User rejected signature'
               console.info(errorMessage, e)
               Client.signSubscription?.remove()
               reject(errorMessage)
@@ -409,6 +427,53 @@ export class Client<
         await XMTPModule.removeAccount(
           this.installationId,
           addressToRemove,
+          signer.walletType?.(),
+          signer.getChainId?.(),
+          signer.getBlockNumber?.()
+        )
+        Client.signSubscription?.remove()
+        resolve()
+      })().catch((error) => {
+        Client.signSubscription?.remove()
+        reject(error)
+      })
+    })
+  }
+
+  /**
+   * Revoke a list of installations.
+   * @param {Signer} signer - The signer object used for authenticate the revoke.
+   * @param {InstallationId[]} installationIds - A list of installationIds to revoke access to the inboxId.
+   */
+  async revokeInstallations(
+    wallet: Signer | WalletClient | null,
+    installationIds: InstallationId[]
+  ) {
+    const signer = getSigner(wallet)
+    if (!signer) {
+      throw new Error('Signer is not configured')
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      ;(async () => {
+        Client.signSubscription = XMTPModule.emitter.addListener(
+          'sign',
+          async (message: { id: string; message: string }) => {
+            try {
+              await Client.handleSignatureRequest(signer, message)
+            } catch (e) {
+              const errorMessage =
+                'ERROR in revokeInstallations. User rejected signature'
+              console.info(errorMessage, e)
+              Client.signSubscription?.remove()
+              reject(errorMessage)
+            }
+          }
+        )
+
+        await XMTPModule.revokeInstallations(
+          this.installationId,
+          installationIds,
           signer.walletType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.()

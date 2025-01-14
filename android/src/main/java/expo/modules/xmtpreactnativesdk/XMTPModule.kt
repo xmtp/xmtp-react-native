@@ -347,6 +347,26 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("revokeInstallations") Coroutine { installationId: String, walletParams: String, installationIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("revokeInstallations")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val reactSigner =
+                    ReactNativeSigner(
+                        module = this@XMTPModule,
+                        address = client.address,
+                        type = walletOptions.walletType,
+                        chainId = walletOptions.chainId,
+                        blockNumber = walletOptions.blockNumber
+                    )
+                signer = reactSigner
+
+                client.revokeInstallations(reactSigner, installationIds)
+                signer = null
+            }
+        }
+
         AsyncFunction("revokeAllOtherInstallations") Coroutine { installationId: String, walletParams: String ->
             withContext(Dispatchers.IO) {
                 logV("revokeAllOtherInstallations")
@@ -450,9 +470,19 @@ class XMTPModule : Module() {
                 logV("staticCanMessage")
                 Client.canMessage(
                     peerAddresses,
-                    context,
                     apiEnvironments(environment, null),
                 )
+            }
+        }
+
+        AsyncFunction("staticInboxStatesForInboxIds") Coroutine { environment: String, inboxIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("staticInboxStatesForInboxIds")
+                val inboxStates = Client.inboxStatesForInboxIds(
+                    inboxIds,
+                    apiEnvironments(environment, null),
+                )
+                inboxStates.map { InboxStateWrapper.encode(it) }
             }
         }
 

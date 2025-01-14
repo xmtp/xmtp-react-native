@@ -6,6 +6,6 @@ export type DecodedMessageUnion<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > = {
   [K in keyof ContentTypes]: ContentTypes[K] extends ContentCodec<any>
-    ? DecodedMessage<ContentTypes[K], ContentTypes>
+    ? DecodedMessage<ContentTypes[K]>
     : never
 }[number]

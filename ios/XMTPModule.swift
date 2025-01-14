@@ -39,7 +39,7 @@ public class XMTPModule: Module {
 
 		// A method to update the client
 		func updateClient(key: String, client: XMTP.Client) {
-			ContentJson.initCodecs(client: client)
+			ContentJson.initCodecs()
 			clients[key] = client
 		}
 
@@ -296,6 +296,30 @@ public class XMTPModule: Module {
 			return try ClientWrapper.encodeToObj(client)
 		}
 
+		AsyncFunction("revokeInstallations") {
+			(
+				installationId: String, walletParams: String,
+				installationIds: [String]
+			) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
+				walletParams)
+			let signer = ReactNativeSigner(
+				module: self, address: client.address,
+				walletType: walletOptions.walletType,
+				chainId: walletOptions.chainId,
+				blockNumber: walletOptions.blockNumber)
+			self.signer = signer
+
+			try await client.revokeInstallations(
+				signingKey: signer, installationIds: installationIds)
+			self.signer = nil
+		}
+
 		AsyncFunction("revokeAllOtherInstallations") {
 			(installationId: String, walletParams: String) in
 			guard
@@ -409,6 +433,13 @@ public class XMTPModule: Module {
 			)
 		}
 
+		AsyncFunction("staticInboxStatesForInboxIds") {
+			(environment: String, inboxIds: [String]) -> [String] in
+			let inboxStates = try await XMTP.Client.inboxStatesForInboxIds(
+				inboxIds: inboxIds, api: createApiClient(env: environment))
+			return try inboxStates.map { try InboxStateWrapper.encode($0) }
+		}
+
 		AsyncFunction("getOrCreateInboxId") {
 			(address: String, environment: String) -> String in
 			do {
@@ -437,8 +468,7 @@ public class XMTPModule: Module {
 			)
 			let encrypted = try RemoteAttachment.encodeEncrypted(
 				content: attachment,
-				codec: AttachmentCodec(),
-				with: client
+				codec: AttachmentCodec()
 			)
 			let encryptedFile = FileManager.default.temporaryDirectory
 				.appendingPathComponent(UUID().uuidString)
@@ -472,7 +502,7 @@ public class XMTPModule: Module {
 			)
 			let encoded = try RemoteAttachment.decryptEncoded(
 				encrypted: encrypted)
-			let attachment: Attachment = try encoded.decoded(with: client)
+			let attachment: Attachment = try encoded.decoded()
 			let file = FileManager.default.temporaryDirectory
 				.appendingPathComponent(UUID().uuidString)
 			try attachment.data.write(to: file)
@@ -617,7 +647,7 @@ public class XMTPModule: Module {
 
 			return messages.compactMap { msg in
 				do {
-					return try MessageWrapper.encode(msg, client: client)
+					return try MessageWrapper.encode(msg)
 				} catch {
 					print(
 						"discarding message, unable to encode wrapper \(msg.id)"
@@ -636,7 +666,7 @@ public class XMTPModule: Module {
 			}
 			if let message = try client.findMessage(messageId: messageId) {
 				return try MessageWrapper.encode(
-					message, client: client)
+					message)
 			} else {
 				return nil
 			}
@@ -1549,7 +1579,7 @@ public class XMTPModule: Module {
 				messageBytes: encryptedMessageData)
 			{
 				return try MessageWrapper.encode(
-					decodedMessage, client: client)
+					decodedMessage)
 			} else {
 				return nil
 			}
@@ -1776,7 +1806,8 @@ public class XMTPModule: Module {
 				else {
 					throw Error.noClient
 				}
-				let hmacKeysResult = try await client.conversations.getHmacKeys()
+				let hmacKeysResult = try await client.conversations
+					.getHmacKeys()
 				let subscriptions = topics.map {
 					topic -> NotificationSubscription in
 					let hmacKeys = hmacKeysResult.hmacKeys
@@ -2090,7 +2121,7 @@ public class XMTPModule: Module {
 							[
 								"installationId": installationId,
 								"message": MessageWrapper.encodeToObj(
-									message, client: client),
+									message),
 							])
 					}
 				} catch {
@@ -2129,7 +2160,7 @@ public class XMTPModule: Module {
 									"installationId": installationId,
 									"message":
 										MessageWrapper.encodeToObj(
-											message, client: client),
+											message),
 									"conversationId": id,
 								])
 						} catch {

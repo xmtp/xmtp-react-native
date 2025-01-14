@@ -39,7 +39,7 @@ struct GroupWrapper {
 		}
 		if conversationParams.lastMessage {
 			if let lastMessage = try await group.lastMessage() {
-				result["lastMessage"] = try MessageWrapper.encode(lastMessage, client: client)
+				result["lastMessage"] = try MessageWrapper.encode(lastMessage)
 			}
 		}
 		
