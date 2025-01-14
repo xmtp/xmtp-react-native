@@ -25,7 +25,7 @@ struct DmWrapper {
 		}
 		if conversationParams.lastMessage {
 			if let lastMessage = try await dm.lastMessage() {
-				result["lastMessage"] = try MessageWrapper.encode(lastMessage, client: client)
+				result["lastMessage"] = try MessageWrapper.encode(lastMessage)
 			}
 		}
 		
