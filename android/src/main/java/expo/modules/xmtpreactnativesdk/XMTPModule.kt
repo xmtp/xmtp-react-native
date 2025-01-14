@@ -478,10 +478,11 @@ class XMTPModule : Module() {
         AsyncFunction("staticInboxStatesForInboxIds") Coroutine { environment: String, inboxIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("staticInboxStatesForInboxIds")
-                Client.inboxStatesForInboxIds(
+                val inboxStates = Client.inboxStatesForInboxIds(
                     inboxIds,
                     apiEnvironments(environment, null),
                 )
+                inboxStates.map { InboxStateWrapper.encode(it) }
             }
         }
 
