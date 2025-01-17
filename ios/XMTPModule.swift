@@ -877,6 +877,24 @@ public class XMTPModule: Module {
 				throw error
 			}
 		}
+		
+		AsyncFunction("findOrCreateDmWithInboxId") {
+			(installationId: String, peerInboxId: String) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+
+			do {
+				let dm = try await client.conversations.findOrCreateDmWithInboxId(
+					with: peerInboxId)
+				return try await DmWrapper.encode(dm, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
 
 		AsyncFunction("createGroup") {
 			(
@@ -936,6 +954,77 @@ public class XMTPModule: Module {
 				let group = try await client.conversations
 					.newGroupCustomPermissions(
 						with: peerAddresses,
+						permissionPolicySet: permissionPolicySet,
+						name: createGroupParams.groupName,
+						imageUrlSquare: createGroupParams.groupImageUrlSquare,
+						description: createGroupParams.groupDescription,
+						pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+					)
+				return try await GroupWrapper.encode(group, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
+		
+		AsyncFunction("createGroupWithInboxIds") {
+			(
+				installationId: String, inboxIds: [String],
+				permission: String,
+				groupOptionsJson: String
+			) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			let permissionLevel: GroupPermissionPreconfiguration = {
+				switch permission {
+				case "admin_only":
+					return .adminOnly
+				default:
+					return .allMembers
+				}
+			}()
+			do {
+				let createGroupParams =
+					CreateGroupParamsWrapper.createGroupParamsFromJson(
+						groupOptionsJson)
+				let group = try await client.conversations.newGroupWithInboxIds(
+					with: inboxIds,
+					permissions: permissionLevel,
+					name: createGroupParams.groupName,
+					imageUrlSquare: createGroupParams.groupImageUrlSquare,
+					description: createGroupParams.groupDescription,
+					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+				)
+				return try await GroupWrapper.encode(group, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
+
+		AsyncFunction("createGroupCustomPermissionsWithInboxIds") {
+			(
+				installationId: String, inboxIds: [String],
+				permissionPolicySetJson: String, groupOptionsJson: String
+			) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			do {
+				let createGroupParams =
+					CreateGroupParamsWrapper.createGroupParamsFromJson(
+						groupOptionsJson)
+				let permissionPolicySet =
+					try PermissionPolicySetWrapper.createPermissionPolicySet(
+						from: permissionPolicySetJson)
+				let group = try await client.conversations
+					.newGroupCustomPermissionsWithInboxIds(
+						with: inboxIds,
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
 						imageUrlSquare: createGroupParams.groupImageUrlSquare,
@@ -1912,15 +2001,8 @@ public class XMTPModule: Module {
 	}
 
 	private func getConsentStates(states: [String]) throws -> [ConsentState] {
-		return states.map { state in
-			switch state {
-			case "allowed":
-				return .allowed
-			case "denied":
-				return .denied
-			default:
-				return .unknown
-			}
+		return try states.map { state in
+			try getConsentState(state: state)
 		}
 	}
 
