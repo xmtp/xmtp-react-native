@@ -50,7 +50,8 @@ class PermissionPolicySetWrapper {
             "updateGroupNamePolicy": fromPermissionOption(policySet.updateGroupNamePolicy),
             "updateGroupDescriptionPolicy": fromPermissionOption(policySet.updateGroupDescriptionPolicy),
             "updateGroupImagePolicy": fromPermissionOption(policySet.updateGroupImagePolicy),
-            "updateGroupPinnedFrameUrlPolicy": fromPermissionOption(policySet.updateGroupPinnedFrameUrlPolicy)
+            "updateGroupPinnedFrameUrlPolicy": fromPermissionOption(policySet.updateGroupPinnedFrameUrlPolicy),
+            "updateMessageExpirationPolicy": fromPermissionOption(policySet.updateMessageExpirationPolicy)
         ]
     }
     public static func createPermissionPolicySet(from json: String) throws -> PermissionPolicySet {
@@ -71,7 +72,8 @@ class PermissionPolicySetWrapper {
             updateGroupNamePolicy: createPermissionOption(from: jsonDict["updateGroupNamePolicy"] as? String ?? ""),
             updateGroupDescriptionPolicy: createPermissionOption(from: jsonDict["updateGroupDescriptionPolicy"] as? String ?? ""),
             updateGroupImagePolicy: createPermissionOption(from: jsonDict["updateGroupImagePolicy"] as? String ?? ""),
-            updateGroupPinnedFrameUrlPolicy: createPermissionOption(from: jsonDict["updateGroupPinnedFrameUrlPolicy"] as? String ?? "")
+            updateGroupPinnedFrameUrlPolicy: createPermissionOption(from: jsonDict["updateGroupPinnedFrameUrlPolicy"] as? String ?? ""),
+            updateMessageExpirationPolicy: createPermissionOption(from: jsonDict["updateMessageExpirationPolicy"] as? String ?? "")
         )
     }
     

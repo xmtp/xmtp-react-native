@@ -516,7 +516,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listGroups") {
 			(
 				installationId: String, groupParams: String?,
-				limit: Int?, consentState: String?
+				limit: Int?, consentStringStates: [String]?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -526,14 +526,14 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
-			let consent: ConsentState?
-			if let state = consentState {
-				consent = try getConsentState(state: state)
+			let consentStates: [ConsentState]?
+			if let states = consentStringStates {
+				consentStates = try getConsentStates(states: states)
 			} else {
-				consent = nil
+				consentStates = nil
 			}
 			var groupList: [Group] = try await client.conversations.listGroups(
-				limit: limit, consentState: consent)
+				limit: limit, consentStates: consentStates)
 
 			var results: [String] = []
 			for group in groupList {
@@ -547,7 +547,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listDms") {
 			(
 				installationId: String, groupParams: String?,
-				limit: Int?, consentState: String?
+				limit: Int?, consentStringStates: [String]?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -557,14 +557,14 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
-			let consent: ConsentState?
-			if let state = consentState {
-				consent = try getConsentState(state: state)
+			let consentStates: [ConsentState]?
+			if let states = consentStringStates {
+				consentStates = try getConsentStates(states: states)
 			} else {
-				consent = nil
+				consentStates = nil
 			}
 			var dmList: [Dm] = try await client.conversations.listDms(
-				limit: limit, consentState: consent)
+				limit: limit, consentStates: consentStates)
 
 			var results: [String] = []
 			for dm in dmList {
@@ -578,7 +578,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listConversations") {
 			(
 				installationId: String, conversationParams: String?,
-				limit: Int?, consentState: String?
+				limit: Int?, consentStringStates: [String]?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -588,14 +588,14 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				conversationParams ?? "")
-			let consent: ConsentState?
-			if let state = consentState {
-				consent = try getConsentState(state: state)
+			let consentStates: [ConsentState]?
+			if let states = consentStringStates {
+				consentStates = try getConsentStates(states: states)
 			} else {
-				consent = nil
+				consentStates = nil
 			}
 			let conversations = try await client.conversations.list(
-				limit: limit, consentState: consent)
+				limit: limit, consentStates: consentStates)
 
 			var results: [String] = []
 			for conversation in conversations {
@@ -1021,20 +1021,20 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("syncAllConversations") {
-			(installationId: String, consentState: String?) -> UInt32 in
+			(installationId: String, consentStringStates: [String]?) -> UInt32 in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			let consent: ConsentState?
-			if let state = consentState {
-				consent = try getConsentState(state: state)
+			let consentStates: [ConsentState]?
+			if let states = consentStringStates {
+				consentStates = try getConsentStates(states: states)
 			} else {
-				consent = nil
+                consentStates = nil
 			}
 			return try await client.conversations.syncAllConversations(
-				consentState: consent)
+				consentStates: consentStates)
 		}
 
 		AsyncFunction("syncConversation") {
@@ -1908,6 +1908,19 @@ public class XMTPModule: Module {
 			return .denied
 		default:
 			return .unknown
+		}
+	}
+
+	private func getConsentStates(states: [String]) throws -> [ConsentState] {
+		return states.map { state in
+			switch state {
+			case "allowed":
+				return .allowed
+			case "denied":
+				return .denied
+			default:
+				return .unknown
+			}
 		}
 	}
 

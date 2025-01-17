@@ -547,15 +547,15 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("listGroups") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentStates: List<String>? ->
+        AsyncFunction("listGroups") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentStringStates: List<String>? ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val consentList = consentStates?.let { getConsentStates(it) }
+                val consentStates = consentStringStates?.let { getConsentStates(it) }
                 val groups = client.conversations.listGroups(
                     limit = limit,
-                    consentStates = consentList
+                    consentStates = consentStates
                 )
                 groups.map { group ->
                     GroupWrapper.encode(client, group, params)
@@ -563,15 +563,15 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listDms") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentStates: List<String>? ->
+        AsyncFunction("listDms") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentStringStates: List<String>? ->
             withContext(Dispatchers.IO) {
                 logV("listDms")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val consentList = consentStates?.let { getConsentStates(it) }
+                val consentStates = consentStringStates?.let { getConsentStates(it) }
                 val dms = client.conversations.listDms(
                     limit = limit,
-                    consentStates = consentList
+                    consentStates = consentStates
                 )
                 dms.map { dm ->
                     DmWrapper.encode(client, dm, params)
@@ -579,15 +579,15 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listConversations") Coroutine { installationId: String, conversationParams: String?, limit: Int?, consentStates: List<String>? ->
+        AsyncFunction("listConversations") Coroutine { installationId: String, conversationParams: String?, limit: Int?, consentStringStates: List<String>? ->
             withContext(Dispatchers.IO) {
                 logV("listConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params =
                     ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
-                val consentList = consentStates?.let { getConsentStates(it) }
+                val consentStates = consentStringStates?.let { getConsentStates(it) }
                 val conversations =
-                    client.conversations.list(limit = limit, consentStates = consentList)
+                    client.conversations.list(limit = limit, consentStates = consentStates)
                 conversations.map { conversation ->
                     ConversationWrapper.encode(client, conversation, params)
                 }
@@ -855,13 +855,13 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("syncAllConversations") Coroutine { installationId: String, consentStates: List<String>? ->
+        AsyncFunction("syncAllConversations") Coroutine { installationId: String, consentStringStates: List<String>? ->
             withContext(Dispatchers.IO) {
                 logV("syncAllConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val consentList = consentStates?.let { getConsentStates(it) }
+                val consentStates = consentStringStates?.let { getConsentStates(it) }
                 val numGroupsSyncedInt: Int =
-                    client.conversations.syncAllConversations(consentList).toInt()
+                    client.conversations.syncAllConversations(consentStates).toInt()
                 numGroupsSyncedInt
             }
         }
