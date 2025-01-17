@@ -352,14 +352,14 @@ export async function listGroups<
   clientInstallationId: InstallationId,
   opts?: ConversationOptions | undefined,
   limit?: number | undefined,
-  consentState?: ConsentState | undefined
+  consentStates?: ConsentState[] | undefined
 ): Promise<Group<ContentTypes>[]> {
   return (
     await XMTPModule.listGroups(
       clientInstallationId,
       JSON.stringify(opts),
       limit,
-      consentState
+      consentStates
     )
   ).map((json: string) => {
     const group = JSON.parse(json)

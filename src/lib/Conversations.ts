@@ -219,13 +219,13 @@ export default class Conversations<
   async listGroups(
     opts?: ConversationOptions | undefined,
     limit?: number | undefined,
-    consentState?: ConsentState | undefined
+    consentStates?: ConsentState[] | undefined
   ): Promise<Group<ContentTypes>[]> {
     return await XMTPModule.listGroups(
       this.client.installationId,
       opts,
       limit,
-      consentState
+      consentStates
     )
   }
 

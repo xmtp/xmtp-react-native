@@ -176,11 +176,6 @@ class XMTPModule : Module() {
                 a.apply { set(i, v.toByte()) }
             }
         val historySyncUrl = authOptions.historySyncUrl
-            ?: when (authOptions.environment) {
-                "production" -> "https://message-history.production.ephemera.network/"
-                "local" -> "http://10.0.2.2:5558"
-                else -> "https://message-history.dev.ephemera.network/"
-            }
         return ClientOptions(
             api = apiEnvironments(authOptions.environment, authOptions.appVersion),
             preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
@@ -552,15 +547,15 @@ class XMTPModule : Module() {
             ).toJson()
         }
 
-        AsyncFunction("listGroups") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentState: String? ->
+        AsyncFunction("listGroups") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentStates: List<String>? ->
             withContext(Dispatchers.IO) {
                 logV("listGroups")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val consent = consentState?.let { getConsentState(it) }
+                val consentList = consentStates?.let { getConsentStates(it) }
                 val groups = client.conversations.listGroups(
                     limit = limit,
-                    consentState = consent
+                    consentStates = consentList
                 )
                 groups.map { group ->
                     GroupWrapper.encode(client, group, params)
@@ -568,15 +563,15 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listDms") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentState: String? ->
+        AsyncFunction("listDms") Coroutine { installationId: String, groupParams: String?, limit: Int?, consentStates: List<String>? ->
             withContext(Dispatchers.IO) {
                 logV("listDms")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val consent = consentState?.let { getConsentState(it) }
+                val consentList = consentStates?.let { getConsentStates(it) }
                 val dms = client.conversations.listDms(
                     limit = limit,
-                    consentState = consent
+                    consentStates = consentList
                 )
                 dms.map { dm ->
                     DmWrapper.encode(client, dm, params)
@@ -584,15 +579,15 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("listConversations") Coroutine { installationId: String, conversationParams: String?, limit: Int?, consentState: String? ->
+        AsyncFunction("listConversations") Coroutine { installationId: String, conversationParams: String?, limit: Int?, consentStates: List<String>? ->
             withContext(Dispatchers.IO) {
                 logV("listConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params =
                     ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
-                val consent = consentState?.let { getConsentState(it) }
+                val consentList = consentStates?.let { getConsentStates(it) }
                 val conversations =
-                    client.conversations.list(limit = limit, consentState = consent)
+                    client.conversations.list(limit = limit, consentStates = consentList)
                 conversations.map { conversation ->
                     ConversationWrapper.encode(client, conversation, params)
                 }
@@ -860,13 +855,13 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("syncAllConversations") Coroutine { installationId: String, consentState: String? ->
+        AsyncFunction("syncAllConversations") Coroutine { installationId: String, consentStates: List<String>? ->
             withContext(Dispatchers.IO) {
                 logV("syncAllConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val consent = consentState?.let { getConsentState(it) }
+                val consentList = consentStates?.let { getConsentStates(it) }
                 val numGroupsSyncedInt: Int =
-                    client.conversations.syncAllConversations(consent).toInt()
+                    client.conversations.syncAllConversations(consentList).toInt()
                 numGroupsSyncedInt
             }
         }
@@ -1440,6 +1435,16 @@ class XMTPModule : Module() {
             "allowed" -> ConsentState.ALLOWED
             "denied" -> ConsentState.DENIED
             else -> ConsentState.UNKNOWN
+        }
+    }
+
+    private fun getConsentStates(stateStrings: List<String>): List<ConsentState> {
+        return stateStrings.map { stateString ->
+            when (stateString) {
+                "allowed" -> ConsentState.ALLOWED
+                "denied" -> ConsentState.DENIED
+                else -> ConsentState.UNKNOWN
+            }
         }
     }
 

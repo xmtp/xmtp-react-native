@@ -974,12 +974,12 @@ test('can filter groups by consent', async () => {
   const boConvosFilteredAllowed = await boClient.conversations.listGroups(
     {},
     undefined,
-    'allowed'
+    ['allowed']
   )
   const boConvosFilteredUnknown = await boClient.conversations.listGroups(
     {},
     undefined,
-    'unknown'
+    ['unknown']
   )
 
   assert(
