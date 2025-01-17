@@ -159,6 +159,23 @@ export default class Conversations<
   }
 
   /**
+   * Creates a new conversation.
+   *
+   * This method creates a new conversation with the specified peer inboxId.
+   *
+   * @param {InboxId} peerInboxId - The inboxId of the peer to create a conversation with.
+   * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
+   */
+  async findOrCreateDmWithInboxId(
+    peerInboxId: InboxId
+  ): Promise<Dm<ContentTypes>> {
+    return await XMTPModule.findOrCreateDmWithInboxId(
+      this.client.installationId,
+      peerInboxId
+    )
+  }
+
+  /**
    * Creates a new group.
    *
    * This method creates a new group with the specified peer addresses and options.
@@ -209,23 +226,74 @@ export default class Conversations<
   }
 
   /**
+   * Creates a new group.
+   *
+   * This method creates a new group with the specified peer inboxIds and options.
+   *
+   * @param {InboxId[]} peerInboxIds - The inboxIds of the peers to create a group with.
+   * @param {CreateGroupOptions} opts - The options to use for the group.
+   * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
+   */
+  async newGroupWithInboxIds(
+    peerInboxIds: InboxId[],
+    opts?: CreateGroupOptions | undefined
+  ): Promise<Group<ContentTypes>> {
+    return await XMTPModule.createGroupWithInboxIds(
+      this.client.installationId,
+      peerInboxIds,
+      opts?.permissionLevel,
+      opts?.name,
+      opts?.imageUrlSquare,
+      opts?.description,
+      opts?.pinnedFrameUrl
+    )
+  }
+
+  /**
+   * Creates a new group with custom permissions.
+   *
+   * This method creates a new group with the specified peer inboxIds and options.
+   *
+   * @param {InboxId[]} peerInboxIds - The inboxIds of the peers to create a group with.
+   * @param {PermissionPolicySet} permissionPolicySet - The permission policy set to use for the group.
+   * @param {CreateGroupOptions} opts - The options to use for the group.
+   * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
+   */
+  async newGroupCustomPermissionsWithInboxIds(
+    peerInboxIds: InboxId[],
+    permissionPolicySet: PermissionPolicySet,
+    opts?: CreateGroupOptions | undefined
+  ): Promise<Group<ContentTypes>> {
+    return await XMTPModule.createGroupCustomPermissionsWithInboxIds(
+      this.client.installationId,
+      peerInboxIds,
+      permissionPolicySet,
+      opts?.name,
+      opts?.imageUrlSquare,
+      opts?.description,
+      opts?.pinnedFrameUrl
+    )
+  }
+
+  /**
    * This method returns a list of all groups that the client is a member of.
    * To get the latest list of groups from the network, call syncGroups() first.
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the groups in the list.
    * @param {number} limit - Limit the number of groups returned in the list.
+   * @param {consentStates} ConsentState[] - Filter the groups by a list of consent states.
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
   async listGroups(
     opts?: ConversationOptions | undefined,
     limit?: number | undefined,
-    consentState?: ConsentState | undefined
+    consentStates?: ConsentState[] | undefined
   ): Promise<Group<ContentTypes>[]> {
     return await XMTPModule.listGroups(
       this.client.installationId,
       opts,
       limit,
-      consentState
+      consentStates
     )
   }
 
@@ -234,38 +302,41 @@ export default class Conversations<
    * To get the latest list of dms from the network, call sync() first.
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the dms in the list.
    * @param {number} limit - Limit the number of dms returned in the list.
+   * @param {consentStates} ConsentState[] - Filter the dms by a list of consent states.
    *
    * @returns {Promise<Dm[]>} A Promise that resolves to an array of Dms objects.
    */
   async listDms(
     opts?: ConversationOptions | undefined,
     limit?: number | undefined,
-    consentState?: ConsentState | undefined
+    consentStates?: ConsentState[] | undefined
   ): Promise<Dm<ContentTypes>[]> {
     return await XMTPModule.listDms(
       this.client.installationId,
       opts,
       limit,
-      consentState
+      consentStates
     )
   }
 
   /**
-   * This method returns a list of all V3 conversations that the client is a member of.
-   * To include the latest conversations from the network in the returned list, call sync() first.
+   * This method returns a list of all conversations that the client is a member of.
+   * @param {ConversationOptions} opts - The options to specify what fields you want returned for the conversations in the list.
+   * @param {number} limit - Limit the number of conversations returned in the list.
+   * @param {consentStates} ConsentState[] - Filter the conversations by a list of consent states.
    *
    * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
    */
   async list(
     opts?: ConversationOptions | undefined,
     limit?: number | undefined,
-    consentState?: ConsentState | undefined
+    consentStates?: ConsentState[] | undefined
   ): Promise<Conversation<ContentTypes>[]> {
     return await XMTPModule.listConversations(
       this.client.installationId,
       opts,
       limit,
-      consentState
+      consentStates
     )
   }
 
@@ -286,15 +357,16 @@ export default class Conversations<
 
   /**
    * Executes a network request to sync all active conversations associated with the client
+   * @param {consentStates} ConsentState[] - Filter the conversations to sync by a list of consent states.
    *
    * @returns {Promise<number>} A Promise that resolves to the number of conversations synced.
    */
   async syncAllConversations(
-    consentState: ConsentState | undefined = undefined
+    consentStates: ConsentState[] | undefined = undefined
   ): Promise<number> {
     return await XMTPModule.syncAllConversations(
       this.client.installationId,
-      consentState
+      consentStates
     )
   }
 

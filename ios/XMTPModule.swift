@@ -516,7 +516,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listGroups") {
 			(
 				installationId: String, groupParams: String?,
-				limit: Int?, consentState: String?
+				limit: Int?, consentStringStates: [String]?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -526,14 +526,14 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
-			let consent: ConsentState?
-			if let state = consentState {
-				consent = try getConsentState(state: state)
+			let consentStates: [ConsentState]?
+			if let states = consentStringStates {
+				consentStates = try getConsentStates(states: states)
 			} else {
-				consent = nil
+				consentStates = nil
 			}
 			var groupList: [Group] = try await client.conversations.listGroups(
-				limit: limit, consentState: consent)
+				limit: limit, consentStates: consentStates)
 
 			var results: [String] = []
 			for group in groupList {
@@ -547,7 +547,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listDms") {
 			(
 				installationId: String, groupParams: String?,
-				limit: Int?, consentState: String?
+				limit: Int?, consentStringStates: [String]?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -557,14 +557,14 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
-			let consent: ConsentState?
-			if let state = consentState {
-				consent = try getConsentState(state: state)
+			let consentStates: [ConsentState]?
+			if let states = consentStringStates {
+				consentStates = try getConsentStates(states: states)
 			} else {
-				consent = nil
+				consentStates = nil
 			}
 			var dmList: [Dm] = try await client.conversations.listDms(
-				limit: limit, consentState: consent)
+				limit: limit, consentStates: consentStates)
 
 			var results: [String] = []
 			for dm in dmList {
@@ -578,7 +578,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listConversations") {
 			(
 				installationId: String, conversationParams: String?,
-				limit: Int?, consentState: String?
+				limit: Int?, consentStringStates: [String]?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -588,14 +588,14 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				conversationParams ?? "")
-			let consent: ConsentState?
-			if let state = consentState {
-				consent = try getConsentState(state: state)
+			let consentStates: [ConsentState]?
+			if let states = consentStringStates {
+				consentStates = try getConsentStates(states: states)
 			} else {
-				consent = nil
+				consentStates = nil
 			}
 			let conversations = try await client.conversations.list(
-				limit: limit, consentState: consent)
+				limit: limit, consentStates: consentStates)
 
 			var results: [String] = []
 			for conversation in conversations {
@@ -877,6 +877,24 @@ public class XMTPModule: Module {
 				throw error
 			}
 		}
+		
+		AsyncFunction("findOrCreateDmWithInboxId") {
+			(installationId: String, peerInboxId: String) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+
+			do {
+				let dm = try await client.conversations.findOrCreateDmWithInboxId(
+					with: peerInboxId)
+				return try await DmWrapper.encode(dm, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
 
 		AsyncFunction("createGroup") {
 			(
@@ -936,6 +954,77 @@ public class XMTPModule: Module {
 				let group = try await client.conversations
 					.newGroupCustomPermissions(
 						with: peerAddresses,
+						permissionPolicySet: permissionPolicySet,
+						name: createGroupParams.groupName,
+						imageUrlSquare: createGroupParams.groupImageUrlSquare,
+						description: createGroupParams.groupDescription,
+						pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+					)
+				return try await GroupWrapper.encode(group, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
+		
+		AsyncFunction("createGroupWithInboxIds") {
+			(
+				installationId: String, inboxIds: [String],
+				permission: String,
+				groupOptionsJson: String
+			) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			let permissionLevel: GroupPermissionPreconfiguration = {
+				switch permission {
+				case "admin_only":
+					return .adminOnly
+				default:
+					return .allMembers
+				}
+			}()
+			do {
+				let createGroupParams =
+					CreateGroupParamsWrapper.createGroupParamsFromJson(
+						groupOptionsJson)
+				let group = try await client.conversations.newGroupWithInboxIds(
+					with: inboxIds,
+					permissions: permissionLevel,
+					name: createGroupParams.groupName,
+					imageUrlSquare: createGroupParams.groupImageUrlSquare,
+					description: createGroupParams.groupDescription,
+					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+				)
+				return try await GroupWrapper.encode(group, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
+
+		AsyncFunction("createGroupCustomPermissionsWithInboxIds") {
+			(
+				installationId: String, inboxIds: [String],
+				permissionPolicySetJson: String, groupOptionsJson: String
+			) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			do {
+				let createGroupParams =
+					CreateGroupParamsWrapper.createGroupParamsFromJson(
+						groupOptionsJson)
+				let permissionPolicySet =
+					try PermissionPolicySetWrapper.createPermissionPolicySet(
+						from: permissionPolicySetJson)
+				let group = try await client.conversations
+					.newGroupCustomPermissionsWithInboxIds(
+						with: inboxIds,
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
 						imageUrlSquare: createGroupParams.groupImageUrlSquare,
@@ -1021,20 +1110,20 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("syncAllConversations") {
-			(installationId: String, consentState: String?) -> UInt32 in
+			(installationId: String, consentStringStates: [String]?) -> UInt32 in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			let consent: ConsentState?
-			if let state = consentState {
-				consent = try getConsentState(state: state)
+			let consentStates: [ConsentState]?
+			if let states = consentStringStates {
+				consentStates = try getConsentStates(states: states)
 			} else {
-				consent = nil
+                consentStates = nil
 			}
 			return try await client.conversations.syncAllConversations(
-				consentState: consent)
+				consentStates: consentStates)
 		}
 
 		AsyncFunction("syncConversation") {
@@ -1908,6 +1997,12 @@ public class XMTPModule: Module {
 			return .denied
 		default:
 			return .unknown
+		}
+	}
+
+	private func getConsentStates(states: [String]) throws -> [ConsentState] {
+		return try states.map { state in
+			try getConsentState(state: state)
 		}
 	}
 
