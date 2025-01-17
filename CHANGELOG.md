@@ -1,5 +1,14 @@
 # @xmtp/react-native-sdk
 
+## 3.1.8
+
+### Patch Changes
+
+- 8c15ef6: - Add ability to filter and sync by multiple consents
+  - And new inboxId methods for performance
+  - Conversation list sort by last "readable" msg
+  - Default msg history off
+
 ## 3.1.7
 
 ### Patch Changes
