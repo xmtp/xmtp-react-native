@@ -349,24 +349,36 @@ test('can find a dm by address', async () => {
 test('can filter conversations by consent', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
-  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
-  const otherGroup = await alixClient.conversations.newGroup([boClient.address])
-  const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.address)
+  // Bo allowed + 1
+  const boGroupWithAlixAllowed = await boClient.conversations.newGroup([alixClient.address])
+  // Bo unknown + 1
+  const alixGroupWithBo = await alixClient.conversations.newGroup([boClient.address])
+  // Bo allowed + 1
+  const boDmWithAlixAllowed = await boClient.conversations.findOrCreateDm(alixClient.address)
+  // Bo unknown + 1
   await caroClient.conversations.findOrCreateDm(boClient.address)
   await boClient.conversations.sync()
-  const boDm2 = await boClient.conversations.findDmByInboxId(caroClient.inboxId)
-  const boGroup2 = await boClient.conversations.findGroup(otherGroup.id)
+  const boDmWithCaroUnknownThenDenied = await boClient.conversations.findDmByInboxId(caroClient.inboxId)
+  const boGroupWithAlixUnknown = await boClient.conversations.findGroup(alixGroupWithBo.id)
+
+  // Bo denied + 1; Bo unknown - 1
+  boDmWithCaroUnknownThenDenied?.updateConsent('denied')
 
   const boConvos = await boClient.conversations.list()
   const boConvosFilteredAllowed = await boClient.conversations.list(
     {},
     undefined,
-    'allowed'
+    ['allowed']
   )
   const boConvosFilteredUnknown = await boClient.conversations.list(
     {},
     undefined,
-    'unknown'
+    ['unknown']
+  )
+  const boConvosFilteredAllowedOrDenied = await boClient.conversations.list(
+    {},
+    undefined,
+    ['allowed', 'denied']
   )
 
   assert(
@@ -377,10 +389,10 @@ test('can filter conversations by consent', async () => {
   assert(
     boConvosFilteredAllowed
       .map((conversation: any) => conversation.id)
-      .toString() === [boGroup1.id, boDm1.id].toString(),
+      .toString() === [boGroupWithAlixAllowed.id, boDmWithAlixAllowed.id].toString(),
     `Conversation allowed should be ${[
-      boGroup1.id,
-      boDm1.id,
+      boGroupWithAlixAllowed.id,
+      boDmWithAlixAllowed.id,
     ].toString()} but was ${boConvosFilteredAllowed
       .map((convo: any) => convo.id)
       .toString()}`
@@ -389,14 +401,27 @@ test('can filter conversations by consent', async () => {
   assert(
     boConvosFilteredUnknown
       .map((conversation: any) => conversation.id)
-      .toString() === [boGroup2?.id, boDm2?.id].toString(),
+      .toString() === [boGroupWithAlixUnknown?.id].toString(),
     `Conversation unknown filter should be ${[
-      boGroup2?.id,
-      boDm2?.id,
+      boGroupWithAlixUnknown?.id,
     ].toString()} but was ${boConvosFilteredUnknown
       .map((convo: any) => convo.id)
       .toString()}`
   )
+
+  assert(
+    boConvosFilteredAllowedOrDenied
+      .map((conversation: any) => conversation.id)
+      .toString() === [boGroupWithAlixAllowed.id, boDmWithAlixAllowed.id, boDmWithCaroUnknownThenDenied?.id].toString(), 
+    `Conversation allowed or denied filter should be ${[
+      boGroupWithAlixAllowed.id,
+      boDmWithAlixAllowed.id,
+      boDmWithCaroUnknownThenDenied?.id,
+    ].toString()} but was ${boConvosFilteredAllowedOrDenied
+      .map((convo: any) => convo.id)
+      .toString()}`
+  )
+
 
   return true
 })
@@ -404,28 +429,44 @@ test('can filter conversations by consent', async () => {
 test('can filter sync all by consent', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
+  // Bo allowed + 1
   await boClient.conversations.newGroup([alixClient.address])
+  // Bo unknown + 1
   const otherGroup = await alixClient.conversations.newGroup([boClient.address])
+  // Bo allowed + 1
   await boClient.conversations.findOrCreateDm(alixClient.address)
+  // Bo unknown + 1
   await caroClient.conversations.findOrCreateDm(boClient.address)
+
   await boClient.conversations.sync()
-  await boClient.conversations.findDmByInboxId(caroClient.inboxId)
+  const boDmWithCaro =await boClient.conversations.findDmByInboxId(caroClient.inboxId)
   await boClient.conversations.findGroup(otherGroup.id)
+  
+  // Bo denied + 1; Bo unknown - 1
+  boDmWithCaro?.updateConsent('denied')
 
   const boConvos = await boClient.conversations.syncAllConversations()
   const boConvosFilteredAllowed =
-    await boClient.conversations.syncAllConversations('allowed')
+    await boClient.conversations.syncAllConversations(['allowed'])
   const boConvosFilteredUnknown =
-    await boClient.conversations.syncAllConversations('unknown')
+    await boClient.conversations.syncAllConversations(['unknown'])
 
-  assert(boConvos === 5, `Conversation length should be 5 but was ${boConvos}`)
+  const boConvosFilteredAllowedOrDenied =
+    await boClient.conversations.syncAllConversations(['allowed', 'denied'])
+
+  assert(boConvos === 4, `Conversation length should be 4 but was ${boConvos}`)
   assert(
-    boConvosFilteredAllowed === 3,
-    `Conversation length should be 3 but was ${boConvosFilteredAllowed}`
+    boConvosFilteredAllowed === 2,
+    `Conversation length should be 2 but was ${boConvosFilteredAllowed}`
   )
   assert(
-    boConvosFilteredUnknown === 3,
-    `Conversation length should be 3 but was ${boConvosFilteredUnknown}`
+    boConvosFilteredUnknown === 1,
+    `Conversation length should be 1 but was ${boConvosFilteredUnknown}`
+  )
+
+  assert(
+    boConvosFilteredAllowedOrDenied === 3,
+    `Conversation length should be 3 but was ${boConvosFilteredAllowedOrDenied}`
   )
 
   return true
@@ -810,7 +851,7 @@ test('can streamAllMessages from multiple clients - swapped', async () => {
   return true
 })
 
-test('can sync consent', async () => {
+test('can sync consent (expected to fail unless historySyncUrl is set)', async () => {
   const [bo] = await createClients(1)
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -834,6 +875,7 @@ test('can sync consent', async () => {
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
+    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   // Create DM conversation
@@ -850,6 +892,7 @@ test('can sync consent', async () => {
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
+    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   const state = await alix2.inboxState(true)
@@ -887,7 +930,7 @@ test('can sync consent', async () => {
   return true
 })
 
-test('can stream consent', async () => {
+test('can stream consent (expected to fail unless historySyncUrl is set)', async () => {
   const [bo] = await createClients(1)
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -911,6 +954,7 @@ test('can stream consent', async () => {
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
+    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   const alixGroup = await alix.conversations.newGroup([bo.address])
@@ -920,6 +964,7 @@ test('can stream consent', async () => {
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
+    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   await alixGroup.send('Hello')
@@ -959,7 +1004,7 @@ test('can stream consent', async () => {
   return true
 })
 
-test('can preference updates', async () => {
+test('can preference updates (expected to fail unless historySyncUrl is set)', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
@@ -982,6 +1027,7 @@ test('can preference updates', async () => {
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
+    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   const types = []
@@ -995,6 +1041,7 @@ test('can preference updates', async () => {
     appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
+    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   await alix2.conversations.syncAllConversations()
