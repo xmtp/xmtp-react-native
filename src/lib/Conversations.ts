@@ -278,6 +278,7 @@ export default class Conversations<
    * To get the latest list of groups from the network, call syncGroups() first.
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the groups in the list.
    * @param {number} limit - Limit the number of groups returned in the list.
+   * @param {consentStates} ConsentState[] - Filter the groups by a list of consent states.
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
@@ -299,6 +300,7 @@ export default class Conversations<
    * To get the latest list of dms from the network, call sync() first.
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the dms in the list.
    * @param {number} limit - Limit the number of dms returned in the list.
+   * @param {consentStates} ConsentState[] - Filter the dms by a list of consent states.
    *
    * @returns {Promise<Dm[]>} A Promise that resolves to an array of Dms objects.
    */
@@ -316,8 +318,10 @@ export default class Conversations<
   }
 
   /**
-   * This method returns a list of all V3 conversations that the client is a member of.
-   * To include the latest conversations from the network in the returned list, call sync() first.
+   * This method returns a list of all conversations that the client is a member of.
+   * @param {ConversationOptions} opts - The options to specify what fields you want returned for the conversations in the list.
+   * @param {number} limit - Limit the number of conversations returned in the list.
+   * @param {consentStates} ConsentState[] - Filter the conversations by a list of consent states.
    *
    * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
    */
@@ -330,7 +334,7 @@ export default class Conversations<
       this.client.installationId,
       opts,
       limit,
-      consentState
+      consentStates
     )
   }
 
@@ -351,11 +355,12 @@ export default class Conversations<
 
   /**
    * Executes a network request to sync all active conversations associated with the client
+   * @param {consentStates} ConsentState[] - Filter the conversations to sync by a list of consent states.
    *
    * @returns {Promise<number>} A Promise that resolves to the number of conversations synced.
    */
   async syncAllConversations(
-    consentStates?: ConsentState[] | undefined = undefined
+    consentStates: ConsentState[] | undefined = undefined
   ): Promise<number> {
     return await XMTPModule.syncAllConversations(
       this.client.installationId,
