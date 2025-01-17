@@ -377,14 +377,14 @@ export async function listDms<
   clientInstallationId: InstallationId,
   opts?: ConversationOptions | undefined,
   limit?: number | undefined,
-  consentState?: ConsentState | undefined
+  consentStates?: ConsentState[] | undefined
 ): Promise<Dm<ContentTypes>[]> {
   return (
     await XMTPModule.listDms(
       clientInstallationId,
       JSON.stringify(opts),
       limit,
-      consentState
+      consentStates
     )
   ).map((json: string) => {
     const group = JSON.parse(json)
@@ -402,14 +402,14 @@ export async function listConversations<
   clientInstallationId: InstallationId,
   opts?: ConversationOptions | undefined,
   limit?: number | undefined,
-  consentState?: ConsentState | undefined
+  consentStates?: ConsentState[] | undefined
 ): Promise<Conversation<ContentTypes>[]> {
   return (
     await XMTPModule.listConversations(
       clientInstallationId,
       JSON.stringify(opts),
       limit,
-      consentState
+      consentStates
     )
   ).map((json: string) => {
     const jsonObj = JSON.parse(json)
@@ -815,9 +815,9 @@ export async function syncConversations(installationId: InstallationId) {
 
 export async function syncAllConversations(
   installationId: InstallationId,
-  consentState?: ConsentState | undefined
+  consentStates?: ConsentState[] | undefined
 ): Promise<number> {
-  return await XMTPModule.syncAllConversations(installationId, consentState)
+  return await XMTPModule.syncAllConversations(installationId, consentStates)
 }
 
 export async function syncConversation(

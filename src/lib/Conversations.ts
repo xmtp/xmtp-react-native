@@ -305,13 +305,13 @@ export default class Conversations<
   async listDms(
     opts?: ConversationOptions | undefined,
     limit?: number | undefined,
-    consentState?: ConsentState | undefined
+    consentStates?: ConsentState[] | undefined
   ): Promise<Dm<ContentTypes>[]> {
     return await XMTPModule.listDms(
       this.client.installationId,
       opts,
       limit,
-      consentState
+      consentStates
     )
   }
 
@@ -324,7 +324,7 @@ export default class Conversations<
   async list(
     opts?: ConversationOptions | undefined,
     limit?: number | undefined,
-    consentState?: ConsentState | undefined
+    consentStates?: ConsentState[] | undefined
   ): Promise<Conversation<ContentTypes>[]> {
     return await XMTPModule.listConversations(
       this.client.installationId,
@@ -355,11 +355,11 @@ export default class Conversations<
    * @returns {Promise<number>} A Promise that resolves to the number of conversations synced.
    */
   async syncAllConversations(
-    consentState: ConsentState | undefined = undefined
+    consentStates?: ConsentState[] | undefined = undefined
   ): Promise<number> {
     return await XMTPModule.syncAllConversations(
       this.client.installationId,
-      consentState
+      consentStates
     )
   }
 
