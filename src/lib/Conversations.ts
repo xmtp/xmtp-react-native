@@ -166,7 +166,9 @@ export default class Conversations<
    * @param {InboxId} peerInboxId - The inboxId of the peer to create a conversation with.
    * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
    */
-  async findOrCreateDmWithInboxId(peerInboxId: InboxId): Promise<Dm<ContentTypes>> {
+  async findOrCreateDmWithInboxId(
+    peerInboxId: InboxId
+  ): Promise<Dm<ContentTypes>> {
     return await XMTPModule.findOrCreateDmWithInboxId(
       this.client.installationId,
       peerInboxId

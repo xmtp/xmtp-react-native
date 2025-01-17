@@ -25,6 +25,89 @@ function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name: String(counter++) + '. ' + name, run: perform })
 }
 
+test('can create a group with inbox ids default permissions', async () => {
+  const [alix, bo, caro] = await createClients(3)
+
+  // Create group with inbox ID
+  const boGroup = await bo.conversations.newGroupWithInboxIds([alix.inboxId])
+
+  await alix.conversations.sync()
+  await boGroup.sync()
+
+  const alixGroups = await alix.conversations.listGroups()
+  const alixGroup = alixGroups[0]
+
+  // Verify group IDs are not empty
+  assert(boGroup.id !== '', 'bo group ID should not be empty')
+  assert(alixGroup.id !== '', 'alix group ID should not be empty')
+
+  // Add caro to group
+  await alixGroup.addMembers([caro.address])
+  await boGroup.sync()
+
+  // Verify member counts
+  assert(
+    (await alixGroup.members()).length === 3,
+    'alix group should have 3 members'
+  )
+  assert(
+    (await boGroup.members()).length === 3,
+    'bo group should have 3 members'
+  )
+
+  // Verify remove members throws error (admin only)
+  try {
+    await alixGroup.removeMembers([caro.address])
+    await boGroup.sync()
+    throw new Error('Should not be able to remove members')
+  } catch {
+    // Expected error
+  }
+
+  // Verify member counts unchanged
+  assert(
+    (await alixGroup.members()).length === 3,
+    'alix group should still have 3 members'
+  )
+  assert(
+    (await boGroup.members()).length === 3,
+    'bo group should still have 3 members'
+  )
+
+  // Check permissions
+  const boPermissions = await boGroup.permissionPolicySet()
+  const alixPermissions = await alixGroup.permissionPolicySet()
+
+  assert(
+    boPermissions.addMemberPolicy === 'allow',
+    'bo group should have allow add member policy'
+  )
+  assert(
+    alixPermissions.addMemberPolicy === 'allow',
+    'alix group should have allow add member policy'
+  )
+
+  // Check super admin status
+  assert(
+    await boGroup.isSuperAdmin(bo.inboxId),
+    'bo should be super admin in bo group'
+  )
+  assert(
+    !(await boGroup.isSuperAdmin(alix.inboxId)),
+    'alix should not be super admin in bo group'
+  )
+  assert(
+    await alixGroup.isSuperAdmin(bo.inboxId),
+    'bo should be super admin in alix group'
+  )
+  assert(
+    !(await alixGroup.isSuperAdmin(alix.inboxId)),
+    'alix should not be super admin in alix group'
+  )
+
+  return true
+})
+
 test('groups cannot fork', async () => {
   const [alix, bo, caro] = await createClients(3)
   // Create group with 3 users
@@ -236,8 +319,7 @@ test('groups cannot fork short version', async () => {
 })
 
 test('groups cannot fork short version - update metadata', async () => {
-  const [alix, bo, new_one, new_two, new_three, new_four] =
-    await createClients(6)
+  const [alix, bo, new_one, new_two] = await createClients(6)
   // Create group with 2 users
   const alixGroup = await alix.conversations.newGroup([
     bo.address,

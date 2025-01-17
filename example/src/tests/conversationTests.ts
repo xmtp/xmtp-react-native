@@ -1,6 +1,5 @@
 import { content } from '@xmtp/proto'
 import { Wallet } from 'ethers'
-import ReactNativeBlobUtil from 'react-native-blob-util'
 import RNFS from 'react-native-fs'
 import { PreferenceUpdates } from 'xmtp-react-native-sdk/lib/PrivatePreferences'
 
@@ -31,8 +30,6 @@ function test(name: string, perform: () => Promise<boolean>) {
 
 type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
-
-const { fs } = ReactNativeBlobUtil
 
 const ContentTypeNumber: ContentTypeId = {
   authorityId: 'org',
@@ -350,19 +347,28 @@ test('can filter conversations by consent', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
   // Bo allowed + 1
-  const boGroupWithAlixAllowed = await boClient.conversations.newGroup([alixClient.address])
+  const boGroupWithAlixAllowed = await boClient.conversations.newGroup([
+    alixClient.address,
+  ])
   // Bo unknown + 1
-  const alixGroupWithBo = await alixClient.conversations.newGroup([boClient.address])
+  const alixGroupWithBo = await alixClient.conversations.newGroup([
+    boClient.address,
+  ])
   // Bo allowed + 1
-  const boDmWithAlixAllowed = await boClient.conversations.findOrCreateDm(alixClient.address)
+  const boDmWithAlixAllowed = await boClient.conversations.findOrCreateDm(
+    alixClient.address
+  )
   // Bo unknown + 1
   await caroClient.conversations.findOrCreateDm(boClient.address)
   await boClient.conversations.sync()
-  const boDmWithCaroUnknownThenDenied = await boClient.conversations.findDmByInboxId(caroClient.inboxId)
-  const boGroupWithAlixUnknown = await boClient.conversations.findGroup(alixGroupWithBo.id)
+  const boDmWithCaroUnknownThenDenied =
+    await boClient.conversations.findDmByInboxId(caroClient.inboxId)
+  const boGroupWithAlixUnknown = await boClient.conversations.findGroup(
+    alixGroupWithBo.id
+  )
 
   // Bo denied + 1; Bo unknown - 1
-  boDmWithCaroUnknownThenDenied?.updateConsent('denied')
+  await boDmWithCaroUnknownThenDenied?.updateConsent('denied')
 
   const boConvos = await boClient.conversations.list()
   const boConvosFilteredAllowed = await boClient.conversations.list(
@@ -389,7 +395,8 @@ test('can filter conversations by consent', async () => {
   assert(
     boConvosFilteredAllowed
       .map((conversation: any) => conversation.id)
-      .toString() === [boGroupWithAlixAllowed.id, boDmWithAlixAllowed.id].toString(),
+      .toString() ===
+      [boGroupWithAlixAllowed.id, boDmWithAlixAllowed.id].toString(),
     `Conversation allowed should be ${[
       boGroupWithAlixAllowed.id,
       boDmWithAlixAllowed.id,
@@ -412,7 +419,12 @@ test('can filter conversations by consent', async () => {
   assert(
     boConvosFilteredAllowedOrDenied
       .map((conversation: any) => conversation.id)
-      .toString() === [boGroupWithAlixAllowed.id, boDmWithAlixAllowed.id, boDmWithCaroUnknownThenDenied?.id].toString(), 
+      .toString() ===
+      [
+        boGroupWithAlixAllowed.id,
+        boDmWithAlixAllowed.id,
+        boDmWithCaroUnknownThenDenied?.id,
+      ].toString(),
     `Conversation allowed or denied filter should be ${[
       boGroupWithAlixAllowed.id,
       boDmWithAlixAllowed.id,
@@ -421,7 +433,6 @@ test('can filter conversations by consent', async () => {
       .map((convo: any) => convo.id)
       .toString()}`
   )
-
 
   return true
 })
@@ -439,11 +450,13 @@ test('can filter sync all by consent', async () => {
   await caroClient.conversations.findOrCreateDm(boClient.address)
 
   await boClient.conversations.sync()
-  const boDmWithCaro =await boClient.conversations.findDmByInboxId(caroClient.inboxId)
+  const boDmWithCaro = await boClient.conversations.findDmByInboxId(
+    caroClient.inboxId
+  )
   await boClient.conversations.findGroup(otherGroup.id)
-  
+
   // Bo denied + 1; Bo unknown - 1
-  boDmWithCaro?.updateConsent('denied')
+  await boDmWithCaro?.updateConsent('denied')
 
   const boConvos = await boClient.conversations.syncAllConversations()
   const boConvosFilteredAllowed =
@@ -1034,7 +1047,8 @@ test('can preference updates (expected to fail unless historySyncUrl is set)', a
   await alix.preferences.streamPreferenceUpdates(
     async (entry: PreferenceUpdates) => {
       types.push(entry)
-  })
+    }
+  )
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
