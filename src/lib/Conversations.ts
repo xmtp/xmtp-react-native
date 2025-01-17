@@ -159,6 +159,21 @@ export default class Conversations<
   }
 
   /**
+   * Creates a new conversation.
+   *
+   * This method creates a new conversation with the specified peer inboxId.
+   *
+   * @param {InboxId} peerInboxId - The inboxId of the peer to create a conversation with.
+   * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
+   */
+  async findOrCreateDmWithInboxId(peerInboxId: InboxId): Promise<Dm<ContentTypes>> {
+    return await XMTPModule.findOrCreateDmWithInboxId(
+      this.client.installationId,
+      peerInboxId
+    )
+  }
+
+  /**
    * Creates a new group.
    *
    * This method creates a new group with the specified peer addresses and options.
@@ -200,6 +215,56 @@ export default class Conversations<
     return await XMTPModule.createGroupCustomPermissions(
       this.client.installationId,
       peerAddresses,
+      permissionPolicySet,
+      opts?.name,
+      opts?.imageUrlSquare,
+      opts?.description,
+      opts?.pinnedFrameUrl
+    )
+  }
+
+  /**
+   * Creates a new group.
+   *
+   * This method creates a new group with the specified peer inboxIds and options.
+   *
+   * @param {InboxId[]} peerInboxIds - The inboxIds of the peers to create a group with.
+   * @param {CreateGroupOptions} opts - The options to use for the group.
+   * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
+   */
+  async newGroupWithInboxIds(
+    peerInboxIds: InboxId[],
+    opts?: CreateGroupOptions | undefined
+  ): Promise<Group<ContentTypes>> {
+    return await XMTPModule.createGroupWithInboxIds(
+      this.client.installationId,
+      peerInboxIds,
+      opts?.permissionLevel,
+      opts?.name,
+      opts?.imageUrlSquare,
+      opts?.description,
+      opts?.pinnedFrameUrl
+    )
+  }
+
+  /**
+   * Creates a new group with custom permissions.
+   *
+   * This method creates a new group with the specified peer inboxIds and options.
+   *
+   * @param {InboxId[]} peerInboxIds - The inboxIds of the peers to create a group with.
+   * @param {PermissionPolicySet} permissionPolicySet - The permission policy set to use for the group.
+   * @param {CreateGroupOptions} opts - The options to use for the group.
+   * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
+   */
+  async newGroupCustomPermissionsWithInboxIds(
+    peerInboxIds: InboxId[],
+    permissionPolicySet: PermissionPolicySet,
+    opts?: CreateGroupOptions | undefined
+  ): Promise<Group<ContentTypes>> {
+    return await XMTPModule.createGroupCustomPermissionsWithInboxIds(
+      this.client.installationId,
+      peerInboxIds,
       permissionPolicySet,
       opts?.name,
       opts?.imageUrlSquare,

@@ -653,6 +653,21 @@ export async function findOrCreateDm<
   return new Dm(clientInstallationId, dm)
 }
 
+export async function findOrCreateDmWithInboxId<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  clientInstallationId: InstallationId,
+  peerInboxId: InboxId
+): Promise<Dm<ContentTypes>> {
+  const dm = JSON.parse(
+    await XMTPModule.findOrCreateDmWithInboxId(
+      clientInstallationId,
+      peerInboxId
+    )
+  )
+  return new Dm(clientInstallationId, dm)
+}
+
 export async function createGroup<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
@@ -674,6 +689,64 @@ export async function createGroup<
     await XMTPModule.createGroup(
       clientInstallationId,
       peerAddresses,
+      permissionLevel,
+      JSON.stringify(options)
+    )
+  )
+
+  return new Group(clientInstallationId, group)
+}
+
+export async function createGroupCustomPermissionsWithInboxIds<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  clientInstallationId: InstallationId,
+  inboxIds: InboxId[],
+  permissionPolicySet: PermissionPolicySet,
+  name: string = '',
+  imageUrlSquare: string = '',
+  description: string = '',
+  pinnedFrameUrl: string = ''
+): Promise<Group<ContentTypes>> {
+  const options: CreateGroupParams = {
+    name,
+    imageUrlSquare,
+    description,
+    pinnedFrameUrl,
+  }
+  const group = JSON.parse(
+    await XMTPModule.createGroupCustomPermissionsWithInboxIds(
+      clientInstallationId,
+      inboxIds,
+      JSON.stringify(permissionPolicySet),
+      JSON.stringify(options)
+    )
+  )
+
+  return new Group(clientInstallationId, group)
+}
+
+export async function createGroupWithInboxIds<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  clientInstallationId: InstallationId,
+  inboxIds: InboxId[],
+  permissionLevel: 'all_members' | 'admin_only' = 'all_members',
+  name: string = '',
+  imageUrlSquare: string = '',
+  description: string = '',
+  pinnedFrameUrl: string = ''
+): Promise<Group<ContentTypes>> {
+  const options: CreateGroupParams = {
+    name,
+    imageUrlSquare,
+    description,
+    pinnedFrameUrl,
+  }
+  const group = JSON.parse(
+    await XMTPModule.createGroupWithInboxIds(
+      clientInstallationId,
+      inboxIds,
       permissionLevel,
       JSON.stringify(options)
     )
