@@ -25,7 +25,8 @@ class MessageWrapper {
                 "senderInboxId" to model.senderInboxId,
                 "sentNs" to model.sentAtNs,
                 "fallback" to fallback,
-                "deliveryStatus" to model.deliveryStatus.toString()
+                "deliveryStatus" to model.deliveryStatus.toString(),
+                "childMessages" to model.childMessages?.map { childMessage -> encodeMap(childMessage) }
             )
         }
     }

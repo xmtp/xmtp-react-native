@@ -457,6 +457,29 @@ export async function conversationMessages<
   })
 }
 
+export async function conversationMessagesWithReactions<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  clientInstallationId: InstallationId,
+  conversationId: ConversationId,
+  limit?: number | undefined,
+  beforeNs?: number | undefined,
+  afterNs?: number | undefined,
+  direction?: MessageOrder | undefined
+): Promise<DecodedMessageUnion<ContentTypes>[]> {
+  const messages = await XMTPModule.conversationMessagesWithReactions(
+    clientInstallationId,
+    conversationId,
+    limit,
+    beforeNs,
+    afterNs,
+    direction
+  )
+  return messages.map((json: string) => {
+    return DecodedMessage.from(json)
+  })
+}
+
 export async function findMessage<
   ContentType extends DefaultContentTypes[number] = DefaultContentTypes[number],
   ContentTypes extends DefaultContentTypes = [ContentType], // Adjusted to work with arrays

@@ -224,6 +224,30 @@ export class Group<
   }
 
   /**
+   * This method returns an array of messages associated with the group.
+   * To get the latest messages from the network, call sync() first.
+   *
+   * @param {number | undefined} limit - Optional maximum number of messages to return.
+   * @param {number | Date | undefined} before - Optional filter for specifying the maximum timestamp of messages to return.
+   * @param {number | Date | undefined} after - Optional filter for specifying the minimum timestamp of messages to return.
+   * @param direction - Optional parameter to specify the time ordering of the messages to return.
+   * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
+   */
+
+  async messagesWithReactions(
+    opts?: MessagesOptions
+  ): Promise<DecodedMessageUnion<ContentTypes>[]> {
+    return await XMTP.conversationMessagesWithReactions(
+      this.clientInstallationId,
+      this.id,
+      opts?.limit,
+      opts?.beforeNs,
+      opts?.afterNs,
+      opts?.direction
+    )
+  }
+
+  /**
    * Executes a network request to fetch the latest messages and membership changes
    * associated with the group and saves them to the local state.
    */

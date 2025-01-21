@@ -1,7 +1,8 @@
 import ReactNativeBlobUtil from 'react-native-blob-util'
 
-import { Test, createClients, delayToPropogate } from './test-utils'
-import { RemoteAttachmentContent } from '../../../src/index'
+import { Test, assert, createClients, delayToPropogate } from './test-utils'
+import { ReactionContent, RemoteAttachmentContent } from '../../../src/index'
+import { ContentTypeId } from '@xmtp/proto/ts/dist/types/message_contents/content.pb'
 const { fs } = ReactNativeBlobUtil
 
 export const contentTypeTests: Test[] = []
@@ -12,6 +13,78 @@ function test(name: string, perform: () => Promise<boolean>) {
     run: perform,
   })
 }
+
+test('can fetch messages with reactions', async () => {
+  const [alix, bo] = await createClients(2)
+  
+  // Create group and sync
+  const group = await alix.conversations.newGroup([bo.address])
+  await bo.conversations.sync()
+  const boGroup = await bo.conversations.findGroup(group.id)
+  
+  // Send 3 messages from alix
+  await group.send('message 1')
+  await group.send('message 2') 
+  await group.send('message 3')
+  
+  await delayToPropogate()
+  await boGroup?.sync()
+  
+  // Get messages to react to
+  const messages = await boGroup?.messages()
+  assert(messages?.length === 3, 'Should have 3 messages')
+  
+  // Bo sends reactions to first two messages
+  await boGroup?.send({
+    reaction: {
+      action: 'added',
+      content: '👍',
+      reference: messages![0].id,
+      schema: 'unicode',
+    }
+  })
+  
+  await boGroup?.send({
+    reaction: {
+      action: 'added', 
+      content: '❤️',
+      reference: messages![1].id,
+      schema: 'unicode',
+    }
+})
+
+  await delayToPropogate()
+  await group.sync()
+
+  // Get regular messages
+  const regularMessages = await group.messages()
+  assert(regularMessages.length === 6, 'Should have 5 total messages including reactions, but got ' + regularMessages.length)
+
+  // Get messages with reactions
+  const messagesWithReactions = await group.messagesWithReactions()
+  assert(messagesWithReactions.length === 4, 'Should have 4 original messages')
+
+  // Check reactions are attached to correct messages
+  const firstMessage = messagesWithReactions[0] // Reverse chronological
+  const secondMessage = messagesWithReactions[1]
+  const thirdMessage = messagesWithReactions[2]
+
+  assert(firstMessage.childMessages?.length === 1, 'First message should have 1 reaction')
+  let messageType = firstMessage.childMessages![0].contentTypeId
+  assert(messageType === 'xmtp.org/reaction:1.0', 'First message should have reaction type, but got ' + messageType)
+  let messageContent: ReactionContent = (firstMessage.childMessages![0].content()) as ReactionContent
+  assert(messageContent.content === '👍', 'First message should have thumbs up, but got ' + messageContent.content)
+  
+  assert(secondMessage.childMessages?.length === 1, 'Second message should have 1 reaction')
+  messageType = secondMessage.childMessages![0].contentTypeId
+  assert(messageType === 'xmtp.org/reaction:1.0', 'Second message should have reaction type, but got ' + messageType)
+  messageContent = (secondMessage.childMessages![0].content()) as ReactionContent
+  assert(messageContent.content === '❤️', 'Second message should have heart, but got ' + messageContent.content)
+  
+  assert(!thirdMessage.childMessages?.length, 'Third message should have no reactions')
+
+  return true
+})
 
 test('remote attachments should work', async () => {
   const [alix, bo] = await createClients(2)
