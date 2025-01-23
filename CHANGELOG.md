@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 3.1.9
+
+### Patch Changes
+
+- 29f8783: fixes exportNativeLogs on iOS
+
 ## 3.1.8
 
 ### Patch Changes
