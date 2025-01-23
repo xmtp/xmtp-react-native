@@ -25,6 +25,16 @@ function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name: String(counter++) + '. ' + name, run: perform })
 }
 
+test('verify exportNativeLogs', async () => {
+  await createClients(2)
+  const logs = await Client.exportNativeLogs()
+  assert(
+    logs.includes('Created XMTP client for inbox_id'),
+    'Logs should contain Initialized identity inbox_id='
+  )
+  return true
+})
+
 test('can create a group with inbox ids default permissions', async () => {
   const [alix, bo, caro] = await createClients(3)
 
