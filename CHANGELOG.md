@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 3.1.10
+
+### Patch Changes
+
+- 2998faa: Revert client removal
+
 ## 3.1.9
 
 ### Patch Changes
