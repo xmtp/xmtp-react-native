@@ -1,4 +1,4 @@
-import { Client, InboxId, InstallationId } from './Client'
+import { Client, InboxId } from './Client'
 import { ConsentState } from './ConsentRecord'
 import { ConversationVersion, ConversationBase } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
@@ -23,7 +23,7 @@ export interface DmParams {
 export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   implements ConversationBase<ContentTypes>
 {
-  clientInstallationId: InstallationId
+  client: Client<ContentTypes>
   id: ConversationId
   createdAt: number
   version = ConversationVersion.DM as const
@@ -32,11 +32,11 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   lastMessage?: DecodedMessageUnion<ContentTypes>
 
   constructor(
-    clientInstallationId: InstallationId,
+    client: Client<ContentTypes>,
     params: DmParams,
     lastMessage?: DecodedMessageUnion<ContentTypes>
   ) {
-    this.clientInstallationId = clientInstallationId
+    this.client = client
     this.id = params.id
     this.createdAt = params.createdAt
     this.topic = params.topic
@@ -49,7 +49,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * @returns {Promise<InboxId>} A Promise that resolves to a InboxId.
    */
   async peerInboxId(): Promise<InboxId> {
-    return XMTP.dmPeerInboxId(this.clientInstallationId, this.id)
+    return XMTP.dmPeerInboxId(this.client.installationId, this.id)
   }
 
   /**
@@ -72,7 +72,11 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         content = { text: content }
       }
 
-      return await XMTP.sendMessage(this.clientInstallationId, this.id, content)
+      return await XMTP.sendMessage(
+        this.client.installationId,
+        this.id,
+        content
+      )
     } catch (e) {
       console.info('ERROR in send()', e.message)
       throw e
@@ -93,7 +97,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     }
 
     return await XMTP.sendWithContentType(
-      this.clientInstallationId,
+      this.client.installationId,
       this.id,
       content,
       codec
@@ -123,7 +127,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
       }
 
       return await XMTP.prepareMessage(
-        this.clientInstallationId,
+        this.client.installationId,
         this.id,
         content
       )
@@ -147,7 +151,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     }
 
     return await XMTP.prepareMessageWithContentType(
-      this.clientInstallationId,
+      this.client.installationId,
       this.id,
       content,
       codec
@@ -162,7 +166,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   async publishPreparedMessages() {
     try {
       return await XMTP.publishPreparedMessages(
-        this.clientInstallationId,
+        this.client.installationId,
         this.id
       )
     } catch (e) {
@@ -185,7 +189,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     opts?: MessagesOptions
   ): Promise<DecodedMessageUnion<ContentTypes>[]> {
     return await XMTP.conversationMessages(
-      this.clientInstallationId,
+      this.client.installationId,
       this.id,
       opts?.limit,
       opts?.beforeNs,
@@ -199,7 +203,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * associated with the dm and saves them to the local state.
    */
   async sync() {
-    await XMTP.syncConversation(this.clientInstallationId, this.id)
+    await XMTP.syncConversation(this.client.installationId, this.id)
   }
 
   /**
@@ -215,7 +219,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   async streamMessages(
     callback: (message: DecodedMessage<ContentTypes[number]>) => Promise<void>
   ): Promise<() => void> {
-    await XMTP.subscribeToMessages(this.clientInstallationId, this.id)
+    await XMTP.subscribeToMessages(this.client.installationId, this.id)
     const messageSubscription = XMTP.emitter.addListener(
       EventTypes.ConversationMessage,
       async ({
@@ -227,7 +231,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         message: DecodedMessage<ContentTypes[number]>
         conversationId: string
       }) => {
-        if (installationId !== this.clientInstallationId) {
+        if (installationId !== this.client.installationId) {
           return
         }
         if (conversationId !== this.id) {
@@ -239,7 +243,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     )
     return async () => {
       messageSubscription.remove()
-      await XMTP.unsubscribeFromMessages(this.clientInstallationId, this.id)
+      await XMTP.unsubscribeFromMessages(this.client.installationId, this.id)
     }
   }
 
@@ -248,7 +252,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   ): Promise<DecodedMessageUnion<ContentTypes>> {
     try {
       return await XMTP.processMessage(
-        this.clientInstallationId,
+        this.client.installationId,
         this.id,
         encryptedMessage
       )
@@ -260,14 +264,14 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
 
   async consentState(): Promise<ConsentState> {
     return await XMTP.conversationConsentState(
-      this.clientInstallationId,
+      this.client.installationId,
       this.id
     )
   }
 
   async updateConsent(state: ConsentState): Promise<void> {
     return await XMTP.updateConversationConsent(
-      this.clientInstallationId,
+      this.client.installationId,
       this.id,
       state
     )
@@ -280,7 +284,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    */
   async members(): Promise<Member[]> {
     return await XMTP.listConversationMembers(
-      this.clientInstallationId,
+      this.client.installationId,
       this.id
     )
   }
