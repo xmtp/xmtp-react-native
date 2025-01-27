@@ -25,12 +25,12 @@ test('can filter dms by consent', async () => {
   const boConvosFilteredAllowed = await boClient.conversations.listDms(
     {},
     undefined,
-    'allowed'
+    ['allowed']
   )
   const boConvosFilteredUnknown = await boClient.conversations.listDms(
     {},
     undefined,
-    'unknown'
+    ['unknown']
   )
 
   assert(

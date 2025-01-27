@@ -7,7 +7,7 @@ import {
 } from './types'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
-import { DecodedMessage, Member, Dm, Group } from '../index'
+import { DecodedMessage, Member, Dm, Group, Client } from '../index'
 
 export enum ConversationVersion {
   GROUP = 'GROUP',
@@ -15,6 +15,7 @@ export enum ConversationVersion {
 }
 
 export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
+  client: Client<ContentTypes>
   createdAt: number
   topic: string
   version: ConversationVersion

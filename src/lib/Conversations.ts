@@ -42,7 +42,7 @@ export default class Conversations<
   async findGroup(
     groupId: ConversationId
   ): Promise<Group<ContentTypes> | undefined> {
-    return await XMTPModule.findGroup(this.client.installationId, groupId)
+    return await XMTPModule.findGroup(this.client, groupId)
   }
 
   /**
@@ -54,7 +54,7 @@ export default class Conversations<
   async findDmByInboxId(
     inboxId: InboxId
   ): Promise<Dm<ContentTypes> | undefined> {
-    return await XMTPModule.findDmByInboxId(this.client.installationId, inboxId)
+    return await XMTPModule.findDmByInboxId(this.client, inboxId)
   }
 
   /**
@@ -66,7 +66,7 @@ export default class Conversations<
   async findDmByAddress(
     address: Address
   ): Promise<Dm<ContentTypes> | undefined> {
-    return await XMTPModule.findDmByAddress(this.client.installationId, address)
+    return await XMTPModule.findDmByAddress(this.client, address)
   }
 
   /**
@@ -78,10 +78,7 @@ export default class Conversations<
   async findConversationByTopic(
     topic: ConversationTopic
   ): Promise<Conversation<ContentTypes> | undefined> {
-    return await XMTPModule.findConversationByTopic(
-      this.client.installationId,
-      topic
-    )
+    return await XMTPModule.findConversationByTopic(this.client, topic)
   }
 
   /**
@@ -93,10 +90,7 @@ export default class Conversations<
   async findConversation(
     conversationId: ConversationId
   ): Promise<Conversation<ContentTypes> | undefined> {
-    return await XMTPModule.findConversation(
-      this.client.installationId,
-      conversationId
-    )
+    return await XMTPModule.findConversation(this.client, conversationId)
   }
 
   /**
@@ -116,7 +110,7 @@ export default class Conversations<
   ): Promise<Conversation<ContentTypes>> {
     try {
       return await XMTPModule.processWelcomeMessage(
-        this.client.installationId,
+        this.client,
         encryptedMessage
       )
     } catch (e) {
@@ -137,10 +131,7 @@ export default class Conversations<
     peerAddress: Address
   ): Promise<Conversation<ContentTypes>> {
     const checksumAddress = getAddress(peerAddress)
-    return await XMTPModule.findOrCreateDm(
-      this.client.installationId,
-      checksumAddress
-    )
+    return await XMTPModule.findOrCreateDm(this.client, checksumAddress)
   }
 
   /**
@@ -152,10 +143,7 @@ export default class Conversations<
    * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
    */
   async findOrCreateDm(peerAddress: Address): Promise<Dm<ContentTypes>> {
-    return await XMTPModule.findOrCreateDm(
-      this.client.installationId,
-      peerAddress
-    )
+    return await XMTPModule.findOrCreateDm(this.client, peerAddress)
   }
 
   /**
@@ -169,10 +157,7 @@ export default class Conversations<
   async findOrCreateDmWithInboxId(
     peerInboxId: InboxId
   ): Promise<Dm<ContentTypes>> {
-    return await XMTPModule.findOrCreateDmWithInboxId(
-      this.client.installationId,
-      peerInboxId
-    )
+    return await XMTPModule.findOrCreateDmWithInboxId(this.client, peerInboxId)
   }
 
   /**
@@ -189,7 +174,7 @@ export default class Conversations<
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroup(
-      this.client.installationId,
+      this.client,
       peerAddresses,
       opts?.permissionLevel,
       opts?.name,
@@ -215,7 +200,7 @@ export default class Conversations<
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroupCustomPermissions(
-      this.client.installationId,
+      this.client,
       peerAddresses,
       permissionPolicySet,
       opts?.name,
@@ -239,7 +224,7 @@ export default class Conversations<
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroupWithInboxIds(
-      this.client.installationId,
+      this.client,
       peerInboxIds,
       opts?.permissionLevel,
       opts?.name,
@@ -265,7 +250,7 @@ export default class Conversations<
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroupCustomPermissionsWithInboxIds(
-      this.client.installationId,
+      this.client,
       peerInboxIds,
       permissionPolicySet,
       opts?.name,
@@ -289,12 +274,7 @@ export default class Conversations<
     limit?: number | undefined,
     consentStates?: ConsentState[] | undefined
   ): Promise<Group<ContentTypes>[]> {
-    return await XMTPModule.listGroups(
-      this.client.installationId,
-      opts,
-      limit,
-      consentStates
-    )
+    return await XMTPModule.listGroups(this.client, opts, limit, consentStates)
   }
 
   /**
@@ -311,12 +291,7 @@ export default class Conversations<
     limit?: number | undefined,
     consentStates?: ConsentState[] | undefined
   ): Promise<Dm<ContentTypes>[]> {
-    return await XMTPModule.listDms(
-      this.client.installationId,
-      opts,
-      limit,
-      consentStates
-    )
+    return await XMTPModule.listDms(this.client, opts, limit, consentStates)
   }
 
   /**
@@ -333,7 +308,7 @@ export default class Conversations<
     consentStates?: ConsentState[] | undefined
   ): Promise<Conversation<ContentTypes>[]> {
     return await XMTPModule.listConversations(
-      this.client.installationId,
+      this.client,
       opts,
       limit,
       consentStates
@@ -394,17 +369,11 @@ export default class Conversations<
         }
         if (conversation.version === ConversationVersion.GROUP) {
           return await callback(
-            new Group(
-              this.client.installationId,
-              conversation as unknown as GroupParams
-            )
+            new Group(this.client, conversation as unknown as GroupParams)
           )
         } else if (conversation.version === ConversationVersion.DM) {
           return await callback(
-            new Dm(
-              this.client.installationId,
-              conversation as unknown as DmParams
-            )
+            new Dm(this.client, conversation as unknown as DmParams)
           )
         }
       }

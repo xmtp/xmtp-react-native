@@ -626,6 +626,7 @@ test('creating a group with invalid permissions should fail', async () => {
     updateGroupDescriptionPolicy: 'allow',
     updateGroupImagePolicy: 'admin',
     updateGroupPinnedFrameUrlPolicy: 'deny',
+    updateMessageExpirationPolicy: 'admin',
   }
 
   // Bo creates a group with Alix and Caro
