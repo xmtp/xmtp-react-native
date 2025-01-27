@@ -2,7 +2,13 @@ import { content, keystore } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import XMTPModule from './XMTPModule'
-import { Address, Client, InboxId, InstallationId, XMTPEnvironment } from './lib/Client'
+import {
+  Address,
+  Client,
+  InboxId,
+  InstallationId,
+  XMTPEnvironment,
+} from './lib/Client'
 import { ConsentRecord, ConsentState, ConsentType } from './lib/ConsentRecord'
 import {
   ContentCodec,
@@ -365,7 +371,9 @@ export async function listGroups<
     const group = JSON.parse(json)
 
     const lastMessage = group['lastMessage']
-      ? DecodedMessage.from(group['lastMessage'])
+      ? (DecodedMessage.from<ContentTypes[number], ContentTypes>(
+          group['lastMessage']
+        ) as DecodedMessageUnion<ContentTypes> | undefined)
       : undefined
     return new Group(client, group, lastMessage)
   })
@@ -390,7 +398,9 @@ export async function listDms<
     const group = JSON.parse(json)
 
     const lastMessage = group['lastMessage']
-      ? DecodedMessage.from(group['lastMessage'])
+      ? (DecodedMessage.from<ContentTypes[number], ContentTypes>(
+          group['lastMessage']
+        ) as DecodedMessageUnion<ContentTypes> | undefined)
       : undefined
     return new Dm(client, group, lastMessage)
   })
@@ -415,7 +425,9 @@ export async function listConversations<
     const jsonObj = JSON.parse(json)
 
     const lastMessage = jsonObj['lastMessage']
-      ? DecodedMessage.from(jsonObj['lastMessage'])
+      ? (DecodedMessage.from<ContentTypes[number], ContentTypes>(
+          jsonObj['lastMessage']
+        ) as DecodedMessageUnion<ContentTypes> | undefined)
       : undefined
 
     if (jsonObj.version === ConversationVersion.GROUP) {
