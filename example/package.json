@@ -8,7 +8,8 @@
     "ios:clean": "expo run:ios --no-build-cache",
     "web": "expo start --web",
     "upload:up": "docker-compose -p xmtp -f dev/local/docker-compose.yml up -d",
-    "upload:down": "docker-compose -p xmtp -f dev/local/docker-compose.yml down"
+    "upload:down": "docker-compose -p xmtp -f dev/local/docker-compose.yml down",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.21.0",
@@ -65,6 +66,8 @@
     "eslint": "^8.54.0",
     "eslint-plugin-prettier": "^5.0.1",
     "eslint-plugin-react": "^7.33.2",
+    "patch-package": "^8.0.0",
+    "postinstall-postinstall": "^2.1.0",
     "prettier": "^3.1.0",
     "typescript": "^4.9.4"
   },
