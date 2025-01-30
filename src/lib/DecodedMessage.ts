@@ -34,7 +34,6 @@ export class DecodedMessage<
   deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
   childMessages?: DecodedMessage<ContentType>[]
 
-
   static from<
     ContentType extends
       DefaultContentTypes[number] = DefaultContentTypes[number],
@@ -45,7 +44,7 @@ export class DecodedMessage<
     const childMessages = decoded.childMessages?.map((childJson: any) =>
       DecodedMessage.fromObject<ContentType>({
         ...childJson,
-        deliveryStatus: childJson.deliveryStatus
+        deliveryStatus: childJson.deliveryStatus,
       })
     )
     return new DecodedMessage<ContentType>(
@@ -57,7 +56,7 @@ export class DecodedMessage<
       decoded.content,
       decoded.fallback,
       decoded.deliveryStatus,
-      childMessages,
+      childMessages
     ) as DecodedMessageUnion<ContentTypes>
   }
 
@@ -95,7 +94,7 @@ export class DecodedMessage<
     content: any,
     fallback: string | undefined,
     deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED,
-    childMessages?: DecodedMessage<ContentType>[],
+    childMessages?: DecodedMessage<ContentType>[]
   ) {
     this.id = id
     this.topic = topic

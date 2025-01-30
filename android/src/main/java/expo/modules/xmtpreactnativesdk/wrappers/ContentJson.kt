@@ -12,6 +12,7 @@ import org.xmtp.android.library.codecs.ContentTypeAttachment
 import org.xmtp.android.library.codecs.ContentTypeGroupUpdated
 import org.xmtp.android.library.codecs.ContentTypeId
 import org.xmtp.android.library.codecs.ContentTypeReaction
+import org.xmtp.android.library.codecs.ContentTypeReactionV2
 import org.xmtp.android.library.codecs.ContentTypeReadReceipt
 import org.xmtp.android.library.codecs.ContentTypeRemoteAttachment
 import org.xmtp.android.library.codecs.ContentTypeReply
@@ -21,6 +22,7 @@ import org.xmtp.android.library.codecs.GroupUpdated
 import org.xmtp.android.library.codecs.GroupUpdatedCodec
 import org.xmtp.android.library.codecs.Reaction
 import org.xmtp.android.library.codecs.ReactionCodec
+import org.xmtp.android.library.codecs.ReactionV2Codec
 import org.xmtp.android.library.codecs.ReadReceipt
 import org.xmtp.android.library.codecs.ReadReceiptCodec
 import org.xmtp.android.library.codecs.RemoteAttachment
@@ -33,6 +35,10 @@ import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.codecs.getReactionAction
 import org.xmtp.android.library.codecs.getReactionSchema
 import org.xmtp.android.library.codecs.id
+import uniffi.xmtpv3.FfiReaction
+import uniffi.xmtpv3.FfiReactionAction
+import uniffi.xmtpv3.FfiReactionSchema
+import uniffi.xmtpv3.decodeReaction
 import java.net.URL
 
 class ContentJson(
@@ -55,6 +61,7 @@ class ContentJson(
             Client.register(ReplyCodec())
             Client.register(ReadReceiptCodec())
             Client.register(GroupUpdatedCodec())
+            Client.register(ReactionV2Codec())
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -93,6 +100,17 @@ class ContentJson(
                         action = getReactionAction(reaction.get("action").asString.lowercase()),
                         schema = getReactionSchema(reaction.get("schema").asString.lowercase()),
                         content = reaction.get("content").asString,
+                    )
+                )
+            } else if (obj.has("reactionV2")) {
+                val reaction = obj.get("reactionV2").asJsonObject
+                return ContentJson(
+                    ContentTypeReactionV2, FfiReaction(
+                        reference = reaction.get("reference").asString,
+                        action = getReactionV2Action(reaction.get("action").asString.lowercase()),
+                        schema = getReactionV2Schema(reaction.get("schema").asString.lowercase()),
+                        content = reaction.get("content").asString,
+                        referenceInboxId = ""
                     )
                 )
             } else if (obj.has("reply")) {
@@ -158,6 +176,18 @@ class ContentJson(
                     "content" to content.content,
                 )
             )
+
+            ContentTypeReactionV2.id ->  {
+                val reaction: FfiReaction = decodeReaction(encodedContent!!.toByteArray())
+                mapOf(
+                    "reaction" to mapOf(
+                        "reference" to reaction.reference,
+                        "action" to getReactionV2ActionString(reaction.action),
+                        "schema" to getReactionV2SchemaString(reaction.schema),
+                        "content" to reaction.content,
+                    )
+                )
+            }
 
             ContentTypeReply.id -> mapOf(
                 "reply" to mapOf(
@@ -226,5 +256,39 @@ class ContentJson(
                 }
             }
         }
+    }
+}
+
+fun getReactionV2Schema(schema: String): FfiReactionSchema {
+    return when (schema) {
+        "unicode" -> FfiReactionSchema.UNICODE
+        "shortcode" -> FfiReactionSchema.SHORTCODE
+        "custom" -> FfiReactionSchema.CUSTOM
+        else -> FfiReactionSchema.UNKNOWN
+    }
+}
+
+fun getReactionV2Action(action: String): FfiReactionAction {
+    return when (action) {
+        "removed" -> FfiReactionAction.REMOVED
+        "added" -> FfiReactionAction.ADDED
+        else -> FfiReactionAction.UNKNOWN
+    }
+}
+
+fun getReactionV2SchemaString(schema: FfiReactionSchema): String {
+    return when (schema) {
+        FfiReactionSchema.UNICODE -> "unicode"
+        FfiReactionSchema.SHORTCODE -> "shortcode"
+        FfiReactionSchema.CUSTOM -> "custom"
+        FfiReactionSchema.UNKNOWN -> "unknown"
+    }
+}
+
+fun getReactionV2ActionString(action: FfiReactionAction): String {
+    return when (action) {
+        FfiReactionAction.REMOVED -> "removed"
+        FfiReactionAction.ADDED -> "added"
+        FfiReactionAction.UNKNOWN -> "unknown"
     }
 }

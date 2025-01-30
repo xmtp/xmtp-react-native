@@ -76,6 +76,7 @@ export type NativeMessageContent = {
   unknown?: UnknownContent
   reply?: ReplyContent
   reaction?: ReactionContent
+  reactionV2?: ReactionContent
   attachment?: StaticAttachmentContent
   remoteAttachment?: RemoteAttachmentContent
   readReceipt?: ReadReceiptContent
