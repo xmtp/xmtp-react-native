@@ -32,6 +32,7 @@ export class DecodedMessage<
   nativeContent: NativeMessageContent
   fallback: string | undefined
   deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
+  childMessages?: DecodedMessage<ContentType>[]
 
   static from<
     ContentType extends
@@ -39,6 +40,13 @@ export class DecodedMessage<
     ContentTypes extends DefaultContentTypes = ContentType[],
   >(json: string): DecodedMessageUnion<ContentTypes> {
     const decoded = JSON.parse(json)
+    // Parse any child messages recursively
+    const childMessages = decoded.childMessages?.map((childJson: any) =>
+      DecodedMessage.fromObject<ContentType>({
+        ...childJson,
+        deliveryStatus: childJson.deliveryStatus,
+      })
+    )
     return new DecodedMessage<ContentType>(
       decoded.id,
       decoded.topic,
@@ -47,7 +55,8 @@ export class DecodedMessage<
       decoded.sentNs,
       decoded.content,
       decoded.fallback,
-      decoded.deliveryStatus
+      decoded.deliveryStatus,
+      childMessages
     ) as DecodedMessageUnion<ContentTypes>
   }
 
@@ -84,7 +93,8 @@ export class DecodedMessage<
     sentNs: number,
     content: any,
     fallback: string | undefined,
-    deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
+    deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED,
+    childMessages?: DecodedMessage<ContentType>[]
   ) {
     this.id = id
     this.topic = topic
@@ -95,6 +105,7 @@ export class DecodedMessage<
     // undefined comes back as null when bridged, ensure undefined so integrators don't have to add a new check for null as well
     this.fallback = fallback ?? undefined
     this.deliveryStatus = deliveryStatus
+    this.childMessages = childMessages
   }
 
   content(): ExtractDecodedType<ContentType> {
