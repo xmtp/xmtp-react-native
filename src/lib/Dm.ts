@@ -206,7 +206,8 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * @param {number | undefined} before - Optional filter for specifying the maximum timestamp of messages to return.
    * @param {number | undefined} after - Optional filter for specifying the minimum timestamp of messages to return.
    * @param direction - Optional parameter to specify the time ordering of the messages to return.
-   * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects.
+   * @returns {Promise<DecodedMessage<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessage objects,
+   * each of which will contain any related reactions under the childMessages property.
    */
   async messagesWithReactions(
     opts?: MessagesOptions
