@@ -110,6 +110,7 @@ class ContentJson(
                         action = getReactionV2Action(reaction.get("action").asString.lowercase()),
                         schema = getReactionV2Schema(reaction.get("schema").asString.lowercase()),
                         content = reaction.get("content").asString,
+                        // Update if we add referenceInboxId to ../src/lib/types/ContentCodec.ts#L19-L24
                         referenceInboxId = ""
                     )
                 )

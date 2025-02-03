@@ -78,6 +78,7 @@ struct ContentJson {
 		} else if let reaction = obj["reactionV2"] as? [String: Any] {
             return ContentJson(type: ContentTypeReactionV2, content: FfiReaction(
 				reference: reaction["reference"] as? String ?? "",
+				// Update if we add referenceInboxId to ../src/lib/types/ContentCodec.ts#L19-L24
                 referenceInboxId: "",
 				action: ReactionV2Action.fromString(reaction["action"] as? String ?? ""),
 				content: reaction["content"] as? String ?? "",
