@@ -657,6 +657,33 @@ public class XMTPModule: Module {
 			}
 		}
 
+		AsyncFunction("conversationMessagesWithReactions") {
+            (
+                installationId: String, conversationId: String, limit: Int?,
+                beforeNs: Double?, afterNs: Double?, direction: String?
+            ) -> [String] in
+			guard let client = await clientsManager.getClient(key: installationId) else {
+				throw Error.noClient
+			}
+			guard let conversation = try await client.findConversation(conversationId: conversationId) else {
+				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+			}
+			let messages = try await conversation.messagesWithReactions(
+				limit: limit,
+				beforeNs: beforeNs != nil ? Int64(beforeNs!) : nil,
+				afterNs: afterNs != nil ? Int64(afterNs!) : nil,
+				direction: getSortDirection(direction: direction ?? "DESCENDING")
+			)
+			return messages.compactMap { msg in
+				do {
+					return try MessageWrapper.encode(msg)
+				} catch {
+					print("discarding message, unable to encode wrapper \(msg.id)")
+					return nil
+				}
+			}
+		}
+
 		AsyncFunction("findMessage") {
 			(installationId: String, messageId: String) -> String? in
 			guard
