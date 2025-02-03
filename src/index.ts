@@ -689,13 +689,11 @@ export async function createGroup<
   name: string = '',
   imageUrlSquare: string = '',
   description: string = '',
-  pinnedFrameUrl: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
-    pinnedFrameUrl,
   }
   const group = JSON.parse(
     await XMTPModule.createGroup(
@@ -718,13 +716,11 @@ export async function createGroupCustomPermissionsWithInboxIds<
   name: string = '',
   imageUrlSquare: string = '',
   description: string = '',
-  pinnedFrameUrl: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
-    pinnedFrameUrl,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissionsWithInboxIds(
@@ -747,13 +743,11 @@ export async function createGroupWithInboxIds<
   name: string = '',
   imageUrlSquare: string = '',
   description: string = '',
-  pinnedFrameUrl: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
-    pinnedFrameUrl,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupWithInboxIds(
@@ -776,13 +770,11 @@ export async function createGroupCustomPermissions<
   name: string = '',
   imageUrlSquare: string = '',
   description: string = '',
-  pinnedFrameUrl: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
-    pinnedFrameUrl,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissions(
@@ -918,25 +910,6 @@ export function updateGroupDescription(
   description: string
 ): Promise<void> {
   return XMTPModule.updateGroupDescription(installationId, id, description)
-}
-
-export function groupPinnedFrameUrl(
-  installationId: InstallationId,
-  id: ConversationId
-): string | PromiseLike<string> {
-  return XMTPModule.groupPinnedFrameUrl(installationId, id)
-}
-
-export function updateGroupPinnedFrameUrl(
-  installationId: InstallationId,
-  id: ConversationId,
-  pinnedFrameUrl: string
-): Promise<void> {
-  return XMTPModule.updateGroupPinnedFrameUrl(
-    installationId,
-    id,
-    pinnedFrameUrl
-  )
 }
 
 export function isGroupActive(
@@ -1100,18 +1073,6 @@ export async function updateGroupDescriptionPermission(
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
   return XMTPModule.updateGroupDescriptionPermission(
-    clientInstallationId,
-    id,
-    permissionOption
-  )
-}
-
-export async function updateGroupPinnedFrameUrlPermission(
-  clientInstallationId: InstallationId,
-  id: ConversationId,
-  permissionOption: PermissionUpdateOption
-): Promise<void> {
-  return XMTPModule.updateGroupPinnedFrameUrlPermission(
     clientInstallationId,
     id,
     permissionOption
@@ -1311,7 +1272,6 @@ interface CreateGroupParams {
   name: string
   imageUrlSquare: string
   description: string
-  pinnedFrameUrl: string
 }
 
 export { Client } from './lib/Client'

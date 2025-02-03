@@ -796,7 +796,6 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
-                    createGroupParams.groupPinnedFrameUrl
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -818,7 +817,6 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
-                    createGroupParams.groupPinnedFrameUrl
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -840,7 +838,6 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
-                    createGroupParams.groupPinnedFrameUrl
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -862,7 +859,6 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
-                    createGroupParams.groupPinnedFrameUrl
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1025,26 +1021,6 @@ class XMTPModule : Module() {
                 val group = client.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateGroupDescription(groupDescription)
-            }
-        }
-
-        AsyncFunction("groupPinnedFrameUrl") Coroutine { installationId: String, groupId: String ->
-            withContext(Dispatchers.IO) {
-                logV("groupPinnedFrameUrl")
-                val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
-                    ?: throw XMTPException("no group found for $groupId")
-                group.pinnedFrameUrl
-            }
-        }
-
-        AsyncFunction("updateGroupPinnedFrameUrl") Coroutine { installationId: String, groupId: String, pinnedFrameUrl: String ->
-            withContext(Dispatchers.IO) {
-                logV("updateGroupPinnedFrameUrl")
-                val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
-                    ?: throw XMTPException("no group found for $groupId")
-                group.updateGroupPinnedFrameUrl(pinnedFrameUrl)
             }
         }
 
@@ -1225,16 +1201,6 @@ class XMTPModule : Module() {
                 val group = client.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateGroupDescriptionPermission(getPermissionOption(newPermission))
-            }
-        }
-
-        AsyncFunction("updateGroupPinnedFrameUrlPermission") Coroutine { clientInstallationId: String, groupId: String, newPermission: String ->
-            withContext(Dispatchers.IO) {
-                logV("updateGroupPinnedFrameUrlPermission")
-                val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
-                    ?: throw XMTPException("no group found for $groupId")
-                group.updateGroupPinnedFrameUrlPermission(getPermissionOption(newPermission))
             }
         }
 
