@@ -1,5 +1,17 @@
 # @xmtp/react-native-sdk
 
+## 3.1.10
+
+### Patch Changes
+
+- 2998faa: Revert client removal
+
+## 3.1.9
+
+### Patch Changes
+
+- 29f8783: fixes exportNativeLogs on iOS
+
 ## 3.1.8
 
 ### Patch Changes

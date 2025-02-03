@@ -1961,9 +1961,7 @@ public class XMTPModule: Module {
 					let entries = try logStore.getEntries(at: position)
 
 					for entry in entries {
-						if let logEntry = entry as? OSLogEntryLog,
-							logEntry.composedMessage.contains("libxmtp")
-						{
+						if let logEntry = entry as? OSLogEntryLog {
 							logOutput.append(
 								"\(logEntry.date): \(logEntry.composedMessage)\n"
 							)

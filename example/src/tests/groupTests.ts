@@ -25,6 +25,16 @@ function test(name: string, perform: () => Promise<boolean>) {
   groupTests.push({ name: String(counter++) + '. ' + name, run: perform })
 }
 
+test('verify exportNativeLogs', async () => {
+  await createClients(2)
+  const logs = await Client.exportNativeLogs()
+  assert(
+    logs.includes('Created XMTP client for inbox_id'),
+    'Logs should contain Initialized identity inbox_id='
+  )
+  return true
+})
+
 test('can create a group with inbox ids default permissions', async () => {
   const [alix, bo, caro] = await createClients(3)
 
@@ -168,12 +178,12 @@ test('groups cannot fork', async () => {
     const lastMessage = messages[0]
     // console.log(lastMessage);
     console.log(
-      `${receiverGroupToCheck.clientInstallationId} sees ${messages.length} messages in group`
+      `${receiverGroupToCheck.client.installationId} sees ${messages.length} messages in group`
     )
     assert(
       lastMessage !== undefined &&
         lastMessage.nativeContent.text === messageContent,
-      `${receiverGroupToCheck.clientInstallationId} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
+      `${receiverGroupToCheck.client.installationId} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
     )
     // }
   }
@@ -287,12 +297,12 @@ test('groups cannot fork short version', async () => {
     })
     const lastMessage = messages[0]
     console.log(
-      `${receiverGroup.clientInstallationId} sees ${messages.length} messages in group`
+      `${receiverGroup.client.installationId} sees ${messages.length} messages in group`
     )
     assert(
       lastMessage !== undefined &&
         lastMessage.nativeContent.text === messageContent,
-      `${receiverGroup.clientInstallationId} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
+      `${receiverGroup.client.installationId} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
     )
   }
   // When forked, it stays forked even if we try 5 times
@@ -362,12 +372,12 @@ test('groups cannot fork short version - update metadata', async () => {
     })
     const lastMessage = messages[0]
     console.log(
-      `${receiverGroup.clientInstallationId} sees ${messages.length} messages in group`
+      `${receiverGroup.client.installationId} sees ${messages.length} messages in group`
     )
     assert(
       lastMessage !== undefined &&
         lastMessage.nativeContent.text === messageContent,
-      `${receiverGroup.clientInstallationId} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
+      `${receiverGroup.client.installationId} should have received the message, FORK? ${lastMessage?.nativeContent.text} !== ${messageContent}`
     )
   }
   // When forked, it stays forked even if we try 5 times
