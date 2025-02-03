@@ -157,7 +157,7 @@ test('can use reaction v2 from rust/proto', async () => {
   const regularMessages = await group.messages()
   assert(
     regularMessages.length === 6,
-    'Should have 5 total messages including reactions, but got ' +
+    'Should have 6 total messages including reactions, but got ' +
       regularMessages.length
   )
 
