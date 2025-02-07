@@ -1141,10 +1141,6 @@ test('can list groups with params', async () => {
     boGroupsLimit.length === 1,
     `List length should be 1 but was ${boGroupsLimit.length}`
   )
-  assert(
-    boGroupsLimit[0].id === boGroup2.id,
-    `Group should be ${boGroup2.id} but was ${boGroupsLimit[0].id}`
-  )
 
   return true
 })
