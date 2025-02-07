@@ -618,6 +618,22 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("conversationMessagesWithReactions") Coroutine { installationId: String, conversationId: String, limit: Int?, beforeNs: Long?, afterNs: Long?, direction: String? ->
+            withContext(Dispatchers.IO) {
+                logV("conversationMessagesWithReactions")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                conversation?.messagesWithReactions(
+                    limit = limit,
+                    beforeNs = beforeNs,
+                    afterNs = afterNs,
+                    direction = Message.SortDirection.valueOf(
+                        direction ?: "DESCENDING"
+                    )
+                )?.map { MessageWrapper.encode(it) }
+            }
+        }
+
         AsyncFunction("findMessage") Coroutine { installationId: String, messageId: String ->
             withContext(Dispatchers.IO) {
                 logV("findMessage")

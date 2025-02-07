@@ -38,6 +38,7 @@ export * from './context'
 export * from './hooks'
 export { GroupUpdatedCodec } from './lib/NativeCodecs/GroupUpdatedCodec'
 export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
+export { ReactionV2Codec } from './lib/NativeCodecs/ReactionV2Codec'
 export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
 export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
@@ -457,6 +458,29 @@ export async function conversationMessages<
   direction?: MessageOrder | undefined
 ): Promise<DecodedMessageUnion<ContentTypes>[]> {
   const messages = await XMTPModule.conversationMessages(
+    clientInstallationId,
+    conversationId,
+    limit,
+    beforeNs,
+    afterNs,
+    direction
+  )
+  return messages.map((json: string) => {
+    return DecodedMessage.from(json)
+  })
+}
+
+export async function conversationMessagesWithReactions<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  clientInstallationId: InstallationId,
+  conversationId: ConversationId,
+  limit?: number | undefined,
+  beforeNs?: number | undefined,
+  afterNs?: number | undefined,
+  direction?: MessageOrder | undefined
+): Promise<DecodedMessageUnion<ContentTypes>[]> {
+  const messages = await XMTPModule.conversationMessagesWithReactions(
     clientInstallationId,
     conversationId,
     limit,

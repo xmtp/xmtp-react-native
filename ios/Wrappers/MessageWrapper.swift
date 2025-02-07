@@ -1,5 +1,6 @@
 import Foundation
 import XMTP
+import LibXMTP
 
 // Wrapper around XMTP.DecodedMessage to allow passing these objects back
 // into react native.
@@ -17,7 +18,10 @@ struct MessageWrapper {
 			"sentNs": model.sentAtNs,
 			"fallback": fallback,
 			"deliveryStatus": model.deliveryStatus.rawValue.uppercased(),
-		]
+            "childMessages": model.childMessages?.map { childMessage in
+                try? encodeToObj(childMessage)
+            }
+        ]
 	}
 
 	static func encode(_ model: XMTP.Message) throws -> String {
@@ -41,6 +45,7 @@ struct ContentJson {
 	static var codecs: [any ContentCodec] = [
 		TextCodec(),
 		ReactionCodec(),
+		ReactionV2Codec(),
 		AttachmentCodec(),
 		ReplyCodec(),
 		RemoteAttachmentCodec(),
@@ -70,7 +75,16 @@ struct ContentJson {
 				content: reaction["content"] as? String ?? "",
 				schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "")
 			))
-		} else if let reply = obj["reply"] as? [String: Any] {
+		} else if let reaction = obj["reactionV2"] as? [String: Any] {
+            return ContentJson(type: ContentTypeReactionV2, content: FfiReaction(
+				reference: reaction["reference"] as? String ?? "",
+				// Update if we add referenceInboxId to ../src/lib/types/ContentCodec.ts#L19-L24
+                referenceInboxId: "",
+				action: ReactionV2Action.fromString(reaction["action"] as? String ?? ""),
+				content: reaction["content"] as? String ?? "",
+				schema: ReactionV2Schema.fromString(reaction["schema"] as? String ?? "")
+			))
+		}else if let reply = obj["reply"] as? [String: Any] {
 			guard let nestedContent = reply["content"] as? [String: Any] else {
 				throw Error.badReplyContent
 			}
@@ -133,6 +147,22 @@ struct ContentJson {
 				"schema": reaction.schema.rawValue,
 				"content": reaction.content,
 			]]
+        case ContentTypeReactionV2.id:
+            guard let encodedContent = encodedContent else {
+                return ["error": "Missing encoded content for reaction"]
+            }
+            do {
+                let bytes = try encodedContent.serializedData()
+                let reaction = try decodeReaction(bytes: bytes)
+                return ["reaction": [
+                    "reference": reaction.reference,
+                    "action": ReactionV2Action.toString(reaction.action),
+                    "schema": ReactionV2Schema.toString(reaction.schema),
+                    "content": reaction.content,
+                ]]
+            } catch {
+                return ["error": "Failed to decode reaction: \(error.localizedDescription)"]
+            }
 		case ContentTypeReply.id where content is XMTP.Reply:
 			let reply = content as! XMTP.Reply
 			let nested = ContentJson(type: reply.contentType, content: reply.content)
@@ -192,6 +222,59 @@ struct ContentJson {
 			}
 		}
 	}
+	
+}
+
+struct ReactionV2Schema {
+    static func fromString(_ schema: String) -> FfiReactionSchema {
+        switch schema {
+        case "unicode":
+            return .unicode
+        case "shortcode":
+            return .shortcode
+        case "custom":
+            return .custom
+        default:
+            return .unknown
+        }
+    }
+    
+    static func toString(_ schema: FfiReactionSchema) -> String {
+        switch schema {
+        case .unicode:
+            return "unicode"
+        case .shortcode:
+            return "shortcode"
+        case .custom:
+            return "custom"
+        case .unknown:
+            return "unknown"
+        }
+    }
+}
+
+struct ReactionV2Action {
+    static func fromString(_ action: String) -> FfiReactionAction {
+        switch action {
+        case "removed":
+            return .removed
+        case "added":
+            return .added
+        default:
+            return .unknown
+        }
+    }
+    
+    static func toString(_ action: FfiReactionAction) -> String {
+        switch action {
+        case .removed:
+            return "removed"
+        case .added:
+            return "added"
+        case .unknown:
+            return "unknown"
+        }
+    }
 }
 
 struct EncryptedAttachmentMetadata {

@@ -47,6 +47,7 @@
   "license": "MIT",
   "homepage": "https://github.com/xmtp/xmtp-react-native#readme",
   "dependencies": {
+    "@changesets/changelog-git": "^0.2.0",
     "@changesets/cli": "^2.27.10",
     "@ethersproject/bytes": "^5.7.0",
     "@msgpack/msgpack": "^3.0.0-beta2",

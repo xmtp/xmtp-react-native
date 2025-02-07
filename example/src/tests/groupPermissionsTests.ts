@@ -480,7 +480,7 @@ test('can create a group with custom permissions', async () => {
     updateGroupNamePolicy: 'admin',
     updateGroupDescriptionPolicy: 'allow',
     updateGroupImagePolicy: 'admin',
-    updateMessageExpirationPolicy: 'deny',
+    updateMessageDisappearingPolicy: 'deny',
   }
 
   // Bo creates a group with Alix and Caro with custom permissions

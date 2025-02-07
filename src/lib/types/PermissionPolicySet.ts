@@ -14,5 +14,5 @@ export type PermissionPolicySet = {
   updateGroupNamePolicy: PermissionOption
   updateGroupDescriptionPolicy: PermissionOption
   updateGroupImagePolicy: PermissionOption
-  updateMessageExpirationPolicy: PermissionOption
+  updateMessageDisappearingPolicy: PermissionOption
 }

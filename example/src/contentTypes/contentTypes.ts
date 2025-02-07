@@ -1,6 +1,7 @@
 import {
   GroupUpdatedCodec,
   ReactionCodec,
+  ReactionV2Codec,
   ReplyCodec,
   RemoteAttachmentCodec,
   StaticAttachmentCodec,
@@ -8,6 +9,7 @@ import {
 
 export const supportedCodecs = [
   new ReactionCodec(),
+  new ReactionV2Codec(),
   new ReplyCodec(),
   new RemoteAttachmentCodec(),
   new StaticAttachmentCodec(),
