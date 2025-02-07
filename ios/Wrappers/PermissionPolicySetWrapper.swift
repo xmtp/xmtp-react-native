@@ -50,7 +50,6 @@ class PermissionPolicySetWrapper {
             "updateGroupNamePolicy": fromPermissionOption(policySet.updateGroupNamePolicy),
             "updateGroupDescriptionPolicy": fromPermissionOption(policySet.updateGroupDescriptionPolicy),
             "updateGroupImagePolicy": fromPermissionOption(policySet.updateGroupImagePolicy),
-            "updateGroupPinnedFrameUrlPolicy": fromPermissionOption(policySet.updateGroupPinnedFrameUrlPolicy),
             "updateMessageDisappearingPolicy": fromPermissionOption(policySet.updateMessageDisappearingPolicy)
         ]
     }
@@ -72,7 +71,6 @@ class PermissionPolicySetWrapper {
             updateGroupNamePolicy: createPermissionOption(from: jsonDict["updateGroupNamePolicy"] as? String ?? ""),
             updateGroupDescriptionPolicy: createPermissionOption(from: jsonDict["updateGroupDescriptionPolicy"] as? String ?? ""),
             updateGroupImagePolicy: createPermissionOption(from: jsonDict["updateGroupImagePolicy"] as? String ?? ""),
-            updateGroupPinnedFrameUrlPolicy: createPermissionOption(from: jsonDict["updateGroupPinnedFrameUrlPolicy"] as? String ?? ""),
             updateMessageDisappearingPolicy: createPermissionOption(from: jsonDict["updateMessageDisappearingPolicy"] as? String ?? "")
         )
     }

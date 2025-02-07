@@ -468,56 +468,6 @@ test('can update group permissions', async () => {
   return true
 })
 
-test('can update group pinned frame', async () => {
-  // Create clients
-  const [alix, bo, caro] = await createClients(3)
-
-  // Bo creates a group with Alix and Caro
-  const boGroup = await bo.conversations.newGroup(
-    [alix.address, caro.address],
-    { permissionLevel: 'admin_only' }
-  )
-
-  // Verify that alix can not update the group pinned frame
-  await alix.conversations.sync()
-  const alixGroup = (await alix.conversations.listGroups())[0]
-  try {
-    await alixGroup.updateGroupPinnedFrameUrl('new pinned frame')
-    return false
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    // expected
-  }
-
-  // Verify that bo can update the group pinned frame
-  await boGroup.updateGroupPinnedFrameUrl('new pinned frame 2')
-  await boGroup.sync()
-  assert(
-    (await boGroup.groupPinnedFrameUrl()) === 'new pinned frame 2',
-    `boGroup.groupPinnedFrameUrl should be "new pinned frame 2" but was ${boGroup.groupPinnedFrameUrl}`
-  )
-
-  // Verify that bo can update the pinned frame permission
-  await boGroup.updateGroupPinnedFrameUrlPermission('allow')
-  await boGroup.sync()
-  assert(
-    (await boGroup.permissionPolicySet()).updateGroupPinnedFrameUrlPolicy ===
-      'allow',
-    `boGroup.permissionPolicySet.updateGroupPinnedFrameUrlPolicy should be allow but was ${(await boGroup.permissionPolicySet()).updateGroupPinnedFrameUrlPolicy}`
-  )
-
-  // Verify that Alix can now update pinned frames
-  await alixGroup.updateGroupPinnedFrameUrl('new pinned frame 3')
-  await alixGroup.sync()
-  await boGroup.sync()
-  assert(
-    (await boGroup.groupPinnedFrameUrl()) === 'new pinned frame 3',
-    `alixGroup.groupPinnedFrameUrl should be "new pinned frame 3" but was ${boGroup.groupPinnedFrameUrl}`
-  )
-
-  return true
-})
-
 test('can create a group with custom permissions', async () => {
   // Create clients
   const [alix, bo, caro] = await createClients(3)
@@ -530,7 +480,6 @@ test('can create a group with custom permissions', async () => {
     updateGroupNamePolicy: 'admin',
     updateGroupDescriptionPolicy: 'allow',
     updateGroupImagePolicy: 'admin',
-    updateGroupPinnedFrameUrlPolicy: 'deny',
     updateMessageDisappearingPolicy: 'deny',
   }
 
@@ -577,20 +526,6 @@ test('can create a group with custom permissions', async () => {
       customPermissionsPolicySet.updateGroupImagePolicy,
     `permissions.updateGroupImagePolicy should be ${customPermissionsPolicySet.updateGroupImagePolicy} but was ${permissions.updateGroupImagePolicy}`
   )
-  assert(
-    permissions.updateGroupPinnedFrameUrlPolicy ===
-      customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy,
-    `permissions.updateGroupPinnedFrameUrlPolicy should be ${customPermissionsPolicySet.updateGroupPinnedFrameUrlPolicy} but was ${permissions.updateGroupPinnedFrameUrlPolicy}`
-  )
-
-  // Verify that bo can not update the pinned frame even though they are a super admin
-  try {
-    await boGroup.updateGroupPinnedFrameUrl('new pinned frame')
-    return false
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    // expected
-  }
 
   // Verify that alix can update the group description
   await alixGroup.updateGroupDescription('new description')
@@ -625,8 +560,7 @@ test('creating a group with invalid permissions should fail', async () => {
     updateGroupNamePolicy: 'admin',
     updateGroupDescriptionPolicy: 'allow',
     updateGroupImagePolicy: 'admin',
-    updateGroupPinnedFrameUrlPolicy: 'deny',
-    updateMessageExpirationPolicy: 'admin',
+    updateMessageDisappearingPolicy: 'admin',
   }
 
   // Bo creates a group with Alix and Caro

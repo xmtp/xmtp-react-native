@@ -3,5 +3,4 @@ export type CreateGroupOptions = {
   name?: string | undefined
   imageUrlSquare?: string | undefined
   description?: string | undefined
-  pinnedFrameUrl?: string | undefined
 }

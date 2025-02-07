@@ -139,7 +139,6 @@ test('creating a new conversation', async () => {
       name: 'Group Name',
       imageUrlSquare: 'imageurl.com',
       description: 'group description',
-      pinnedFrameUrl: 'pinnedframe.com',
     }
   )
   const end4 = performance.now()

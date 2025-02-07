@@ -951,8 +951,7 @@ public class XMTPModule: Module {
 					permissions: permissionLevel,
 					name: createGroupParams.groupName,
 					imageUrlSquare: createGroupParams.groupImageUrlSquare,
-					description: createGroupParams.groupDescription,
-					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+					description: createGroupParams.groupDescription
 				)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -984,8 +983,7 @@ public class XMTPModule: Module {
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
 						imageUrlSquare: createGroupParams.groupImageUrlSquare,
-						description: createGroupParams.groupDescription,
-						pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+						description: createGroupParams.groupDescription
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1022,8 +1020,7 @@ public class XMTPModule: Module {
 					permissions: permissionLevel,
 					name: createGroupParams.groupName,
 					imageUrlSquare: createGroupParams.groupImageUrlSquare,
-					description: createGroupParams.groupDescription,
-					pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+					description: createGroupParams.groupDescription
 				)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1055,8 +1052,7 @@ public class XMTPModule: Module {
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
 						imageUrlSquare: createGroupParams.groupImageUrlSquare,
-						description: createGroupParams.groupDescription,
-						pinnedFrameUrl: createGroupParams.groupPinnedFrameUrl
+						description: createGroupParams.groupDescription
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1317,37 +1313,6 @@ public class XMTPModule: Module {
 
 			try await group.updateGroupDescription(
 				groupDescription: description)
-		}
-
-		AsyncFunction("groupPinnedFrameUrl") {
-			(installationId: String, id: String) -> String in
-			guard
-				let client = await clientsManager.getClient(key: installationId)
-			else {
-				throw Error.noClient
-			}
-			guard let group = try client.findGroup(groupId: id) else {
-				throw Error.conversationNotFound(
-					"no conversation found for \(id)")
-			}
-
-			return try group.groupPinnedFrameUrl()
-		}
-
-		AsyncFunction("updateGroupPinnedFrameUrl") {
-			(installationId: String, id: String, pinnedFrameUrl: String) in
-			guard
-				let client = await clientsManager.getClient(key: installationId)
-			else {
-				throw Error.noClient
-			}
-			guard let group = try client.findGroup(groupId: id) else {
-				throw Error.conversationNotFound(
-					"no conversation found for \(id)")
-			}
-
-			try await group.updateGroupPinnedFrameUrl(
-				groupPinnedFrameUrl: pinnedFrameUrl)
 		}
 
 		AsyncFunction("isGroupActive") {
@@ -1629,23 +1594,6 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 			try await group.updateGroupDescriptionPermission(
-				newPermissionOption: getPermissionOption(
-					permission: newPermission))
-		}
-
-		AsyncFunction("updateGroupPinnedFrameUrlPermission") {
-			(clientInstallationId: String, id: String, newPermission: String) in
-			guard
-				let client = await clientsManager.getClient(
-					key: clientInstallationId)
-			else {
-				throw Error.noClient
-			}
-			guard let group = try client.findGroup(groupId: id) else {
-				throw Error.conversationNotFound(
-					"no conversation found for \(id)")
-			}
-			try await group.updateGroupPinnedFrameUrlPermission(
 				newPermissionOption: getPermissionOption(
 					permission: newPermission))
 		}

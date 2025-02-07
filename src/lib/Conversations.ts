@@ -179,8 +179,7 @@ export default class Conversations<
       opts?.permissionLevel,
       opts?.name,
       opts?.imageUrlSquare,
-      opts?.description,
-      opts?.pinnedFrameUrl
+      opts?.description
     )
   }
 
@@ -205,8 +204,7 @@ export default class Conversations<
       permissionPolicySet,
       opts?.name,
       opts?.imageUrlSquare,
-      opts?.description,
-      opts?.pinnedFrameUrl
+      opts?.description
     )
   }
 
@@ -229,8 +227,7 @@ export default class Conversations<
       opts?.permissionLevel,
       opts?.name,
       opts?.imageUrlSquare,
-      opts?.description,
-      opts?.pinnedFrameUrl
+      opts?.description
     )
   }
 
@@ -255,8 +252,7 @@ export default class Conversations<
       permissionPolicySet,
       opts?.name,
       opts?.imageUrlSquare,
-      opts?.description,
-      opts?.pinnedFrameUrl
+      opts?.description
     )
   }
 
