@@ -176,6 +176,11 @@ class XMTPModule : Module() {
                 a.apply { set(i, v.toByte()) }
             }
         val historySyncUrl = authOptions.historySyncUrl
+            ?: when (authOptions.environment) {
+                "production" -> "https://message-history.production.ephemera.network/"
+                "local" -> "http://10.0.2.2:5558"
+                else -> "https://message-history.dev.ephemera.network/"
+            }
         return ClientOptions(
             api = apiEnvironments(authOptions.environment, authOptions.appVersion),
             preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
