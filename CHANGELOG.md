@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 3.1.11
+
+### Patch Changes
+
+- 4548cee: Remove pinned frame url
+
 ## 3.1.10
 
 ### Patch Changes
