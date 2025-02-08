@@ -484,7 +484,7 @@ test('can create a group with custom permissions', async () => {
   }
 
   // Bo creates a group with Alix and Caro with custom permissions
-  const boGroup = await bo.conversations.newGroupCustomPermissions(
+  await bo.conversations.newGroupCustomPermissions(
     [alix.address, caro.address],
     customPermissionsPolicySet
   )
