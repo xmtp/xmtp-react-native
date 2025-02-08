@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 3.1.12
+
+### Patch Changes
+
+- c85ff9e: Fix streaming issue
+
 ## 3.1.11
 
 ### Patch Changes
