@@ -707,14 +707,6 @@ test('unpublished messages handling', async () => {
   // Prepare a message in the group
   const preparedMessageId = await alixGroup.prepareMessage('Test text')
 
-  // Check if the group is allowed after preparing the message
-  const isGroupAllowed = await alixClient.preferences.conversationConsentState(
-    boGroup.id
-  )
-  if (isGroupAllowed !== 'allowed') {
-    throw new Error('Group should be allowed after preparing a message')
-  }
-
   // Verify the message count in the group
   let messageCount = (await alixGroup.messages()).length
   if (messageCount !== 1) {
@@ -729,6 +721,14 @@ test('unpublished messages handling', async () => {
   messageCount = (await alixGroup.messages()).length
   if (messageCount !== 1) {
     throw new Error(`Message count should be 1, but it is ${messageCount}`)
+  }
+
+  // Check if the group is allowed after preparing the message
+  const isGroupAllowed = await alixClient.preferences.conversationConsentState(
+    boGroup.id
+  )
+  if (isGroupAllowed !== 'allowed') {
+    throw new Error('Group should be allowed after preparing a message')
   }
 
   // Retrieve all messages and verify the prepared message ID
