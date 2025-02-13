@@ -27,7 +27,6 @@ export type MultiRemoteAttachmentContent = {
   attachments: RemoteAttachmentInfo[]
 }
 
-
 export type StaticAttachmentContent = {
   filename: string
   mimeType: string

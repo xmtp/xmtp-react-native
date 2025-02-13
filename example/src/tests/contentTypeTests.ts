@@ -1,7 +1,13 @@
 import ReactNativeBlobUtil from 'react-native-blob-util'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
-import { MultiRemoteAttachmentCodec, MultiRemoteAttachmentContent, ReactionContent, RemoteAttachmentContent, RemoteAttachmentInfo } from '../../../src/index'
+import {
+  MultiRemoteAttachmentCodec,
+  MultiRemoteAttachmentContent,
+  ReactionContent,
+  RemoteAttachmentContent,
+  RemoteAttachmentInfo,
+} from '../../../src/index'
 const { fs } = ReactNativeBlobUtil
 
 export const contentTypeTests: Test[] = []
@@ -305,7 +311,7 @@ test('remote attachments should work', async () => {
   return true
 })
 
-let attachmentUrlMap: Map<string, string> = new Map()
+const attachmentUrlMap: Map<string, string> = new Map()
 
 function testUploadAttachmentForUrl(uriLocalEncryptedData: string): string {
   const url = 'https://' + Math.random().toString(36).substring(2, 15) + '.com'
@@ -357,8 +363,8 @@ test('multi remote attachments should work', async () => {
     console.log('encryptedLocalFileUri saved to: ', encryptedLocalFileUri)
 
     const url = testUploadAttachmentForUrl(encryptedLocalFileUri)
-    const remoteAttachmentInfo = MultiRemoteAttachmentCodec.buildMultiRemoteAttachmentInfo(url, metadata)
-    console.log('XOOM remoteAttachmentInfo: ', JSON.stringify(remoteAttachmentInfo))
+    const remoteAttachmentInfo =
+      MultiRemoteAttachmentCodec.buildMultiRemoteAttachmentInfo(url, metadata)
     remoteAttachments.push(remoteAttachmentInfo)
   }
 
@@ -384,20 +390,29 @@ test('multi remote attachments should work', async () => {
     throw new Error('Expected remoteAttachment')
   }
 
-  const multiRemoteAttachment = message.content() as MultiRemoteAttachmentContent
-  if (multiRemoteAttachment.attachments.length != 2) {
+  const multiRemoteAttachment =
+    message.content() as MultiRemoteAttachmentContent
+  if (multiRemoteAttachment.attachments.length !== 2) {
     throw new Error('Expected 2 attachments')
   }
 
-  assert(multiRemoteAttachment.attachments[0].url === remoteAttachments[0].url, 'Expected url to match')
-  assert(multiRemoteAttachment.attachments[1].url === remoteAttachments[1].url, 'Expected url to match')
-  
+  assert(
+    multiRemoteAttachment.attachments[0].url === remoteAttachments[0].url,
+    'Expected url to match'
+  )
+  assert(
+    multiRemoteAttachment.attachments[1].url === remoteAttachments[1].url,
+    'Expected url to match'
+  )
+
   // // Show how when we can convert a multiRemoteAttachment back into decrypted encoded content
 
   const files: string[] = []
   for (const attachment of multiRemoteAttachment.attachments) {
     // Simulate downloading the encrypted payload from the URL and saving it locally
-    const attachmentUriAfterDownload: string = testDownloadFromUrlForLocalUri(attachment.url)
+    const attachmentUriAfterDownload: string = testDownloadFromUrlForLocalUri(
+      attachment.url
+    )
     // Decrypt the local file
     const decryptedLocalAttachment = await alix.decryptAttachment({
       encryptedLocalFileUri: attachmentUriAfterDownload,
@@ -409,9 +424,16 @@ test('multi remote attachments should work', async () => {
         filename: attachment.filename,
       } as RemoteAttachmentContent,
     })
-    assert(decryptedLocalAttachment.fileUri.startsWith('file:/'), 'Expected fileUri to start with file:// but it is ' + decryptedLocalAttachment.fileUri)
+    assert(
+      decryptedLocalAttachment.fileUri.startsWith('file:/'),
+      'Expected fileUri to start with file:// but it is ' +
+        decryptedLocalAttachment.fileUri
+    )
     // Read the decrypted file
-    const text = await fs.readFile(new URL(decryptedLocalAttachment.fileUri).pathname, 'utf8')
+    const text = await fs.readFile(
+      new URL(decryptedLocalAttachment.fileUri).pathname,
+      'utf8'
+    )
     files.push(text)
     // break;
   }

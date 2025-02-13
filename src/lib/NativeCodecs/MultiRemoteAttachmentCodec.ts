@@ -8,9 +8,13 @@ import {
   RemoteAttachmentMetadata,
 } from '../ContentCodec'
 
-export class MultiRemoteAttachmentCodec implements NativeContentCodec<MultiRemoteAttachmentContent> {
-
-  static buildMultiRemoteAttachmentInfo(url: string, metadata: RemoteAttachmentMetadata): RemoteAttachmentInfo {
+export class MultiRemoteAttachmentCodec
+  implements NativeContentCodec<MultiRemoteAttachmentContent>
+{
+  static buildMultiRemoteAttachmentInfo(
+    url: string,
+    metadata: RemoteAttachmentMetadata
+  ): RemoteAttachmentInfo {
     const multiMetadata: MultiRemoteAttachmentMetadata = {
       secret: metadata.secret,
       salt: metadata.salt,
@@ -22,7 +26,7 @@ export class MultiRemoteAttachmentCodec implements NativeContentCodec<MultiRemot
     return {
       ...multiMetadata,
       scheme: 'https://',
-      url: url,
+      url,
     }
   }
 

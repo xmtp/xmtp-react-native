@@ -713,7 +713,7 @@ export async function createGroup<
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = '',
+  description: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -740,7 +740,7 @@ export async function createGroupCustomPermissionsWithInboxIds<
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = '',
+  description: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -767,7 +767,7 @@ export async function createGroupWithInboxIds<
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = '',
+  description: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -794,7 +794,7 @@ export async function createGroupCustomPermissions<
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = '',
+  description: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
