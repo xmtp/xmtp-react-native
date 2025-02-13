@@ -208,7 +208,7 @@ class ContentJson(
                         "scheme" to "https://",
                         "url" to attachment.url,
                         "filename" to attachment.filename,
-                        "contentLength" to attachment.contentLengthKb.toString(),
+                        "contentLength" to attachment.contentLength.toString(),
                         "contentDigest" to attachment.contentDigest,
                         "secret" to Hex.encodeHex(attachment.secret, false),
                         "salt" to Hex.encodeHex(attachment.salt, false ),
