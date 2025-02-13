@@ -1,7 +1,9 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import android.util.Base64
+import com.facebook.common.util.Hex
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.protobuf.ByteString
@@ -11,6 +13,7 @@ import org.xmtp.android.library.codecs.AttachmentCodec
 import org.xmtp.android.library.codecs.ContentTypeAttachment
 import org.xmtp.android.library.codecs.ContentTypeGroupUpdated
 import org.xmtp.android.library.codecs.ContentTypeId
+import org.xmtp.android.library.codecs.ContentTypeMultiRemoteAttachment
 import org.xmtp.android.library.codecs.ContentTypeReaction
 import org.xmtp.android.library.codecs.ContentTypeReactionV2
 import org.xmtp.android.library.codecs.ContentTypeReadReceipt
@@ -20,6 +23,7 @@ import org.xmtp.android.library.codecs.ContentTypeText
 import org.xmtp.android.library.codecs.EncodedContent
 import org.xmtp.android.library.codecs.GroupUpdated
 import org.xmtp.android.library.codecs.GroupUpdatedCodec
+import org.xmtp.android.library.codecs.MultiRemoteAttachment
 import org.xmtp.android.library.codecs.Reaction
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.ReactionV2Codec
@@ -27,6 +31,8 @@ import org.xmtp.android.library.codecs.ReadReceipt
 import org.xmtp.android.library.codecs.ReadReceiptCodec
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.RemoteAttachmentCodec
+import org.xmtp.android.library.codecs.MultiRemoteAttachmentCodec
+import org.xmtp.android.library.codecs.RemoteAttachmentInfo
 import org.xmtp.android.library.codecs.Reply
 import org.xmtp.android.library.codecs.ReplyCodec
 import org.xmtp.android.library.codecs.TextCodec
@@ -35,9 +41,11 @@ import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.codecs.getReactionAction
 import org.xmtp.android.library.codecs.getReactionSchema
 import org.xmtp.android.library.codecs.id
+import uniffi.xmtpv3.FfiMultiRemoteAttachment
 import uniffi.xmtpv3.FfiReaction
 import uniffi.xmtpv3.FfiReactionAction
 import uniffi.xmtpv3.FfiReactionSchema
+import uniffi.xmtpv3.decodeMultiRemoteAttachment
 import uniffi.xmtpv3.decodeReaction
 import java.net.URL
 
@@ -58,6 +66,7 @@ class ContentJson(
             Client.register(AttachmentCodec())
             Client.register(ReactionCodec())
             Client.register(RemoteAttachmentCodec())
+            Client.register(MultiRemoteAttachmentCodec())
             Client.register(ReplyCodec())
             Client.register(ReadReceiptCodec())
             Client.register(GroupUpdatedCodec())
@@ -92,6 +101,29 @@ class ContentJson(
                         filename = metadata.filename,
                     )
                 )
+            } else if (obj.has("multiRemoteAttachment")) {
+                val multiRemoteAttachment = obj.get("multiRemoteAttachment").asJsonObject
+                val remoteAttachments = multiRemoteAttachment.get("attachments").asJsonArray
+                val attachments: MutableList<RemoteAttachmentInfo> = ArrayList()
+                for(attachmentElement: JsonElement in remoteAttachments) {
+                    val attachment = attachmentElement.asJsonObject
+                    val metadata = EncryptedAttachmentMetadata.fromJsonObj(attachment)
+                    val url = URL(attachment.get("url").asString)
+                    val remoteAttachmentInfo = RemoteAttachmentInfo(
+                        url = url.toString(),
+                        contentDigest = metadata.contentDigest,
+                        secret = metadata.secret,
+                        salt = metadata.salt,
+                        nonce = metadata.nonce,
+                        scheme = "https://",
+                        contentLength = metadata.contentLength.toLong(),
+                        filename = metadata.filename,
+                    )
+                    attachments.add(remoteAttachmentInfo)
+                }
+                return ContentJson(ContentTypeMultiRemoteAttachment, MultiRemoteAttachment(
+                    remoteAttachments = attachments
+                ))
             } else if (obj.has("reaction")) {
                 val reaction = obj.get("reaction").asJsonObject
                 return ContentJson(
@@ -168,6 +200,27 @@ class ContentJson(
                     .fromRemoteAttachment(content)
                     .toJsonMap()
             )
+
+            ContentTypeMultiRemoteAttachment.id -> {
+                 val multiRemoteAttachment: FfiMultiRemoteAttachment = decodeMultiRemoteAttachment(encodedContent!!.toByteArray())
+                 val attachmentMaps = multiRemoteAttachment.attachments.map { attachment ->
+                    mapOf(
+                        "scheme" to "https://",
+                        "url" to attachment.url,
+                        "filename" to attachment.filename,
+                        "contentLength" to attachment.contentLengthKb.toString(),
+                        "contentDigest" to attachment.contentDigest,
+                        "secret" to Hex.encodeHex(attachment.secret, false),
+                        "salt" to Hex.encodeHex(attachment.salt, false ),
+                        "nonce" to Hex.encodeHex(attachment.nonce, false)
+                    )
+                }
+                 mapOf(
+                     "multiRemoteAttachment" to mapOf(
+                         "attachments" to attachmentMaps
+                     )
+                 )
+            }
 
             ContentTypeReaction.id -> mapOf(
                 "reaction" to mapOf(

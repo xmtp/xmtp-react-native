@@ -1,7 +1,7 @@
 import ReactNativeBlobUtil from 'react-native-blob-util'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
-import { ReactionContent, RemoteAttachmentContent } from '../../../src/index'
+import { MultiRemoteAttachmentCodec, MultiRemoteAttachmentContent, ReactionContent, RemoteAttachmentContent, RemoteAttachmentInfo } from '../../../src/index'
 const { fs } = ReactNativeBlobUtil
 
 export const contentTypeTests: Test[] = []
@@ -302,5 +302,122 @@ test('remote attachments should work', async () => {
   if (text !== 'hello world') {
     throw new Error('Expected text to match')
   }
+  return true
+})
+
+let attachmentUrlMap: Map<string, string> = new Map()
+
+function testUploadAttachmentForUrl(uriLocalEncryptedData: string): string {
+  const url = 'https://' + Math.random().toString(36).substring(2, 15) + '.com'
+  attachmentUrlMap.set(url, uriLocalEncryptedData)
+  return url
+}
+
+function testDownloadFromUrlForLocalUri(url: string): string {
+  const attachmentUriAfterDownload = attachmentUrlMap.get(url)
+  if (!attachmentUriAfterDownload) {
+    throw new Error('Expected attachment to exist')
+  }
+  return attachmentUriAfterDownload
+}
+
+type fileInfo = {
+  filename: string
+  fileUri: string
+}
+
+test('multi remote attachments should work', async () => {
+  const [alix, bo] = await createClients(2)
+  const convo = await alix.conversations.newConversation(bo.address)
+
+  // Alice is sending Bob two files from her phone.
+  const filename1 = `${Date.now()}.txt`
+  const file1 = `${fs.dirs.CacheDir}/${filename1}`
+  await fs.writeFile(file1, 'hello world 1', 'utf8')
+  const fileInfo1: fileInfo = {
+    filename: filename1,
+    fileUri: `file://${file1}`,
+  }
+
+  const filename2 = `${Date.now()}.txt`
+  const file2 = `${fs.dirs.CacheDir}/${filename2}`
+  await fs.writeFile(file2, 'hello world 2', 'utf8')
+  const fileInfo2: fileInfo = {
+    filename: filename2,
+    fileUri: `file://${file2}`,
+  }
+
+  const remoteAttachments: RemoteAttachmentInfo[] = []
+  for (const fileInfo of [fileInfo1, fileInfo2]) {
+    const { encryptedLocalFileUri, metadata } = await alix.encryptAttachment({
+      fileUri: fileInfo.fileUri,
+      mimeType: 'text/plain',
+      filename: fileInfo.filename,
+    })
+    console.log('encryptedLocalFileUri saved to: ', encryptedLocalFileUri)
+
+    const url = testUploadAttachmentForUrl(encryptedLocalFileUri)
+    const remoteAttachmentInfo = MultiRemoteAttachmentCodec.buildMultiRemoteAttachmentInfo(url, metadata)
+    console.log('XOOM remoteAttachmentInfo: ', JSON.stringify(remoteAttachmentInfo))
+    remoteAttachments.push(remoteAttachmentInfo)
+  }
+
+  await convo.send({
+    multiRemoteAttachment: {
+      attachments: remoteAttachments,
+    },
+  })
+
+  await delayToPropogate()
+
+  // // Now we should see the remote attachment message.
+  const messages = await convo.messages()
+  if (messages.length !== 1) {
+    throw new Error('Expected 1 message')
+  }
+  const message = messages[0]
+
+  if (message.contentTypeId !== 'xmtp.org/multiRemoteStaticAttachment:1.0') {
+    throw new Error('Expected correctly formatted typeId')
+  }
+  if (!message.content()) {
+    throw new Error('Expected remoteAttachment')
+  }
+
+  const multiRemoteAttachment = message.content() as MultiRemoteAttachmentContent
+  if (multiRemoteAttachment.attachments.length != 2) {
+    throw new Error('Expected 2 attachments')
+  }
+
+  assert(multiRemoteAttachment.attachments[0].url === remoteAttachments[0].url, 'Expected url to match')
+  assert(multiRemoteAttachment.attachments[1].url === remoteAttachments[1].url, 'Expected url to match')
+  
+  // // Show how when we can convert a multiRemoteAttachment back into decrypted encoded content
+
+  const files: string[] = []
+  for (const attachment of multiRemoteAttachment.attachments) {
+    // Simulate downloading the encrypted payload from the URL and saving it locally
+    const attachmentUriAfterDownload: string = testDownloadFromUrlForLocalUri(attachment.url)
+    // Decrypt the local file
+    const decryptedLocalAttachment = await alix.decryptAttachment({
+      encryptedLocalFileUri: attachmentUriAfterDownload,
+      metadata: {
+        secret: attachment.secret,
+        salt: attachment.salt,
+        nonce: attachment.nonce,
+        contentDigest: attachment.contentDigest,
+        filename: attachment.filename,
+      } as RemoteAttachmentContent,
+    })
+    assert(decryptedLocalAttachment.fileUri.startsWith('file:/'), 'Expected fileUri to start with file:// but it is ' + decryptedLocalAttachment.fileUri)
+    // Read the decrypted file
+    const text = await fs.readFile(new URL(decryptedLocalAttachment.fileUri).pathname, 'utf8')
+    files.push(text)
+    // break;
+  }
+
+  assert(files[0] === 'hello world 1', 'Expected text to match')
+  assert(files[1] === 'hello world 2', 'Expected text to match')
+
   return true
 })
