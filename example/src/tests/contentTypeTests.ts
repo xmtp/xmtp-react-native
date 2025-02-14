@@ -376,7 +376,7 @@ test('multi remote attachments should work', async () => {
 
   await delayToPropogate()
 
-  // // Now we should see the remote attachment message.
+  // Now we should see the remote attachment message.
   const messages = await convo.messages()
   if (messages.length !== 1) {
     throw new Error('Expected 1 message')
@@ -387,7 +387,7 @@ test('multi remote attachments should work', async () => {
     throw new Error('Expected correctly formatted typeId')
   }
   if (!message.content()) {
-    throw new Error('Expected remoteAttachment')
+    throw new Error('Expected multiRemoteAttachment')
   }
 
   const multiRemoteAttachment =
@@ -405,7 +405,7 @@ test('multi remote attachments should work', async () => {
     'Expected url to match'
   )
 
-  // // Show how when we can convert a multiRemoteAttachment back into decrypted encoded content
+ // Show how when we can convert a multiRemoteAttachment back into decrypted encoded content
 
   const files: string[] = []
   for (const attachment of multiRemoteAttachment.attachments) {
@@ -435,7 +435,6 @@ test('multi remote attachments should work', async () => {
       'utf8'
     )
     files.push(text)
-    // break;
   }
 
   assert(files[0] === 'hello world 1', 'Expected text to match')
