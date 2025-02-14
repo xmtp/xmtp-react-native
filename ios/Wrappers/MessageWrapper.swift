@@ -49,6 +49,7 @@ struct ContentJson {
 		AttachmentCodec(),
 		ReplyCodec(),
 		RemoteAttachmentCodec(),
+		MultiRemoteAttachmentCodec(),
 		ReadReceiptCodec(),
 		GroupUpdatedCodec(),
 	]
@@ -122,7 +123,30 @@ struct ContentJson {
 			content.filename = metadata.filename
 			content.contentLength = metadata.contentLength
 			return ContentJson(type: ContentTypeRemoteAttachment, content: content)
-		} else if let readReceipt = obj["readReceipt"] as? [String: Any] {
+		} else if let multiRemoteAttachment = obj["multiRemoteAttachment"] as? [String: Any] {
+            guard let attachmentsArray = multiRemoteAttachment["attachments"] as? [[String: Any]] else {
+                throw Error.badRemoteAttachmentMetadata
+            }
+            
+            let attachments = try attachmentsArray.map { attachment -> MultiRemoteAttachment.RemoteAttachmentInfo in
+                guard let metadata = try? EncryptedAttachmentMetadata.fromJsonObj(attachment),
+                      let urlString = attachment["url"] as? String else {
+                    throw Error.badRemoteAttachmentMetadata
+                }
+                
+                return MultiRemoteAttachment.RemoteAttachmentInfo(
+                    url: urlString,
+                    filename: metadata.filename,
+                    contentLength: UInt32(metadata.contentLength),
+                    contentDigest: metadata.contentDigest,
+                    nonce: metadata.nonce,
+                    scheme: "https",
+                    salt: metadata.salt,
+                    secret: metadata.secret
+                )
+            }
+            return ContentJson(type: ContentTypeMultiRemoteAttachment, content: MultiRemoteAttachment(remoteAttachments: attachments))
+        } else if let readReceipt = obj["readReceipt"] as? [String: Any] {
 			return ContentJson(type: ContentTypeReadReceipt, content: ReadReceipt())
 		} else {
 			throw Error.unknownContentType
@@ -190,6 +214,31 @@ struct ContentJson {
 				"scheme": "https://",
 				"url": remoteAttachment.url,
 			]]
+		case ContentTypeMultiRemoteAttachment.id where content is XMTP.MultiRemoteAttachment:
+            guard let encodedContent = encodedContent else {
+                return ["error": "Missing encoded content for multi remote attachment"]
+            }
+            do {
+                let bytes = try encodedContent.serializedData()
+                let multiRemoteAttachment = try decodeMultiRemoteAttachment(bytes: bytes)
+                let attachmentMaps = multiRemoteAttachment.attachments.map { attachment in
+                    return [
+                        "scheme": "https",
+                        "url": attachment.url,
+                        "filename": attachment.filename ?? "",
+                        "contentLength": String(attachment.contentLength ?? 0),
+                        "contentDigest": attachment.contentDigest,
+                        "secret": attachment.secret.toHex,
+                        "salt": attachment.salt.toHex,
+                        "nonce": attachment.nonce.toHex
+                    ]
+                }
+                return ["multiRemoteAttachment": [
+                    "attachments": attachmentMaps
+                ]]
+            } catch {
+                return ["error": "Failed to decode multi remote attachment: \(error.localizedDescription)"]
+            }
 		case ContentTypeReadReceipt.id where content is XMTP.ReadReceipt:
 			return ["readReceipt": ""]
 		case ContentTypeGroupUpdated.id where content is XMTP.GroupUpdated:
