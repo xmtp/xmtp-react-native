@@ -1045,6 +1045,47 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("disappearingMessageSettings") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("disappearingMessageSettings")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                val settings = conversation.disapperingMessageSettings
+                DisapperingMessageSettingsWrapper.encode(client, settings)
+            }
+        }
+
+        AsyncFunction("isDisappearingMessagesEnabled") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isDisappearingMessagesEnabled")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.isDisappearingMessagesEnabled
+            }
+        }
+
+        AsyncFunction("clearDisappearingMessageSettings") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("clearDisappearingMessageSettings")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.clearDisappearingMessageSettings()
+            }
+        }
+
+        AsyncFunction("updateDisappearingMessageSettings") Coroutine { installationId: String, conversationId: String, startAtNs: Long, durationInNs: Long ->
+            withContext(Dispatchers.IO) {
+                logV("updateDisappearingMessageSettings")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.updateDisappearingMessageSettings(DisappearingMessageSettings(startAtNs, durationInNs))
+            }
+        }
+
         AsyncFunction("isGroupActive") Coroutine { installationId: String, groupId: String ->
             withContext(Dispatchers.IO) {
                 logV("isGroupActive")
