@@ -41,6 +41,7 @@ export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
 export { ReactionV2Codec } from './lib/NativeCodecs/ReactionV2Codec'
 export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
+export { MultiRemoteAttachmentCodec } from './lib/NativeCodecs/MultiRemoteAttachmentCodec'
 export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
 export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
 export { TextCodec } from './lib/NativeCodecs/TextCodec'
@@ -712,7 +713,7 @@ export async function createGroup<
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = '',
+  description: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -739,7 +740,7 @@ export async function createGroupCustomPermissionsWithInboxIds<
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = '',
+  description: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -766,7 +767,7 @@ export async function createGroupWithInboxIds<
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = '',
+  description: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -793,7 +794,7 @@ export async function createGroupCustomPermissions<
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = '',
+  description: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,

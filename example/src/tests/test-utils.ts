@@ -9,6 +9,7 @@ import {
   Signer,
   ReactionCodec,
   ReactionV2Codec,
+  MultiRemoteAttachmentCodec,
 } from 'xmtp-react-native-sdk'
 
 export type Test = {
@@ -48,6 +49,7 @@ export async function createClients(
     })
     Client.register(new GroupUpdatedCodec())
     Client.register(new RemoteAttachmentCodec())
+    Client.register(new MultiRemoteAttachmentCodec())
     Client.register(new ReactionCodec())
     Client.register(new ReactionV2Codec())
     clients.push(client)

@@ -24,8 +24,10 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  ScrollView,
 } from 'react-native'
 import {
+  MultiRemoteAttachmentContent,
   RemoteAttachmentContent,
   DecodedMessage,
   StaticAttachmentContent,
@@ -43,7 +45,9 @@ import {
   useMessageReactions,
   useMessages,
   useLoadRemoteAttachment,
+  useLoadMultiRemoteAttachment,
   usePrepareRemoteAttachment,
+  usePrepareMultiRemoteAttachment,
 } from './hooks'
 
 type Attachment = {
@@ -69,12 +73,64 @@ export default function ConversationScreen({
   const [text, setText] = useState('')
   const [isShowingAttachmentModal, setShowingAttachmentModal] = useState(false)
   const [attachment, setAttachment] = useState<Attachment | null>(null)
+
   const [isAttachmentPreviewing, setAttachmentPreviewing] = useState(false)
   const [isSending, setSending] = useState(false)
   const { remoteAttachment } = usePrepareRemoteAttachment({
     fileUri: attachment?.image?.uri || attachment?.file?.uri,
     mimeType: attachment?.file?.mimeType,
   })
+  // Update state to handle multiple attachments
+  const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [previewingAttachmentIndex, setPreviewingAttachmentIndex] = useState<
+    number | null
+  >(null)
+  const { remoteAttachments } = usePrepareMultiRemoteAttachment({
+    files: attachments
+      .filter((a) => a.image?.uri || a.file?.uri) // Filter out any attachments without URIs
+      .map((a) => {
+        const uri = a.image?.uri || a.file?.uri || ''
+        // Ensure URI has file:// prefix if it doesn't already
+        const fileUri = uri.startsWith('file://') ? uri : `file://${uri}`
+        return {
+          fileUri,
+          mimeType:
+            a.file?.mimeType ||
+            (a.image ? 'image/jpeg' : 'application/octet-stream'),
+        }
+      }),
+  })
+
+  // const sendRemoteAttachmentMessages = () => {
+  //   if (remoteAttachments && remoteAttachments.length) {
+  //     Promise.all(
+  //       remoteAttachments.map(attachment =>
+  //         sendMessage({ remoteAttachment: attachment })
+  //       )
+  //     )
+  //       .then(() => setAttachments([]))
+  //       .catch((e) => {
+  //         console.error('Error sending messages: ', e)
+  //       })
+  //   }
+  // }
+
+  const sendMultiRemoteAttachmentMessage = () => {
+    if (remoteAttachments && remoteAttachments.length) {
+      sendMessage({
+        multiRemoteAttachment: {
+          attachments: remoteAttachments.map((a) => ({
+            ...a,
+            contentLength: a.contentLength || '0',
+          })),
+        },
+      })
+        .then(() => setAttachments([]))
+        .catch((e) => {
+          console.error('Error sending message: ', e)
+        })
+    }
+  }
 
   const filteredMessages = useMemo(
     () =>
@@ -145,16 +201,18 @@ export default function ConversationScreen({
             visible={isShowingAttachmentModal}
             onAttachedImageFromCamera={(image) => {
               console.log('from camera', image)
-              setAttachment({ image })
+              setAttachments((prev) => [...prev, { image }])
               setShowingAttachmentModal(false)
             }}
-            onAttachedImageFromLibrary={(image) => {
-              setAttachment({ image })
+            onAttachedImageFromLibrary={(images) => {
+              setAttachments((prev) => [
+                ...prev,
+                ...images.map((img) => ({ image: img })),
+              ])
               setShowingAttachmentModal(false)
             }}
             onAttachedFile={(file) => {
-              console.log('from file', file)
-              setAttachment({ file })
+              setAttachments((prev) => [...prev, { file }])
               setShowingAttachmentModal(false)
             }}
             onRequestClose={() => setShowingAttachmentModal(false)}
@@ -220,6 +278,34 @@ export default function ConversationScreen({
                     />
                   </>
                 )}
+                {attachments.length > 0 && (
+                  <>
+                    <AttachmentInputHeader
+                      attachments={attachments}
+                      onPress={(index) => {
+                        setPreviewingAttachmentIndex(index)
+                        setAttachmentPreviewing(true)
+                      }}
+                      onRemove={(index) => {
+                        setAttachments((prev) =>
+                          prev.filter((_, i) => i !== index)
+                        )
+                      }}
+                    />
+                    <AttachmentPreviewModal
+                      attachment={
+                        previewingAttachmentIndex !== null
+                          ? attachments[previewingAttachmentIndex]
+                          : null
+                      }
+                      visible={isAttachmentPreviewing}
+                      onRequestClose={() => {
+                        setAttachmentPreviewing(false)
+                        setPreviewingAttachmentIndex(null)
+                      }}
+                    />
+                  </>
+                )}
                 <View
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
                 >
@@ -233,7 +319,7 @@ export default function ConversationScreen({
                     iconStyle={{ margin: 0 }}
                     onPress={() => setShowingAttachmentModal(true)}
                   />
-                  {attachment ? (
+                  {attachments.length > 0 ? (
                     <>
                       <View
                         style={{
@@ -247,9 +333,11 @@ export default function ConversationScreen({
                       />
                       <Button
                         title="Send"
-                        onPress={sendRemoteAttachmentMessage}
+                        onPress={sendMultiRemoteAttachmentMessage}
                         disabled={
-                          isSending || !conversation || !remoteAttachment
+                          isSending ||
+                          !conversation ||
+                          !remoteAttachments?.length
                         }
                       />
                     </>
@@ -335,85 +423,94 @@ function AttachmentPreviewModal({
 }
 
 function AttachmentInputHeader({
-  topic,
-  attachment,
+  attachments,
   onPress,
   onRemove,
 }: {
-  topic: string
-  attachment: Attachment
-  onPress: () => void
-  onRemove: () => void
+  attachments: Attachment[]
+  onPress: (index: number) => void
+  onRemove: (index: number) => void
 }) {
-  const isImage = attachment.image?.type === 'image'
   return (
-    <View
+    <ScrollView
+      horizontal
       style={{
         marginTop: 8,
         marginLeft: 16,
         marginBottom: 16,
-        width: 110,
-        height: 110,
-        // alignItems: "center",
       }}
     >
-      <TouchableOpacity onPress={onPress}>
-        {isImage && attachment?.image && (
-          <Image
-            source={attachment.image}
-            style={{
-              marginTop: 16,
-              width: 100,
-              height: 100,
-              borderWidth: 1,
-              borderColor: '#aaa',
-              borderRadius: 4,
-              backgroundColor: '#eee',
-            }}
-            resizeMethod="auto"
-            resizeMode="cover"
-          />
-        )}
-        {!isImage && (
+      {attachments.map((attachment, index) => {
+        const isImage = attachment.image?.type === 'image'
+        return (
           <View
+            key={`attachment-${index}`}
             style={{
-              marginTop: 16,
-              width: 100,
-              height: 100,
-              borderWidth: 1,
-              borderColor: '#aaa',
-              borderRadius: 4,
-              backgroundColor: '#f4f4f4',
-              justifyContent: 'center',
-              alignItems: 'center',
+              width: 110,
+              height: 110,
+              marginRight: 8,
             }}
           >
-            <FontAwesome name="file" size={32} color="#999" />
+            <TouchableOpacity onPress={() => onPress(index)}>
+              {isImage && attachment?.image && (
+                <Image
+                  source={attachment.image}
+                  style={{
+                    marginTop: 16,
+                    width: 100,
+                    height: 100,
+                    borderWidth: 1,
+                    borderColor: '#aaa',
+                    borderRadius: 4,
+                    backgroundColor: '#eee',
+                  }}
+                  resizeMethod="auto"
+                  resizeMode="cover"
+                />
+              )}
+              {!isImage && (
+                <View
+                  style={{
+                    marginTop: 16,
+                    width: 100,
+                    height: 100,
+                    borderWidth: 1,
+                    borderColor: '#aaa',
+                    borderRadius: 4,
+                    backgroundColor: '#f4f4f4',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <FontAwesome name="file" size={32} color="#999" />
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: '#999',
+                position: 'absolute',
+                padding: 8,
+                right: 0,
+                top: 0,
+              }}
+              onPress={() => onRemove(index)}
+            >
+              <FontAwesome
+                name="close"
+                size={16}
+                backgroundColor="transparent"
+                style={{ alignSelf: 'center' }}
+                color="white"
+              />
+            </TouchableOpacity>
           </View>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: '#999',
-          position: 'absolute',
-          padding: 8,
-          right: 0,
-          top: 0,
-        }}
-        onPress={onRemove}
-      >
-        <FontAwesome
-          name="close"
-          size={16}
-          backgroundColor="transparent"
-          style={{ alignSelf: 'center' }}
-          color="white"
-        />
-      </TouchableOpacity>
-    </View>
+        )
+      })}
+    </ScrollView>
   )
 }
 
@@ -524,12 +621,36 @@ function AttachmentModal({
 }: {
   visible: boolean
   onRequestClose: () => void
-  onAttachedImageFromLibrary: (image: ImagePickerAsset) => void
+  onAttachedImageFromLibrary: (images: ImagePickerAsset[]) => void
   onAttachedImageFromCamera: (image: ImagePickerAsset) => void
   onAttachedFile: (file: DocumentPickerAsset) => void
 }) {
-  const [cameraPerm, requestCamera] = ImagePicker.useCameraPermissions()
   const [libraryPerm, requestLibrary] = ImagePicker.useMediaLibraryPermissions()
+  const [cameraPerm, requestCamera] = ImagePicker.useCameraPermissions()
+  // Update image picker to allow multiple selection
+  const pickImages = async () => {
+    console.log('pickImages')
+    if (libraryPerm?.status !== PermissionStatus.GRANTED) {
+      if (!libraryPerm?.canAskAgain) {
+        return
+      }
+      const updated = await requestLibrary()
+      if (updated?.status !== PermissionStatus.GRANTED) {
+        return
+      }
+    }
+    console.log('libraryPerm', libraryPerm.status)
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsMultipleSelection: true,
+      aspect: [4, 3],
+      quality: 1,
+    })
+    if (result.assets?.length) {
+      onAttachedImageFromLibrary(result.assets)
+    }
+  }
+
   return (
     <Modal transparent visible={visible} onRequestClose={onRequestClose}>
       <TouchableWithoutFeedback onPress={onRequestClose}>
@@ -579,27 +700,7 @@ function AttachmentModal({
               size={32}
               style={{ alignSelf: 'center' }}
               iconStyle={{ marginLeft: 8, marginRight: 8 }}
-              onPress={async () => {
-                if (libraryPerm?.status !== PermissionStatus.GRANTED) {
-                  if (!libraryPerm?.canAskAgain) {
-                    return
-                  }
-                  const updated = await requestLibrary()
-                  if (updated?.status !== PermissionStatus.GRANTED) {
-                    return
-                  }
-                }
-                const result = await ImagePicker.launchImageLibraryAsync({
-                  // mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                  mediaTypes: ImagePicker.MediaTypeOptions.All,
-                  allowsMultipleSelection: false, // TODO
-                  aspect: [4, 3],
-                  quality: 1,
-                })
-                if (result.assets?.length) {
-                  onAttachedImageFromLibrary(result.assets[0])
-                }
-              }}
+              onPress={pickImages}
             />
             <FontAwesome.Button
               name="camera"
@@ -1004,6 +1105,86 @@ function MessageItem({
   )
 }
 
+function MultiRemoteAttachmentMessageContents({
+  remoteAttachments,
+}: {
+  remoteAttachments: RemoteAttachmentContent[]
+}) {
+  const [isLoading, setIsLoading] = useState(false)
+  const { decrypted } = useLoadMultiRemoteAttachment({
+    remoteAttachments,
+    enabled: isLoading,
+  })
+
+  if (decrypted) {
+    return (
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {decrypted.map((attachment, index) => (
+          <TouchableOpacity key={`decrypted-${index}`}>
+            <Image
+              source={{ uri: attachment.fileUri }}
+              style={{
+                marginTop: 16,
+                width: 100,
+                height: 100,
+                borderWidth: 1,
+                borderColor: '#aaa',
+                borderRadius: 4,
+                backgroundColor: '#eee',
+              }}
+              resizeMethod="auto"
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+    )
+  }
+
+  return (
+    <TouchableOpacity onPress={() => setIsLoading(true)}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {remoteAttachments.map((attachment, index) => (
+          <View
+            key={`remote-${index}`}
+            style={{
+              marginTop: 16,
+              width: 100,
+              height: 100,
+              borderWidth: 1,
+              borderColor: '#aaa',
+              borderRadius: 4,
+              backgroundColor: '#eee',
+              paddingHorizontal: 4,
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="middle"
+              style={{ marginTop: 8, fontSize: 12 }}
+            >
+              {attachment.filename}
+            </Text>
+            <Text
+              style={{ marginBottom: 8, fontSize: 10, fontStyle: 'italic' }}
+            >
+              {new URL(attachment.url).host}
+            </Text>
+            <Text
+              style={{ marginBottom: 4, fontSize: 10, textAlign: 'center' }}
+            >
+              {Number(attachment.contentLength).toLocaleString()} bytes
+            </Text>
+            <FontAwesome name="download" size={24} />
+          </View>
+        ))}
+      </View>
+    </TouchableOpacity>
+  )
+}
+
 function RemoteAttachmentMessageContents({
   remoteAttachment,
   onPress,
@@ -1078,20 +1259,42 @@ function MessageContents({
   contentTypeId: string
   content: any
 }) {
-  const { client } = useClient<SupportedContentTypes>()
+  useClient<SupportedContentTypes>()
 
   if (contentTypeId === 'xmtp.org/text:1.0') {
     const text: string = content
-
     return (
       <>
         <Text>{text}</Text>
       </>
     )
   }
+
+  if (contentTypeId === 'xmtp.org/multiRemoteStaticAttachment:1.0') {
+    const multiAttachment = content as MultiRemoteAttachmentContent
+    return (
+      <MultiRemoteAttachmentMessageContents
+        remoteAttachments={multiAttachment.attachments}
+      />
+    )
+  }
+
+  if (contentTypeId === 'xmtp.org/multiRemoteStaticAttachment:1.0') {
+    const multiAttachment = content as MultiRemoteAttachmentContent
+    return (
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {multiAttachment.attachments.map((attachment, index) => (
+          <RemoteAttachmentMessageContents
+            key={`attachment-${index}`}
+            remoteAttachment={attachment}
+          />
+        ))}
+      </View>
+    )
+  }
+
   if (contentTypeId === 'xmtp.org/attachment:1.0') {
     const attachment: StaticAttachmentContent = content
-
     return (
       <>
         <Text style={{ fontStyle: 'italic' }}>
@@ -1099,13 +1302,6 @@ function MessageContents({
           {new Buffer(attachment.data, 'base64').length} bytes)
         </Text>
       </>
-    )
-  }
-  if (contentTypeId === 'xmtp.org/remoteStaticAttachment:1.0') {
-    const remoteAttachment: RemoteAttachmentContent = content
-
-    return (
-      <RemoteAttachmentMessageContents remoteAttachment={remoteAttachment} />
     )
   }
 

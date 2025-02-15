@@ -23,6 +23,10 @@ export type ReactionContent = {
   content: string
 }
 
+export type MultiRemoteAttachmentContent = {
+  attachments: RemoteAttachmentInfo[]
+}
+
 export type StaticAttachmentContent = {
   filename: string
   mimeType: string
@@ -47,6 +51,20 @@ export type RemoteAttachmentMetadata = {
 export type EncryptedLocalAttachment = {
   encryptedLocalFileUri: string
   metadata: RemoteAttachmentMetadata
+}
+
+export type MultiRemoteAttachmentMetadata = {
+  filename?: string
+  secret: string
+  salt: string
+  nonce: string
+  contentDigest: string
+  contentLength: string
+}
+
+export type RemoteAttachmentInfo = MultiRemoteAttachmentMetadata & {
+  scheme: 'https://'
+  url: string
 }
 
 export type RemoteAttachmentContent = RemoteAttachmentMetadata & {
@@ -79,6 +97,7 @@ export type NativeMessageContent = {
   reactionV2?: ReactionContent
   attachment?: StaticAttachmentContent
   remoteAttachment?: RemoteAttachmentContent
+  multiRemoteAttachment?: MultiRemoteAttachmentContent
   readReceipt?: ReadReceiptContent
   encoded?: string
   groupUpdated?: GroupUpdatedContent

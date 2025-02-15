@@ -51,7 +51,7 @@ class EncryptedAttachmentMetadata(
             Hex.hexStringToByteArray(obj.get("salt").asString).toByteString(),
             Hex.hexStringToByteArray(obj.get("nonce").asString).toByteString(),
             obj.get("contentDigest").asString,
-            Integer.parseInt(obj.get("contentLength").asString),
+            obj.get("contentLength")?.asString?.let { Integer.parseInt(it) } ?: 0,
         )
     }
 

@@ -5,6 +5,7 @@ import {
   ReplyCodec,
   RemoteAttachmentCodec,
   StaticAttachmentCodec,
+  MultiRemoteAttachmentCodec,
 } from 'xmtp-react-native-sdk'
 
 export const supportedCodecs = [
@@ -12,6 +13,7 @@ export const supportedCodecs = [
   new ReactionV2Codec(),
   new ReplyCodec(),
   new RemoteAttachmentCodec(),
+  new MultiRemoteAttachmentCodec(),
   new StaticAttachmentCodec(),
   new GroupUpdatedCodec(),
 ]

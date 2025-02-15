@@ -1,6 +1,11 @@
 FROM ruby:3.2
 
-RUN gem install sinatra puma
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN gem install sinatra webrick puma rackup --no-document
+
 WORKDIR /usr/src/app
 ADD app.rb /usr/src/app/
 
