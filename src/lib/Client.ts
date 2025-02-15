@@ -355,9 +355,15 @@ export class Client<
 
   /**
    * Add this account to the current inboxId.
+   * Adding a wallet already associated with an inboxId will cause the wallet to lose access to that inbox.
    * @param {Signer} newAccount - The signer of the new account to be added.
+   * @param {boolean} allowReassignInboxId - The signer object used for authenticate the removal.
    */
-  async addAccount(newAccount: Signer | WalletClient) {
+  async addAccount(newAccount: Signer | WalletClient, allowReassignInboxId: boolean = false) {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Adding a wallet already associated with an inboxId will cause the wallet to lose access to that inbox.'
+    )
     const signer = getSigner(newAccount)
     if (!signer) {
       throw new Error('Signer is not configured')
@@ -584,6 +590,10 @@ export class Client<
    * Drop the local database connection. This function is delicate and should be used with caution. App will error if database not properly reconnected. See: reconnectLocalDatabase()
    */
   async dropLocalDatabaseConnection() {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'App will error if database not properly reconnected. See: reconnectLocalDatabase()'
+    )
     return await XMTPModule.dropLocalDatabaseConnection(this.installationId)
   }
 
