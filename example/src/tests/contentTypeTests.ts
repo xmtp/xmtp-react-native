@@ -405,7 +405,7 @@ test('multi remote attachments should work', async () => {
     'Expected url to match'
   )
 
- // Show how when we can convert a multiRemoteAttachment back into decrypted encoded content
+  // Show how when we can convert a multiRemoteAttachment back into decrypted encoded content
 
   const files: string[] = []
   for (const attachment of multiRemoteAttachment.attachments) {

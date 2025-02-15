@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import EncryptedStorage from 'react-native-encrypted-storage'
-import RNFS from 'react-native-fs';
-import crypto from 'react-native-quick-crypto';
+import RNFS from 'react-native-fs'
+import crypto from 'react-native-quick-crypto'
 import { useMutation, useQuery, UseQueryResult } from 'react-query'
 import {
   Conversation,
@@ -463,7 +463,9 @@ export function useLoadMultiRemoteAttachment({
   enabled: boolean
 }): { decrypted: DecryptedLocalAttachment[] | undefined } {
   const { client } = useXmtp()
-  const [decrypted, setDecrypted] = useState<DecryptedLocalAttachment[] | undefined>(undefined)
+  const [decrypted, setDecrypted] = useState<
+    DecryptedLocalAttachment[] | undefined
+  >(undefined)
 
   useEffect(() => {
     if (!enabled || !remoteAttachments?.length) {
@@ -473,50 +475,82 @@ export function useLoadMultiRemoteAttachment({
 
     const loadAttachments = async () => {
       try {
+        let timeToDecrypt = 0
+        let fileSizeTotal = 0
+        const numFiles = remoteAttachments.length
         const results = await Promise.all(
           remoteAttachments.map(async (attachment) => {
             console.log('Processing attachment:', {
               url: attachment.url,
               contentDigest: attachment.contentDigest,
             })
-            
+
             const encryptedLocalFileUri = await downloadFile(attachment.url)
+            const fileSize = await getFileSize(encryptedLocalFileUri)
             console.log('Downloaded attachment to:', {
               encryptedLocalFileUri,
               fileExists: await fileExists(encryptedLocalFileUri),
-              fileSize: await getFileSize(encryptedLocalFileUri),
+              fileSize,
             })
 
             // Verify the downloaded file before decryption
-            const downloadedDigest = await calculateFileDigest(encryptedLocalFileUri) // You'll need to implement this
+            const downloadedDigest = await calculateFileDigest(
+              encryptedLocalFileUri
+            ) // You'll need to implement this
             console.log('Verifying content digest:', {
               expected: attachment.contentDigest,
               actual: downloadedDigest,
-              match: attachment.contentDigest === downloadedDigest
+              match: attachment.contentDigest === downloadedDigest,
             })
-            
+            const startTime = Date.now()
             const decryptedAttachment = await client!.decryptAttachment({
               encryptedLocalFileUri,
               metadata: attachment,
             })
+            timeToDecrypt += Date.now() - startTime
+            fileSizeTotal += fileSize
             return decryptedAttachment
           })
         )
+        // Format sizes and times for better readability
+        const formatFileSize = (bytes: number) => {
+          const units = ['B', 'KB', 'MB', 'GB']
+          let size = bytes
+          let unitIndex = 0
+          while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024
+            unitIndex++
+          }
+          return `${size.toFixed(2)} ${units[unitIndex]}`
+        }
+
+        const formatTime = (ms: number) => {
+          if (ms < 1000) return `${ms.toFixed(0)}ms`
+          return `${(ms / 1000).toFixed(2)}s`
+        }
+
+        console.log('Decrypted attachments summary:', {
+          totalFiles: numFiles,
+          totalSize: formatFileSize(fileSizeTotal),
+          averageSize: formatFileSize(fileSizeTotal / numFiles),
+          totalDecryptTime: formatTime(timeToDecrypt),
+          averageDecryptTime: formatTime(timeToDecrypt / numFiles),
+        })
         setDecrypted(results)
       } catch (err) {
         console.log('Error loading remote attachments:', {
           error: err,
-          remoteAttachments: remoteAttachments.map(a => ({
+          remoteAttachments: remoteAttachments.map((a) => ({
             url: a.url,
             contentDigest: a.contentDigest,
             contentLength: a.contentLength,
-          }))
+          })),
         })
         setDecrypted(undefined)
       }
     }
 
-    loadAttachments()
+    void loadAttachments()
   }, [enabled, remoteAttachments, client])
 
   return { decrypted }
@@ -611,7 +645,7 @@ export function usePrepareMultiRemoteAttachment({
   const { client } = useXmtp()
 
   const filesRef = useRef(files)
-  
+
   // Compare files and only update ref if they're different
   useEffect(() => {
     if (JSON.stringify(filesRef.current) !== JSON.stringify(files)) {
@@ -627,7 +661,7 @@ export function usePrepareMultiRemoteAttachment({
     ['xmtp', 'remoteAttachment', 'local'],
     ({ fileUri, mimeType }) =>
       client!.encryptAttachment({
-        fileUri: fileUri,
+        fileUri,
         mimeType,
       }),
     {}
@@ -647,53 +681,55 @@ export function usePrepareMultiRemoteAttachment({
   )
 
   useEffect(() => {
-      console.log('Preparing multiple remote attachments', { files: filesRef.current })
-      if (!filesRef.current.length) {
-        setRemoteAttachments(undefined)
-        return
-      }
-  
-      const prepareAttachments = async () => {
-        try {
-          const results = await Promise.all(
-            filesRef.current.map(async ({ fileUri, mimeType }) => {
-              console.log('Encrypting attachment:', { fileUri, mimeType })
-              const encrypted = await encryptAttachment({
-                fileUri,
-                mimeType: mimeType || 'application/octet-stream', // Ensure we always have a mimeType
-              })
-              
-              console.log('Encrypted attachment:', {
-                contentDigest: encrypted.metadata?.contentDigest,
-              })
-              
-              const url = await uploadAttachment(encrypted)
-              return {
-                url,
-                metadata: encrypted.metadata,
-              }
+    console.log('Preparing multiple remote attachments', {
+      files: filesRef.current,
+    })
+    if (!filesRef.current.length) {
+      setRemoteAttachments(undefined)
+      return
+    }
+
+    const prepareAttachments = async () => {
+      try {
+        const results = await Promise.all(
+          filesRef.current.map(async ({ fileUri, mimeType }) => {
+            console.log('Encrypting attachment:', { fileUri, mimeType })
+            const encrypted = await encryptAttachment({
+              fileUri,
+              mimeType: mimeType || 'application/octet-stream', // Ensure we always have a mimeType
             })
-          )
-          
-          const attachments = results.map((res) => ({
-            url: res.url,
-            scheme: 'https://',
-            ...res.metadata,
-          }))
-          
-          console.log('Prepared attachments:', attachments)
-          setRemoteAttachments(attachments as RemoteAttachmentContent[])
-        } catch (err) {
-          console.log('Error preparing remote attachments', err)
-          setRemoteAttachments(undefined)
-        }
+
+            console.log('Encrypted attachment:', {
+              contentDigest: encrypted.metadata?.contentDigest,
+            })
+
+            const url = await uploadAttachment(encrypted)
+            return {
+              url,
+              metadata: encrypted.metadata,
+            }
+          })
+        )
+
+        const attachments = results.map((res) => ({
+          url: res.url,
+          scheme: 'https://',
+          ...res.metadata,
+        }))
+
+        console.log('Prepared attachments:', attachments)
+        setRemoteAttachments(attachments as RemoteAttachmentContent[])
+      } catch (err) {
+        console.log('Error preparing remote attachments', err)
+        setRemoteAttachments(undefined)
       }
-  
-      prepareAttachments()
-    }, [filesRef.current, encryptAttachment, uploadAttachment])
-  
-    return { remoteAttachments }
-  }
+    }
+
+    void prepareAttachments()
+  }, [filesRef.current, encryptAttachment, uploadAttachment])
+
+  return { remoteAttachments }
+}
 
 /**
  * Load or save a keyBundle for future use.
@@ -764,35 +800,35 @@ function hexStringToUint8Array(hexString: string): Uint8Array {
 
 async function fileExists(path: string): Promise<boolean> {
   try {
-    return await RNFS.exists(path);
+    return await RNFS.exists(path)
   } catch (error) {
-    console.error('Error checking file existence:', error);
-    return false;
+    console.error('Error checking file existence:', error)
+    return false
   }
 }
 
 async function getFileSize(path: string): Promise<number> {
   try {
-    const stats = await RNFS.stat(path);
-    return stats.size;
+    const stats = await RNFS.stat(path)
+    return stats.size
   } catch (error) {
-    console.error('Error getting file size:', error);
-    return 0;
+    console.error('Error getting file size:', error)
+    return 0
   }
 }
 
 async function calculateFileDigest(path: string): Promise<string> {
   try {
     // Read the file content
-    const fileContent = await RNFS.readFile(path, 'base64');
-    const buffer = Buffer.from(fileContent, 'base64');
-    
+    const fileContent = await RNFS.readFile(path, 'base64')
+    const buffer = Buffer.from(fileContent, 'base64')
+
     // Create SHA-256 hash using react-native-quick-crypto
-    const hash = crypto.createHash('sha256');
-    hash.update(buffer.buffer);
-    return hash.digest('hex');
+    const hash = crypto.createHash('sha256')
+    hash.update(buffer.buffer)
+    return hash.digest('hex')
   } catch (error) {
-    console.error('Error calculating file digest:', error);
-    throw error;
+    console.error('Error calculating file digest:', error)
+    throw error
   }
 }

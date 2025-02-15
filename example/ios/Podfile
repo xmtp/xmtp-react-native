@@ -52,7 +52,7 @@ target 'xmtpreactnativesdkexample' do
   pod "OpenSSL-Universal", "1.1.2200"
 
     # Override XMTP pod to use specific commit
-  pod 'XMTP', :git => 'https://github.com/xmtp/xmtp-ios.git', :commit => '77940ee4790390154248d0fed0a2d5316fd99b3b'
+  # pod 'XMTP', :git => 'https://github.com/xmtp/xmtp-ios.git', :commit => 'commit here'
 
 
   use_react_native!(
