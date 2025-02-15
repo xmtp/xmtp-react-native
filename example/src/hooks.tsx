@@ -472,7 +472,11 @@ export function useLoadMultiRemoteAttachment({
     }
 
     const loadAttachments = async () => {
+
       try {
+        let timeToDecrypt = 0
+        let fileSizeTotal = 0
+        let numFiles = remoteAttachments.length
         const results = await Promise.all(
           remoteAttachments.map(async (attachment) => {
             console.log('Processing attachment:', {
@@ -481,10 +485,11 @@ export function useLoadMultiRemoteAttachment({
             })
             
             const encryptedLocalFileUri = await downloadFile(attachment.url)
+            const fileSize = await getFileSize(encryptedLocalFileUri)
             console.log('Downloaded attachment to:', {
               encryptedLocalFileUri,
               fileExists: await fileExists(encryptedLocalFileUri),
-              fileSize: await getFileSize(encryptedLocalFileUri),
+              fileSize,
             })
 
             // Verify the downloaded file before decryption
@@ -494,14 +499,40 @@ export function useLoadMultiRemoteAttachment({
               actual: downloadedDigest,
               match: attachment.contentDigest === downloadedDigest
             })
-            
+            const startTime = Date.now()
             const decryptedAttachment = await client!.decryptAttachment({
               encryptedLocalFileUri,
               metadata: attachment,
             })
+            timeToDecrypt += Date.now() - startTime
+            fileSizeTotal += fileSize
             return decryptedAttachment
           })
         )
+        // Format sizes and times for better readability
+        const formatFileSize = (bytes: number) => {
+          const units = ['B', 'KB', 'MB', 'GB']
+          let size = bytes
+          let unitIndex = 0
+          while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024
+            unitIndex++
+          }
+          return `${size.toFixed(2)} ${units[unitIndex]}`
+        }
+
+        const formatTime = (ms: number) => {
+          if (ms < 1000) return `${ms.toFixed(0)}ms`
+          return `${(ms / 1000).toFixed(2)}s`
+        }
+
+        console.log('Decrypted attachments summary:', {
+          totalFiles: numFiles,
+          totalSize: formatFileSize(fileSizeTotal),
+          averageSize: formatFileSize(fileSizeTotal / numFiles),
+          totalDecryptTime: formatTime(timeToDecrypt),
+          averageDecryptTime: formatTime(timeToDecrypt / numFiles),
+        })
         setDecrypted(results)
       } catch (err) {
         console.log('Error loading remote attachments:', {
