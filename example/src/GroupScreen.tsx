@@ -1123,7 +1123,7 @@ function MessageContents({
   contentTypeId: string
   content: any
 }) {
-  const { client } = useClient<SupportedContentTypes>()
+  useClient<SupportedContentTypes>()
 
   if (contentTypeId === 'xmtp.org/text:1.0') {
     const text: string = content
