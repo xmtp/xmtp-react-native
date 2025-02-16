@@ -785,20 +785,30 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("findOrCreateDm") Coroutine { installationId: String, peerAddress: String ->
+        AsyncFunction("findOrCreateDm") Coroutine { installationId: String, peerAddress: String, disappearStartingAtNs: Long?, retentionDurationInNs: Long? ->
             withContext(Dispatchers.IO) {
                 logV("findOrCreateDm")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val dm = client.conversations.findOrCreateDm(peerAddress)
+                val settings = if (disappearStartingAtNs != null && retentionDurationInNs != null) {
+                    DisappearingMessageSettings(disappearStartingAtNs, retentionDurationInNs)
+                } else {
+                    null
+                }
+                val dm = client.conversations.findOrCreateDm(peerAddress, settings)
                 DmWrapper.encode(client, dm)
             }
         }
 
-        AsyncFunction("findOrCreateDmWithInboxId") Coroutine { installationId: String, peerInboxId: String ->
+        AsyncFunction("findOrCreateDmWithInboxId") Coroutine { installationId: String, peerInboxId: String, disappearStartingAtNs: Long?, retentionDurationInNs: Long? ->
             withContext(Dispatchers.IO) {
                 logV("findOrCreateDmWithInboxId")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val dm = client.conversations.findOrCreateDmWithInboxId(peerInboxId)
+                val settings = if (disappearStartingAtNs != null && retentionDurationInNs != null) {
+                    DisappearingMessageSettings(disappearStartingAtNs, retentionDurationInNs)
+                } else {
+                    null
+                }
+                val dm = client.conversations.findOrCreateDmWithInboxId(peerInboxId, settings)
                 DmWrapper.encode(client, dm)
             }
         }
@@ -819,6 +829,7 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
+                    createGroupParams.disappearingMessageSettings
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -840,6 +851,7 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
+                    createGroupParams.disappearingMessageSettings
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -861,6 +873,7 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
+                    createGroupParams.disappearingMessageSettings
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -882,6 +895,7 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
+                    createGroupParams.disappearingMessageSettings
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1054,7 +1068,7 @@ class XMTPModule : Module() {
                 val conversation = client.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
                 val settings = conversation.disappearingMessageSettings
-                DisappearingMessageSettingsWrapper.encode(client, settings)
+                settings?.let { DisappearingMessageSettingsWrapper.encode(it) }
             }
         }
 
