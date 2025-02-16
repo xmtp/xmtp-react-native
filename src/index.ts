@@ -236,7 +236,8 @@ export async function addAccount(
   newAddress: Address,
   walletType?: WalletType | undefined,
   chainId?: number | undefined,
-  blockNumber?: number | undefined
+  blockNumber?: number | undefined,
+  allowReassignInboxId: boolean = false
 ) {
   const walletParams: WalletParams = {
     walletType,
@@ -246,7 +247,8 @@ export async function addAccount(
   return XMTPModule.addAccount(
     installationId,
     newAddress,
-    JSON.stringify(walletParams)
+    JSON.stringify(walletParams),
+    allowReassignInboxId
   )
 }
 

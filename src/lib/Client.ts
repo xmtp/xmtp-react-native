@@ -391,7 +391,8 @@ export class Client<
           await signer.getAddress(),
           signer.walletType?.(),
           signer.getChainId?.(),
-          signer.getBlockNumber?.()
+          signer.getBlockNumber?.(),
+          allowReassignInboxId
         )
         Client.signSubscription?.remove()
         resolve()
