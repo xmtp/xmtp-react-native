@@ -20,6 +20,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.DisappearingMessageSettingsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
@@ -55,6 +56,7 @@ import org.xmtp.android.library.codecs.EncryptedEncodedContent
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.hexToByteArray
+import org.xmtp.android.library.libxmtp.DisappearingMessageSettings
 import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import org.xmtp.android.library.libxmtp.Message
 import org.xmtp.android.library.libxmtp.PermissionOption
@@ -1051,8 +1053,8 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val conversation = client.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
-                val settings = conversation.disapperingMessageSettings
-                DisapperingMessageSettingsWrapper.encode(client, settings)
+                val settings = conversation.disappearingMessageSettings
+                DisappearingMessageSettingsWrapper.encode(client, settings)
             }
         }
 
@@ -1082,7 +1084,12 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val conversation = client.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
-                conversation.updateDisappearingMessageSettings(DisappearingMessageSettings(startAtNs, durationInNs))
+                conversation.updateDisappearingMessageSettings(
+                    DisappearingMessageSettings(
+                        startAtNs,
+                        durationInNs
+                    )
+                )
             }
         }
 
