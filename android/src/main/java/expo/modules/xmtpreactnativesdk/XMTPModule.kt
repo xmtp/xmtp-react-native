@@ -389,7 +389,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("addAccount") Coroutine { installationId: String, newAddress: String, walletParams: String ->
+        AsyncFunction("addAccount") Coroutine { installationId: String, newAddress: String, walletParams: String, allowReassignInboxId: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("addAccount")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -404,7 +404,7 @@ class XMTPModule : Module() {
                     )
                 signer = reactSigner
 
-                client.addAccount(reactSigner)
+                client.addAccount(reactSigner, allowReassignInboxId)
                 signer = null
             }
         }

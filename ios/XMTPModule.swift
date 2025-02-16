@@ -341,7 +341,10 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addAccount") {
-			(installationId: String, newAddress: String, walletParams: String)
+			(
+				installationId: String, newAddress: String,
+				walletParams: String, allowReassignInboxId: Bool
+			)
 			in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -357,7 +360,8 @@ public class XMTPModule: Module {
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
 
-			try await client.addAccount(newAccount: signer)
+			try await client.addAccount(
+				newAccount: signer, allowReassignInboxId: allowReassignInboxId)
 			self.signer = nil
 		}
 
