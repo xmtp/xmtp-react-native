@@ -658,27 +658,36 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("conversationMessagesWithReactions") {
-            (
-                installationId: String, conversationId: String, limit: Int?,
-                beforeNs: Double?, afterNs: Double?, direction: String?
-            ) -> [String] in
-			guard let client = await clientsManager.getClient(key: installationId) else {
+			(
+				installationId: String, conversationId: String, limit: Int?,
+				beforeNs: Double?, afterNs: Double?, direction: String?
+			) -> [String] in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
 				throw Error.noClient
 			}
-			guard let conversation = try await client.findConversation(conversationId: conversationId) else {
-				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+			guard
+				let conversation = try await client.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
 			}
 			let messages = try await conversation.messagesWithReactions(
 				limit: limit,
 				beforeNs: beforeNs != nil ? Int64(beforeNs!) : nil,
 				afterNs: afterNs != nil ? Int64(afterNs!) : nil,
-				direction: getSortDirection(direction: direction ?? "DESCENDING")
+				direction: getSortDirection(
+					direction: direction ?? "DESCENDING")
 			)
 			return messages.compactMap { msg in
 				do {
 					return try MessageWrapper.encode(msg)
 				} catch {
-					print("discarding message, unable to encode wrapper \(msg.id)")
+					print(
+						"discarding message, unable to encode wrapper \(msg.id)"
+					)
 					return nil
 				}
 			}
@@ -904,7 +913,7 @@ public class XMTPModule: Module {
 				throw error
 			}
 		}
-		
+
 		AsyncFunction("findOrCreateDmWithInboxId") {
 			(installationId: String, peerInboxId: String) -> String in
 			guard
@@ -914,8 +923,9 @@ public class XMTPModule: Module {
 			}
 
 			do {
-				let dm = try await client.conversations.findOrCreateDmWithInboxId(
-					with: peerInboxId)
+				let dm = try await client.conversations
+					.findOrCreateDmWithInboxId(
+						with: peerInboxId)
 				return try await DmWrapper.encode(dm, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -991,7 +1001,7 @@ public class XMTPModule: Module {
 				throw error
 			}
 		}
-		
+
 		AsyncFunction("createGroupWithInboxIds") {
 			(
 				installationId: String, inboxIds: [String],
@@ -1133,7 +1143,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("syncAllConversations") {
-			(installationId: String, consentStringStates: [String]?) -> UInt32 in
+			(installationId: String, consentStringStates: [String]?) -> UInt32
+			in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1143,7 +1154,7 @@ public class XMTPModule: Module {
 			if let states = consentStringStates {
 				consentStates = try getConsentStates(states: states)
 			} else {
-                consentStates = nil
+				consentStates = nil
 			}
 			return try await client.conversations.syncAllConversations(
 				consentStates: consentStates)
@@ -1313,6 +1324,84 @@ public class XMTPModule: Module {
 
 			try await group.updateGroupDescription(
 				groupDescription: description)
+		}
+
+		AsyncFunction("disappearingMessageSettings") {
+			(installationId: String, conversationId: String) async throws
+				-> DisappearingMessageSettingsWrapper? in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let conversation = try client.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"No conversation found for \(conversationId)")
+			}
+			return conversation.disappearingMessageSettings.map {
+				DisappearingMessageSettingsWrapper.encode($0)
+			}
+		}
+
+		AsyncFunction("isDisappearingMessagesEnabled") {
+			(installationId: String, conversationId: String) async throws
+				-> Bool in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let conversation = try client.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"No conversation found for \(conversationId)")
+			}
+			return conversation.isDisappearingMessagesEnabled
+		}
+
+		AsyncFunction("clearDisappearingMessageSettings") {
+			(installationId: String, conversationId: String) async throws in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let conversation = try client.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"No conversation found for \(conversationId)")
+			}
+			try await conversation.clearDisappearingMessageSettings()
+		}
+
+		AsyncFunction("updateDisappearingMessageSettings") {
+			(
+				installationId: String, conversationId: String,
+				startAtNs: Int64, durationInNs: Int64
+			) async throws in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let conversation = try client.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"No conversation found for \(conversationId)")
+			}
+			try await conversation.updateDisappearingMessageSettings(
+				DisappearingMessageSettings(
+					startAtNs: startAtNs, durationInNs: durationInNs)
+			)
 		}
 
 		AsyncFunction("isGroupActive") {
