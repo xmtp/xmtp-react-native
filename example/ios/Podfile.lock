@@ -55,7 +55,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.14)
   - hermes-engine/Pre-built (0.71.14)
   - libevent (2.1.12)
-  - LibXMTP (3.0.26)
+  - LibXMTP (3.0.27)
   - MessagePacker (0.4.7)
   - MMKV (2.0.2):
     - MMKVCore (~> 2.0.2)
@@ -452,7 +452,7 @@ PODS:
     - Connect-Swift (= 1.0.0)
     - CryptoSwift (= 1.8.3)
     - CSecp256k1 (~> 0.2)
-    - LibXMTP (= 3.0.26)
+    - LibXMTP (= 3.0.27)
     - SQLCipher (= 4.5.7)
   - XMTPReactNative (3.1.12):
     - CSecp256k1 (~> 0.2)
@@ -530,7 +530,6 @@ DEPENDENCIES:
   - RNFS (from `../node_modules/react-native-fs`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
-  - XMTP (from `https://github.com/xmtp/xmtp-ios.git`, commit `77940ee4790390154248d0fed0a2d5316fd99b3b`)
   - XMTPReactNative (from `../../ios`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -549,6 +548,7 @@ SPEC REPOS:
     - OpenSSL-Universal
     - SQLCipher
     - SwiftProtobuf
+    - XMTP
 
 EXTERNAL SOURCES:
   boost:
@@ -679,21 +679,13 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-screens"
   RNSVG:
     :path: "../node_modules/react-native-svg"
-  XMTP:
-    :commit: 77940ee4790390154248d0fed0a2d5316fd99b3b
-    :git: https://github.com/xmtp/xmtp-ios.git
   XMTPReactNative:
     :path: "../../ios"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
-CHECKOUT OPTIONS:
-  XMTP:
-    :commit: 77940ee4790390154248d0fed0a2d5316fd99b3b
-    :git: https://github.com/xmtp/xmtp-ios.git
-
 SPEC CHECKSUMS:
-  boost: 7dcd2de282d72e344012f7d6564d024930a6a440
+  boost: 57d2868c099736d80fcd648bf211b4431e51a558
   CoinbaseWalletSDK: ea1f37512bbc69ebe07416e3b29bf840f5cc3152
   CoinbaseWalletSDKExpo: c79420eb009f482f768c23b6768fc5b2d7c98777
   Connect-Swift: 84e043b904f63dc93a2c01c6c125da25e765b50d
@@ -719,7 +711,7 @@ SPEC CHECKSUMS:
   glog: 04b94705f318337d7ead9e6d17c019bd9b1f6b1b
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  LibXMTP: e80c8c226e67d8c820e81c5a2bfa1934ab5d263c
+  LibXMTP: 312922ac85f2b20983ba14beb08722b08002ded4
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: 3eacda84cd1c4fc95cf848d3ecb69d85ed56006c
   MMKVCore: 508b4d3a8ce031f1b5c8bd235f0517fb3f4c73a9
@@ -770,10 +762,10 @@ SPEC CHECKSUMS:
   RNSVG: d00c8f91c3cbf6d476451313a18f04d220d4f396
   SQLCipher: 5e6bfb47323635c8b657b1b27d25c5f1baf63bf5
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
-  XMTP: 5815a5886b5a698e910d7eb49c11681e9001c931
+  XMTP: 12cc7f309b993790a2a6c2a8bb2048c62fb4b788
   XMTPReactNative: 68152197c8135a6e0fe03637e7cde6bdd896d75c
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
-PODFILE CHECKSUM: bb988e1a087fa2d3c0bc34c187128b2c7c6b2e58
+PODFILE CHECKSUM: 2d04c11c2661aeaad852cd3ada0b0f1b06e0cf24
 
 COCOAPODS: 1.15.2
