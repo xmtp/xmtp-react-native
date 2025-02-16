@@ -3,4 +3,10 @@ export type CreateGroupOptions = {
   name?: string | undefined
   imageUrlSquare?: string | undefined
   description?: string | undefined
+  disappearingMessageSettings?: DisappearingMessageSettings | undefined
+}
+
+export type DisappearingMessageSettings = {
+  disappearStartingAtNs: number
+  retentionDurationInNs: number
 }

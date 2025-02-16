@@ -684,10 +684,17 @@ export async function findOrCreateDm<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerAddress: Address
+  peerAddress: Address,
+  disappearStartingAtNs: number | undefined,
+  retentionDurationInNs: number | undefined
 ): Promise<Dm<ContentTypes>> {
   const dm = JSON.parse(
-    await XMTPModule.findOrCreateDm(client.installationId, peerAddress)
+    await XMTPModule.findOrCreateDm(
+      client.installationId,
+      peerAddress,
+      disappearStartingAtNs,
+      retentionDurationInNs
+    )
   )
   return new Dm(client, dm)
 }
@@ -696,12 +703,16 @@ export async function findOrCreateDmWithInboxId<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerInboxId: InboxId
+  peerInboxId: InboxId,
+  disappearStartingAtNs: number | undefined,
+  retentionDurationInNs: number | undefined
 ): Promise<Dm<ContentTypes>> {
   const dm = JSON.parse(
     await XMTPModule.findOrCreateDmWithInboxId(
       client.installationId,
-      peerInboxId
+      peerInboxId,
+      disappearStartingAtNs,
+      retentionDurationInNs
     )
   )
   return new Dm(client, dm)
@@ -715,12 +726,16 @@ export async function createGroup<
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = ''
+  description: string = '',
+  disappearStartingAtNs: number = 0,
+  retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
+    disappearStartingAtNs,
+    retentionDurationInNs,
   }
   const group = JSON.parse(
     await XMTPModule.createGroup(
@@ -742,12 +757,16 @@ export async function createGroupCustomPermissionsWithInboxIds<
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = ''
+  description: string = '',
+  disappearStartingAtNs: number = 0,
+  retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
+    disappearStartingAtNs,
+    retentionDurationInNs,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissionsWithInboxIds(
@@ -769,12 +788,16 @@ export async function createGroupWithInboxIds<
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = ''
+  description: string = '',
+  disappearStartingAtNs: number = 0,
+  retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
+    disappearStartingAtNs,
+    retentionDurationInNs,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupWithInboxIds(
@@ -796,12 +819,16 @@ export async function createGroupCustomPermissions<
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = ''
+  description: string = '',
+  disappearStartingAtNs: number = 0,
+  retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
+    disappearStartingAtNs,
+    retentionDurationInNs,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissions(
@@ -1299,6 +1326,8 @@ interface CreateGroupParams {
   name: string
   imageUrlSquare: string
   description: string
+  disappearStartingAtNs: number
+  retentionDurationInNs: number
 }
 
 export { Client } from './lib/Client'

@@ -6,7 +6,10 @@ import { DecodedMessage } from './DecodedMessage'
 import { Dm, DmParams } from './Dm'
 import { Group, GroupParams } from './Group'
 import { ConversationOptions } from './types/ConversationOptions'
-import { CreateGroupOptions } from './types/CreateGroupOptions'
+import {
+  CreateGroupOptions,
+  DisappearingMessageSettings,
+} from './types/CreateGroupOptions'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
@@ -125,13 +128,20 @@ export default class Conversations<
    * This method creates a new conversation with the specified peer address and context.
    *
    * @param {Address} peerAddress - The address of the peer to create a conversation with.
+   * @param {DisappearingMessageSettings} disappearingMessageSettings - The disappearing message settings for this dm or undefined.
    * @returns {Promise<Conversation>} A Promise that resolves to a Conversation object.
    */
   async newConversation(
-    peerAddress: Address
+    peerAddress: Address,
+    disappearingMessageSettings?: DisappearingMessageSettings | undefined
   ): Promise<Conversation<ContentTypes>> {
     const checksumAddress = getAddress(peerAddress)
-    return await XMTPModule.findOrCreateDm(this.client, checksumAddress)
+    return await XMTPModule.findOrCreateDm(
+      this.client,
+      checksumAddress,
+      disappearingMessageSettings?.disappearStartingAtNs,
+      disappearingMessageSettings?.retentionDurationInNs
+    )
   }
 
   /**
@@ -140,10 +150,19 @@ export default class Conversations<
    * This method creates a new conversation with the specified peer address.
    *
    * @param {Address} peerAddress - The address of the peer to create a conversation with.
+   * @param {DisappearingMessageSettings} disappearingMessageSettings - The disappearing message settings for this dm or undefined.
    * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
    */
-  async findOrCreateDm(peerAddress: Address): Promise<Dm<ContentTypes>> {
-    return await XMTPModule.findOrCreateDm(this.client, peerAddress)
+  async findOrCreateDm(
+    peerAddress: Address,
+    disappearingMessageSettings?: DisappearingMessageSettings | undefined
+  ): Promise<Dm<ContentTypes>> {
+    return await XMTPModule.findOrCreateDm(
+      this.client,
+      peerAddress,
+      disappearingMessageSettings?.disappearStartingAtNs,
+      disappearingMessageSettings?.retentionDurationInNs
+    )
   }
 
   /**
@@ -152,12 +171,19 @@ export default class Conversations<
    * This method creates a new conversation with the specified peer inboxId.
    *
    * @param {InboxId} peerInboxId - The inboxId of the peer to create a conversation with.
+   * @param {DisappearingMessageSettings} disappearingMessageSettings - The disappearing message settings for this dm or undefined.
    * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
    */
   async findOrCreateDmWithInboxId(
-    peerInboxId: InboxId
+    peerInboxId: InboxId,
+    disappearingMessageSettings?: DisappearingMessageSettings | undefined
   ): Promise<Dm<ContentTypes>> {
-    return await XMTPModule.findOrCreateDmWithInboxId(this.client, peerInboxId)
+    return await XMTPModule.findOrCreateDmWithInboxId(
+      this.client,
+      peerInboxId,
+      disappearingMessageSettings?.disappearStartingAtNs,
+      disappearingMessageSettings?.retentionDurationInNs
+    )
   }
 
   /**
@@ -179,7 +205,9 @@ export default class Conversations<
       opts?.permissionLevel,
       opts?.name,
       opts?.imageUrlSquare,
-      opts?.description
+      opts?.description,
+      opts?.disappearingMessageSettings?.disappearStartingAtNs,
+      opts?.disappearingMessageSettings?.retentionDurationInNs
     )
   }
 
@@ -204,7 +232,9 @@ export default class Conversations<
       permissionPolicySet,
       opts?.name,
       opts?.imageUrlSquare,
-      opts?.description
+      opts?.description,
+      opts?.disappearingMessageSettings?.disappearStartingAtNs,
+      opts?.disappearingMessageSettings?.retentionDurationInNs
     )
   }
 
@@ -227,7 +257,9 @@ export default class Conversations<
       opts?.permissionLevel,
       opts?.name,
       opts?.imageUrlSquare,
-      opts?.description
+      opts?.description,
+      opts?.disappearingMessageSettings?.disappearStartingAtNs,
+      opts?.disappearingMessageSettings?.retentionDurationInNs
     )
   }
 
@@ -252,7 +284,9 @@ export default class Conversations<
       permissionPolicySet,
       opts?.name,
       opts?.imageUrlSquare,
-      opts?.description
+      opts?.description,
+      opts?.disappearingMessageSettings?.disappearStartingAtNs,
+      opts?.disappearingMessageSettings?.retentionDurationInNs
     )
   }
 
