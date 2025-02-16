@@ -1327,52 +1327,50 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("disappearingMessageSettings") {
-			(installationId: String, conversationId: String) async throws
-				-> DisappearingMessageSettingsWrapper? in
+			(installationId: String, conversationId: String) -> String? in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"No conversation found for \(conversationId)")
 			}
-			return conversation.disappearingMessageSettings.map {
-				DisappearingMessageSettingsWrapper.encode($0)
+			return try conversation.disappearingMessageSettings.map {
+				try DisappearingMessageSettingsWrapper.encode($0)
 			}
 		}
 
 		AsyncFunction("isDisappearingMessagesEnabled") {
-			(installationId: String, conversationId: String) async throws
-				-> Bool in
+			(installationId: String, conversationId: String) -> Bool in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"No conversation found for \(conversationId)")
 			}
-			return conversation.isDisappearingMessagesEnabled
+			return try conversation.isDisappearingMessagesEnabled()
 		}
 
 		AsyncFunction("clearDisappearingMessageSettings") {
-			(installationId: String, conversationId: String) async throws in
+			(installationId: String, conversationId: String) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
@@ -1385,14 +1383,14 @@ public class XMTPModule: Module {
 			(
 				installationId: String, conversationId: String,
 				startAtNs: Int64, durationInNs: Int64
-			) async throws in
+			) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
 			guard
-				let conversation = try client.findConversation(
+				let conversation = try await client.findConversation(
 					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
@@ -1400,7 +1398,8 @@ public class XMTPModule: Module {
 			}
 			try await conversation.updateDisappearingMessageSettings(
 				DisappearingMessageSettings(
-					startAtNs: startAtNs, durationInNs: durationInNs)
+					disappearStartingAtNs: startAtNs,
+					retentionDurationInNs: durationInNs)
 			)
 		}
 
