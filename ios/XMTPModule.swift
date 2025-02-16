@@ -897,16 +897,24 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findOrCreateDm") {
-			(installationId: String, peerAddress: String) -> String in
+			(
+				installationId: String, peerAddress: String,
+				disappearStartingAtNs: Int64?, retentionDurationInNs: Int64?
+			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
+			let settings =
+				(disappearStartingAtNs != nil && retentionDurationInNs != nil)
+				? DisappearingMessageSettings(
+					disappearStartingAtNs: disappearStartingAtNs!,
+					retentionDurationInNs: retentionDurationInNs!) : nil
 
 			do {
 				let dm = try await client.conversations.findOrCreateDm(
-					with: peerAddress)
+					with: peerAddress, disappearingMessageSettings: settings)
 				return try await DmWrapper.encode(dm, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -915,17 +923,26 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("findOrCreateDmWithInboxId") {
-			(installationId: String, peerInboxId: String) -> String in
+			(
+				installationId: String, peerInboxId: String,
+				disappearStartingAtNs: Int64?, retentionDurationInNs: Int64?
+			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
+			let settings =
+				(disappearStartingAtNs != nil && retentionDurationInNs != nil)
+				? DisappearingMessageSettings(
+					disappearStartingAtNs: disappearStartingAtNs!,
+					retentionDurationInNs: retentionDurationInNs!) : nil
 
 			do {
 				let dm = try await client.conversations
 					.findOrCreateDmWithInboxId(
-						with: peerInboxId)
+						with: peerInboxId, disappearingMessageSettings: settings
+					)
 				return try await DmWrapper.encode(dm, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -961,7 +978,9 @@ public class XMTPModule: Module {
 					permissions: permissionLevel,
 					name: createGroupParams.groupName,
 					imageUrlSquare: createGroupParams.groupImageUrlSquare,
-					description: createGroupParams.groupDescription
+					description: createGroupParams.groupDescription,
+					disappearingMessageSettings: createGroupParams
+						.disappearingMessageSettings
 				)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -993,7 +1012,9 @@ public class XMTPModule: Module {
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
 						imageUrlSquare: createGroupParams.groupImageUrlSquare,
-						description: createGroupParams.groupDescription
+						description: createGroupParams.groupDescription,
+						disappearingMessageSettings: createGroupParams
+							.disappearingMessageSettings
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1030,7 +1051,9 @@ public class XMTPModule: Module {
 					permissions: permissionLevel,
 					name: createGroupParams.groupName,
 					imageUrlSquare: createGroupParams.groupImageUrlSquare,
-					description: createGroupParams.groupDescription
+					description: createGroupParams.groupDescription,
+					disappearingMessageSettings: createGroupParams
+						.disappearingMessageSettings
 				)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1062,7 +1085,9 @@ public class XMTPModule: Module {
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
 						imageUrlSquare: createGroupParams.groupImageUrlSquare,
-						description: createGroupParams.groupDescription
+						description: createGroupParams.groupDescription,
+						disappearingMessageSettings: createGroupParams
+							.disappearingMessageSettings
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
