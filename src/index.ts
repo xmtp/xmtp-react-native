@@ -33,6 +33,7 @@ import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
+import { DisappearingMessageSettings } from './lib/types'
 
 export * from './context'
 export * from './hooks'
@@ -964,6 +965,51 @@ export function updateGroupDescription(
   description: string
 ): Promise<void> {
   return XMTPModule.updateGroupDescription(installationId, id, description)
+}
+
+export async function disappearingMessageSettings(
+  installationId: string,
+  conversationId: string
+): Promise<DisappearingMessageSettings | undefined> {
+  const settings = JSON.parse(
+    await XMTPModule.disappearingMessageSettings(installationId, conversationId)
+  )
+
+  return new DisappearingMessageSettings(settings)
+}
+
+export async function isDisappearingMessagesEnabled(
+  installationId: string,
+  conversationId: string
+): Promise<boolean> {
+  return await XMTPModule.isDisappearingMessagesEnabled(
+    installationId,
+    conversationId
+  )
+}
+
+export async function clearDisappearingMessageSettings(
+  installationId: string,
+  conversationId: string
+): Promise<void> {
+  return await XMTPModule.clearDisappearingMessageSettings(
+    installationId,
+    conversationId
+  )
+}
+
+export async function updateDisappearingMessageSettings(
+  installationId: string,
+  conversationId: string,
+  startAtNs: number,
+  durationInNs: number
+): Promise<void> {
+  return await XMTPModule.updateDisappearingMessageSettings(
+    installationId,
+    conversationId,
+    startAtNs,
+    durationInNs
+  )
 }
 
 export function isGroupActive(

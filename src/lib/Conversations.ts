@@ -3,13 +3,11 @@ import { keystore } from '@xmtp/proto'
 import { Client, InboxId } from './Client'
 import { ConversationVersion } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
+import { DisappearingMessageSettings } from './DisappearingMessageSettings'
 import { Dm, DmParams } from './Dm'
 import { Group, GroupParams } from './Group'
 import { ConversationOptions } from './types/ConversationOptions'
-import {
-  CreateGroupOptions,
-  DisappearingMessageSettings,
-} from './types/CreateGroupOptions'
+import { CreateGroupOptions } from './types/CreateGroupOptions'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
