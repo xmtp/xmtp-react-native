@@ -10,7 +10,11 @@ import { EventTypes } from './types/EventTypes'
 import { MessageId, MessagesOptions } from './types/MessagesOptions'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
-import { ConversationId, ConversationTopic } from '../index'
+import {
+  ConversationId,
+  ConversationTopic,
+  DisappearingMessageSettings,
+} from '../index'
 
 export interface DmParams {
   id: ConversationId
@@ -298,6 +302,57 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
       this.client.installationId,
       this.id,
       state
+    )
+  }
+
+  /**
+   * Returns the disappearing message settings.
+   * To get the latest settings from the network, call sync() first.
+   * @returns {Promise<DisappearingMessageSettings | undefined>} A Promise that resolves to the disappearing message settings.
+   */
+  async disappearingMessageSettings(): Promise<
+    DisappearingMessageSettings | undefined
+  > {
+    return XMTP.disappearingMessageSettings(this.client.installationId, this.id)
+  }
+
+  /**
+   * Checks if disappearing messages are enabled.
+   * @returns {Promise<boolean>} A Promise that resolves to a boolean indicating whether disappearing messages are enabled.
+   */
+  async isDisappearingMessagesEnabled(): Promise<boolean> {
+    return XMTP.isDisappearingMessagesEnabled(
+      this.client.installationId,
+      this.id
+    )
+  }
+
+  /**
+   * Clears the disappearing message settings for this group.
+   * Will throw if the user does not have the required permissions.
+   * @returns {Promise<void>} A Promise that resolves when the settings are cleared.
+   */
+  async clearDisappearingMessageSettings(): Promise<void> {
+    return XMTP.clearDisappearingMessageSettings(
+      this.client.installationId,
+      this.id
+    )
+  }
+
+  /**
+   * Updates the disappearing message settings.
+   * Will throw if the user does not have the required permissions.
+   * @param {DisappearingMessageSettings} disappearingMessageSettings The new disappearing message setting.
+   * @returns {Promise<void>} A Promise that resolves when the settings are updated.
+   */
+  async updateDisappearingMessageSettings(
+    disappearingMessageSettings: DisappearingMessageSettings
+  ): Promise<void> {
+    return XMTP.updateDisappearingMessageSettings(
+      this.client.installationId,
+      this.id,
+      disappearingMessageSettings.disappearStartingAtNs,
+      disappearingMessageSettings.retentionDurationInNs
     )
   }
 

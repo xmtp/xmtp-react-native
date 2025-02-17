@@ -17,6 +17,7 @@ import {
 } from './lib/ContentCodec'
 import { Conversation, ConversationVersion } from './lib/Conversation'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
+import { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
 import { Dm } from './lib/Dm'
 import { Group, PermissionUpdateOption } from './lib/Group'
 import { InboxState } from './lib/InboxState'
@@ -33,7 +34,6 @@ import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
-import { DisappearingMessageSettings } from './lib/types'
 
 export * from './context'
 export * from './hooks'
@@ -975,7 +975,10 @@ export async function disappearingMessageSettings(
     await XMTPModule.disappearingMessageSettings(installationId, conversationId)
   )
 
-  return new DisappearingMessageSettings(settings)
+  return new DisappearingMessageSettings(
+    settings.disappearStartingAtNs,
+    settings.retentionDurationInNs
+  )
 }
 
 export async function isDisappearingMessagesEnabled(
@@ -1393,3 +1396,4 @@ export {
 } from './lib/types/ConversationOptions'
 export { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 export { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
+export { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
