@@ -84,3 +84,11 @@ export function adaptEthersWalletToSigner(wallet: Wallet): Signer {
     signMessage: async (message: string) => wallet.signMessage(message),
   }
 }
+
+export async function assertEqual(actual: any, expected: any, message: string) {
+  const resolvedActual = typeof actual === 'function' ? await actual() : actual;
+  assert(
+    resolvedActual === expected,
+    `${message} Expected: ${expected}, but was: ${resolvedActual}`
+  )
+}
