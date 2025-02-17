@@ -6,6 +6,7 @@ import {
   assert,
   createClients,
   adaptEthersWalletToSigner,
+  assertEqual,
 } from './test-utils'
 import { Client } from '../../../src/index'
 
@@ -435,7 +436,7 @@ test('can verify signatures', async () => {
   return true
 })
 
-test('can add and remove accounts', async () => {
+test('test add account with existing InboxIds', async () => {
   const [alixClient] = await createClients(1)
 
   const keyBytes = new Uint8Array([
@@ -464,18 +465,21 @@ test('can add and remove accounts', async () => {
   }
 
   // Ensure that both clients have different inbox IDs
-  expect(alixClient.inboxId).not.toBe(boClient.inboxId)
+  assert(
+    alixClient.inboxId !== boClient.inboxId,
+    'Inbox ids should not be equal'
+  )
 
   // Forcefully add the boClient account to alixClient
   await alixClient.addAccount(adaptEthersWalletToSigner(boWallet), true)
 
   // Retrieve the inbox state and check the number of associated addresses
   const state = await alixClient.inboxState(true)
-  expect(state.addresses.length).toBe(2)
+  await assertEqual(state.addresses.length, 2, 'Length should be 2')
 
   // Validate that the inbox ID from the address matches alixClient's inbox ID
   const inboxId = await alixClient.findInboxIdFromAddress(boClient.address)
-  expect(inboxId).toBe(alixClient.inboxId)
+  await assertEqual(inboxId, alixClient.inboxId, 'InboxIds should be equal')
 
   return true
 })
