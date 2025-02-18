@@ -1,5 +1,15 @@
 # @xmtp/react-native-sdk
 
+## 3.1.13
+
+### Patch Changes
+
+- 05592eb: Disappearing Messages
+  DM membership adds (increases message length by 1 for dm creators)
+  Bug fix key package issues
+  Bug fix rate limiting
+  Mark addAccount as a delicate API
+
 ## 3.1.12
 
 ### Patch Changes
