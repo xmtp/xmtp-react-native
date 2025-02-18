@@ -604,8 +604,8 @@ test('can list conversation messages', async () => {
   )
 
   assert(
-    boDmMessages?.length === 2,
-    `alix conversation lengths should be 2 but was ${boDmMessages?.length}`
+    boDmMessages?.length === 3,
+    `alix conversation lengths should be 3 but was ${boDmMessages?.length}`
   )
 
   return true

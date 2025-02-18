@@ -1,5 +1,6 @@
 import { Wallet } from 'ethers'
 import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
+import { PermissionPolicySet } from 'xmtp-react-native-sdk/lib/types/PermissionPolicySet'
 
 import {
   Test,
@@ -19,7 +20,6 @@ import {
   DecodedMessage,
   ConsentRecord,
 } from '../../../src/index'
-import { PermissionPolicySet } from 'xmtp-react-native-sdk/lib/types/PermissionPolicySet'
 
 export const groupTests: Test[] = []
 let counter = 1

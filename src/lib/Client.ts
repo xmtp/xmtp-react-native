@@ -357,9 +357,12 @@ export class Client<
    * Add this account to the current inboxId.
    * Adding a wallet already associated with an inboxId will cause the wallet to lose access to that inbox.
    * @param {Signer} newAccount - The signer of the new account to be added.
-   * @param {boolean} allowReassignInboxId - The signer object used for authenticate the removal.
+   * @param {boolean} allowReassignInboxId - A boolean specifying if the inboxId should be reassigned or not.
    */
-  async addAccount(newAccount: Signer | WalletClient, allowReassignInboxId: boolean = false) {
+  async addAccount(
+    newAccount: Signer | WalletClient,
+    allowReassignInboxId: boolean = false
+  ) {
     console.warn(
       '⚠️ This function is delicate and should be used with caution. ' +
         'Adding a wallet already associated with an inboxId will cause the wallet to lose access to that inbox.'
