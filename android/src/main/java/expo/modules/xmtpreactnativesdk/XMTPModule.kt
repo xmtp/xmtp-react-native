@@ -20,6 +20,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.DisappearingMessageSettingsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
@@ -55,6 +56,7 @@ import org.xmtp.android.library.codecs.EncryptedEncodedContent
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.hexToByteArray
+import org.xmtp.android.library.libxmtp.DisappearingMessageSettings
 import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import org.xmtp.android.library.libxmtp.Message
 import org.xmtp.android.library.libxmtp.PermissionOption
@@ -387,7 +389,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("addAccount") Coroutine { installationId: String, newAddress: String, walletParams: String ->
+        AsyncFunction("addAccount") Coroutine { installationId: String, newAddress: String, walletParams: String, allowReassignInboxId: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("addAccount")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -402,7 +404,7 @@ class XMTPModule : Module() {
                     )
                 signer = reactSigner
 
-                client.addAccount(reactSigner)
+                client.addAccount(reactSigner, allowReassignInboxId)
                 signer = null
             }
         }
@@ -783,20 +785,30 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("findOrCreateDm") Coroutine { installationId: String, peerAddress: String ->
+        AsyncFunction("findOrCreateDm") Coroutine { installationId: String, peerAddress: String, disappearStartingAtNs: Long?, retentionDurationInNs: Long? ->
             withContext(Dispatchers.IO) {
                 logV("findOrCreateDm")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val dm = client.conversations.findOrCreateDm(peerAddress)
+                val settings = if (disappearStartingAtNs != null && retentionDurationInNs != null) {
+                    DisappearingMessageSettings(disappearStartingAtNs, retentionDurationInNs)
+                } else {
+                    null
+                }
+                val dm = client.conversations.findOrCreateDm(peerAddress, settings)
                 DmWrapper.encode(client, dm)
             }
         }
 
-        AsyncFunction("findOrCreateDmWithInboxId") Coroutine { installationId: String, peerInboxId: String ->
+        AsyncFunction("findOrCreateDmWithInboxId") Coroutine { installationId: String, peerInboxId: String, disappearStartingAtNs: Long?, retentionDurationInNs: Long? ->
             withContext(Dispatchers.IO) {
                 logV("findOrCreateDmWithInboxId")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val dm = client.conversations.findOrCreateDmWithInboxId(peerInboxId)
+                val settings = if (disappearStartingAtNs != null && retentionDurationInNs != null) {
+                    DisappearingMessageSettings(disappearStartingAtNs, retentionDurationInNs)
+                } else {
+                    null
+                }
+                val dm = client.conversations.findOrCreateDmWithInboxId(peerInboxId, settings)
                 DmWrapper.encode(client, dm)
             }
         }
@@ -817,6 +829,7 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
+                    createGroupParams.disappearingMessageSettings
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -838,6 +851,7 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
+                    createGroupParams.disappearingMessageSettings
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -859,6 +873,7 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
+                    createGroupParams.disappearingMessageSettings
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -880,6 +895,7 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrlSquare,
                     createGroupParams.groupDescription,
+                    createGroupParams.disappearingMessageSettings
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1042,6 +1058,52 @@ class XMTPModule : Module() {
                 val group = client.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateGroupDescription(groupDescription)
+            }
+        }
+
+        AsyncFunction("disappearingMessageSettings") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("disappearingMessageSettings")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                val settings = conversation.disappearingMessageSettings
+                settings?.let { DisappearingMessageSettingsWrapper.encode(it) }
+            }
+        }
+
+        AsyncFunction("isDisappearingMessagesEnabled") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("isDisappearingMessagesEnabled")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.isDisappearingMessagesEnabled
+            }
+        }
+
+        AsyncFunction("clearDisappearingMessageSettings") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("clearDisappearingMessageSettings")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.clearDisappearingMessageSettings()
+            }
+        }
+
+        AsyncFunction("updateDisappearingMessageSettings") Coroutine { installationId: String, conversationId: String, startAtNs: Long, durationInNs: Long ->
+            withContext(Dispatchers.IO) {
+                logV("updateDisappearingMessageSettings")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.updateDisappearingMessageSettings(
+                    DisappearingMessageSettings(
+                        startAtNs,
+                        durationInNs
+                    )
+                )
             }
         }
 

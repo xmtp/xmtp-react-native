@@ -17,6 +17,7 @@ import {
 } from './lib/ContentCodec'
 import { Conversation, ConversationVersion } from './lib/Conversation'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
+import { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
 import { Dm } from './lib/Dm'
 import { Group, PermissionUpdateOption } from './lib/Group'
 import { InboxState } from './lib/InboxState'
@@ -236,7 +237,8 @@ export async function addAccount(
   newAddress: Address,
   walletType?: WalletType | undefined,
   chainId?: number | undefined,
-  blockNumber?: number | undefined
+  blockNumber?: number | undefined,
+  allowReassignInboxId: boolean = false
 ) {
   const walletParams: WalletParams = {
     walletType,
@@ -246,7 +248,8 @@ export async function addAccount(
   return XMTPModule.addAccount(
     installationId,
     newAddress,
-    JSON.stringify(walletParams)
+    JSON.stringify(walletParams),
+    allowReassignInboxId
   )
 }
 
@@ -682,10 +685,17 @@ export async function findOrCreateDm<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerAddress: Address
+  peerAddress: Address,
+  disappearStartingAtNs: number | undefined,
+  retentionDurationInNs: number | undefined
 ): Promise<Dm<ContentTypes>> {
   const dm = JSON.parse(
-    await XMTPModule.findOrCreateDm(client.installationId, peerAddress)
+    await XMTPModule.findOrCreateDm(
+      client.installationId,
+      peerAddress,
+      disappearStartingAtNs,
+      retentionDurationInNs
+    )
   )
   return new Dm(client, dm)
 }
@@ -694,12 +704,16 @@ export async function findOrCreateDmWithInboxId<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerInboxId: InboxId
+  peerInboxId: InboxId,
+  disappearStartingAtNs: number | undefined,
+  retentionDurationInNs: number | undefined
 ): Promise<Dm<ContentTypes>> {
   const dm = JSON.parse(
     await XMTPModule.findOrCreateDmWithInboxId(
       client.installationId,
-      peerInboxId
+      peerInboxId,
+      disappearStartingAtNs,
+      retentionDurationInNs
     )
   )
   return new Dm(client, dm)
@@ -713,12 +727,16 @@ export async function createGroup<
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = ''
+  description: string = '',
+  disappearStartingAtNs: number = 0,
+  retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
+    disappearStartingAtNs,
+    retentionDurationInNs,
   }
   const group = JSON.parse(
     await XMTPModule.createGroup(
@@ -740,12 +758,16 @@ export async function createGroupCustomPermissionsWithInboxIds<
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = ''
+  description: string = '',
+  disappearStartingAtNs: number = 0,
+  retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
+    disappearStartingAtNs,
+    retentionDurationInNs,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissionsWithInboxIds(
@@ -767,12 +789,16 @@ export async function createGroupWithInboxIds<
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = ''
+  description: string = '',
+  disappearStartingAtNs: number = 0,
+  retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
+    disappearStartingAtNs,
+    retentionDurationInNs,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupWithInboxIds(
@@ -794,12 +820,16 @@ export async function createGroupCustomPermissions<
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
   imageUrlSquare: string = '',
-  description: string = ''
+  description: string = '',
+  disappearStartingAtNs: number = 0,
+  retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
     imageUrlSquare,
     description,
+    disappearStartingAtNs,
+    retentionDurationInNs,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissions(
@@ -935,6 +965,58 @@ export function updateGroupDescription(
   description: string
 ): Promise<void> {
   return XMTPModule.updateGroupDescription(installationId, id, description)
+}
+
+export async function disappearingMessageSettings(
+  installationId: string,
+  conversationId: string
+): Promise<DisappearingMessageSettings | undefined> {
+  const settings = JSON.parse(
+    await XMTPModule.disappearingMessageSettings(installationId, conversationId)
+  )
+
+  if (!settings) {
+    return undefined
+  } else {
+    return new DisappearingMessageSettings(
+      settings.disappearStartingAtNs,
+      settings.retentionDurationInNs
+    )
+  }
+}
+
+export async function isDisappearingMessagesEnabled(
+  installationId: string,
+  conversationId: string
+): Promise<boolean> {
+  return await XMTPModule.isDisappearingMessagesEnabled(
+    installationId,
+    conversationId
+  )
+}
+
+export async function clearDisappearingMessageSettings(
+  installationId: string,
+  conversationId: string
+): Promise<void> {
+  return await XMTPModule.clearDisappearingMessageSettings(
+    installationId,
+    conversationId
+  )
+}
+
+export async function updateDisappearingMessageSettings(
+  installationId: string,
+  conversationId: string,
+  startAtNs: number,
+  durationInNs: number
+): Promise<void> {
+  return await XMTPModule.updateDisappearingMessageSettings(
+    installationId,
+    conversationId,
+    startAtNs,
+    durationInNs
+  )
 }
 
 export function isGroupActive(
@@ -1297,6 +1379,8 @@ interface CreateGroupParams {
   name: string
   imageUrlSquare: string
   description: string
+  disappearStartingAtNs: number
+  retentionDurationInNs: number
 }
 
 export { Client } from './lib/Client'
@@ -1316,3 +1400,4 @@ export {
 } from './lib/types/ConversationOptions'
 export { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 export { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
+export { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'

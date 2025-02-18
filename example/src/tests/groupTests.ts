@@ -1,5 +1,6 @@
 import { Wallet } from 'ethers'
 import { DefaultContentTypes } from 'xmtp-react-native-sdk/lib/types/DefaultContentType'
+import { PermissionPolicySet } from 'xmtp-react-native-sdk/lib/types/PermissionPolicySet'
 
 import {
   Test,
@@ -8,6 +9,7 @@ import {
   createGroups,
   delayToPropogate,
   adaptEthersWalletToSigner,
+  assertEqual,
 } from './test-utils'
 import {
   Client,
@@ -2009,6 +2011,243 @@ test('can create new installation without breaking group', async () => {
   assert(
     members3?.length === 2,
     `client 1 should still see the 2 members but was ${members3?.length}`
+  )
+
+  return true
+})
+
+test('handles disappearing messages in a group', async () => {
+  const [alixClient, boClient] = await createClients(2)
+
+  const initialSettings = {
+    disappearStartingAtNs: 1_000_000_000,
+    retentionDurationInNs: 1_000_000_000, // 1s duration
+  }
+
+  const customPermissionsPolicySet: PermissionPolicySet = {
+    addMemberPolicy: 'allow',
+    removeMemberPolicy: 'deny',
+    addAdminPolicy: 'admin',
+    removeAdminPolicy: 'superAdmin',
+    updateGroupNamePolicy: 'admin',
+    updateGroupDescriptionPolicy: 'allow',
+    updateGroupImagePolicy: 'admin',
+    updateMessageDisappearingPolicy: 'deny',
+  }
+
+  // Create group with disappearing messages enabled
+  const boGroup = await boClient.conversations.newGroup([alixClient.address], {
+    disappearingMessageSettings: initialSettings,
+  })
+  await boClient.conversations.newGroupWithInboxIds([alixClient.inboxId], {
+    disappearingMessageSettings: initialSettings,
+  })
+  await boClient.conversations.newGroupCustomPermissions(
+    [alixClient.address],
+    customPermissionsPolicySet,
+    {
+      disappearingMessageSettings: initialSettings,
+    }
+  )
+  await boClient.conversations.newGroupCustomPermissionsWithInboxIds(
+    [alixClient.inboxId],
+    customPermissionsPolicySet,
+    {
+      disappearingMessageSettings: initialSettings,
+    }
+  )
+
+  await boGroup.send('howdy')
+  await alixClient.conversations.syncAllConversations()
+
+  const alixGroup = await alixClient.conversations.findGroup(boGroup.id)
+
+  // Validate initial state
+  await assertEqual(
+    () => boGroup.messages().then((m) => m.length),
+    2,
+    'BoGroup should have 2 messages'
+  )
+  await assertEqual(
+    () => alixGroup!.messages().then((m) => m.length),
+    1,
+    'AlixGroup should have 1 message'
+  )
+  await assertEqual(
+    () => boGroup.disappearingMessageSettings() !== undefined,
+    true,
+    'BoGroup should have disappearing settings'
+  )
+  await assertEqual(
+    () =>
+      boGroup
+        .disappearingMessageSettings()
+        .then((s) => s!.retentionDurationInNs),
+    1_000_000_000,
+    'Retention duration should be 1s'
+  )
+  await assertEqual(
+    () =>
+      boGroup
+        .disappearingMessageSettings()
+        .then((s) => s!.disappearStartingAtNs),
+    1_000_000_000,
+    'Disappearing should start at 1s'
+  )
+
+  // Wait for messages to disappear
+  await delayToPropogate(5000)
+
+  // Validate messages are deleted
+  await assertEqual(
+    () => boGroup.messages().then((m) => m.length),
+    1,
+    'BoGroup should have 1 remaining message'
+  )
+  await assertEqual(
+    () => alixGroup!.messages().then((m) => m.length),
+    0,
+    'AlixGroup should have 0 messages left'
+  )
+
+  // Disable disappearing messages
+  await boGroup.clearDisappearingMessageSettings()
+  await delayToPropogate(1000)
+
+  await boGroup.sync()
+  await alixGroup!.sync()
+
+  await delayToPropogate(1000)
+
+  // Validate disappearing messages are disabled
+  await assertEqual(
+    () => boGroup.disappearingMessageSettings(),
+    undefined,
+    'BoGroup should not have disappearing settings'
+  )
+  await assertEqual(
+    () => alixGroup!.disappearingMessageSettings(),
+    undefined,
+    'AlixGroup should not have disappearing settings'
+  )
+
+  await assertEqual(
+    () => boGroup.isDisappearingMessagesEnabled(),
+    false,
+    'BoGroup should have disappearing disabled'
+  )
+  await assertEqual(
+    () => alixGroup!.isDisappearingMessagesEnabled(),
+    false,
+    'AlixGroup should have disappearing disabled'
+  )
+
+  // Send messages after disabling disappearing settings
+  await boGroup.send('message after disabling disappearing')
+  await alixGroup!.send('another message after disabling')
+  await boGroup.sync()
+
+  await delayToPropogate(1000)
+
+  // Ensure messages persist
+  await assertEqual(
+    () => boGroup.messages().then((m) => m.length),
+    5,
+    'BoGroup should have 5 messages'
+  )
+  await assertEqual(
+    () => alixGroup!.messages().then((m) => m.length),
+    4,
+    'AlixGroup should have 4 messages'
+  )
+
+  // Re-enable disappearing messages
+  const updatedSettings = {
+    disappearStartingAtNs: (await boGroup.messages())[0].sentNs + 1_000_000_000, // 1s from now
+    retentionDurationInNs: 1_000_000_000,
+  }
+  await boGroup.updateDisappearingMessageSettings(updatedSettings)
+  await delayToPropogate(1000)
+
+  await boGroup.sync()
+  await alixGroup!.sync()
+
+  await delayToPropogate(1000)
+
+  // Validate updated settings
+  await assertEqual(
+    () =>
+      boGroup
+        .disappearingMessageSettings()
+        .then((s) => s!.disappearStartingAtNs),
+    updatedSettings.disappearStartingAtNs,
+    'BoGroup disappearStartingAtNs should match updated settings'
+  )
+  await assertEqual(
+    () =>
+      alixGroup!
+        .disappearingMessageSettings()
+        .then((s) => s!.disappearStartingAtNs),
+    updatedSettings.disappearStartingAtNs,
+    'AlixGroup disappearStartingAtNs should match updated settings'
+  )
+
+  // Send new messages
+  await boGroup.send('this will disappear soon')
+  await alixGroup!.send('so will this')
+  await boGroup.sync()
+
+  await assertEqual(
+    () => boGroup.messages().then((m) => m.length),
+    9,
+    'BoGroup should have 9 messages'
+  )
+  await assertEqual(
+    () => alixGroup!.messages().then((m) => m.length),
+    8,
+    'AlixGroup should have 8 messages'
+  )
+
+  await delayToPropogate(6000)
+
+  // Validate messages were deleted
+  await assertEqual(
+    () => boGroup.messages().then((m) => m.length),
+    7,
+    'BoGroup should have 7 messages left'
+  )
+  await assertEqual(
+    () => alixGroup!.messages().then((m) => m.length),
+    6,
+    'AlixGroup should have 6 messages left'
+  )
+
+  // Final validation that settings persist
+  await assertEqual(
+    () =>
+      boGroup
+        .disappearingMessageSettings()
+        .then((s) => s!.retentionDurationInNs),
+    updatedSettings.retentionDurationInNs,
+    'BoGroup retentionDuration should match updated settings'
+  )
+  await assertEqual(
+    () =>
+      alixGroup!
+        .disappearingMessageSettings()
+        .then((s) => s!.retentionDurationInNs),
+    updatedSettings.retentionDurationInNs,
+    'AlixGroup retentionDuration should match updated settings'
+  )
+  await assertEqual(
+    () => boGroup.isDisappearingMessagesEnabled(),
+    true,
+    'BoGroup should have disappearing enabled'
+  )
+  await assertEqual(
+    () => alixGroup!.isDisappearingMessagesEnabled(),
+    true,
+    'AlixGroup should have disappearing enabled'
   )
 
   return true

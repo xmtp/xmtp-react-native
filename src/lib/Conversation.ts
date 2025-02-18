@@ -7,7 +7,14 @@ import {
 } from './types'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
-import { DecodedMessage, Member, Dm, Group, Client } from '../index'
+import {
+  DecodedMessage,
+  Member,
+  Dm,
+  Group,
+  Client,
+  DisappearingMessageSettings,
+} from '../index'
 
 export enum ConversationVersion {
   GROUP = 'GROUP',
@@ -38,6 +45,14 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   ): Promise<() => void>
   consentState(): Promise<ConsentState>
   updateConsent(state: ConsentState): Promise<void>
+  disappearingMessageSettings(): Promise<
+    DisappearingMessageSettings | undefined
+  >
+  isDisappearingMessagesEnabled(): Promise<boolean>
+  clearDisappearingMessageSettings(): Promise<void>
+  updateDisappearingMessageSettings(
+    disappearingMessageSettings: DisappearingMessageSettings
+  ): Promise<void>
   processMessage(
     encryptedMessage: string
   ): Promise<DecodedMessage<ContentTypes[number]>>

@@ -6,6 +6,7 @@ import {
   assert,
   createClients,
   adaptEthersWalletToSigner,
+  assertEqual,
 } from './test-utils'
 import { Client } from '../../../src/index'
 
@@ -431,6 +432,54 @@ test('can verify signatures', async () => {
     (await bo.verifySignature('a message', signature)) === false,
     `message should not verify for bo`
   )
+
+  return true
+})
+
+test('test add account with existing InboxIds', async () => {
+  const [alixClient] = await createClients(1)
+
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+
+  const boWallet = Wallet.createRandom()
+
+  const boClient = await Client.create(adaptEthersWalletToSigner(boWallet), {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+  })
+
+  let errorThrown = false
+  try {
+    await alixClient.addAccount(adaptEthersWalletToSigner(boWallet))
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    errorThrown = true
+  }
+
+  if (!errorThrown) {
+    throw new Error('Expected addAccount to throw an error but it did not')
+  }
+
+  // Ensure that both clients have different inbox IDs
+  assert(
+    alixClient.inboxId !== boClient.inboxId,
+    'Inbox ids should not be equal'
+  )
+
+  // Forcefully add the boClient account to alixClient
+  await alixClient.addAccount(adaptEthersWalletToSigner(boWallet), true)
+
+  // Retrieve the inbox state and check the number of associated addresses
+  const state = await alixClient.inboxState(true)
+  await assertEqual(state.addresses.length, 2, 'Length should be 2')
+
+  // Validate that the inbox ID from the address matches alixClient's inbox ID
+  const inboxId = await alixClient.findInboxIdFromAddress(boClient.address)
+  await assertEqual(inboxId, alixClient.inboxId, 'InboxIds should be equal')
 
   return true
 })

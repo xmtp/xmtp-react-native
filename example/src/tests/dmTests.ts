@@ -1,4 +1,10 @@
-import { Test, assert, createClients, delayToPropogate } from './test-utils'
+import {
+  Test,
+  assert,
+  assertEqual,
+  createClients,
+  delayToPropogate,
+} from './test-utils'
 import { Conversation } from '../../../src/index'
 
 export const dmTests: Test[] = []
@@ -220,6 +226,215 @@ test('can stream all dms', async () => {
       'Unexpected num conversations (should be 3): ' + containers.length
     )
   }
+
+  return true
+})
+
+test('handles disappearing messages in a dm', async () => {
+  const [alixClient, boClient, caroClient] = await createClients(3)
+
+  const initialSettings = {
+    disappearStartingAtNs: 1_000_000_000,
+    retentionDurationInNs: 1_000_000_000, // 1s duration
+  }
+
+  // Create group with disappearing messages enabled
+  const boDm = await boClient.conversations.findOrCreateDm(
+    alixClient.address,
+    initialSettings
+  )
+
+  await boClient.conversations.findOrCreateDmWithInboxId(
+    caroClient.inboxId,
+    initialSettings
+  )
+
+  await boDm.send('howdy')
+  await alixClient.conversations.syncAllConversations()
+
+  const alixDm = await alixClient.conversations.findDmByInboxId(
+    boClient.inboxId
+  )
+
+  // Validate initial state
+  await assertEqual(
+    () => boDm.messages().then((m) => m.length),
+    2,
+    'boDm should have 2 messages'
+  )
+  await assertEqual(
+    () => alixDm!.messages().then((m) => m.length),
+    1,
+    'alixDm should have 1 message'
+  )
+  await assertEqual(
+    () => boDm.disappearingMessageSettings() !== undefined,
+    true,
+    'boDm should have disappearing settings'
+  )
+  await assertEqual(
+    () =>
+      boDm.disappearingMessageSettings().then((s) => s!.retentionDurationInNs),
+    1_000_000_000,
+    'Retention duration should be 1s'
+  )
+  await assertEqual(
+    () =>
+      boDm.disappearingMessageSettings().then((s) => s!.disappearStartingAtNs),
+    1_000_000_000,
+    'Disappearing should start at 1s'
+  )
+
+  // Wait for messages to disappear
+  await delayToPropogate(5000)
+
+  // Validate messages are deleted
+  await assertEqual(
+    () => boDm.messages().then((m) => m.length),
+    1,
+    'boDm should have 1 remaining message'
+  )
+  await assertEqual(
+    () => alixDm!.messages().then((m) => m.length),
+    0,
+    'alixDm should have 0 messages left'
+  )
+
+  // Disable disappearing messages
+  await boDm.clearDisappearingMessageSettings()
+  await delayToPropogate(1000)
+
+  await boDm.sync()
+  await alixDm!.sync()
+
+  await delayToPropogate(1000)
+
+  // Validate disappearing messages are disabled
+  await assertEqual(
+    () => boDm.disappearingMessageSettings(),
+    undefined,
+    'boDm should not have disappearing settings'
+  )
+  await assertEqual(
+    () => alixDm!.disappearingMessageSettings(),
+    undefined,
+    'alixDm should not have disappearing settings'
+  )
+
+  await assertEqual(
+    () => boDm.isDisappearingMessagesEnabled(),
+    false,
+    'boDm should have disappearing disabled'
+  )
+  await assertEqual(
+    () => alixDm!.isDisappearingMessagesEnabled(),
+    false,
+    'alixDm should have disappearing disabled'
+  )
+
+  // Send messages after disabling disappearing settings
+  await boDm.send('message after disabling disappearing')
+  await alixDm!.send('another message after disabling')
+  await boDm.sync()
+
+  await delayToPropogate(1000)
+
+  // Ensure messages persist
+  await assertEqual(
+    () => boDm.messages().then((m) => m.length),
+    5,
+    'boDm should have 5 messages'
+  )
+  await assertEqual(
+    () => alixDm!.messages().then((m) => m.length),
+    4,
+    'alixDm should have 4 messages'
+  )
+
+  // Re-enable disappearing messages
+  const updatedSettings = {
+    disappearStartingAtNs: (await boDm.messages())[0].sentNs + 1_000_000_000, // 1s from now
+    retentionDurationInNs: 1_000_000_000,
+  }
+  await boDm.updateDisappearingMessageSettings(updatedSettings)
+  await delayToPropogate(1000)
+
+  await boDm.sync()
+  await alixDm!.sync()
+
+  await delayToPropogate(1000)
+
+  // Validate updated settings
+  await assertEqual(
+    () =>
+      boDm.disappearingMessageSettings().then((s) => s!.disappearStartingAtNs),
+    updatedSettings.disappearStartingAtNs,
+    'boDm disappearStartingAtNs should match updated settings'
+  )
+  await assertEqual(
+    () =>
+      alixDm!
+        .disappearingMessageSettings()
+        .then((s) => s!.disappearStartingAtNs),
+    updatedSettings.disappearStartingAtNs,
+    'alixDm disappearStartingAtNs should match updated settings'
+  )
+
+  // Send new messages
+  await boDm.send('this will disappear soon')
+  await alixDm!.send('so will this')
+  await boDm.sync()
+
+  await assertEqual(
+    () => boDm.messages().then((m) => m.length),
+    9,
+    'boDm should have 9 messages'
+  )
+  await assertEqual(
+    () => alixDm!.messages().then((m) => m.length),
+    8,
+    'alixDm should have 8 messages'
+  )
+
+  await delayToPropogate(6000)
+
+  // Validate messages were deleted
+  await assertEqual(
+    () => boDm.messages().then((m) => m.length),
+    7,
+    'boDm should have 7 messages left'
+  )
+  await assertEqual(
+    () => alixDm!.messages().then((m) => m.length),
+    6,
+    'alixDm should have 6 messages left'
+  )
+
+  // Final validation that settings persist
+  await assertEqual(
+    () =>
+      boDm.disappearingMessageSettings().then((s) => s!.retentionDurationInNs),
+    updatedSettings.retentionDurationInNs,
+    'boDm retentionDuration should match updated settings'
+  )
+  await assertEqual(
+    () =>
+      alixDm!
+        .disappearingMessageSettings()
+        .then((s) => s!.retentionDurationInNs),
+    updatedSettings.retentionDurationInNs,
+    'alixDm retentionDuration should match updated settings'
+  )
+  await assertEqual(
+    () => boDm.isDisappearingMessagesEnabled(),
+    true,
+    'boDm should have disappearing enabled'
+  )
+  await assertEqual(
+    () => alixDm!.isDisappearingMessagesEnabled(),
+    true,
+    'alixDm should have disappearing enabled'
+  )
 
   return true
 })
