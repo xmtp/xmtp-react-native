@@ -975,10 +975,14 @@ export async function disappearingMessageSettings(
     await XMTPModule.disappearingMessageSettings(installationId, conversationId)
   )
 
-  return new DisappearingMessageSettings(
-    settings.disappearStartingAtNs,
-    settings.retentionDurationInNs
-  )
+  if (!settings) {
+    return undefined
+  } else {
+    return new DisappearingMessageSettings(
+      settings.disappearStartingAtNs,
+      settings.retentionDurationInNs
+    )
+  }
 }
 
 export async function isDisappearingMessagesEnabled(
