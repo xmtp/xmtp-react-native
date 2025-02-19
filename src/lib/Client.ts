@@ -187,6 +187,7 @@ export class Client<
       })().catch((error) => {
         this.removeAllSubscriptions(authInboxSubscription)
         console.error('ERROR in create: ', error.message)
+        reject(error)
       })
     })
   }
