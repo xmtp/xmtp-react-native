@@ -529,3 +529,60 @@ test('can add and remove accounts', async () => {
 
   return true
 })
+
+test('errors if dbEncryptionKey is lost', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const badKeyBytes = new Uint8Array([
+    0, 0, 0, 0, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64, 166, 83,
+    208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 0, 0, 0, 0,
+  ])
+  const alixWallet = Wallet.createRandom()
+
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    appVersion: 'Testing/0.0.0',
+    dbEncryptionKey: keyBytes,
+  })
+
+  let errorThrown = false
+
+  try {
+    await Client.build(alix.address, {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      dbEncryptionKey: badKeyBytes,
+    })
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    errorThrown = true
+  }
+
+  if (!errorThrown) {
+    throw new Error(
+      'Expected build to throw an error with a bad encryption key but it did not'
+    )
+  }
+
+  errorThrown = false
+  try {
+    await Client.create(adaptEthersWalletToSigner(alixWallet), {
+      env: 'local',
+      appVersion: 'Testing/0.0.0',
+      dbEncryptionKey: badKeyBytes,
+    })
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    errorThrown = true
+  }
+
+  if (!errorThrown) {
+    throw new Error(
+      'Expected create to throw an error with a bad encryption key but it did not'
+    )
+  }
+
+  return true
+})
