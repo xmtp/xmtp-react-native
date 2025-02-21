@@ -26,7 +26,7 @@ Pod::Spec.new do |s|
   s.source_files = "**/*.{h,m,swift}"
 
   s.dependency "MessagePacker"
-  s.dependency "XMTP", "= 3.0.30"
+  s.dependency "XMTP", "= 3.0.31"
   s.dependency 'CSecp256k1', '~> 0.2'
   s.dependency "SQLCipher", "= 4.5.7"
 end
