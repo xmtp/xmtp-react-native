@@ -1,5 +1,12 @@
 # @xmtp/react-native-sdk
 
+## 3.1.14
+
+### Patch Changes
+
+- a1af1d4: - Create errors instead of promise hanging.
+  - Stream fixes for reliability
+
 ## 3.1.13
 
 ### Patch Changes
