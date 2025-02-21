@@ -613,7 +613,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("conversationMessages")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                 conversation?.messages(
                     limit = limit,
                     beforeNs = beforeNs,
@@ -629,7 +629,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("conversationMessagesWithReactions")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                 conversation?.messagesWithReactions(
                     limit = limit,
                     beforeNs = beforeNs,
@@ -645,7 +645,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val message = client.findMessage(messageId)
+                val message = client.conversations.findMessage(messageId)
                 message?.let {
                     MessageWrapper.encode(it)
                 }
@@ -656,7 +656,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findGroup")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                 group?.let {
                     GroupWrapper.encode(client, it)
                 }
@@ -667,7 +667,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findConversation")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                 conversation?.let {
                     ConversationWrapper.encode(client, conversation)
                 }
@@ -678,7 +678,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findConversationByTopic")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversationByTopic(topic)
+                val conversation = client.conversations.findConversationByTopic(topic)
                 conversation?.let {
                     ConversationWrapper.encode(client, conversation)
                 }
@@ -689,7 +689,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findDmByInboxId")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val dm = client.findDmByInboxId(peerInboxId)
+                val dm = client.conversations.findDmByInboxId(peerInboxId)
                 dm?.let {
                     DmWrapper.encode(client, dm)
                 }
@@ -700,7 +700,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("findDmByAddress")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val dm = client.findDmByAddress(peerAddress)
+                val dm = client.conversations.findDmByAddress(peerAddress)
                 dm?.let {
                     DmWrapper.encode(client, dm)
                 }
@@ -711,7 +711,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("sendEncodedContent")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
                 val encodedContentDataBytes =
                     encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
@@ -731,7 +731,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("sendMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(id)
+                val conversation = client.conversations.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 val sending = ContentJson.fromJson(contentJson)
                 conversation.send(
@@ -745,7 +745,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("publishPreparedMessages")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(id)
+                val conversation = client.conversations.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 conversation.publishMessages()
             }
@@ -755,7 +755,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("prepareMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(id)
+                val conversation = client.conversations.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 val sending = ContentJson.fromJson(contentJson)
                 conversation.prepareMessage(
@@ -769,7 +769,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("prepareEncodedMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
                 val encodedContentDataBytes =
                     encodedContentData.foldIndexed(ByteArray(encodedContentData.size)) { i, a, v ->
@@ -905,7 +905,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("listMembers")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(id)
+                val conversation = client.conversations.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 conversation.members().map { it.inboxId }
             }
@@ -915,7 +915,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("dmPeerInboxId")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(dmId)
+                val conversation = client.conversations.findConversation(dmId)
                     ?: throw XMTPException("no conversation found for $dmId")
                 val dm = (conversation as Conversation.Dm).dm
                 dm.peerInboxId
@@ -926,7 +926,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("listConversationMembers")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
                 conversation.members().map { MemberWrapper.encode(it) }
             }
@@ -955,7 +955,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("syncConversation")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(id)
+                val conversation = client.conversations.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 conversation.sync()
             }
@@ -965,7 +965,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("addGroupMembers")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.addMembers(peerAddresses)
             }
@@ -975,7 +975,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("removeGroupMembers")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.removeMembers(peerAddresses)
             }
@@ -985,7 +985,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("addGroupMembersByInboxId")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.addMembersByInboxId(peerInboxIds)
             }
@@ -995,7 +995,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("removeGroupMembersByInboxId")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.removeMembersByInboxId(peerInboxIds)
             }
@@ -1005,7 +1005,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("groupName")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.name
             }
@@ -1015,7 +1015,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateGroupName")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateGroupName(groupName)
             }
@@ -1025,7 +1025,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("groupImageUrlSquare")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.imageUrlSquare
             }
@@ -1035,7 +1035,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateGroupImageUrlSquare")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateGroupImageUrlSquare(groupImageUrl)
             }
@@ -1045,7 +1045,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("groupDescription")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.description
             }
@@ -1055,7 +1055,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateGroupDescription")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateGroupDescription(groupDescription)
             }
@@ -1065,7 +1065,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("disappearingMessageSettings")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
                 val settings = conversation.disappearingMessageSettings
                 settings?.let { DisappearingMessageSettingsWrapper.encode(it) }
@@ -1076,7 +1076,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("isDisappearingMessagesEnabled")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
                 conversation.isDisappearingMessagesEnabled
             }
@@ -1086,7 +1086,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("clearDisappearingMessageSettings")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
                 conversation.clearDisappearingMessageSettings()
             }
@@ -1096,7 +1096,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateDisappearingMessageSettings")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no conversation found for $conversationId")
                 conversation.updateDisappearingMessageSettings(
                     DisappearingMessageSettings(
@@ -1111,7 +1111,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("isGroupActive")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.isActive()
             }
@@ -1121,7 +1121,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("addedByInboxId")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.addedByInboxId()
             }
@@ -1131,7 +1131,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("creatorInboxId")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.creatorInboxId()
             }
@@ -1141,7 +1141,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("isGroupAdmin")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.isAdmin(inboxId)
             }
@@ -1151,7 +1151,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("isSuperAdmin")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.isSuperAdmin(inboxId)
             }
@@ -1161,7 +1161,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("listAdmins")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.listAdmins()
             }
@@ -1171,7 +1171,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("listSuperAdmins")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.listSuperAdmins()
             }
@@ -1181,7 +1181,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("addAdmin")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.addAdmin(inboxId)
             }
@@ -1191,7 +1191,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("addSuperAdmin")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.addSuperAdmin(inboxId)
             }
@@ -1201,7 +1201,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("removeAdmin")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.removeAdmin(inboxId)
             }
@@ -1211,7 +1211,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("removeSuperAdmin")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.removeSuperAdmin(inboxId)
             }
@@ -1221,7 +1221,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateAddMemberPermission")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateAddMemberPermission(getPermissionOption(newPermission))
             }
@@ -1231,7 +1231,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateRemoveMemberPermission")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateRemoveMemberPermission(getPermissionOption(newPermission))
             }
@@ -1241,7 +1241,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateAddAdminPermission")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateAddAdminPermission(getPermissionOption(newPermission))
             }
@@ -1251,7 +1251,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateRemoveAdminPermission")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateRemoveAdminPermission(getPermissionOption(newPermission))
             }
@@ -1261,7 +1261,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateGroupNamePermission")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateGroupNamePermission(getPermissionOption(newPermission))
             }
@@ -1271,7 +1271,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateGroupImageUrlSquarePermission")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateGroupImageUrlSquarePermission(getPermissionOption(newPermission))
             }
@@ -1281,7 +1281,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateGroupDescriptionPermission")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateGroupDescriptionPermission(getPermissionOption(newPermission))
             }
@@ -1291,7 +1291,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("groupImageUrlSquare")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.findGroup(groupId)
+                val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 val permissionPolicySet = group.permissionPolicySet()
                 PermissionPolicySetWrapper.encodeToJsonString(permissionPolicySet)
@@ -1302,7 +1302,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("processMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(id)
+                val conversation = client.conversations.findConversation(id)
                     ?: throw XMTPException("no conversation found for $id")
                 val message = conversation.processMessage(Base64.decode(encryptedMessage, NO_WRAP))
                 message?.let {
@@ -1373,7 +1373,7 @@ class XMTPModule : Module() {
         AsyncFunction("conversationConsentState") Coroutine { installationId: String, conversationId: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no group found for $conversationId")
                 consentStateToString(conversation.consentState())
             }
@@ -1383,7 +1383,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("updateConversationConsent")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val conversation = client.findConversation(conversationId)
+                val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no group found for $conversationId")
 
                 conversation.updateConsentState(getConsentState(state))
@@ -1664,7 +1664,7 @@ class XMTPModule : Module() {
 
     private suspend fun subscribeToMessages(installationId: String, id: String) {
         val client = clients[installationId] ?: throw XMTPException("No client")
-        val conversation = client.findConversation(id)
+        val conversation = client.conversations.findConversation(id)
             ?: throw XMTPException("no conversation found for $id")
         subscriptions[conversation.cacheKey(installationId)]?.cancel()
         subscriptions[conversation.cacheKey(installationId)] =
@@ -1708,7 +1708,7 @@ class XMTPModule : Module() {
         id: String,
     ) {
         val client = clients[installationId] ?: throw XMTPException("No client")
-        val convo = client.findConversation(id) ?: return
+        val convo = client.conversations.findConversation(id) ?: return
         subscriptions[convo.cacheKey(installationId)]?.cancel()
     }
 

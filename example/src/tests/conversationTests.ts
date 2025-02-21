@@ -9,6 +9,7 @@ import {
   createClients,
   delayToPropogate,
   adaptEthersWalletToSigner,
+  assertEqual,
 } from './test-utils'
 import {
   Client,
@@ -640,6 +641,7 @@ test('can stream both conversations and messages at same time', async () => {
     'message stream should have received 2 message'
   )
 
+  bo.conversations.cancelStreamAllMessages()
   return true
 })
 
@@ -825,6 +827,8 @@ test('can streamAllMessages from multiple clients', async () => {
     )
   }
 
+  bo.conversations.cancelStreamAllMessages()
+  alix.conversations.cancelStreamAllMessages()
   return true
 })
 
@@ -860,6 +864,8 @@ test('can streamAllMessages from multiple clients - swapped', async () => {
       'Unexpected all conversations count for Ali ' + allAliMessages.length
     )
   }
+  bo.conversations.cancelStreamAllMessages()
+  alix.conversations.cancelStreamAllMessages()
 
   return true
 })
@@ -1091,5 +1097,126 @@ test('get all HMAC keys', async () => {
     assert(topics.includes(conversation.topic), 'topic not found')
   })
 
+  return true
+})
+
+test('test stream messages in parallel', async () => {
+  const messages = []
+  const [alix, bo, caro, davon] = await createClients(4)
+
+  // Create groups
+  const alixGroup = await alix.conversations.newGroup([
+    caro.address,
+    bo.address,
+  ])
+
+  const caroGroup2 = await caro.conversations.newGroup([
+    alix.address,
+    bo.address,
+  ])
+
+  // Sync all clients
+  await Promise.all([
+    alix.conversations.syncAllConversations(),
+    caro.conversations.syncAllConversations(),
+    bo.conversations.syncAllConversations(),
+  ])
+
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  const caroGroup = await caro.conversations.findGroup(alixGroup.id)
+  const boGroup2 = await bo.conversations.findGroup(caroGroup2.id)
+  const alixGroup2 = await alix.conversations.findGroup(caroGroup2.id)
+
+  // Start listening for messages
+  console.log('Caro is listening...')
+  try {
+    await caro.conversations.streamAllMessages(async (message) => {
+      messages.push(message.content)
+      console.log(`Caro received: ${message.content}`)
+    })
+  } catch (error) {
+    console.error('Error while streaming messages:', error)
+  }
+
+  await delayToPropogate(1000) // 1 second delay
+
+  // Simulate parallel message sending
+  await Promise.all([
+    (async () => {
+      console.log('Alix is sending messages...')
+      for (let i = 0; i < 20; i++) {
+        const message = `Alix Message ${i}`
+        await alixGroup.send(message)
+        await alixGroup2!.send(message)
+        console.log(`Alix sent: ${message}`)
+      }
+    })(),
+
+    (async () => {
+      console.log('Bo is sending messages...')
+      for (let i = 0; i < 10; i++) {
+        const message = `Bo Message ${i}`
+        await boGroup!.send(message)
+        await boGroup2!.send(message)
+        console.log(`Bo sent: ${message}`)
+      }
+    })(),
+
+    (async () => {
+      console.log('Davon is sending spam groups...')
+      for (let i = 0; i < 10; i++) {
+        const spamMessage = `Davon Spam Message ${i}`
+        const spamGroup = await davon.conversations.newGroup([caro.address])
+        await spamGroup.send(spamMessage)
+        console.log(`Davon spam: ${spamMessage}`)
+      }
+    })(),
+
+    (async () => {
+      console.log('Caro is sending messages...')
+      for (let i = 0; i < 10; i++) {
+        const message = `Caro Message ${i}`
+        await caroGroup!.send(message)
+        await caroGroup2.send(message)
+        console.log(`Caro sent: ${message}`)
+      }
+    })(),
+  ])
+
+  // Wait to ensure all messages are processed
+  await delayToPropogate(2000)
+
+  await assertEqual(
+    messages.length,
+    90,
+    `Expected 90 messages, got ${messages.length}`
+  )
+  const caroMessagesCount = (await caroGroup!.messages()).length
+  await assertEqual(
+    caroMessagesCount,
+    40,
+    'Caro should have received 40 messages'
+  )
+
+  await Promise.all([boGroup!.sync(), alixGroup.sync(), caroGroup!.sync()])
+
+  const boMessagesCount = (await boGroup!.messages()).length
+  const alixMessagesCount = (await alixGroup.messages()).length
+  const caroMessagesCountAfterSync = (await caroGroup!.messages()).length
+
+  await assertEqual(boMessagesCount, 40, 'Bo should have received 40 messages')
+  await assertEqual(
+    alixMessagesCount,
+    41,
+    'Alix should have received 41 messages'
+  )
+  await assertEqual(
+    caroMessagesCountAfterSync,
+    40,
+    'Caro should still have 40 messages'
+  )
+
+  console.log('Test passed: Streams and messages handled correctly.')
+  caro.conversations.cancelStreamAllMessages()
   return true
 })
