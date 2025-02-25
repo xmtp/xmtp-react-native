@@ -223,17 +223,14 @@ export async function ffiCreateSignatureText(
   return await XMTPModule.ffiCreateSignatureText(installationId)
 }
 
-export async function ffiRegisterIdentity(
-  installationId: InstallationId
-): Promise<void> {
-  return await XMTPModule.ffiRegisterIdentity(installationId)
-}
-
 export async function ffiAddEcdsaSignature(
   installationId: InstallationId,
   signatureBytes: Uint8Array
 ): Promise<void> {
-  return await XMTPModule.ffiAddEcdsaSignature(installationId, signatureBytes)
+  return await XMTPModule.ffiAddEcdsaSignature(
+    installationId,
+    Array.from(signatureBytes)
+  )
 }
 
 export async function ffiAddScwSignature(
@@ -245,11 +242,17 @@ export async function ffiAddScwSignature(
 ): Promise<void> {
   return await XMTPModule.ffiAddScwSignature(
     installationId,
-    signatureBytes,
+    Array.from(signatureBytes),
     address,
     chainId,
     blockNumber
   )
+}
+
+export async function ffiRegisterIdentity(
+  installationId: InstallationId
+): Promise<void> {
+  return await XMTPModule.ffiRegisterIdentity(installationId)
 }
 
 export async function revokeInstallations(

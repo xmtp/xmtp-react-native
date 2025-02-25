@@ -61,6 +61,7 @@ import org.xmtp.android.library.libxmtp.DisappearingMessageSettings
 import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import org.xmtp.android.library.libxmtp.Message
 import org.xmtp.android.library.libxmtp.PermissionOption
+import org.xmtp.android.library.libxmtp.SignatureRequest
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.Service
@@ -200,6 +201,8 @@ class XMTPModule : Module() {
     private val isDebugEnabled = BuildConfig.DEBUG // TODO: consider making this configurable
     private val subscriptions: MutableMap<String, Job> = mutableMapOf()
     private var preAuthenticateToInboxCallbackDeferred: CompletableDeferred<Unit>? = null
+    private var clientSignatureRequests: MutableMap<String, SignatureRequest> =
+        mutableMapOf()
 
 
     override fun definition() = ModuleDefinition {
@@ -372,7 +375,37 @@ class XMTPModule : Module() {
                 logV("ffiCreateSignatureText")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val sigRequest = client.ffiSignatureRequest()
-                sigRequest?.signatureText()
+                sigRequest?.let {
+                    clientSignatureRequests[installationId] = it
+                    it.signatureText()
+                }
+            }
+        }
+
+        AsyncFunction("ffiAddEcdsaSignature") Coroutine { installationId: String, signatureBytes: List<Int> ->
+            withContext(Dispatchers.IO) {
+                logV("ffiAddEcdsaSignature")
+                val signature =
+                    signatureBytes.foldIndexed(ByteArray(signatureBytes.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                clientSignatureRequests[installationId]?.addEcdsaSignature(signature)
+            }
+        }
+
+        AsyncFunction("ffiAddScwSignature") Coroutine { installationId: String, signatureBytes: List<Int>, address: String, chainId: Long, blockNumber: Long? ->
+            withContext(Dispatchers.IO) {
+                logV("ffiAddScwSignature")
+                val signature =
+                    signatureBytes.foldIndexed(ByteArray(signatureBytes.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                clientSignatureRequests[installationId]?.addScwSignature(
+                    signature,
+                    address,
+                    chainId.toULong(),
+                    blockNumber?.toULong()
+                )
             }
         }
 
@@ -380,38 +413,9 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("ffiRegisterIdentity")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                client.ffiSignatureRequest()?.let {
+                clientSignatureRequests[installationId]?.let {
                     client.ffiRegisterIdentity(it)
                 }
-            }
-        }
-
-        AsyncFunction("ffiAddEcdsaSignature") Coroutine { installationId: String, signatureBytes: List<Int> ->
-            withContext(Dispatchers.IO) {
-                logV("ffiRegisterIdentity")
-                val signature =
-                    signatureBytes.foldIndexed(ByteArray(signatureBytes.size)) { i, a, v ->
-                        a.apply { set(i, v.toByte()) }
-                    }
-                val client = clients[installationId] ?: throw XMTPException("No client")
-                client.ffiSignatureRequest()?.addEcdsaSignature(signature)
-            }
-        }
-
-        AsyncFunction("ffiAddScwSignature") Coroutine { installationId: String, signatureBytes: List<Int>, address: String, chainId: Long, blockNumber: Long? ->
-            withContext(Dispatchers.IO) {
-                logV("ffiRegisterIdentity")
-                val signature =
-                    signatureBytes.foldIndexed(ByteArray(signatureBytes.size)) { i, a, v ->
-                        a.apply { set(i, v.toByte()) }
-                    }
-                val client = clients[installationId] ?: throw XMTPException("No client")
-                client.ffiSignatureRequest()?.addScwSignature(
-                    signature,
-                    address,
-                    chainId.toULong(),
-                    blockNumber?.toULong()
-                )
             }
         }
 
@@ -501,7 +505,10 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val ids = installationIds.map { it.hexToByteArray() }
                 val sigRequest = client.ffiRevokeInstallations(ids)
-                sigRequest.signatureText()
+                sigRequest.let {
+                    clientSignatureRequests[installationId] = it
+                    it.signatureText()
+                }
             }
         }
 
@@ -510,7 +517,10 @@ class XMTPModule : Module() {
                 logV("ffiRevokeAllOtherInstallationsSignatureText")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val sigRequest = client.ffiRevokeAllOtherInstallations()
-                sigRequest.signatureText()
+                sigRequest.let {
+                    clientSignatureRequests[installationId] = it
+                    it.signatureText()
+                }
             }
         }
 
@@ -519,7 +529,10 @@ class XMTPModule : Module() {
                 logV("ffiRevokeWalletSignatureText")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val sigRequest = client.ffiRevokeWallet(addressToRemove)
-                sigRequest.signatureText()
+                sigRequest.let {
+                    clientSignatureRequests[installationId] = it
+                    it.signatureText()
+                }
             }
         }
 
@@ -528,15 +541,18 @@ class XMTPModule : Module() {
                 logV("ffiAddWalletSignatureText")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val sigRequest = client.ffiAddWallet(addressToAdd)
-                sigRequest.signatureText()
+                sigRequest.let {
+                    clientSignatureRequests[installationId] = it
+                    it.signatureText()
+                }
             }
         }
 
         AsyncFunction("ffiApplySignatureRequest") Coroutine { installationId: String ->
             withContext(Dispatchers.IO) {
-                logV("ffiAddWalletSignatureText")
+                logV("ffiApplySignatureRequest")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                client.ffiSignatureRequest()?.let {
+                clientSignatureRequests[installationId]?.let {
                     client.ffiApplySignatureRequest(it)
                 }
             }
