@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
-    "@types/react": "^18.2.39",
+    "@types/react": "^19.0.0",
     "@types/react-native": "^0.72.7",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",

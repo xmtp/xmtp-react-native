@@ -231,6 +231,48 @@ export class Client<
   }
 
   /**
+   * ⚠️ This function is delicate and should be used with caution.
+   * Creating an FfiClient without signing or registering will create a broken experience use `create()` instead
+   *
+   * Creates a new instance of the Client class using the provided address.
+   *
+   * @param {Address} address - The address of the account to create
+   * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
+   * @returns {Promise<Client>} A Promise that resolves to a new Client instance.
+   */
+  static async ffiCreateClient<
+    ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
+  >(
+    address: Address,
+    options: ClientOptions & { codecs?: ContentCodecs }
+  ): Promise<Client<ContentCodecs>> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Creating an FfiClient without signing or registering will create a broken experience use `create()` instead'
+    )
+
+    if (options.dbEncryptionKey.length !== 32) {
+      throw new Error('Must pass an encryption key that is exactly 32 bytes.')
+    }
+    const client = await XMTPModule.ffiCreateClient(
+      address,
+      options.env,
+      options.dbEncryptionKey,
+      options.appVersion,
+      options.dbDirectory,
+      options.historySyncUrl
+    )
+
+    return new Client(
+      client['address'],
+      client['inboxId'],
+      client['installationId'],
+      client['dbPath'],
+      options.codecs || []
+    )
+  }
+
+  /**
    * Drop the client from memory. Use when you want to remove the client from memory and are done with it.
    */
   static async dropClient(installationId: InstallationId) {
@@ -688,6 +730,140 @@ export class Client<
       this.installationId,
       encryptedFile
     )
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `create()` instead.
+   * Gets the signature text to be signed
+   */
+  async ffiCreateSignatureText(): Promise<string> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `create()` instead'
+    )
+    return await XMTPModule.ffiCreateSignatureText(this.installationId)
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `create()` instead.
+   * Adds the Ecdsa signature to the identity to be registered
+   */
+  async ffiAddEcdsaSignature(signature: Uint8Array): Promise<void> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `create()` instead'
+    )
+    return await XMTPModule.ffiAddEcdsaSignature(this.installationId, signature)
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `create()` instead.
+   * Adds the SCW signature to the identity to be registered
+   */
+  async ffiAddScwSignature(
+    signature: Uint8Array,
+    address: Address,
+    chainId: number,
+    blockNumber?: number | undefined
+  ): Promise<void> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `create()` instead'
+    )
+    return await XMTPModule.ffiAddScwSignature(
+      this.installationId,
+      signature,
+      address,
+      chainId,
+      blockNumber
+    )
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the create and register flow independently otherwise use `create()` instead.
+   * Registers the identity to the XMTP network
+   */
+  async ffiRegisterIdentity(): Promise<void> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the create and register flow independently otherwise use `create()` instead'
+    )
+    return await XMTPModule.ffiRegisterIdentity(this.installationId)
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `revokeInstallations()` instead.
+   * Gets the signature text for the revoke installations action
+   */
+  async ffiRevokeInstallationsSignatureText(
+    installationIds: InstallationId[]
+  ): Promise<string> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `revokeInstallations()` instead'
+    )
+    return await XMTPModule.ffiRevokeInstallationsSignatureText(
+      this.installationId,
+      installationIds
+    )
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `revokeAllOtherInstallations()` instead.
+   * Gets the signature text for the revoke installations action
+   */
+  async ffiRevokeAllOtherInstallationsSignatureText(): Promise<string> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `revokeAllOtherInstallations()` instead'
+    )
+    return await XMTPModule.ffiRevokeAllOtherInstallationsSignatureText(
+      this.installationId
+    )
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `removeWallet()` instead.
+   * Gets the signature text for the remove wallet action
+   */
+  async ffiRemoveWalletSignatureText(
+    addressToRemove: Address
+  ): Promise<string> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `removeWallet()` instead'
+    )
+    return await XMTPModule.ffiRevokeWalletSignatureText(
+      this.installationId,
+      addressToRemove
+    )
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the create and register flow independently otherwise use `addWallet()` instead.
+   * Gets the signature text for the add wallet action
+   */
+  async ffiAddWalletSignatureText(addressToAdd: Address): Promise<string> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the create and register flow independently otherwise use `addWallet()` instead'
+    )
+    return await XMTPModule.ffiAddWalletSignatureText(
+      this.installationId,
+      addressToAdd
+    )
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `addAccount(), removeAccount(), or revoke()` instead.
+   * Applys the signature after adding signature
+   */
+  async ffiApplySignature(): Promise<void> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `addAccount(), removeAccount(), or revoke()` instead'
+    )
+    return await XMTPModule.ffiApplySignatureRequest(this.installationId)
   }
 }
 
