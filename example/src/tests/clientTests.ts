@@ -617,3 +617,65 @@ test('can manage clients manually', async () => {
 
   return true
 })
+
+test('can manage add remove manually', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const alix = Wallet.createRandom()
+
+  const signer = adaptEthersWalletToSigner(alix)
+  const options = { env: 'local', dbEncryptionKey: keyBytes }
+
+  const inboxId = await Client.getOrCreateInboxId(alix.address, 'local')
+  // const client = await Client.ffiCreateClient(alix.address, options)
+  // const sigRequest = client.ffiSignatureRequest()
+  // await sigRequest!.addEcdsaSignature(
+  // 	signatureBytes: try alix.sign(message: sigRequest!.signatureText())
+  // 		.rawData)
+  // await client.ffiRegisterIdentity(signatureRequest: sigRequest!)
+  // let canMessage = await client.canMessage([client.address]
+  // )[client.address]
+
+  // assert(canMessage == true,
+  //   `Should be able to message the client`
+  // )
+  // assert(
+  //   inboxId === client.inboxId,
+  //   `${inboxId} does not match ${client.inboxId}`
+  // )
+
+  return true
+})
+
+test('can manage revoke manually', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const alix = Wallet.createRandom()
+
+  const signer = adaptEthersWalletToSigner(alix)
+  const options = { env: 'local', dbEncryptionKey: keyBytes }
+
+  const inboxId = await Client.getOrCreateInboxId(alix.address, 'local')
+  // const client = await Client.ffiCreateClient(alix.address, options)
+  // const sigRequest = client.ffiSignatureRequest()
+  // await sigRequest!.addEcdsaSignature(
+  // 	signatureBytes: try alix.sign(message: sigRequest!.signatureText())
+  // 		.rawData)
+  // await client.ffiRegisterIdentity(signatureRequest: sigRequest!)
+  // let canMessage = await client.canMessage([client.address]
+  // )[client.address]
+
+  // assert(canMessage == true,
+  //   `Should be able to message the client`
+  // )
+  // assert(
+  //   inboxId === client.inboxId,
+  //   `${inboxId} does not match ${client.inboxId}`
+  // )
+
+  return true
+})

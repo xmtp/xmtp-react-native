@@ -196,6 +196,62 @@ export async function build(
   )
 }
 
+export async function ffiCreateClient(
+  address: Address,
+  environment: 'local' | 'dev' | 'production',
+  dbEncryptionKey: Uint8Array,
+  appVersion?: string | undefined,
+  dbDirectory?: string | undefined,
+  historySyncUrl?: string | undefined
+): Promise<string> {
+  const authParams: AuthParams = {
+    environment,
+    appVersion,
+    dbDirectory,
+    historySyncUrl,
+  }
+  return await XMTPModule.ffiCreateClient(
+    address,
+    Array.from(dbEncryptionKey),
+    JSON.stringify(authParams)
+  )
+}
+
+export async function ffiCreateSignatureText(
+  installationId: InstallationId
+): Promise<string> {
+  return await XMTPModule.ffiCreateSignatureText(installationId)
+}
+
+export async function ffiRegisterIdentity(
+  installationId: InstallationId
+): Promise<void> {
+  return await XMTPModule.ffiRegisterIdentity(installationId)
+}
+
+export async function ffiAddEcdsaSignature(
+  installationId: InstallationId,
+  signatureBytes: Uint8Array
+): Promise<void> {
+  return await XMTPModule.ffiAddEcdsaSignature(installationId, signatureBytes)
+}
+
+export async function ffiAddScwSignature(
+  installationId: InstallationId,
+  signatureBytes: Uint8Array,
+  address: Address,
+  chainId: number,
+  blockNumber?: number | undefined
+): Promise<void> {
+  return await XMTPModule.ffiAddScwSignature(
+    installationId,
+    signatureBytes,
+    address,
+    chainId,
+    blockNumber
+  )
+}
+
 export async function revokeInstallations(
   installationId: InstallationId,
   installationIds: InstallationId[],
@@ -270,6 +326,50 @@ export async function removeAccount(
     addressToRemove,
     JSON.stringify(walletParams)
   )
+}
+
+export async function ffiRevokeInstallationsSignatureText(
+  installationId: InstallationId,
+  installationIds: InstallationId[]
+): Promise<string> {
+  return await XMTPModule.ffiRevokeInstallationsSignatureText(
+    installationId,
+    installationIds
+  )
+}
+
+export async function ffiRevokeAllOtherInstallationsSignatureText(
+  installationId: InstallationId
+): Promise<string> {
+  return await XMTPModule.ffiRevokeAllOtherInstallationsSignatureText(
+    installationId
+  )
+}
+
+export async function ffiRevokeWalletSignatureText(
+  installationId: InstallationId,
+  addressToRemove: Address
+): Promise<string> {
+  return await XMTPModule.ffiRevokeWalletSignatureText(
+    installationId,
+    addressToRemove
+  )
+}
+
+export async function ffiAddWalletSignatureText(
+  installationId: InstallationId,
+  addressToAdd: Address
+): Promise<string> {
+  return await XMTPModule.ffiAddWalletSignatureText(
+    installationId,
+    addressToAdd
+  )
+}
+
+export async function ffiApplySignatureRequest(
+  installationId: InstallationId
+): Promise<void> {
+  return await XMTPModule.ffiApplySignatureRequest(installationId)
 }
 
 export async function dropClient(installationId: InstallationId) {
