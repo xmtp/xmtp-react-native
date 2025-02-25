@@ -482,7 +482,7 @@ public class XMTPModule: Module {
 			else {
 				throw Error.noClient
 			}
-			let ids = installationIds.map { _ in installationId.hexToData }
+			let ids = installationIds.map { $0.hexToData }
 			let sigRequest = try await client.ffiRevokeInstallations(ids: ids)
 			await clientsManager.updateSignatureRequest(
 				key: client.installationID, signatureRequest: sigRequest)
