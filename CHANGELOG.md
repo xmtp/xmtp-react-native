@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 3.1.15
+
+### Patch Changes
+
+- 404902f: Granular Control Over Creation Flow
+
 ## 3.1.14
 
 ### Patch Changes
