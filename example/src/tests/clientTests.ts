@@ -1,4 +1,4 @@
-import { Wallet } from 'ethers'
+import { ethers, Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
 
 import {
@@ -9,6 +9,7 @@ import {
   assertEqual,
 } from './test-utils'
 import { Client } from '../../../src/index'
+import { hexToBytes } from 'viem'
 
 export const clientTests: Test[] = []
 let counter = 1
@@ -595,25 +596,28 @@ test('can manage clients manually', async () => {
   const alix = Wallet.createRandom()
 
   const signer = adaptEthersWalletToSigner(alix)
-  const options = { env: 'local', dbEncryptionKey: keyBytes }
 
   const inboxId = await Client.getOrCreateInboxId(alix.address, 'local')
-  // const client = await Client.ffiCreateClient(alix.address, options)
-  // const sigRequest = client.ffiSignatureRequest()
-  // await sigRequest!.addEcdsaSignature(
-  // 	signatureBytes: try alix.sign(message: sigRequest!.signatureText())
-  // 		.rawData)
-  // await client.ffiRegisterIdentity(signatureRequest: sigRequest!)
-  // let canMessage = await client.canMessage([client.address]
-  // )[client.address]
+  const client = await Client.ffiCreateClient(alix.address, {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
+  const sigText = await client.ffiCreateSignatureText()
+  const signedMessage = await signer.signMessage(sigText)
+  const { r, s, v } = ethers.utils.splitSignature(signedMessage)
+  const signature = ethers.utils.arrayify(
+    ethers.utils.joinSignature({ r, s, v })
+  )
 
-  // assert(canMessage == true,
-  //   `Should be able to message the client`
-  // )
-  // assert(
-  //   inboxId === client.inboxId,
-  //   `${inboxId} does not match ${client.inboxId}`
-  // )
+  await client.ffiAddEcdsaSignature(signature)
+  await client.ffiRegisterIdentity()
+
+  const canMessage = await client.canMessage([client.address])
+  assert(canMessage[0] === true, `Should be able to message the client`)
+  assert(
+    inboxId === client.inboxId,
+    `${inboxId} does not match ${client.inboxId}`
+  )
 
   return true
 })
@@ -623,28 +627,55 @@ test('can manage add remove manually', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const alix = Wallet.createRandom()
+  const alixWallet = Wallet.createRandom()
+  const boWallet = Wallet.createRandom()
 
-  const signer = adaptEthersWalletToSigner(alix)
-  const options = { env: 'local', dbEncryptionKey: keyBytes }
+  const alixSigner = adaptEthersWalletToSigner(alixWallet)
+  const boSigner = adaptEthersWalletToSigner(boWallet)
+  const alix = await Client.create(alixSigner, {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
 
-  const inboxId = await Client.getOrCreateInboxId(alix.address, 'local')
-  // const client = await Client.ffiCreateClient(alix.address, options)
-  // const sigRequest = client.ffiSignatureRequest()
-  // await sigRequest!.addEcdsaSignature(
-  // 	signatureBytes: try alix.sign(message: sigRequest!.signatureText())
-  // 		.rawData)
-  // await client.ffiRegisterIdentity(signatureRequest: sigRequest!)
-  // let canMessage = await client.canMessage([client.address]
-  // )[client.address]
+  let inboxState = await alix.inboxState(true)
+  assert(
+    inboxState.addresses.length === 1,
+    `addresses length should be 1 but was ${inboxState.addresses.length}`
+  )
 
-  // assert(canMessage == true,
-  //   `Should be able to message the client`
-  // )
-  // assert(
-  //   inboxId === client.inboxId,
-  //   `${inboxId} does not match ${client.inboxId}`
-  // )
+  const sigText = await alix.ffiAddWalletSignatureText(boWallet.address)
+  const signedMessage = await boSigner.signMessage(sigText)
+
+  let { r, s, v } = ethers.utils.splitSignature(signedMessage)
+  const signature = ethers.utils.arrayify(
+    ethers.utils.joinSignature({ r, s, v })
+  )
+
+  await alix.ffiAddEcdsaSignature(signature)
+  await alix.ffiApplySignature()
+
+  inboxState = await alix.inboxState(true)
+  assert(
+    inboxState.addresses.length === 2,
+    `addresses length should be 2 but was ${inboxState.addresses.length}`
+  )
+
+  const sigText2 = await alix.ffiRemoveWalletSignatureText(boWallet.address)
+  const signedMessage2 = await alixSigner.signMessage(sigText2)
+
+  ;({ r, s, v } = ethers.utils.splitSignature(signedMessage2))
+  const signature2 = ethers.utils.arrayify(
+    ethers.utils.joinSignature({ r, s, v })
+  )
+
+  await alix.ffiAddEcdsaSignature(signature2)
+  await alix.ffiApplySignature()
+
+  inboxState = await alix.inboxState(true)
+  assert(
+    inboxState.addresses.length === 1,
+    `addresses length should be 1 but was ${inboxState.addresses.length}`
+  )
 
   return true
 })
@@ -654,28 +685,84 @@ test('can manage revoke manually', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const alix = Wallet.createRandom()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
+  const dbDirPath3 = `${RNFS.DocumentDirectoryPath}/xmtp_db3`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  const directoryExists2 = await RNFS.exists(dbDirPath2)
+  if (!directoryExists2) {
+    await RNFS.mkdir(dbDirPath2)
+  }
+  const directoryExists3 = await RNFS.exists(dbDirPath3)
+  if (!directoryExists3) {
+    await RNFS.mkdir(dbDirPath3)
+  }
+  const alixWallet = Wallet.createRandom()
+  const alixSigner = adaptEthersWalletToSigner(alixWallet)
 
-  const signer = adaptEthersWalletToSigner(alix)
-  const options = { env: 'local', dbEncryptionKey: keyBytes }
+  const alix = await Client.create(alixSigner, {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+  })
 
-  const inboxId = await Client.getOrCreateInboxId(alix.address, 'local')
-  // const client = await Client.ffiCreateClient(alix.address, options)
-  // const sigRequest = client.ffiSignatureRequest()
-  // await sigRequest!.addEcdsaSignature(
-  // 	signatureBytes: try alix.sign(message: sigRequest!.signatureText())
-  // 		.rawData)
-  // await client.ffiRegisterIdentity(signatureRequest: sigRequest!)
-  // let canMessage = await client.canMessage([client.address]
-  // )[client.address]
+  const alix2 = await Client.create(alixSigner, {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath2,
+  })
 
-  // assert(canMessage == true,
-  //   `Should be able to message the client`
-  // )
-  // assert(
-  //   inboxId === client.inboxId,
-  //   `${inboxId} does not match ${client.inboxId}`
-  // )
+  await Client.create(alixSigner, {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath3,
+  })
+
+  let inboxState = await alix.inboxState(true)
+  assert(
+    inboxState.installations.length === 3,
+    `installations length should be 3 but was ${inboxState.installations.length}`
+  )
+
+  const sigText = await alix.ffiRevokeInstallationsSignatureText([
+    alix2.installationId,
+  ])
+  const signedMessage = await alixSigner.signMessage(sigText)
+
+  let { r, s, v } = ethers.utils.splitSignature(signedMessage)
+  const signature = ethers.utils.arrayify(
+    ethers.utils.joinSignature({ r, s, v })
+  )
+
+  await alix.ffiAddEcdsaSignature(signature)
+  await alix.ffiApplySignature()
+
+  inboxState = await alix.inboxState(true)
+  assert(
+    inboxState.installations.length === 2,
+    `installations length should be 2 but was ${inboxState.installations.length}`
+  )
+
+  const sigText2 = await alix.ffiRevokeAllOtherInstallationsSignatureText()
+  const signedMessage2 = await alixSigner.signMessage(sigText2)
+
+  ;({ r, s, v } = ethers.utils.splitSignature(signedMessage2))
+  const signature2 = ethers.utils.arrayify(
+    ethers.utils.joinSignature({ r, s, v })
+  )
+
+  await alix.ffiAddEcdsaSignature(signature2)
+  await alix.ffiApplySignature()
+
+  inboxState = await alix.inboxState(true)
+  assert(
+    inboxState.installations.length === 1,
+    `installations length should be 1 but was ${inboxState.installations.length}`
+  )
 
   return true
 })
