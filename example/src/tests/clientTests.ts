@@ -589,6 +589,7 @@ function test(name: string, perform: () => Promise<boolean>) {
 // })
 
 test('can manage clients manually', async () => {
+  const [bo] = await createClients(1)
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
@@ -612,8 +613,11 @@ test('can manage clients manually', async () => {
   await client.ffiAddEcdsaSignature(signature)
   await client.ffiRegisterIdentity()
 
-  const canMessage = await client.canMessage([client.address])
-  assert(canMessage[0] === true, `Should be able to message the client`)
+  const canMessage = await bo.canMessage([client.address])
+  assert(
+    canMessage[client.address.toLowerCase()] === true,
+    `should be able to message ${canMessage[client.address.toLowerCase()]}`
+  )
   assert(
     inboxId === client.inboxId,
     `${inboxId} does not match ${client.inboxId}`
