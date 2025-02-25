@@ -297,7 +297,7 @@ class XMTPModule : Module() {
                     hasPreAuthenticateToInboxCallback,
                 )
                 val randomClient =
-                    Client().create(account = privateKey, options = options)
+                    Client.create(account = privateKey, options = options)
 
                 ContentJson.Companion
                 clients[randomClient.installationId] = randomClient
@@ -323,7 +323,7 @@ class XMTPModule : Module() {
                     hasAuthInboxCallback,
                 )
                 val client =
-                    Client().create(account = reactSigner, options = options)
+                    Client.create(account = reactSigner, options = options)
                 clients[client.installationId] = client
                 ContentJson.Companion
                 signer = null
@@ -338,7 +338,7 @@ class XMTPModule : Module() {
                     dbEncryptionKey,
                     authParams,
                 )
-                val client = Client().build(
+                val client = Client.build(
                     address = address,
                     options = options,
                     inboxId = inboxId,
