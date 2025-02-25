@@ -22,7 +22,7 @@ const useClient = () => {
   return client
 }
 
-const useConversation = (client: Client<any>, recieve: boolean) => {
+const useConversation = (client: Client<any>, receive: boolean) => {
   const [conversation, setConversation] = useState<Conversation<any> | null>(
     null
   )
@@ -68,7 +68,7 @@ const useConversation = (client: Client<any>, recieve: boolean) => {
         setConversation(otherConvo)
       }
     }
-    if (recieve) {
+    if (receive) {
       setupReceiveConvo()
     } else {
       setupConversations()
