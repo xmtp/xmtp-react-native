@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 3.1.16
+
+### Patch Changes
+
+- ca4653e: remove drop db connection on background on ios
+
 ## 3.1.15
 
 ### Patch Changes
