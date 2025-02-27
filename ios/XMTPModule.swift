@@ -2319,18 +2319,6 @@ public class XMTPModule: Module {
 
 			return logOutput
 		}
-
-		OnAppBecomesActive {
-			Task {
-				try await clientsManager.reconnectAllLocalDatabaseConnections()
-			}
-		}
-
-		OnAppEntersBackground {
-			Task {
-				try await clientsManager.dropAllLocalDatabaseConnections()
-			}
-		}
 	}
 
 	//
