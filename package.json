@@ -10,7 +10,7 @@
     "lint": "expo-module lint",
     "test": "expo-module test",
     "prepare": "expo-module prepare",
-    "publish": "expo-module build && changeset publish",
+    "release": "expo-module build && changeset publish",
     "prepublishOnly": "expo-module prepublishOnly",
     "pretty": "npx prettier '**/*.{js,ts,tsx}' --write",
     "expo-module": "expo-module",
