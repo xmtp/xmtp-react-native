@@ -1,5 +1,12 @@
 # @xmtp/react-native-sdk
 
+## 3.1.17
+
+### Patch Changes
+
+- e0e92b3: - adds `should_push` to messages for push notifications handling
+  - fixes occasional rust panic crash in streams
+
 ## 3.1.16
 
 ### Patch Changes
