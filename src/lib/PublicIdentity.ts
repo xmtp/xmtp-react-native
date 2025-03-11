@@ -5,7 +5,7 @@ export class PublicIdentity {
   kind: PublicIdentityKind
 
   constructor(identifier: string, kind: PublicIdentityKind) {
-    this.identifier = identifier
+    this.identifier = identifier.toLowerCase()
     this.kind = kind
   }
 

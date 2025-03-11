@@ -45,7 +45,7 @@ export class Group<
   groupName: string
   isGroupActive: boolean
   addedByInboxId: InboxId
-  imageUrlSquare: string
+  groupImageUrl: string
   groupDescription: string
   state: ConsentState
   lastMessage?: DecodedMessageUnion<ContentTypes>
@@ -62,7 +62,7 @@ export class Group<
     this.groupName = params.name
     this.isGroupActive = params.isActive
     this.addedByInboxId = params.addedByInboxId
-    this.imageUrlSquare = params.imageUrl
+    this.groupImageUrl = params.imageUrl
     this.groupDescription = params.description
     this.state = params.consentState
     this.lastMessage = lastMessage

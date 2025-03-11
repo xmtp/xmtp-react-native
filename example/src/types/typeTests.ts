@@ -123,7 +123,7 @@ export const typeTests = async () => {
     text: 'text',
   })
   const keyBundleReactionClient = await Client.build<typeof supportedCodecs>(
-    reactionClient.address,
+    reactionClient.publicIdentity,
     {
       codecs: supportedCodecs,
       env: 'local',

@@ -19,12 +19,12 @@ test('group createdAt matches listGroups', async () => {
 
   // alix creates a group
   const alixGroup = await alix.conversations.newGroup([
-    bo.address,
-    caro.address,
+    bo.inboxId,
+    caro.inboxId,
   ])
 
   // bo creates a group
-  const boGroup = await bo.conversations.newGroup([alix.address])
+  const boGroup = await bo.conversations.newGroup([alix.inboxId])
 
   // Fetch groups using listGroups method
   await alix.conversations.sync()
@@ -65,12 +65,12 @@ test('group createdAt matches listAll', async () => {
 
   // alix creates a group
   const alixGroup = await alix.conversations.newGroup([
-    bo.address,
-    caro.address,
+    bo.inboxId,
+    caro.inboxId,
   ])
 
   // bo creates a group
-  const boGroup = await bo.conversations.newGroup([alix.address])
+  const boGroup = await bo.conversations.newGroup([alix.inboxId])
 
   // Fetch groups using listGroups method
   await alix.conversations.sync()
@@ -130,12 +130,12 @@ test('group createdAt matches streamGroups', async () => {
   await delayToPropogate()
 
   // alix creates a group
-  const boGroup = await bo.conversations.newGroup([alix.address])
+  const boGroup = await bo.conversations.newGroup([alix.inboxId])
 
   await delayToPropogate()
 
   // bo creates a group
-  const caroGroup = await caro.conversations.newGroup([alix.address])
+  const caroGroup = await caro.conversations.newGroup([alix.inboxId])
 
   await delayToPropogate()
 
@@ -179,12 +179,12 @@ test('group createdAt matches streamAll', async () => {
   await delayToPropogate()
 
   // alix creates a group
-  const boGroup = await bo.conversations.newGroup([alix.address])
+  const boGroup = await bo.conversations.newGroup([alix.inboxId])
 
   await delayToPropogate()
 
   // bo creates a group
-  const caroGroup = await caro.conversations.newGroup([alix.address])
+  const caroGroup = await caro.conversations.newGroup([alix.inboxId])
 
   await delayToPropogate()
 
@@ -219,11 +219,11 @@ test('conversation createdAt matches list', async () => {
   const [alix, bo, caro] = await createClients(3)
 
   // alix creates a conversation
-  const alixConversation = await alix.conversations.newConversation(bo.address)
+  const alixConversation = await alix.conversations.newConversation(bo.inboxId)
 
   // bo creates a conversation
   const caroConversation = await caro.conversations.newConversation(
-    alix.address
+    alix.inboxId
   )
 
   // Fetch conversations using list() method
@@ -262,11 +262,11 @@ test('conversation createdAt matches listAll', async () => {
   const [alix, bo, caro] = await createClients(3)
 
   // alix creates a group
-  const alixConversation = await alix.conversations.newConversation(bo.address)
+  const alixConversation = await alix.conversations.newConversation(bo.inboxId)
 
   // bo creates a group
   const caroConversation = await caro.conversations.newConversation(
-    alix.address
+    alix.inboxId
   )
 
   // Fetch conversations using list() method
@@ -310,13 +310,13 @@ test('conversation createdAt matches stream', async () => {
   })
 
   // alix creates a conversation
-  const alixConversation = await alix.conversations.newConversation(bo.address)
+  const alixConversation = await alix.conversations.newConversation(bo.inboxId)
 
   await delayToPropogate()
 
   // bo creates a conversation
   const caroConversation = await caro.conversations.newConversation(
-    alix.address
+    alix.inboxId
   )
 
   await delayToPropogate()
@@ -369,13 +369,13 @@ test('conversation createdAt matches streamAll', async () => {
   })
 
   // alix creates a group
-  const alixConversation = await alix.conversations.newConversation(bo.address)
+  const alixConversation = await alix.conversations.newConversation(bo.inboxId)
 
   await delayToPropogate()
 
   // bo creates a group
   const caroConversation = await caro.conversations.newConversation(
-    alix.address
+    alix.inboxId
   )
 
   await delayToPropogate()

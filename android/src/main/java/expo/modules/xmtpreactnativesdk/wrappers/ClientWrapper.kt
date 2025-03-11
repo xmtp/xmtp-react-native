@@ -8,7 +8,8 @@ class ClientWrapper {
             return mapOf(
                 "inboxId" to client.inboxId,
                 "installationId" to client.installationId,
-                "dbPath" to client.dbPath
+                "dbPath" to client.dbPath,
+                "publicIdentity" to PublicIdentityWrapper.encode(client.publicIdentity)
             )
         }
     }

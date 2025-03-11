@@ -8,8 +8,7 @@ import {
   adaptEthersWalletToSigner,
   assertEqual,
 } from './test-utils'
-import { Client } from '../../../src/index'
-import { hexToBytes } from 'viem'
+import { Client, PublicIdentity } from '../../../src/index'
 
 export const clientTests: Test[] = []
 let counter = 1
@@ -31,7 +30,10 @@ test('can make a client', async () => {
     dbEncryptionKey: keyBytes,
   })
 
-  const inboxId = await Client.getOrCreateInboxId(client.address, 'local')
+  const inboxId = await Client.getOrCreateInboxId(
+    client.publicIdentity,
+    'local'
+  )
 
   assert(
     client.inboxId === inboxId,
@@ -44,9 +46,12 @@ test('static can message', async () => {
   const [alix, bo] = await createClients(2)
 
   const addressMap = await Client.canMessage('local', [
-    alix.address,
-    '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67',
-    bo.address,
+    alix.publicIdentity,
+    new PublicIdentity(
+      '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67',
+      'ETHEREUM'
+    ),
+    bo.publicIdentity,
   ])
 
   assert(
@@ -57,13 +62,13 @@ test('static can message', async () => {
   )
 
   assert(
-    addressMap[alix.address.toLowerCase()] === true,
-    `should be able to message ${alix.address}`
+    addressMap[alix.publicIdentity.identifier] === true,
+    `should be able to message ${alix.publicIdentity.identifier}`
   )
 
   assert(
-    addressMap[bo.address.toLowerCase()] === true,
-    `should be able to message ${bo.address}`
+    addressMap[bo.publicIdentity.identifier] === true,
+    `should be able to message ${bo.publicIdentity.identifier}`
   )
   return true
 })
@@ -77,13 +82,14 @@ test('static inboxStates for inboxIds', async () => {
   ])
 
   assert(
-    inboxStates[0].recoveryAddress.toLowerCase === alix.address.toLowerCase,
-    `inbox state should be ${alix.address.toLowerCase} but was ${inboxStates[0].recoveryAddress.toLowerCase}`
+    inboxStates[0].recoveryIdentity.identifier ===
+      alix.publicIdentity.identifier,
+    `inbox state should be ${alix.publicIdentity.identifier} but was ${inboxStates[0].recoveryIdentity.identifier}`
   )
 
   assert(
-    inboxStates[1].recoveryAddress.toLowerCase === bo.address.toLowerCase,
-    `inbox state should be ${bo.address.toLowerCase} but was ${inboxStates[1].recoveryAddress.toLowerCase}`
+    inboxStates[1].recoveryIdentity.identifier === bo.publicIdentity.identifier,
+    `inbox state should be ${bo.publicIdentity.identifier} but was ${inboxStates[1].recoveryIdentity.identifier}`
   )
 
   return true
@@ -115,21 +121,18 @@ test('can revoke installations', async () => {
   // create a v3 client
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
   })
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
   })
 
   const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath3,
   })
@@ -166,7 +169,6 @@ test('can revoke all other installations', async () => {
   // create a v3 client
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
@@ -174,7 +176,6 @@ test('can revoke all other installations', async () => {
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
@@ -182,7 +183,6 @@ test('can revoke all other installations', async () => {
 
   const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
@@ -241,7 +241,7 @@ test('calls preAuthenticateToInboxCallback when supplied', async () => {
 test('can delete a local database', async () => {
   let [client, anotherClient] = await createClients(2)
 
-  await client.conversations.newGroup([anotherClient.address])
+  await client.conversations.newGroup([anotherClient.inboxId])
   await client.conversations.sync()
   assert(
     (await client.conversations.listGroups()).length === 1,
@@ -257,7 +257,6 @@ test('can delete a local database', async () => {
   await client.deleteLocalDatabase()
   client = await Client.createRandom({
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: new Uint8Array([
       233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
       166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135,
@@ -289,18 +288,16 @@ test('can make a client with encryption key and database directory', async () =>
 
   const client = await Client.createRandom({
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: key,
     dbDirectory: dbDirPath,
   })
 
   const anotherClient = await Client.createRandom({
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: key,
   })
 
-  await client.conversations.newGroup([anotherClient.address])
+  await client.conversations.newGroup([anotherClient.inboxId])
   assert(
     (await client.conversations.listGroups()).length === 1,
     `should have a group size of 1 but was ${
@@ -308,16 +305,15 @@ test('can make a client with encryption key and database directory', async () =>
     }`
   )
 
-  const clientFromBundle = await Client.build(client.address, {
+  const clientFromBundle = await Client.build(client.publicIdentity, {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: key,
     dbDirectory: dbDirPath,
   })
 
   assert(
-    clientFromBundle.address === client.address,
-    `clients dont match ${client.address} and ${clientFromBundle.address}`
+    clientFromBundle.inboxId === client.inboxId,
+    `clients dont match ${client.inboxId} and ${clientFromBundle.inboxId}`
   )
 
   assert(
@@ -332,7 +328,7 @@ test('can make a client with encryption key and database directory', async () =>
 test('can drop a local database', async () => {
   const [client, anotherClient] = await createClients(2)
 
-  const group = await client.conversations.newGroup([anotherClient.address])
+  const group = await client.conversations.newGroup([anotherClient.inboxId])
   await client.conversations.sync()
   assert(
     (await client.conversations.listGroups()).length === 1,
@@ -374,7 +370,7 @@ test('can drop client from memory', async () => {
 test('can get a inboxId from an address', async () => {
   const [alix, bo] = await createClients(2)
 
-  const boInboxId = await alix.findInboxIdFromAddress(bo.address)
+  const boInboxId = await alix.findInboxIdFromIdentity(bo.publicIdentity)
   assert(boInboxId === bo.inboxId, `${boInboxId} should match ${bo.inboxId}`)
   return true
 })
@@ -388,7 +384,6 @@ test('production client creation does not error', async () => {
   try {
     await Client.createRandom({
       env: 'production',
-      appVersion: 'Testing/0.0.0',
       dbEncryptionKey: key,
     })
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -403,12 +398,14 @@ test('can find others inbox states', async () => {
 
   const states = await alix.inboxStates(true, [bo.inboxId, caro.inboxId])
   assert(
-    states[0].recoveryAddress.toLowerCase === bo.address.toLowerCase,
-    `addresses dont match ${states[0].recoveryAddress} and ${bo.address}`
+    states[0].recoveryIdentity.identifier.toLowerCase ===
+      bo.publicIdentity.identifier.toLowerCase,
+    `identities dont match ${states[0].recoveryIdentity} and ${bo.publicIdentity.identifier}`
   )
   assert(
-    states[1].addresses[0].toLowerCase === caro.address.toLowerCase,
-    `clients dont match ${states[1].addresses[0]} and ${caro.address}`
+    states[1].identities[0].identifier.toLowerCase ===
+      caro.publicIdentity.identifier.toLowerCase,
+    `clients dont match ${states[1].identities[0]} and ${caro.publicIdentity.identifier}`
   )
 
   return true
@@ -448,7 +445,6 @@ test('test add account with existing InboxIds', async () => {
 
   const boClient = await Client.create(adaptEthersWalletToSigner(boWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
@@ -473,12 +469,14 @@ test('test add account with existing InboxIds', async () => {
   // Forcefully add the boClient account to alixClient
   await alixClient.addAccount(adaptEthersWalletToSigner(boWallet), true)
 
-  // Retrieve the inbox state and check the number of associated addresses
+  // Retrieve the inbox state and check the number of associated identities
   const state = await alixClient.inboxState(true)
-  await assertEqual(state.addresses.length, 2, 'Length should be 2')
+  await assertEqual(state.identities.length, 2, 'Length should be 2')
 
   // Validate that the inbox ID from the address matches alixClient's inbox ID
-  const inboxId = await alixClient.findInboxIdFromAddress(boClient.address)
+  const inboxId = await alixClient.findInboxIdFromIdentity(
+    boClient.publicIdentity
+  )
   await assertEqual(inboxId, alixClient.inboxId, 'InboxIds should be equal')
 
   return true
@@ -496,7 +494,6 @@ test('can add and remove accounts', async () => {
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
@@ -505,26 +502,27 @@ test('can add and remove accounts', async () => {
 
   const inboxState = await alix.inboxState(true)
   assert(
-    inboxState.addresses.length === 3,
-    `addresses length should be 3 but was ${inboxState.addresses.length}`
+    inboxState.identities.length === 3,
+    `identities length should be 3 but was ${inboxState.identities.length}`
   )
   assert(
     inboxState.installations.length === 1,
-    `addresses length should be 1 but was ${inboxState.installations.length}`
+    `identities length should be 1 but was ${inboxState.installations.length}`
   )
   assert(
-    inboxState.recoveryAddress === alix.address.toLowerCase(),
-    `recovery address should be ${alix.address} but was ${inboxState.recoveryAddress}`
+    inboxState.recoveryIdentity.identifier ===
+      alix.publicIdentity.identifier.toLowerCase(),
+    `recovery address should be ${alix.publicIdentity.identifier} but was ${inboxState.recoveryIdentity}`
   )
 
   await alix.removeAccount(
     adaptEthersWalletToSigner(alixWallet),
-    await alixWallet3.getAddress()
+    new PublicIdentity(await alixWallet3.getAddress(), 'ETHEREUM')
   )
   const inboxState2 = await alix.inboxState(true)
   assert(
-    inboxState2.addresses.length === 2,
-    `addresses length should be 2 but was ${inboxState.addresses.length}`
+    inboxState2.identities.length === 2,
+    `identities length should be 2 but was ${inboxState.identities.length}`
   )
 
   return true
@@ -543,16 +541,14 @@ test('errors if dbEncryptionKey is lost', async () => {
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
   let errorThrown = false
 
   try {
-    await Client.build(alix.address, {
+    await Client.build(alix.publicIdentity, {
       env: 'local',
-      appVersion: 'Testing/0.0.0',
       dbEncryptionKey: badKeyBytes,
     })
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -570,7 +566,6 @@ test('errors if dbEncryptionKey is lost', async () => {
   try {
     await Client.create(adaptEthersWalletToSigner(alixWallet), {
       env: 'local',
-      appVersion: 'Testing/0.0.0',
       dbEncryptionKey: badKeyBytes,
     })
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -597,8 +592,11 @@ test('can manage clients manually', async () => {
 
   const signer = adaptEthersWalletToSigner(alix)
 
-  const inboxId = await Client.getOrCreateInboxId(alix.address, 'local')
-  const client = await Client.ffiCreateClient(alix.address, {
+  const inboxId = await Client.getOrCreateInboxId(
+    await signer.getIdentifier(),
+    'local'
+  )
+  const client = await Client.ffiCreateClient(await signer.getIdentifier(), {
     env: 'local',
     dbEncryptionKey: keyBytes,
   })
@@ -612,10 +610,10 @@ test('can manage clients manually', async () => {
   await client.ffiAddEcdsaSignature(signature)
   await client.ffiRegisterIdentity()
 
-  const canMessage = await bo.canMessage([client.address])
+  const canMessage = await bo.canMessage([client.publicIdentity])
   assert(
-    canMessage[client.address.toLowerCase()] === true,
-    `should be able to message ${canMessage[client.address.toLowerCase()]}`
+    canMessage[client.publicIdentity.identifier.toLowerCase()] === true,
+    `should be able to message ${canMessage[client.publicIdentity.identifier.toLowerCase()]}`
   )
   assert(
     inboxId === client.inboxId,
@@ -642,11 +640,13 @@ test('can manage add remove manually', async () => {
 
   let inboxState = await alix.inboxState(true)
   assert(
-    inboxState.addresses.length === 1,
-    `addresses length should be 1 but was ${inboxState.addresses.length}`
+    inboxState.identities.length === 1,
+    `identities length should be 1 but was ${inboxState.identities.length}`
   )
 
-  const sigText = await alix.ffiAddWalletSignatureText(boWallet.address)
+  const sigText = await alix.ffiAddWalletSignatureText(
+    await boSigner.getIdentifier()
+  )
   const signedMessage = await boSigner.signMessage(sigText)
 
   let { r, s, v } = ethers.utils.splitSignature(signedMessage)
@@ -659,11 +659,13 @@ test('can manage add remove manually', async () => {
 
   inboxState = await alix.inboxState(true)
   assert(
-    inboxState.addresses.length === 2,
-    `addresses length should be 2 but was ${inboxState.addresses.length}`
+    inboxState.identities.length === 2,
+    `identities length should be 2 but was ${inboxState.identities.length}`
   )
 
-  const sigText2 = await alix.ffiRemoveWalletSignatureText(boWallet.address)
+  const sigText2 = await alix.ffiRemoveWalletSignatureText(
+    await boSigner.getIdentifier()
+  )
   const signedMessage2 = await alixSigner.signMessage(sigText2)
 
   ;({ r, s, v } = ethers.utils.splitSignature(signedMessage2))
@@ -676,8 +678,8 @@ test('can manage add remove manually', async () => {
 
   inboxState = await alix.inboxState(true)
   assert(
-    inboxState.addresses.length === 1,
-    `addresses length should be 1 but was ${inboxState.addresses.length}`
+    inboxState.identities.length === 1,
+    `identities length should be 1 but was ${inboxState.identities.length}`
   )
 
   return true

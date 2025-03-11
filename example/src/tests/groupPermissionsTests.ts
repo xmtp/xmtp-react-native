@@ -16,7 +16,7 @@ test('new group has expected admin list and super admin list', async () => {
   const [alix, bo] = await createClients(2)
 
   // Alix Create a group
-  const alixGroup = await alix.conversations.newGroup([bo.address])
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
 
   // Alix is the only admin and the only super admin
   const adminList = await alixGroup.listAdmins()
@@ -32,7 +32,7 @@ test('new group has expected admin list and super admin list', async () => {
   )
   assert(
     superAdminList[0] === alix.inboxId,
-    `superAdminList[0] should be ${alix.address} but was ${superAdminList[0]}`
+    `superAdminList[0] should be ${alix.inboxId} but was ${superAdminList[0]}`
   )
   return true
 })
@@ -43,8 +43,8 @@ test('super admin can add a new admin', async () => {
 
   // Alix Create a group
   const alixGroup = await alix.conversations.newGroup([
-    bo.address,
-    caro.address,
+    bo.inboxId,
+    caro.inboxId,
   ])
 
   // Verify alix is a super admin and bo is not
@@ -80,7 +80,7 @@ test('in admin only group, members can not update group name unless they are an 
 
   // Alix Create a group
   const alixGroup = await alix.conversations.newGroup(
-    [bo.address, caro.address],
+    [bo.inboxId, caro.inboxId],
     { permissionLevel: 'admin_only' }
   )
 
@@ -91,17 +91,14 @@ test('in admin only group, members can not update group name unless they are an 
   }
 
   // Verify group name is empty string
-  const groupName = await alixGroup.groupName()
-  assert(
-    groupName === '',
-    `group name should be empty string but was ${groupName}`
-  )
+  const name = await alixGroup.name()
+  assert(name === '', `group name should be empty string but was ${name}`)
 
   // Verify that bo can not update the group name
   await bo.conversations.sync()
   const boGroup = (await bo.conversations.listGroups())[0]
   try {
-    await boGroup.updateGroupName("bo's group")
+    await boGroup.updateName("bo's group")
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return true
@@ -115,7 +112,7 @@ test('in admin only group, members can update group name once they are an admin'
 
   // Alix Create a group
   const alixGroup = await alix.conversations.newGroup(
-    [bo.address, caro.address],
+    [bo.inboxId, caro.inboxId],
     { permissionLevel: 'admin_only' }
   )
 
@@ -128,17 +125,14 @@ test('in admin only group, members can update group name once they are an admin'
   }
 
   // Verify group name is empty string
-  let groupName = await alixGroup.groupName()
-  assert(
-    groupName === '',
-    `group name should be empty string but was ${groupName}`
-  )
+  let name = await alixGroup.name()
+  assert(name === '', `group name should be empty string but was ${name}`)
 
   // Verify that bo can not update the group name
   await bo.conversations.sync()
   const boGroup = (await bo.conversations.listGroups())[0]
   try {
-    await boGroup.updateGroupName("bo's group")
+    await boGroup.updateName("bo's group")
     return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
@@ -153,11 +147,11 @@ test('in admin only group, members can update group name once they are an admin'
 
   // Now bo can update the group name
   await boGroup.sync()
-  await boGroup.updateGroupName("bo's group")
-  groupName = await boGroup.groupName()
+  await boGroup.updateName("bo's group")
+  name = await boGroup.name()
   assert(
-    groupName === "bo's group",
-    `group name should be bo's group but was ${groupName}`
+    name === "bo's group",
+    `group name should be bo's group but was ${name}`
   )
 
   return true
@@ -169,7 +163,7 @@ test('in admin only group, members can not update group name after admin status 
 
   // Alix Create a group
   const alixGroup = await alix.conversations.newGroup(
-    [bo.address, caro.address],
+    [bo.inboxId, caro.inboxId],
     { permissionLevel: 'admin_only' }
   )
 
@@ -182,11 +176,8 @@ test('in admin only group, members can not update group name after admin status 
   }
 
   // Verify group name is empty string
-  let groupName = await alixGroup.groupName()
-  assert(
-    groupName === '',
-    `group name should be empty string but was ${groupName}`
-  )
+  let name = await alixGroup.name()
+  assert(name === '', `group name should be empty string but was ${name}`)
 
   // Alix adds bo as an admin
   await alixGroup.addAdmin(bo.inboxId)
@@ -198,12 +189,12 @@ test('in admin only group, members can not update group name after admin status 
   await bo.conversations.sync()
   const boGroup = (await bo.conversations.listGroups())[0]
   await boGroup.sync()
-  await boGroup.updateGroupName("bo's group")
+  await boGroup.updateName("bo's group")
   await alixGroup.sync()
-  groupName = await alixGroup.groupName()
+  name = await alixGroup.name()
   assert(
-    groupName === "bo's group",
-    `group name should be bo's group but was ${groupName}`
+    name === "bo's group",
+    `group name should be bo's group but was ${name}`
   )
 
   // Now alix removed bo as an admin
@@ -214,7 +205,7 @@ test('in admin only group, members can not update group name after admin status 
 
   // Bo can no longer update the group name
   try {
-    await boGroup.updateGroupName('new name 2')
+    await boGroup.updateName('new name 2')
     return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
@@ -222,10 +213,10 @@ test('in admin only group, members can not update group name after admin status 
   }
 
   await alixGroup.sync()
-  groupName = await alixGroup.groupName()
+  name = await alixGroup.name()
   assert(
-    groupName === "bo's group",
-    `group name should be bo's group but was ${groupName}`
+    name === "bo's group",
+    `group name should be bo's group but was ${name}`
   )
 
   // throw new Error('Expected exception when non-admin attempts to update group name.')
@@ -237,7 +228,7 @@ test('can not remove a super admin from a group', async () => {
   const [alix, bo] = await createClients(3)
 
   // Alix Create a group
-  const alixGroup = await alix.conversations.newGroup([bo.address], {
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId], {
     permissionLevel: 'all_members',
   })
 
@@ -257,7 +248,7 @@ test('can not remove a super admin from a group', async () => {
 
   // Bo should not be able to remove alix from the group
   try {
-    await boGroup.removeMembersByInboxId([alix.inboxId])
+    await boGroup.removeMembersByIdentity([alix.publicIdentity])
     return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
@@ -284,7 +275,7 @@ test('can not remove a super admin from a group', async () => {
 
   // Verify bo can not remove alix bc alix is a super admin
   try {
-    await boGroup.removeMembersByInboxId([alix.inboxId])
+    await boGroup.removeMembersByIdentity([alix.publicIdentity])
     return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
@@ -307,7 +298,7 @@ test('can not remove a super admin from a group', async () => {
   assert(!alixIsSuperAdmin, `alix should not be a super admin`)
 
   // Now bo can remove Alix from the group
-  await boGroup.removeMembers([alix.address])
+  await boGroup.removeMembers([alix.inboxId])
   await boGroup.sync()
   numMembers = (await boGroup.memberInboxIds()).length
   assert(
@@ -324,7 +315,7 @@ test('can commit after invalid permissions commit', async () => {
 
   // Bo creates a group with Alix and Caro
   const boGroup = await bo.conversations.newGroup(
-    [alix.address, caro.address],
+    [alix.inboxId, caro.inboxId],
     { permissionLevel: 'all_members' }
   )
   await alix.conversations.sync()
@@ -332,8 +323,8 @@ test('can commit after invalid permissions commit', async () => {
 
   // Verify that Alix cannot add an admin
   assert(
-    (await boGroup.groupName()) === '',
-    `boGroup.groupName should be empty string but was ${boGroup.groupName}`
+    (await boGroup.name()) === '',
+    `boGroup.name should be empty string but was ${boGroup.name}`
   )
   try {
     await alixGroup.addAdmin(alix.inboxId)
@@ -349,16 +340,16 @@ test('can commit after invalid permissions commit', async () => {
   // Verify that Alix can update the group name
   await boGroup.sync()
   await alixGroup.sync()
-  await alixGroup.updateGroupName('Alix group name')
+  await alixGroup.updateName('Alix group name')
   await alixGroup.sync()
   await boGroup.sync()
   assert(
-    (await boGroup.groupName()) === 'Alix group name',
-    `boGroup.groupName should be "Alix group name" but was ${boGroup.groupName}`
+    (await boGroup.name()) === 'Alix group name',
+    `boGroup.name should be "Alix group name" but was ${boGroup.name}`
   )
   assert(
-    (await alixGroup.groupName()) === 'Alix group name',
-    `alixGroup.groupName should be "Alix group name" but was ${alixGroup.groupName}`
+    (await alixGroup.name()) === 'Alix group name',
+    `alixGroup.name should be "Alix group name" but was ${alixGroup.name}`
   )
 
   return true
@@ -370,7 +361,7 @@ test('group with All Members policy has remove function that is admin only', asy
 
   // Bo creates a group with Alix and Caro with all_members policy
   const boGroup = await bo.conversations.newGroup(
-    [alix.address, caro.address],
+    [alix.inboxId, caro.inboxId],
     { permissionLevel: 'all_members' }
   )
   await alix.conversations.sync()
@@ -378,7 +369,7 @@ test('group with All Members policy has remove function that is admin only', asy
 
   // Verify that Alix cannot remove a member
   try {
-    await alixGroup.removeMembers([caro.address])
+    await alixGroup.removeMembers([caro.inboxId])
     return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
@@ -386,7 +377,7 @@ test('group with All Members policy has remove function that is admin only', asy
   }
 
   // Verify that Bo (admin) can remove a member
-  await boGroup.removeMembers([caro.address])
+  await boGroup.removeMembers([caro.inboxId])
   await boGroup.sync()
   const members = await boGroup.memberInboxIds()
   assert(
@@ -403,7 +394,7 @@ test('can update group permissions', async () => {
 
   // Bo creates a group with Alix and Caro
   const boGroup = await bo.conversations.newGroup(
-    [alix.address, caro.address],
+    [alix.inboxId, caro.inboxId],
     { permissionLevel: 'admin_only' }
   )
 
@@ -421,18 +412,18 @@ test('can update group permissions', async () => {
   )
 
   // Verify that Bo can update the group description
-  await boGroup.updateGroupDescription('new description')
+  await boGroup.updateDescription('new description')
   await boGroup.sync()
   assert(
-    (await boGroup.groupDescription()) === 'new description',
-    `boGroup.groupDescription should be "new description" but was ${boGroup.groupDescription}`
+    (await boGroup.description()) === 'new description',
+    `boGroup.description should be "new description" but was ${boGroup.description}`
   )
 
   // Verify that alix can not update the group description
   await alix.conversations.sync()
   const alixGroup = (await alix.conversations.listGroups())[0]
   try {
-    await alixGroup.updateGroupDescription('new description 2')
+    await alixGroup.updateDescription('new description 2')
     return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
@@ -441,7 +432,7 @@ test('can update group permissions', async () => {
 
   // Verify that alix can not update permissions
   try {
-    await alixGroup.updateGroupDescriptionPermission('allow')
+    await alixGroup.updateDescriptionPermission('allow')
     return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
@@ -449,7 +440,7 @@ test('can update group permissions', async () => {
   }
 
   // Verify that bo can update permissions
-  await boGroup.updateGroupDescriptionPermission('allow')
+  await boGroup.updateDescriptionPermission('allow')
   await boGroup.sync()
   assert(
     (await boGroup.permissionPolicySet()).updateGroupDescriptionPolicy ===
@@ -458,11 +449,11 @@ test('can update group permissions', async () => {
   )
 
   // Verify that alix can now update the group description
-  await alixGroup.updateGroupDescription('new description 2')
+  await alixGroup.updateDescription('new description 2')
   await alixGroup.sync()
   assert(
-    (await alixGroup.groupDescription()) === 'new description 2',
-    `alixGroup.groupDescription should be "new description 2" but was ${alixGroup.groupDescription}`
+    (await alixGroup.description()) === 'new description 2',
+    `alixGroup.description should be "new description 2" but was ${alixGroup.description}`
   )
 
   return true
@@ -485,7 +476,7 @@ test('can create a group with custom permissions', async () => {
 
   // Bo creates a group with Alix and Caro with custom permissions
   await bo.conversations.newGroupCustomPermissions(
-    [alix.address, caro.address],
+    [alix.inboxId, caro.inboxId],
     customPermissionsPolicySet
   )
 
@@ -528,16 +519,16 @@ test('can create a group with custom permissions', async () => {
   )
 
   // Verify that alix can update the group description
-  await alixGroup.updateGroupDescription('new description')
+  await alixGroup.updateDescription('new description')
   await alixGroup.sync()
   assert(
-    (await alixGroup.groupDescription()) === 'new description',
-    `alixGroup.groupDescription should be "new description" but was ${alixGroup.groupDescription}`
+    (await alixGroup.description()) === 'new description',
+    `alixGroup.description should be "new description" but was ${alixGroup.description}`
   )
 
   // Verify that alix can not update the group name
   try {
-    await alixGroup.updateGroupName('new name')
+    await alixGroup.updateName('new name')
     return false
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
@@ -566,7 +557,7 @@ test('creating a group with invalid permissions should fail', async () => {
   // Bo creates a group with Alix and Caro
   try {
     await bo.conversations.newGroupCustomPermissions(
-      [alix.address, caro.address],
+      [alix.inboxId, caro.inboxId],
       customPermissionsPolicySet
     )
     return false

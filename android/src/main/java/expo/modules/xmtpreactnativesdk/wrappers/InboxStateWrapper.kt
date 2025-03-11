@@ -19,7 +19,7 @@ class InboxStateWrapper {
                         )
                     )
                 },
-                "recoveryAddress" to PublicIdentityWrapper.encode(inboxState.recoveryPublicIdentity)
+                "recoveryIdentity" to PublicIdentityWrapper.encode(inboxState.recoveryPublicIdentity)
             )
         }
 

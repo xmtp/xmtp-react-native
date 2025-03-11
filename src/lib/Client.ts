@@ -34,6 +34,7 @@ export class Client<
   inboxId: InboxId
   installationId: InstallationId
   dbPath: string
+  publicIdentity: PublicIdentity
   conversations: Conversations<ContentTypes>
   preferences: PrivatePreferences
   static codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
@@ -105,6 +106,7 @@ export class Client<
       client['inboxId'],
       client['installationId'],
       client['dbPath'],
+      PublicIdentity.from(client['publicIdentity']),
       options?.codecs || []
     )
   }
@@ -153,9 +155,9 @@ export class Client<
           'authed',
           async (message: {
             inboxId: string
-            address: string
             installationId: string
             dbPath: string
+            publicIdentity: string
           }) => {
             this.removeAllSubscriptions(authInboxSubscription)
             resolve(
@@ -163,6 +165,7 @@ export class Client<
                 message.inboxId as InboxId,
                 message.installationId as InstallationId,
                 message.dbPath,
+                PublicIdentity.from(message.publicIdentity),
                 options.codecs || []
               )
             )
@@ -220,6 +223,7 @@ export class Client<
       client['inboxId'],
       client['installationId'],
       client['dbPath'],
+      PublicIdentity.from(client['publicIdentity']),
       options.codecs || []
     )
   }
@@ -260,6 +264,7 @@ export class Client<
       client['inboxId'],
       client['installationId'],
       client['dbPath'],
+      PublicIdentity.from(client['publicIdentity']),
       options.codecs || []
     )
   }
@@ -363,11 +368,13 @@ export class Client<
     inboxId: InboxId,
     installationId: InstallationId,
     dbPath: string,
+    publicIdentity: PublicIdentity,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {
     this.inboxId = inboxId
     this.installationId = installationId
     this.dbPath = dbPath
+    this.publicIdentity = publicIdentity
     this.conversations = new Conversations(this)
     this.preferences = new PrivatePreferences(this)
     Client.codecRegistry = {}
