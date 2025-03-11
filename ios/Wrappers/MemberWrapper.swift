@@ -38,3 +38,22 @@ struct MemberWrapper {
 		return result
 	}
 }
+
+struct MembershipResultWrapper {
+	static func encodeToObj(_ result: XMTP.GroupMembershipResult) throws -> [String: Any] {
+		return [
+			"addedMembers": result.addedMembers,
+			"removedMembers": result.removedMembers,
+			"failedInstallationIds": result.failedInstallationIds,
+		]
+	}
+
+	static func encode(_ result: XMTP.GroupMembershipResult) throws -> String {
+		let obj = try encodeToObj(result)
+		let data = try JSONSerialization.data(withJSONObject: obj)
+		guard let encoded = String(data: data, encoding: .utf8) else {
+			throw WrapperError.encodeError("could not encode member")
+		}
+		return encoded
+	}
+}

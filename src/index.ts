@@ -21,7 +21,7 @@ import { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
 import { Dm } from './lib/Dm'
 import { Group, PermissionUpdateOption } from './lib/Group'
 import { InboxState } from './lib/InboxState'
-import { Member } from './lib/Member'
+import { Member, MembershipResult } from './lib/Member'
 import { PublicIdentity } from './lib/PublicIdentity'
 import { SignerType } from './lib/Signer'
 import {
@@ -995,8 +995,9 @@ export async function addGroupMembers(
   installationId: InstallationId,
   id: ConversationId,
   inboxIds: InboxId[]
-): Promise<void> {
-  return XMTPModule.addGroupMembers(installationId, id, inboxIds)
+): Promise<MembershipResult> {
+  const result = await XMTPModule.addGroupMembers(installationId, id, inboxIds)
+  return MembershipResult.from(result)
 }
 
 export async function removeGroupMembers(
@@ -1004,16 +1005,21 @@ export async function removeGroupMembers(
   id: ConversationId,
   inboxIds: InboxId[]
 ): Promise<void> {
-  return XMTPModule.removeGroupMembers(installationId, id, inboxIds)
+  return await XMTPModule.removeGroupMembers(installationId, id, inboxIds)
 }
 
 export async function addGroupMembersByIdentity(
   installationId: InstallationId,
   id: ConversationId,
   identities: PublicIdentity[]
-): Promise<void> {
+): Promise<MembershipResult> {
   const ids = identities.map((identity) => JSON.stringify(identity))
-  return XMTPModule.addGroupMembersByIdentity(installationId, id, ids)
+  const result = await XMTPModule.addGroupMembersByIdentity(
+    installationId,
+    id,
+    ids
+  )
+  return MembershipResult.from(result)
 }
 
 export async function removeGroupMembersByIdentity(
@@ -1022,7 +1028,7 @@ export async function removeGroupMembersByIdentity(
   identities: PublicIdentity[]
 ): Promise<void> {
   const ids = identities.map((identity) => JSON.stringify(identity))
-  return XMTPModule.removeGroupMembersByIdentity(installationId, id, ids)
+  return await XMTPModule.removeGroupMembersByIdentity(installationId, id, ids)
 }
 
 export function groupName(
@@ -1486,7 +1492,7 @@ export { XMTPPush } from './lib/XMTPPush'
 export { ConsentRecord, DecodedMessage, MessageDeliveryStatus, ConsentState }
 export { Group } from './lib/Group'
 export { Dm } from './lib/Dm'
-export { Member } from './lib/Member'
+export { Member, MembershipResult } from './lib/Member'
 export { Address, InboxId, XMTPEnvironment } from './lib/Client'
 export {
   ConversationOptions,

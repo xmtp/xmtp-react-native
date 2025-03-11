@@ -805,7 +805,12 @@ test('can add members to a group', async () => {
     )
   }
 
-  await alixGroup.addMembers([caroClient.inboxId])
+  const memberResult = await alixGroup.addMembers([caroClient.inboxId])
+
+  assert(
+    memberResult.addedMembers[0] === caroClient.inboxId,
+    `Added member should be ${memberResult.addedMembers[0]}`
+  )
 
   // caro's num groups == 1
   await caroClient.conversations.sync()
@@ -1475,6 +1480,7 @@ test('can stream all group messages', async () => {
   await alix.conversations.streamAllMessages(async (message) => {
     allMessages.push(message)
   }, 'groups')
+  await delayToPropogate()
 
   for (let i = 0; i < 5; i++) {
     await boGroup.send({ text: `Message ${i}` })

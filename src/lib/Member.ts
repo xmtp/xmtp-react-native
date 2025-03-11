@@ -1,4 +1,4 @@
-import { InboxId } from './Client'
+import { InboxId, InstallationId } from './Client'
 import { ConsentState } from './ConsentRecord'
 import { PublicIdentity } from './PublicIdentity'
 
@@ -31,6 +31,31 @@ export class Member {
       }),
       entry.permissionLevel,
       entry.consentState
+    )
+  }
+}
+
+export class MembershipResult {
+  addedMembers: InboxId[]
+  removedMembers: InboxId[]
+  failedInstallationIds: InstallationId[]
+
+  constructor(
+    addedMembers: InboxId[],
+    removedMembers: InboxId[],
+    failedInstallationIds: InstallationId[]
+  ) {
+    this.addedMembers = addedMembers
+    this.removedMembers = removedMembers
+    this.failedInstallationIds = failedInstallationIds
+  }
+
+  static from(json: string): MembershipResult {
+    const result = JSON.parse(json)
+    return new MembershipResult(
+      result.addedMembers,
+      result.removeMembers,
+      result.failedInstallationIds
     )
   }
 }

@@ -2,7 +2,7 @@ import { Client, InboxId } from './Client'
 import { ConsentState } from './ConsentRecord'
 import { ConversationBase, ConversationVersion } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
-import { Member } from './Member'
+import { Member, MembershipResult } from './Member'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
@@ -310,7 +310,7 @@ export class Group<
    * @param inboxIds inboxIds to add to the group
    * @returns
    */
-  async addMembers(inboxIds: InboxId[]): Promise<void> {
+  async addMembers(inboxIds: InboxId[]): Promise<MembershipResult> {
     return XMTP.addGroupMembers(this.client.installationId, this.id, inboxIds)
   }
 
@@ -332,7 +332,9 @@ export class Group<
    * @param identities identities to add to the group
    * @returns
    */
-  async addMembersByIdentity(identities: PublicIdentity[]): Promise<void> {
+  async addMembersByIdentity(
+    identities: PublicIdentity[]
+  ): Promise<MembershipResult> {
     return XMTP.addGroupMembersByIdentity(
       this.client.installationId,
       this.id,

@@ -1427,7 +1427,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addGroupMembers") {
-			(installationId: String, id: String, peerInboxIds: [String]) in
+			(installationId: String, id: String, peerInboxIds: [String]) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1440,7 +1440,8 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.addMembers(inboxIds: peerInboxIds)
+			let result = try await group.addMembers(inboxIds: peerInboxIds)
+			MembershipResultWrapper.encode(result)
 		}
 
 		AsyncFunction("removeGroupMembers") {
@@ -1461,7 +1462,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addGroupMembersByIdentity") {
-			(installationId: String, id: String, peerIdentities: [String]) in
+			(installationId: String, id: String, peerIdentities: [String]) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1479,7 +1480,8 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.addMembersByIdentity(identities: identities)
+			let result = try await group.addMembersByIdentity(identities: identities)
+			MembershipResultWrapper.encode(result)
 		}
 
 		AsyncFunction("removeGroupMembersByIdentity") {
