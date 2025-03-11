@@ -4,13 +4,12 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
 import ModalSelector from 'react-native-modal-selector'
 import * as XMTP from 'xmtp-react-native-sdk'
-import { useXmtp } from 'xmtp-react-native-sdk'
+import { PublicIdentity, useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
 import { TestCategory } from './TestScreen'
 import { supportedCodecs } from './contentTypes/contentTypes'
 import { getDbEncryptionKey, useSavedAddress } from './hooks'
-
 
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
 export default function LaunchScreen(
@@ -33,12 +32,12 @@ export default function LaunchScreen(
       configuring
         .then(async (client) => {
           console.log('Connected XMTP client', label, {
-            address: client.address,
+            address: client.publicIdentity.identifier,
           })
           setClient(client)
           navigation.navigate('home')
           // Save the configured client keys for use in later sessions.
-          await savedKeys.save(client.address)
+          await savedKeys.save(client.publicIdentity.identifier)
         })
         .catch((err) =>
           console.log('Unable to connect XMTP client', label, err)
@@ -197,11 +196,14 @@ export default function LaunchScreen(
                     await getDbEncryptionKey(selectedNetwork)
                   configureWallet(
                     selectedNetwork,
-                    XMTP.Client.build(savedKeys.address!, {
-                      env: selectedNetwork,
-                      codecs: supportedCodecs,
-                      dbEncryptionKey,
-                    })
+                    XMTP.Client.build(
+                      new PublicIdentity(savedKeys.address!, 'ETHEREUM'),
+                      {
+                        env: selectedNetwork,
+                        codecs: supportedCodecs,
+                        dbEncryptionKey,
+                      }
+                    )
                   )
                 })().catch(console.error) // Don't forget error handling
               }}

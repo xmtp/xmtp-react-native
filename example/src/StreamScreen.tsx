@@ -40,7 +40,7 @@ const useConversation = (client: Client<any>, recieve: boolean) => {
 
     const setupConversations = async () => {
       const conversation = await client.conversations.newConversation(
-        conversationClient.address
+        conversationClient.inboxId
       )
       events.push({ type: 'start_conv', timestamp: Date.now() })
       setConversation(conversation)
@@ -56,7 +56,7 @@ const useConversation = (client: Client<any>, recieve: boolean) => {
     const setupReceiveConvo = async () => {
       const conversation =
         await conversationClient.conversations.newConversation(
-          conversationClient.address
+          conversationClient.inboxId
         )
       events.push({ type: 'receive_convo', timestamp: Date.now() })
       setOtherClientConvo(conversation)
@@ -128,7 +128,7 @@ const ConversationItem = ({
   const receiveMessage = useCallback(() => {
     otherClientConvo?.send('Hi!')
     onReceiveMessage()
-  }, [otherClientConvo, client.address, onReceiveMessage])
+  }, [otherClientConvo, client.publicIdentity.identifier, onReceiveMessage])
 
   return (
     <View>

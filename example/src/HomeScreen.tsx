@@ -59,12 +59,12 @@ export default function HomeScreen() {
               <Text style={{ fontSize: 14 }}>Connected as</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ fontSize: 12, fontWeight: 'bold', flex: 1 }}>
-                  {client?.address}
+                  {client?.publicIdentity.identifier}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
-                    if (client?.address) {
-                      Clipboard.setString(client.address)
+                    if (client?.publicIdentity.identifier) {
+                      Clipboard.setString(client.publicIdentity.identifier)
                     }
                   }}
                   style={{
