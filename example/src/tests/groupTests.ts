@@ -1605,6 +1605,10 @@ test('can allow and deny a inbox id', async () => {
     `isInboxAllowed2 should be true but was ${isInboxAllowed}`
   )
 
+  await bo.preferences.setConsentState(
+    new ConsentRecord(alix.inboxId, 'inbox_id', 'denied')
+  )
+
   alixMember = (await boGroup.members()).find(
     (member) => member.inboxId === alix.inboxId
   )
@@ -1953,7 +1957,7 @@ test('can create new installation without breaking group', async () => {
     dbEncryptionKey: keyBytes,
   })
 
-  const group = await client1.conversations.newGroup([wallet2.address])
+  const group = await client1.conversations.newGroup([client2.inboxId])
 
   await client1.conversations.sync()
   await client2.conversations.sync()
