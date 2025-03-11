@@ -26,7 +26,7 @@ import { PublicIdentity } from './lib/PublicIdentity'
 import { SignerType } from './lib/Signer'
 import {
   ConversationOptions,
-  ConversationType,
+  ConversationFilterType,
   ConversationId,
   ConversationTopic,
 } from './lib/types/ConversationOptions'
@@ -1398,14 +1398,14 @@ export function subscribeToConsent(installationId: InstallationId) {
 
 export function subscribeToConversations(
   installationId: InstallationId,
-  type: ConversationType
+  type: ConversationFilterType
 ) {
   return XMTPModule.subscribeToConversations(installationId, type)
 }
 
 export function subscribeToAllMessages(
   installationId: InstallationId,
-  type: ConversationType
+  type: ConversationFilterType
 ) {
   return XMTPModule.subscribeToAllMessages(installationId, type)
 }
@@ -1492,7 +1492,7 @@ export {
   ConversationOptions,
   ConversationId,
   ConversationTopic,
-  ConversationType,
+  ConversationFilterType,
 } from './lib/types/ConversationOptions'
 export { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 export { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'

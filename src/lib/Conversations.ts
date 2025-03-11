@@ -18,7 +18,7 @@ import {
   Conversation,
   ConversationId,
   ConversationTopic,
-  ConversationType,
+  ConversationFilterType,
   MessageId,
   PublicIdentity,
 } from '../index'
@@ -373,12 +373,12 @@ export default class Conversations<
 
   /**
    * This method streams conversations that the client is a member of.
-   * @param {type} ConversationType - Whether to stream groups, dms, or both
+   * @param {type} ConversationFilterType - Whether to stream groups, dms, or both
    * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
    */
   async stream(
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>,
-    type: ConversationType = 'all'
+    type: ConversationFilterType = 'all'
   ): Promise<void> {
     XMTPModule.subscribeToConversations(this.client.installationId, type)
     const subscription = XMTPModule.emitter.addListener(
@@ -411,13 +411,13 @@ export default class Conversations<
    * Listen for new messages in all conversations.
    *
    * This method subscribes to all conversations in real-time and listens for incoming and outgoing messages.
-   * @param {type} ConversationType - Whether to stream messages from groups, dms, or both
+   * @param {type} ConversationFilterType - Whether to stream messages from groups, dms, or both
    * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
    * @returns {Promise<void>} A Promise that resolves when the stream is set up.
    */
   async streamAllMessages(
     callback: (message: DecodedMessageUnion<ContentTypes>) => Promise<void>,
-    type: ConversationType = 'all'
+    type: ConversationFilterType = 'all'
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(this.client.installationId, type)
     const subscription = XMTPModule.emitter.addListener(

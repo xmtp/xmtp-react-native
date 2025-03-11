@@ -8,7 +8,7 @@ export type ConversationOptions = {
   lastMessage?: boolean
 }
 
-export type ConversationType = 'all' | 'groups' | 'dms'
+export type ConversationFilterType = 'all' | 'groups' | 'dms'
 
 export type ConversationId = string & { readonly brand: unique symbol }
 export type ConversationTopic = string & { readonly brand: unique symbol }
