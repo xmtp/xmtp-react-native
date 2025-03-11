@@ -64,7 +64,7 @@ export class Client<
     const signatureString = await signer.signMessage(request.message)
 
     if (signer.walletType?.() === 'SCW') {
-      await XMTPModule.receiveSCWSignature(request.id, signatureString)
+      await XMTPModule.receiveSignature(request.id, signatureString)
     } else {
       const eSig = splitSignature(signatureString)
       const r = hexToBytes(eSig.r)

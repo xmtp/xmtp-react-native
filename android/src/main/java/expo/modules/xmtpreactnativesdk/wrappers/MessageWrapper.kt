@@ -2,18 +2,18 @@ package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.codecs.description
-import org.xmtp.android.library.libxmtp.Message
+import org.xmtp.android.library.libxmtp.DecodedMessage
 
 class MessageWrapper {
 
     companion object {
-        fun encode(model: Message): String {
+        fun encode(model: DecodedMessage): String {
             val gson = GsonBuilder().create()
             val message = encodeMap(model)
             return gson.toJson(message)
         }
 
-        fun encodeMap(model: Message): Map<String, Any?> {
+        fun encodeMap(model: DecodedMessage): Map<String, Any?> {
             // Kotlin/Java Protos don't support null values and will always put the default ""
             // Check if there is a fallback, if there is then make it the set fallback, if not null
             val fallback = if (model.encodedContent.hasFallback()) model.encodedContent.fallback else null

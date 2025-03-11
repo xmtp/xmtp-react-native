@@ -15,7 +15,7 @@ class GroupWrapper {
             groupParams: ConversationParamsWrapper = ConversationParamsWrapper(),
         ): Map<String, Any> {
             return buildMap {
-                put("clientAddress", client.address)
+                put("clientInboxId", client.inboxId)
                 put("id", group.id)
                 put("createdAt", group.createdAt.time)
                 put("version", "GROUP")
@@ -23,7 +23,7 @@ class GroupWrapper {
                 if (groupParams.isActive) put("isActive", group.isActive())
                 if (groupParams.addedByInboxId) put("addedByInboxId", group.addedByInboxId())
                 if (groupParams.name) put("name", group.name)
-                if (groupParams.imageUrlSquare) put("imageUrlSquare", group.imageUrlSquare)
+                if (groupParams.imageUrl) put("imageUrl", group.imageUrl)
                 if (groupParams.description) put("description", group.description)
                 if (groupParams.consentState) {
                     put("consentState", consentStateToString(group.consentState()))
@@ -61,7 +61,7 @@ class ConversationParamsWrapper(
     val isActive: Boolean = true,
     val addedByInboxId: Boolean = true,
     val name: Boolean = true,
-    val imageUrlSquare: Boolean = true,
+    val imageUrl: Boolean = true,
     val description: Boolean = true,
     val consentState: Boolean = true,
     val lastMessage: Boolean = false,
@@ -74,7 +74,7 @@ class ConversationParamsWrapper(
                 if (jsonOptions.has("isActive")) jsonOptions.get("isActive").asBoolean else true,
                 if (jsonOptions.has("addedByInboxId")) jsonOptions.get("addedByInboxId").asBoolean else true,
                 if (jsonOptions.has("name")) jsonOptions.get("name").asBoolean else true,
-                if (jsonOptions.has("imageUrlSquare")) jsonOptions.get("imageUrlSquare").asBoolean else true,
+                if (jsonOptions.has("imageUrl")) jsonOptions.get("imageUrl").asBoolean else true,
                 if (jsonOptions.has("description")) jsonOptions.get("description").asBoolean else true,
                 if (jsonOptions.has("consentState")) jsonOptions.get("consentState").asBoolean else true,
                 if (jsonOptions.has("lastMessage")) jsonOptions.get("lastMessage").asBoolean else false,

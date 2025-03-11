@@ -7,7 +7,6 @@ class ClientWrapper {
         fun encodeToObj(client: Client): Map<String, String> {
             return mapOf(
                 "inboxId" to client.inboxId,
-                "address" to client.address,
                 "installationId" to client.installationId,
                 "dbPath" to client.dbPath
             )

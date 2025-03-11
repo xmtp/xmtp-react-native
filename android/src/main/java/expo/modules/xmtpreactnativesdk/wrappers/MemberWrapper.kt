@@ -15,7 +15,7 @@ class MemberWrapper {
             }
             return mapOf(
                 "inboxId" to member.inboxId,
-                "addresses" to member.addresses,
+                "identities" to member.identities.map { PublicIdentityWrapper.encode(it) },
                 "permissionLevel" to permissionString,
                 "consentState" to consentStateToString(member.consentState)
             )

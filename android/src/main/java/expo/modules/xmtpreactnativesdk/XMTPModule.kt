@@ -15,10 +15,9 @@ import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
-import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.DisappearingMessageSettingsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
@@ -26,6 +25,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PermissionPolicySetWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PublicIdentityWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.WalletParamsWrapper
@@ -41,7 +41,7 @@ import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.ConsentRecord
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
-import org.xmtp.android.library.Conversations.*
+import org.xmtp.android.library.Conversations.ConversationFilterType
 import org.xmtp.android.library.EntryType
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreferenceType
@@ -58,9 +58,9 @@ import org.xmtp.android.library.codecs.EncryptedEncodedContent
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.hexToByteArray
+import org.xmtp.android.library.libxmtp.DecodedMessage
 import org.xmtp.android.library.libxmtp.DisappearingMessageSettings
 import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
-import org.xmtp.android.library.libxmtp.DecodedMessage
 import org.xmtp.android.library.libxmtp.PermissionOption
 import org.xmtp.android.library.libxmtp.PublicIdentity
 import org.xmtp.android.library.libxmtp.SignatureRequest
@@ -73,48 +73,37 @@ import java.io.InputStreamReader
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 
 class ReactNativeSigner(
-    var module: XMTPModule,
+    private val module: XMTPModule,
     override var publicIdentity: PublicIdentity,
     override var type: SignerType = SignerType.EOA,
     override var chainId: Long? = null,
     override var blockNumber: Long? = null,
 ) : SigningKey {
-    private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
-    private val scwContinuations: MutableMap<String, Continuation<ByteArray>> = mutableMapOf()
+    private val continuations: MutableMap<String, Continuation<SignedData>> = mutableMapOf()
 
     fun handle(id: String, signature: String) {
-        val continuation = continuations[id] ?: return
-        val signatureData = Base64.decode(signature.toByteArray(), NO_WRAP)
-        if (signatureData == null || signatureData.size != 65) {
-            continuation.resumeWithException(XMTPException("Invalid Signature"))
-            continuations.remove(id)
-            return
-        }
-        val sig = Signature.newBuilder().also {
-            it.ecdsaCompact = it.ecdsaCompact.toBuilder().also { builder ->
-                builder.bytes = signatureData.take(64).toByteArray().toByteString()
-                builder.recovery = signatureData[64].toInt()
-            }.build()
-        }.build()
-        continuation.resume(sig)
-        continuations.remove(id)
+        val continuation = continuations.remove(id) ?: return
+        val signatureData = Base64.decode(signature, Base64.NO_WRAP)
+
+        val signedData = SignedData(
+            rawData = signatureData,
+            publicKey = publicIdentity.identifier.hexToByteArray(),
+            authenticatorData = null,
+            clientDataJson = null
+        )
+
+        continuation.resume(signedData)
     }
 
-    fun handleSCW(id: String, signature: String) {
-        val continuation = scwContinuations[id] ?: return
-        continuation.resume(signature.hexToByteArray())
-        scwContinuations.remove(id)
-    }
-
-    override suspend fun signSCW(message: String): ByteArray {
+    override suspend fun sign(message: String): SignedData {
         val request = SignatureRequest(message = message)
         module.sendEvent("sign", mapOf("id" to request.id, "message" to request.message))
+
         return suspendCancellableCoroutine { continuation ->
-            scwContinuations[request.id] = continuation
+            continuations[request.id] = continuation
         }
     }
 }
@@ -266,11 +255,6 @@ class XMTPModule : Module() {
         Function("receiveSignature") { requestID: String, signature: String ->
             logV("receiveSignature")
             signer?.handle(id = requestID, signature = signature)
-        }
-
-        Function("receiveSCWSignature") { requestID: String, signature: String ->
-            logV("receiveSCWSignature")
-            signer?.handleSCW(id = requestID, signature = signature)
         }
 
         AsyncFunction("createRandom") Coroutine { hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String ->
@@ -585,7 +569,8 @@ class XMTPModule : Module() {
         AsyncFunction("canMessage") Coroutine { installationId: String, peerIdentities: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("canMessage")
-                val identities = peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
 
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 client.canMessage(identities)
@@ -595,7 +580,8 @@ class XMTPModule : Module() {
         AsyncFunction("staticCanMessage") Coroutine { environment: String, peerIdentities: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("staticCanMessage")
-                val identities = peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
 
                 Client.canMessage(
                     identities,
@@ -997,7 +983,8 @@ class XMTPModule : Module() {
                 }
                 val createGroupParams =
                     CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
-                val identities = peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
                 val group = client.conversations.newGroupWithIdentities(
                     identities,
                     permissionLevel,
@@ -1020,7 +1007,8 @@ class XMTPModule : Module() {
                     PermissionPolicySetWrapper.createPermissionPolicySetFromJson(
                         permissionPolicySetJson
                     )
-                val identities = peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
                 val group = client.conversations.newGroupCustomPermissionsWithIdentities(
                     identities,
                     permissionPolicySet,
@@ -1119,7 +1107,8 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                val identities = peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
                 group.addMembersByIdentity(identities)
             }
         }
@@ -1130,7 +1119,8 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                val identities = peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
                 group.removeMembersByIdentity(identities)
             }
         }
