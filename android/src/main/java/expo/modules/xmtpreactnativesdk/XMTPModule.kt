@@ -943,7 +943,7 @@ class XMTPModule : Module() {
                     peerInboxIds,
                     permissionLevel,
                     createGroupParams.groupName,
-                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
                     createGroupParams.disappearingMessageSettings
                 )
@@ -965,7 +965,7 @@ class XMTPModule : Module() {
                     peerInboxIds,
                     permissionPolicySet,
                     createGroupParams.groupName,
-                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
                     createGroupParams.disappearingMessageSettings
                 )
@@ -989,7 +989,7 @@ class XMTPModule : Module() {
                     identities,
                     permissionLevel,
                     createGroupParams.groupName,
-                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
                     createGroupParams.disappearingMessageSettings
                 )
@@ -1013,7 +1013,7 @@ class XMTPModule : Module() {
                     identities,
                     permissionPolicySet,
                     createGroupParams.groupName,
-                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
                     createGroupParams.disappearingMessageSettings
                 )
@@ -1413,7 +1413,7 @@ class XMTPModule : Module() {
 
         AsyncFunction("permissionPolicySet") Coroutine { installationId: String, groupId: String ->
             withContext(Dispatchers.IO) {
-                logV("groupImageUrlSquare")
+                logV("permissionPolicySet")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")

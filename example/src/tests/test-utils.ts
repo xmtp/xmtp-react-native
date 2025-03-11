@@ -68,7 +68,7 @@ export async function createGroups(
   for (let i = 0; i < numGroups; i++) {
     const group = await client.conversations.newGroup(inboxIds, {
       name: `group ${i}`,
-      imageUrlSquare: `www.group${i}.com`,
+      imageUrl: `www.group${i}.com`,
       description: `group ${i}`,
     })
     groups.push(group)

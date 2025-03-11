@@ -12,10 +12,10 @@ import { PermissionPolicySet } from './types/PermissionPolicySet'
 import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 import {
-  Address,
   ConversationId,
   ConversationTopic,
   DisappearingMessageSettings,
+  PublicIdentity,
 } from '../index'
 
 export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
@@ -27,7 +27,7 @@ export interface GroupParams {
   name: string
   isActive: boolean
   addedByInboxId: InboxId
-  imageUrlSquare: string
+  imageUrl: string
   description: string
   consentState: ConsentState
   lastMessage?: DecodedMessage
@@ -42,11 +42,11 @@ export class Group<
   createdAt: number
   version = ConversationVersion.GROUP as const
   topic: ConversationTopic
-  name: string
+  groupName: string
   isGroupActive: boolean
   addedByInboxId: InboxId
   imageUrlSquare: string
-  description: string
+  groupDescription: string
   state: ConsentState
   lastMessage?: DecodedMessageUnion<ContentTypes>
 
@@ -59,11 +59,11 @@ export class Group<
     this.id = params.id
     this.createdAt = params.createdAt
     this.topic = params.topic
-    this.name = params.name
+    this.groupName = params.name
     this.isGroupActive = params.isActive
     this.addedByInboxId = params.addedByInboxId
-    this.imageUrlSquare = params.imageUrlSquare
-    this.description = params.description
+    this.imageUrlSquare = params.imageUrl
+    this.groupDescription = params.description
     this.state = params.consentState
     this.lastMessage = lastMessage
   }
@@ -307,37 +307,11 @@ export class Group<
   }
   /**
    *
-   * @param addresses addresses to add to the group
-   * @returns
-   */
-  async addMembers(addresses: Address[]): Promise<void> {
-    return XMTP.addGroupMembers(this.client.installationId, this.id, addresses)
-  }
-
-  /**
-   *
-   * @param addresses addresses to remove from the group
-   * @returns
-   */
-  async removeMembers(addresses: Address[]): Promise<void> {
-    return XMTP.removeGroupMembers(
-      this.client.installationId,
-      this.id,
-      addresses
-    )
-  }
-
-  /**
-   *
    * @param inboxIds inboxIds to add to the group
    * @returns
    */
-  async addMembersByInboxId(inboxIds: InboxId[]): Promise<void> {
-    return XMTP.addGroupMembersByInboxId(
-      this.client.installationId,
-      this.id,
-      inboxIds
-    )
+  async addMembers(inboxIds: InboxId[]): Promise<void> {
+    return XMTP.addGroupMembers(this.client.installationId, this.id, inboxIds)
   }
 
   /**
@@ -345,11 +319,37 @@ export class Group<
    * @param inboxIds inboxIds to remove from the group
    * @returns
    */
-  async removeMembersByInboxId(inboxIds: InboxId[]): Promise<void> {
-    return XMTP.removeGroupMembersByInboxId(
+  async removeMembers(inboxIds: InboxId[]): Promise<void> {
+    return XMTP.removeGroupMembers(
       this.client.installationId,
       this.id,
       inboxIds
+    )
+  }
+
+  /**
+   *
+   * @param identities identities to add to the group
+   * @returns
+   */
+  async addMembersByIdentity(identities: PublicIdentity[]): Promise<void> {
+    return XMTP.addGroupMembersByIdentity(
+      this.client.installationId,
+      this.id,
+      identities
+    )
+  }
+
+  /**
+   *
+   * @param identities identities to remove from the group
+   * @returns
+   */
+  async removeMembersByIdentity(identities: PublicIdentity[]): Promise<void> {
+    return XMTP.removeGroupMembersByIdentity(
+      this.client.installationId,
+      this.id,
+      identities
     )
   }
 
@@ -358,7 +358,7 @@ export class Group<
    * To get the latest group name from the network, call sync() first.
    * @returns {string} A Promise that resolves to the group name.
    */
-  async groupName(): Promise<string> {
+  async name(): Promise<string> {
     return XMTP.groupName(this.client.installationId, this.id)
   }
 
@@ -369,7 +369,7 @@ export class Group<
    * @returns
    */
 
-  async updateGroupName(groupName: string): Promise<void> {
+  async updateName(groupName: string): Promise<void> {
     return XMTP.updateGroupName(this.client.installationId, this.id, groupName)
   }
 
@@ -378,22 +378,22 @@ export class Group<
    * To get the latest group image url square from the network, call sync() first.
    * @returns {string} A Promise that resolves to the group image url.
    */
-  async groupImageUrlSquare(): Promise<string> {
-    return XMTP.groupImageUrlSquare(this.client.installationId, this.id)
+  async imageUrl(): Promise<string> {
+    return XMTP.groupImageUrl(this.client.installationId, this.id)
   }
 
   /**
    * Updates the group image url square.
    * Will throw if the user does not have the required permissions.
-   * @param {string} imageUrlSquare new group profile image url
+   * @param {string} imageUrl new group profile image url
    * @returns
    */
 
-  async updateGroupImageUrlSquare(imageUrlSquare: string): Promise<void> {
-    return XMTP.updateGroupImageUrlSquare(
+  async updateImageUrl(imageUrl: string): Promise<void> {
+    return XMTP.updateGroupImageUrl(
       this.client.installationId,
       this.id,
-      imageUrlSquare
+      imageUrl
     )
   }
 
@@ -402,7 +402,7 @@ export class Group<
    * To get the latest group description from the network, call sync() first.
    * @returns {string} A Promise that resolves to the group description.
    */
-  async groupDescription(): Promise<string> {
+  async description(): Promise<string> {
     return XMTP.groupDescription(this.client.installationId, this.id)
   }
 
@@ -413,7 +413,7 @@ export class Group<
    * @returns
    */
 
-  async updateGroupDescription(description: string): Promise<void> {
+  async updateDescription(description: string): Promise<void> {
     return XMTP.updateGroupDescription(
       this.client.installationId,
       this.id,
@@ -630,7 +630,7 @@ export class Group<
    * @returns {Promise<void>} A Promise that resolves when the groupName permission is updated for the group.
    * Will throw if the user does not have the required permissions.
    */
-  async updateGroupNamePermission(
+  async updateNamePermission(
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateGroupNamePermission(
@@ -643,13 +643,13 @@ export class Group<
   /**
    *
    * @param {PermissionOption} permissionOption
-   * @returns {Promise<void>} A Promise that resolves when the groupImageUrlSquare permission is updated for the group.
+   * @returns {Promise<void>} A Promise that resolves when the groupImageUrl permission is updated for the group.
    * Will throw if the user does not have the required permissions.
    */
-  async updateGroupImageUrlSquarePermission(
+  async updateImageUrlPermission(
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
-    return XMTP.updateGroupImageUrlSquarePermission(
+    return XMTP.updateGroupImageUrlPermission(
       this.client.installationId,
       this.id,
       permissionOption
@@ -662,7 +662,7 @@ export class Group<
    * @returns {Promise<void>} A Promise that resolves when the groupDescription permission is updated for the group.
    * Will throw if the user does not have the required permissions.
    */
-  async updateGroupDescriptionPermission(
+  async updateDescriptionPermission(
     permissionOption: PermissionUpdateOption
   ): Promise<void> {
     return XMTP.updateGroupDescriptionPermission(

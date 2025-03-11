@@ -22,9 +22,9 @@ class GroupWrapper {
                 put("topic", group.topic)
                 if (groupParams.isActive) put("isActive", group.isActive())
                 if (groupParams.addedByInboxId) put("addedByInboxId", group.addedByInboxId())
-                if (groupParams.name) put("name", group.name)
+                if (groupParams.name) put("groupName", group.name)
                 if (groupParams.imageUrl) put("imageUrl", group.imageUrl)
-                if (groupParams.description) put("description", group.description)
+                if (groupParams.description) put("groupDescription", group.description)
                 if (groupParams.consentState) {
                     put("consentState", consentStateToString(group.consentState()))
                 }

@@ -316,15 +316,15 @@ export class Client<
   /**
    * Static method to determine the inboxId for the address.
    *
-   * @param {Address} peerAddress - The address of the peer to check for messaging eligibility.
+   * @param {PublicIdentity} identity - The identity of the peer to check for messaging eligibility.
    * @param {XMTPEnvironment} env - Environment to get the inboxId from
    * @returns {Promise<InboxId>}
    */
   static async getOrCreateInboxId(
-    address: Address,
+    identity: PublicIdentity,
     env: XMTPEnvironment
   ): Promise<InboxId> {
-    return await XMTPModule.getOrCreateInboxId(address, env)
+    return await XMTPModule.getOrCreateInboxId(identity, env)
   }
 
   /**
@@ -332,15 +332,15 @@ export class Client<
    *
    * This method checks if the specified peers are using clients that are on the network.
    *
-   * @param {Address[]} addresses - The addresses of the peers to check for messaging eligibility.
+   * @param {PublicIdentity[]} identities - The addresses of the peers to check for messaging eligibility.
    * @param {XMTPEnvironment} env - Environment to see if the address is on the network for
    * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the network.
    */
   static async canMessage(
     env: XMTPEnvironment,
-    addresses: Address[]
+    identities: PublicIdentity[]
   ): Promise<{ [key: Address]: boolean }> {
-    return await XMTPModule.staticCanMessage(env, addresses)
+    return await XMTPModule.staticCanMessage(env, identities)
   }
 
   /**
@@ -473,6 +473,7 @@ export class Client<
         await XMTPModule.removeAccount(
           this.installationId,
           identityToRemove,
+          await signer.getIdentifier(),
           signer.signerType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.()
@@ -520,6 +521,7 @@ export class Client<
         await XMTPModule.revokeInstallations(
           this.installationId,
           installationIds,
+          await signer.getIdentifier(),
           signer.signerType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.()
@@ -562,6 +564,7 @@ export class Client<
 
         await XMTPModule.revokeAllOtherInstallations(
           this.installationId,
+          await signer.getIdentifier(),
           signer.signerType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.()
@@ -607,15 +610,15 @@ export class Client<
   /**
    * Find the Address associated with this address
    *
-   * @param {string} peerAddress - The address of the peer to check for inboxId.
+   * @param {PublicIdentity} identity - The identity of the peer to check for inboxId.
    * @returns {Promise<InboxId>} A Promise resolving to the InboxId.
    */
-  async findInboxIdFromAddress(
-    peerAddress: Address
+  async findInboxIdFromIdentity(
+    identity: PublicIdentity
   ): Promise<InboxId | undefined> {
-    return await XMTPModule.findInboxIdFromAddress(
+    return await XMTPModule.findInboxIdFromIdentity(
       this.installationId,
-      peerAddress
+      identity
     )
   }
 
@@ -680,11 +683,13 @@ export class Client<
    *
    * This method checks if the specified peers are using clients that are on the network.
    *
-   * @param {Address[]} addresses - The addresses of the peers to check for messaging eligibility.
-   * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the network.
+   * @param {PublicIdentity[]} identities - The identities of the peers to check for messaging eligibility.
+   * @returns {Promise<{ [key: string]: boolean }>} A Promise resolving to a hash of identifiers and booleans if they can message on the network.
    */
-  async canMessage(addresses: Address[]): Promise<{ [key: Address]: boolean }> {
-    return await XMTPModule.canMessage(this.installationId, addresses)
+  async canMessage(
+    identities: PublicIdentity[]
+  ): Promise<{ [key: string]: boolean }> {
+    return await XMTPModule.canMessage(this.installationId, identities)
   }
 
   /**
@@ -820,7 +825,7 @@ export class Client<
    * Gets the signature text for the remove wallet action
    */
   async ffiRemoveWalletSignatureText(
-    addressToRemove: Address
+    identityToRemove: PublicIdentity
   ): Promise<string> {
     console.warn(
       '⚠️ This function is delicate and should be used with caution. ' +
@@ -828,7 +833,7 @@ export class Client<
     )
     return await XMTPModule.ffiRevokeWalletSignatureText(
       this.installationId,
-      addressToRemove
+      identityToRemove
     )
   }
 
@@ -836,14 +841,18 @@ export class Client<
    * This function is delicate and should be used with caution. Should only be used if trying to manage the create and register flow independently otherwise use `addWallet()` instead.
    * Gets the signature text for the add wallet action
    */
-  async ffiAddWalletSignatureText(addressToAdd: Address): Promise<string> {
+  async ffiAddWalletSignatureText(
+    identityToAdd: PublicIdentity,
+    allowReassignInboxId: boolean = false
+  ): Promise<string> {
     console.warn(
       '⚠️ This function is delicate and should be used with caution. ' +
         'Should only be used if trying to manage the create and register flow independently otherwise use `addWallet()` instead'
     )
     return await XMTPModule.ffiAddWalletSignatureText(
       this.installationId,
-      addressToAdd
+      identityToAdd,
+      allowReassignInboxId
     )
   }
 

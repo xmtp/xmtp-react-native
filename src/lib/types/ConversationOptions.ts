@@ -2,7 +2,7 @@ export type ConversationOptions = {
   isActive?: boolean
   addedByInboxId?: boolean
   name?: boolean
-  imageUrlSquare?: boolean
+  imageUrl?: boolean
   description?: boolean
   consentState?: boolean
   lastMessage?: boolean
