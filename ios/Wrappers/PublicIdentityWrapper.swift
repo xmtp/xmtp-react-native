@@ -43,7 +43,7 @@ struct PublicIdentityWrapper {
 	static func encodeToObj(publicIdentity: PublicIdentity) -> [String: Any] {
 		return [
 			"identifier": publicIdentity.identifier,
-			"kind": publicIdentity.kind
+			"kind": publicIdentity.kind == .passkey ? "PASSKEY" : "ETHEREUM"
 		]
 	}
 
