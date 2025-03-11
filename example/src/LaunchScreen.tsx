@@ -11,7 +11,6 @@ import { TestCategory } from './TestScreen'
 import { supportedCodecs } from './contentTypes/contentTypes'
 import { getDbEncryptionKey, useSavedAddress } from './hooks'
 
-const appVersion = 'XMTP_RN_EX/0.0.1'
 
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
 export default function LaunchScreen(
@@ -150,7 +149,6 @@ export default function LaunchScreen(
                     selectedNetwork,
                     XMTP.Client.create(signer, {
                       env: selectedNetwork,
-                      appVersion,
                       codecs: supportedCodecs,
                       preAuthenticateToInboxCallback,
                       dbEncryptionKey,
@@ -177,7 +175,6 @@ export default function LaunchScreen(
                 selectedNetwork,
                 XMTP.Client.createRandom({
                   env: selectedNetwork,
-                  appVersion,
                   codecs: supportedCodecs,
                   preAuthenticateToInboxCallback,
                   dbEncryptionKey,
@@ -202,7 +199,6 @@ export default function LaunchScreen(
                     selectedNetwork,
                     XMTP.Client.build(savedKeys.address!, {
                       env: selectedNetwork,
-                      appVersion,
                       codecs: supportedCodecs,
                       dbEncryptionKey,
                     })

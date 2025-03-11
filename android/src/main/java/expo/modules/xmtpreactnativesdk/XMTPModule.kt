@@ -284,7 +284,7 @@ class XMTPModule : Module() {
                 val reactSigner = ReactNativeSigner(
                     module = this@XMTPModule,
                     publicIdentity = identity,
-                    type = walletOptions.walletType,
+                    type = walletOptions.signerType,
                     chainId = walletOptions.chainId,
                     blockNumber = walletOptions.blockNumber
                 )
@@ -399,7 +399,7 @@ class XMTPModule : Module() {
                     ReactNativeSigner(
                         module = this@XMTPModule,
                         publicIdentity = identity,
-                        type = walletOptions.walletType,
+                        type = walletOptions.signerType,
                         chainId = walletOptions.chainId,
                         blockNumber = walletOptions.blockNumber
                     )
@@ -420,7 +420,7 @@ class XMTPModule : Module() {
                     ReactNativeSigner(
                         module = this@XMTPModule,
                         publicIdentity = identity,
-                        type = walletOptions.walletType,
+                        type = walletOptions.signerType,
                         chainId = walletOptions.chainId,
                         blockNumber = walletOptions.blockNumber
                     )
@@ -441,7 +441,7 @@ class XMTPModule : Module() {
                     ReactNativeSigner(
                         module = this@XMTPModule,
                         publicIdentity = identity,
-                        type = walletOptions.walletType,
+                        type = walletOptions.signerType,
                         chainId = walletOptions.chainId,
                         blockNumber = walletOptions.blockNumber
                     )
@@ -464,7 +464,7 @@ class XMTPModule : Module() {
                     ReactNativeSigner(
                         module = this@XMTPModule,
                         publicIdentity = identity,
-                        type = walletOptions.walletType,
+                        type = walletOptions.signerType,
                         chainId = walletOptions.chainId,
                         blockNumber = walletOptions.blockNumber
                     )
