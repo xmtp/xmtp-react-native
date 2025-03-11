@@ -1899,6 +1899,7 @@ test('only streams groups that can be decrypted', async () => {
   await caroClient.conversations.stream(async (group: Conversation<any>) => {
     caroGroups.push(group)
   })
+  await delayToPropogate()
 
   await alixClient.conversations.newGroup([boClient.inboxId])
   await delayToPropogate()
