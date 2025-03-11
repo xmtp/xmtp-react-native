@@ -644,7 +644,7 @@ test('can manage add remove manually', async () => {
     `identities length should be 1 but was ${inboxState.identities.length}`
   )
 
-  const sigText = await alix.ffiAddWalletSignatureText(
+  const sigText = await alix.ffiAddIdentitySignatureText(
     await boSigner.getIdentifier()
   )
   const signedMessage = await boSigner.signMessage(sigText)
@@ -663,7 +663,7 @@ test('can manage add remove manually', async () => {
     `identities length should be 2 but was ${inboxState.identities.length}`
   )
 
-  const sigText2 = await alix.ffiRemoveWalletSignatureText(
+  const sigText2 = await alix.ffiRemoveIdentitySignatureText(
     await boSigner.getIdentifier()
   )
   const signedMessage2 = await alixSigner.signMessage(sigText2)

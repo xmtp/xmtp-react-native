@@ -123,15 +123,15 @@ export class Client<
   static async create<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
-    wallet: Signer | WalletClient | null,
+    signer: Signer | WalletClient | null,
     options: ClientOptions & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
     if (options.dbEncryptionKey.length !== 32) {
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
     const { authInboxSubscription } = this.setupSubscriptions(options)
-    const signer = getSigner(wallet)
-    if (!signer) {
+    const signingKey = getSigner(signer)
+    if (!signingKey) {
       throw new Error('Signer is not configured')
     }
 
@@ -173,15 +173,15 @@ export class Client<
         )
 
         await XMTPModule.create(
-          await signer.getIdentifier(),
+          await signingKey.getIdentifier(),
           options.env,
           options.dbEncryptionKey,
           Boolean(authInboxSubscription),
           options.dbDirectory,
           options.historySyncUrl,
-          signer.signerType?.(),
-          signer.getChainId?.(),
-          signer.getBlockNumber?.()
+          signingKey.signerType?.(),
+          signingKey.getChainId?.(),
+          signingKey.getBlockNumber?.()
         )
       })().catch((error) => {
         this.removeAllSubscriptions(authInboxSubscription)
@@ -192,7 +192,7 @@ export class Client<
   }
 
   /**
-   * Builds a instance of the Client class using the provided address and chainId if SCW.
+   * Builds a instance of the Client class using the provided identity and chainId if SCW.
    *
    * @param {PublicIdentity} identity - The identity of the account to build
    * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
@@ -319,7 +319,7 @@ export class Client<
   }
 
   /**
-   * Static method to determine the inboxId for the address.
+   * Static method to determine the inboxId for the identity.
    *
    * @param {PublicIdentity} identity - The identity of the peer to check for messaging eligibility.
    * @param {XMTPEnvironment} env - Environment to get the inboxId from
@@ -337,14 +337,14 @@ export class Client<
    *
    * This method checks if the specified peers are using clients that are on the network.
    *
-   * @param {PublicIdentity[]} identities - The addresses of the peers to check for messaging eligibility.
-   * @param {XMTPEnvironment} env - Environment to see if the address is on the network for
-   * @returns {Promise<{ [key: Address]: boolean }>} A Promise resolving to a hash of addresses and booleans if they can message on the network.
+   * @param {PublicIdentity[]} identities - The identities of the peers to check for messaging eligibility.
+   * @param {XMTPEnvironment} env - Environment to see if the identity is on the network for
+   * @returns {Promise<{ [key: string]: boolean }>} A Promise resolving to a hash of identifiers and booleans if they can message on the network.
    */
   static async canMessage(
     env: XMTPEnvironment,
     identities: PublicIdentity[]
-  ): Promise<{ [key: Address]: boolean }> {
+  ): Promise<{ [key: string]: boolean }> {
     return await XMTPModule.staticCanMessage(env, identities)
   }
 
@@ -354,7 +354,7 @@ export class Client<
    * This method checks if the specified peers are using clients that are on the network.
    *
    * @param {InboxId[]} inboxIds - The inboxIds to get the associated inbox states for.
-   * @param {XMTPEnvironment} env - Environment to see if the address is on the network for
+   * @param {XMTPEnvironment} env - Environment to see if the identity is on the network for
    * @returns {Promise<InboxState[]>} A Promise resolving to a list of inbox states.
    */
   static async inboxStatesForInboxIds(
@@ -395,7 +395,7 @@ export class Client<
 
   /**
    * Add this account to the current inboxId.
-   * Adding a wallet already associated with an inboxId will cause the wallet to lose access to that inbox.
+   * Adding a identity already associated with an inboxId will cause the identity to lose access to that inbox.
    * @param {Signer} newAccount - The signer of the new account to be added.
    * @param {boolean} allowReassignInboxId - A boolean specifying if the inboxId should be reassigned or not.
    */
@@ -405,7 +405,7 @@ export class Client<
   ) {
     console.warn(
       '⚠️ This function is delicate and should be used with caution. ' +
-        'Adding a wallet already associated with an inboxId will cause the wallet to lose access to that inbox.'
+        'Adding a identity already associated with an inboxId will cause the identity to lose access to that inbox.'
     )
     const signer = getSigner(newAccount)
     if (!signer) {
@@ -448,15 +448,15 @@ export class Client<
 
   /**
    * Remove this account from the current inboxId.
-   * @param {Signer} wallet - The signer object used for authenticate the removal.
+   * @param {Signer} signer - The signer object used for authenticate the removal.
    * @param {PublicIdentity} identityToRemove - The identity of the signer you'd like to remove from the account.
    */
   async removeAccount(
-    wallet: Signer | WalletClient,
+    signer: Signer | WalletClient,
     identityToRemove: PublicIdentity
   ) {
-    const signer = getSigner(wallet)
-    if (!signer) {
+    const signingKey = getSigner(signer)
+    if (!signingKey) {
       throw new Error('Signer is not configured')
     }
 
@@ -480,10 +480,10 @@ export class Client<
         await XMTPModule.removeAccount(
           this.installationId,
           identityToRemove,
-          await signer.getIdentifier(),
-          signer.signerType?.(),
-          signer.getChainId?.(),
-          signer.getBlockNumber?.()
+          await signingKey.getIdentifier(),
+          signingKey.signerType?.(),
+          signingKey.getChainId?.(),
+          signingKey.getBlockNumber?.()
         )
         Client.signSubscription?.remove()
         resolve()
@@ -500,11 +500,11 @@ export class Client<
    * @param {InstallationId[]} installationIds - A list of installationIds to revoke access to the inboxId.
    */
   async revokeInstallations(
-    wallet: Signer | WalletClient | null,
+    signer: Signer | WalletClient | null,
     installationIds: InstallationId[]
   ) {
-    const signer = getSigner(wallet)
-    if (!signer) {
+    const signingKey = getSigner(signer)
+    if (!signingKey) {
       throw new Error('Signer is not configured')
     }
 
@@ -528,10 +528,10 @@ export class Client<
         await XMTPModule.revokeInstallations(
           this.installationId,
           installationIds,
-          await signer.getIdentifier(),
-          signer.signerType?.(),
-          signer.getChainId?.(),
-          signer.getBlockNumber?.()
+          await signingKey.getIdentifier(),
+          signingKey.signerType?.(),
+          signingKey.getChainId?.(),
+          signingKey.getBlockNumber?.()
         )
         Client.signSubscription?.remove()
         resolve()
@@ -546,9 +546,9 @@ export class Client<
    * Revoke all other installations but the current one.
    * @param {Signer} signer - The signer object used for authenticate the revoke.
    */
-  async revokeAllOtherInstallations(wallet: Signer | WalletClient | null) {
-    const signer = getSigner(wallet)
-    if (!signer) {
+  async revokeAllOtherInstallations(signer: Signer | WalletClient | null) {
+    const signingKey = getSigner(signer)
+    if (!signingKey) {
       throw new Error('Signer is not configured')
     }
 
@@ -571,10 +571,10 @@ export class Client<
 
         await XMTPModule.revokeAllOtherInstallations(
           this.installationId,
-          await signer.getIdentifier(),
-          signer.signerType?.(),
-          signer.getChainId?.(),
-          signer.getBlockNumber?.()
+          await signingKey.getIdentifier(),
+          signingKey.signerType?.(),
+          signingKey.getChainId?.(),
+          signingKey.getBlockNumber?.()
         )
         Client.signSubscription?.remove()
         resolve()
@@ -615,7 +615,7 @@ export class Client<
   }
 
   /**
-   * Find the Address associated with this address
+   * Find the InboxId associated with this identity
    *
    * @param {PublicIdentity} identity - The identity of the peer to check for inboxId.
    * @returns {Promise<InboxId>} A Promise resolving to the InboxId.
@@ -829,14 +829,14 @@ export class Client<
 
   /**
    * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `removeWallet()` instead.
-   * Gets the signature text for the remove wallet action
+   * Gets the signature text for the removed identity action
    */
-  async ffiRemoveWalletSignatureText(
+  async ffiRemoveIdentitySignatureText(
     identityToRemove: PublicIdentity
   ): Promise<string> {
     console.warn(
       '⚠️ This function is delicate and should be used with caution. ' +
-        'Should only be used if trying to manage the signature flow independently otherwise use `removeWallet()` instead'
+        'Should only be used if trying to manage the signature flow independently otherwise use `removeAccount()` instead'
     )
     return await XMTPModule.ffiRevokeWalletSignatureText(
       this.installationId,
@@ -846,15 +846,15 @@ export class Client<
 
   /**
    * This function is delicate and should be used with caution. Should only be used if trying to manage the create and register flow independently otherwise use `addWallet()` instead.
-   * Gets the signature text for the add wallet action
+   * Gets the signature text for the add identity action
    */
-  async ffiAddWalletSignatureText(
+  async ffiAddIdentitySignatureText(
     identityToAdd: PublicIdentity,
     allowReassignInboxId: boolean = false
   ): Promise<string> {
     console.warn(
       '⚠️ This function is delicate and should be used with caution. ' +
-        'Should only be used if trying to manage the create and register flow independently otherwise use `addWallet()` instead'
+        'Should only be used if trying to manage the create and register flow independently otherwise use `addAccount()` instead'
     )
     return await XMTPModule.ffiAddWalletSignatureText(
       this.installationId,
