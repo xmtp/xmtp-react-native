@@ -10,16 +10,14 @@ import XMTP
 
 struct AuthParamsWrapper {
 	let environment: String
-	let appVersion: String?
 	let dbDirectory: String?
 	let historySyncUrl: String?
 
 	init(
-		environment: String, appVersion: String?, dbDirectory: String?,
+		environment: String, dbDirectory: String?,
 		historySyncUrl: String?
 	) {
 		self.environment = environment
-		self.appVersion = appVersion
 		self.dbDirectory = dbDirectory
 		self.historySyncUrl = historySyncUrl
 	}
@@ -30,18 +28,16 @@ struct AuthParamsWrapper {
 				with: data, options: []) as? [String: Any]
 		else {
 			return AuthParamsWrapper(
-				environment: "dev", appVersion: nil, dbDirectory: nil,
+				environment: "dev", dbDirectory: nil,
 				historySyncUrl: nil)
 		}
 
 		let environment = jsonOptions["environment"] as? String ?? "dev"
-		let appVersion = jsonOptions["appVersion"] as? String
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
 		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
 
 		return AuthParamsWrapper(
 			environment: environment,
-			appVersion: appVersion,
 			dbDirectory: dbDirectory,
 			historySyncUrl: historySyncUrl
 		)
@@ -49,12 +45,12 @@ struct AuthParamsWrapper {
 }
 
 struct WalletParamsWrapper {
-	let walletType: WalletType
+	let signerType: SignerType
 	let chainId: Int64?
 	let blockNumber: Int64?
 
-	init(walletType: WalletType, chainId: Int64?, blockNumber: Int64?) {
-		self.walletType = walletType
+	init(signerType: SignerType, chainId: Int64?, blockNumber: Int64?) {
+		self.signerType = signerType
 		self.chainId = chainId
 		self.blockNumber = blockNumber
 	}
@@ -67,24 +63,24 @@ struct WalletParamsWrapper {
 				with: data, options: []) as? [String: Any]
 		else {
 			return WalletParamsWrapper(
-				walletType: WalletType.EOA, chainId: nil, blockNumber: nil)
+				signerType: SignerType.EOA, chainId: nil, blockNumber: nil)
 		}
 
-		let walletTypeString = jsonOptions["walletType"] as? String ?? "EOA"
+		let walletTypeString = jsonOptions["signerType"] as? String ?? "EOA"
 		let chainId = jsonOptions["chainId"] as? Int64
 		let blockNumber = jsonOptions["blockNumber"] as? Int64
 
-		let walletType = {
+		let signerType = {
 			switch walletTypeString {
 			case "SCW":
-				return WalletType.SCW
+				return SignerType.SCW
 			default:
-				return WalletType.EOA
+				return SignerType.EOA
 			}
 		}()
 
 		return WalletParamsWrapper(
-			walletType: walletType,
+			signerType: signerType,
 			chainId: chainId,
 			blockNumber: blockNumber
 		)

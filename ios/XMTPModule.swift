@@ -124,15 +124,6 @@ public class XMTPModule: Module {
 			"preferences"
 		)
 
-		AsyncFunction("address") { (installationId: String) -> String in
-			if let client = await clientsManager.getClient(key: installationId)
-			{
-				return client.address
-			} else {
-				return "No Client."
-			}
-		}
-
 		AsyncFunction("inboxId") { (installationId: String) -> String in
 			if let client = await clientsManager.getClient(key: installationId)
 			{
@@ -142,14 +133,16 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("findInboxIdFromAddress") {
-			(installationId: String, address: String) -> String? in
+		AsyncFunction("findInboxIdFromIdentity") {
+			(installationId: String, publicIdentity: String) -> String? in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			return try await client.inboxIdFromAddress(address: address)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
+			return try await client.inboxIdFromIdentity(identity: identity)
 		}
 
 		AsyncFunction("deleteLocalDatabase") { (installationId: String) in
@@ -222,11 +215,6 @@ public class XMTPModule: Module {
 			try signer?.handle(id: requestID, signature: signature)
 		}
 
-		Function("receiveSCWSignature") {
-			(requestID: String, signature: String) in
-			try signer?.handleSCW(id: requestID, signature: signature)
-		}
-
 		AsyncFunction("createRandom") {
 			(
 				hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8],
@@ -257,15 +245,17 @@ public class XMTPModule: Module {
 
 		AsyncFunction("create") {
 			(
-				address: String, hasAuthenticateToInboxCallback: Bool?,
+				publicIdentity: String, hasAuthenticateToInboxCallback: Bool?,
 				dbEncryptionKey: [UInt8], authParams: String,
 				walletParams: String
 			) in
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: address,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
@@ -293,20 +283,22 @@ public class XMTPModule: Module {
 
 		AsyncFunction("build") {
 			(
-				address: String, inboxId: String?, dbEncryptionKey: [UInt8],
+				publicIdentity: String, inboxId: String?,
+				dbEncryptionKey: [UInt8],
 				authParams: String
 			)
 				-> [String: String] in
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let encryptionKeyData = Data(dbEncryptionKey)
-
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let options = self.createClientConfig(
 				authParams: authParams,
 				dbEncryptionKey: encryptionKeyData,
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.build(
-				address: address, options: options, inboxId: inboxId)
+				publicIdentity: identity, options: options, inboxId: inboxId)
 			await clientsManager.updateClient(
 				key: client.installationID, client: client)
 			return try ClientWrapper.encodeToObj(client)
@@ -314,19 +306,21 @@ public class XMTPModule: Module {
 
 		AsyncFunction("ffiCreateClient") {
 			(
-				address: String, dbEncryptionKey: [UInt8],
+				publicIdentity: String, dbEncryptionKey: [UInt8],
 				authParams: String
 			)
 				-> [String: String] in
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let encryptionKeyData = Data(dbEncryptionKey)
-
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let options = self.createClientConfig(
 				authParams: authParams,
 				dbEncryptionKey: encryptionKeyData
 			)
 			let client = try await XMTP.Client.ffiCreateClient(
-				address: address, clientOptions: options)
+				identity: identity,
+				clientOptions: options)
 			await clientsManager.updateClient(
 				key: client.installationID, client: client)
 			return try ClientWrapper.encodeToObj(client)
@@ -385,7 +379,7 @@ public class XMTPModule: Module {
 		AsyncFunction("revokeInstallations") {
 			(
 				installationId: String, walletParams: String,
-				installationIds: [String]
+				installationIds: [String], publicIdentity: String
 			) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -394,9 +388,11 @@ public class XMTPModule: Module {
 			}
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: client.address,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
@@ -407,7 +403,10 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("revokeAllOtherInstallations") {
-			(installationId: String, walletParams: String) in
+			(
+				installationId: String, walletParams: String,
+				publicIdentity: String
+			) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -415,9 +414,11 @@ public class XMTPModule: Module {
 			}
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: client.address,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
@@ -428,7 +429,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("addAccount") {
 			(
-				installationId: String, newAddress: String,
+				installationId: String, newIdentity: String,
 				walletParams: String, allowReassignInboxId: Bool
 			)
 			in
@@ -439,9 +440,11 @@ public class XMTPModule: Module {
 			}
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				newIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: newAddress,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
@@ -453,8 +456,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("removeAccount") {
 			(
-				installationId: String, addressToRemove: String,
-				walletParams: String
+				installationId: String, identityToRemove: String,
+				walletParams: String, publicIdentity: String
 			) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -463,15 +466,19 @@ public class XMTPModule: Module {
 			}
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let remove = try PublicIdentityWrapper.publicIdentityFromJson(
+				identityToRemove)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: client.address,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
 
 			try await client.removeAccount(
-				recoveryAccount: signer, addressToRemove: addressToRemove)
+				recoveryAccount: signer, identityToRemove: remove)
 			self.signer = nil
 		}
 
@@ -503,28 +510,36 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("ffiRevokeWalletSignatureText") {
-			(installationId: String, addressToRemove: String) -> String in
+			(installationId: String, identityToRemove: String) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			let sigRequest = try await client.ffiRevokeWallet(
-				addressToRemove: addressToRemove)
+			let remove = try PublicIdentityWrapper.publicIdentityFromJson(
+				identityToRemove)
+			let sigRequest = try await client.ffiRevokeIdentity(
+				identityToRemove: remove)
 			await clientsManager.updateSignatureRequest(
 				key: client.installationID, signatureRequest: sigRequest)
 			return try await sigRequest.signatureText()
 		}
 
 		AsyncFunction("ffiAddWalletSignatureText") {
-			(installationId: String, addressToAdd: String) -> String in
+			(
+				installationId: String, newIdentity: String,
+				allowReassignInboxId: Bool
+			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			let sigRequest = try await client.ffiAddWallet(
-				addressToAdd: addressToAdd)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				newIdentity)
+			let sigRequest = try await client.ffiAddIdentity(
+				identityToAdd: identity,
+				allowReassignInboxId: allowReassignInboxId)
 			await clientsManager.updateSignatureRequest(
 				key: client.installationID, signatureRequest: sigRequest)
 			return try await sigRequest.signatureText()
@@ -2365,8 +2380,6 @@ public class XMTPModule: Module {
 			return .inbox_id
 		case "conversation_id":
 			return .conversation_id
-		case "address":
-			return .address
 		default:
 			throw Error.invalidPermissionOption
 		}
@@ -2381,7 +2394,9 @@ public class XMTPModule: Module {
 		}
 	}
 
-	private func getConversationType(type: String) throws -> ConversationType {
+	private func getConversationType(type: String) throws
+		-> ConversationFilterType
+	{
 		switch type {
 		case "groups":
 			return .groups
@@ -2400,27 +2415,24 @@ public class XMTPModule: Module {
 		}
 	}
 
-	func createApiClient(env: String, appVersion: String? = nil)
+	func createApiClient(env: String)
 		-> XMTP.ClientOptions.Api
 	{
 		switch env {
 		case "local":
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.local,
-				isSecure: false,
-				appVersion: appVersion
+				isSecure: false
 			)
 		case "production":
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
-				isSecure: true,
-				appVersion: appVersion
+				isSecure: true
 			)
 		default:
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
-				isSecure: true,
-				appVersion: appVersion
+				isSecure: true
 			)
 		}
 	}
@@ -2433,7 +2445,7 @@ public class XMTPModule: Module {
 
 		return XMTP.ClientOptions(
 			api: createApiClient(
-				env: authOptions.environment, appVersion: authOptions.appVersion
+				env: authOptions.environment
 			),
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 			dbEncryptionKey: dbEncryptionKey,
@@ -2510,7 +2522,7 @@ public class XMTPModule: Module {
 	}
 
 	func subscribeToConversations(
-		installationId: String, type: ConversationType
+		installationId: String, type: ConversationFilterType
 	)
 		async throws
 	{
@@ -2546,7 +2558,9 @@ public class XMTPModule: Module {
 			})
 	}
 
-	func subscribeToAllMessages(installationId: String, type: ConversationType)
+	func subscribeToAllMessages(
+		installationId: String, type: ConversationFilterType
+	)
 		async throws
 	{
 		guard let client = await clientsManager.getClient(key: installationId)
