@@ -25,6 +25,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.MembershipResultWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PermissionPolicySetWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PublicIdentityWrapper
@@ -1087,7 +1088,7 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.addMembers(peerInboxIds)
+                MembershipResultWrapper.encode(group.addMembers(peerInboxIds))
             }
         }
 
@@ -1109,7 +1110,7 @@ class XMTPModule : Module() {
                     ?: throw XMTPException("no group found for $groupId")
                 val identities =
                     peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
-                group.addMembersByIdentity(identities)
+                MembershipResultWrapper.encode(group.addMembersByIdentity(identities))
             }
         }
 
