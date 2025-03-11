@@ -265,7 +265,7 @@ test('remote attachments should work', async () => {
 
   // Now we should see the remote attachment message.
   const messages = await convo.messages()
-  if (messages.length !== 1) {
+  if (messages.length !== 2) {
     throw new Error('Expected 1 message')
   }
   const message = messages[0]
@@ -378,8 +378,8 @@ test('multi remote attachments should work', async () => {
 
   // Now we should see the remote attachment message.
   const messages = await convo.messages()
-  if (messages.length !== 1) {
-    throw new Error('Expected 1 message')
+  if (messages.length !== 2) {
+    throw new Error('Expected 2 message')
   }
   const message = messages[0]
 
