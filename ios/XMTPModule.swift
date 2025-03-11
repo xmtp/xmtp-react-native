@@ -1276,7 +1276,7 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("createGroupCustomPermissionsWithInboxIds") {
+		AsyncFunction("createGroupCustomPermissionsWithIdentities") {
 			(
 				installationId: String, peerIdentities: [String],
 				permissionPolicySetJson: String, groupOptionsJson: String
