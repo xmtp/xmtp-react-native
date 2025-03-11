@@ -599,7 +599,9 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			let identities =
-				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
 
 			return try await client.canMessage(identities: identities)
 		}
@@ -607,7 +609,9 @@ public class XMTPModule: Module {
 		AsyncFunction("staticCanMessage") {
 			(environment: String, peerIdentities: [String]) -> [String: Bool] in
 			let identities =
-				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
 
 			return try await XMTP.Client.canMessage(
 				accountIdentities: identities,
@@ -974,7 +978,8 @@ public class XMTPModule: Module {
 			}
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
 				peerIdentity)
-			if let dm = try await client.conversations.findDmByIdentity(publicIdentity: identity)
+			if let dm = try await client.conversations.findDmByIdentity(
+				publicIdentity: identity)
 			{
 				return try await DmWrapper.encode(dm, client: client)
 			} else {
@@ -1180,7 +1185,7 @@ public class XMTPModule: Module {
 					with: peerInboxIds,
 					permissions: permissionLevel,
 					name: createGroupParams.groupName,
-					imageUrlSquare: createGroupParams.groupImageUrl,
+					imageUrl: createGroupParams.groupImageUrl,
 					description: createGroupParams.groupDescription,
 					disappearingMessageSettings: createGroupParams
 						.disappearingMessageSettings
@@ -1214,7 +1219,7 @@ public class XMTPModule: Module {
 						with: peerInboxIds,
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
-						imageUrlSquare: createGroupParams.groupImageUrl,
+						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
 							.disappearingMessageSettings
@@ -1246,21 +1251,24 @@ public class XMTPModule: Module {
 				}
 			}()
 			let identities =
-				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
 
 			do {
 				let createGroupParams =
 					CreateGroupParamsWrapper.createGroupParamsFromJson(
 						groupOptionsJson)
-				let group = try await client.conversations.newGroupWithIdentities(
-					with: identities,
-					permissions: permissionLevel,
-					name: createGroupParams.groupName,
-					imageUrlSquare: createGroupParams.groupImageUrl,
-					description: createGroupParams.groupDescription,
-					disappearingMessageSettings: createGroupParams
-						.disappearingMessageSettings
-				)
+				let group = try await client.conversations
+					.newGroupWithIdentities(
+						with: identities,
+						permissions: permissionLevel,
+						name: createGroupParams.groupName,
+						imageUrl: createGroupParams.groupImageUrl,
+						description: createGroupParams.groupDescription,
+						disappearingMessageSettings: createGroupParams
+							.disappearingMessageSettings
+					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -1279,7 +1287,9 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			let identities =
-				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
 			do {
 				let createGroupParams =
 					CreateGroupParamsWrapper.createGroupParamsFromJson(
@@ -1292,7 +1302,7 @@ public class XMTPModule: Module {
 						with: identities,
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
-						imageUrlSquare: createGroupParams.groupImageUrl,
+						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
 							.disappearingMessageSettings
@@ -1458,7 +1468,9 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			let identities =
-				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
 
 			guard
 				let group = try await client.conversations.findGroup(
@@ -1478,7 +1490,9 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			let identities =
-				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
 
 			guard
 				let group = try await client.conversations.findGroup(
@@ -1992,7 +2006,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.updateImageUrlPermission(
+			try await group.updateImageUrlSquarePermission(
 				newPermissionOption: getPermissionOption(
 					permission: newPermission))
 		}

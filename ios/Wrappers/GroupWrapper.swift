@@ -94,7 +94,7 @@ struct ConversationParamsWrapper {
 			isActive: jsonDict["isActive"] as? Bool ?? true,
 			addedByInboxId: jsonDict["addedByInboxId"] as? Bool ?? true,
 			name: jsonDict["name"] as? Bool ?? true,
-			imageUrlSquare: jsonDict["imageUrl"] as? Bool ?? true,
+			imageUrl: jsonDict["imageUrl"] as? Bool ?? true,
 			description: jsonDict["description"] as? Bool ?? true,
 			consentState: jsonDict["consentState"] as? Bool ?? true,
 			lastMessage: jsonDict["lastMessage"] as? Bool ?? false
