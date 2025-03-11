@@ -591,21 +591,26 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("canMessage") {
-			(installationId: String, peerAddresses: [String]) -> [String: Bool]
+			(installationId: String, peerIdentities: [String]) -> [String: Bool]
 			in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
+			let identities =
+				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
 
-			return try await client.canMessage(addresses: peerAddresses)
+			return try await client.canMessage(identities: identities)
 		}
 
 		AsyncFunction("staticCanMessage") {
-			(environment: String, peerAddresses: [String]) -> [String: Bool] in
+			(environment: String, peerIdentities: [String]) -> [String: Bool] in
+			let identities =
+				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+
 			return try await XMTP.Client.canMessage(
-				accountAddresses: peerAddresses,
+				accountIdentities: identities,
 				api: createApiClient(env: environment)
 			)
 		}
@@ -618,11 +623,13 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("getOrCreateInboxId") {
-			(address: String, environment: String) -> String in
+			(publicIdentity: String, environment: String) -> String in
 			do {
+				let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+					publicIdentity)
 				let api = createApiClient(env: environment)
 				return try await XMTP.Client.getOrCreateInboxId(
-					api: api, address: address)
+					api: api, publicIdentity: identity)
 			} catch {
 				throw Error.noClient
 			}
@@ -958,15 +965,16 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("findDmByAddress") {
-			(installationId: String, peerAddress: String) -> String? in
+		AsyncFunction("findDmByIdentity") {
+			(installationId: String, peerIdentity: String) -> String? in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			if let dm = try await client.conversations.findDmByAddress(
-				address: peerAddress)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				peerIdentity)
+			if let dm = try await client.conversations.findDmByIdentity(publicIdentity: identity)
 			{
 				return try await DmWrapper.encode(dm, client: client)
 			} else {
@@ -1092,32 +1100,6 @@ public class XMTPModule: Module {
 
 		AsyncFunction("findOrCreateDm") {
 			(
-				installationId: String, peerAddress: String,
-				disappearStartingAtNs: Int64?, retentionDurationInNs: Int64?
-			) -> String in
-			guard
-				let client = await clientsManager.getClient(key: installationId)
-			else {
-				throw Error.noClient
-			}
-			let settings =
-				(disappearStartingAtNs != nil && retentionDurationInNs != nil)
-				? DisappearingMessageSettings(
-					disappearStartingAtNs: disappearStartingAtNs!,
-					retentionDurationInNs: retentionDurationInNs!) : nil
-
-			do {
-				let dm = try await client.conversations.findOrCreateDm(
-					with: peerAddress, disappearingMessageSettings: settings)
-				return try await DmWrapper.encode(dm, client: client)
-			} catch {
-				print("ERRRO!: \(error.localizedDescription)")
-				throw error
-			}
-		}
-
-		AsyncFunction("findOrCreateDmWithInboxId") {
-			(
 				installationId: String, peerInboxId: String,
 				disappearStartingAtNs: Int64?, retentionDurationInNs: Int64?
 			) -> String in
@@ -1133,9 +1115,36 @@ public class XMTPModule: Module {
 					retentionDurationInNs: retentionDurationInNs!) : nil
 
 			do {
+				let dm = try await client.conversations.findOrCreateDm(
+					with: peerInboxId, disappearingMessageSettings: settings)
+				return try await DmWrapper.encode(dm, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
+
+		AsyncFunction("findOrCreateDmWithIdentity") {
+			(
+				installationId: String, peerIdentity: String,
+				disappearStartingAtNs: Int64?, retentionDurationInNs: Int64?
+			) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			let settings =
+				(disappearStartingAtNs != nil && retentionDurationInNs != nil)
+				? DisappearingMessageSettings(
+					disappearStartingAtNs: disappearStartingAtNs!,
+					retentionDurationInNs: retentionDurationInNs!) : nil
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				peerIdentity)
+			do {
 				let dm = try await client.conversations
-					.findOrCreateDmWithInboxId(
-						with: peerInboxId, disappearingMessageSettings: settings
+					.findOrCreateDmWithIdentity(
+						with: identity, disappearingMessageSettings: settings
 					)
 				return try await DmWrapper.encode(dm, client: client)
 			} catch {
@@ -1146,7 +1155,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("createGroup") {
 			(
-				installationId: String, peerAddresses: [String],
+				installationId: String, peerInboxIds: [String],
 				permission: String,
 				groupOptionsJson: String
 			) -> String in
@@ -1168,10 +1177,10 @@ public class XMTPModule: Module {
 					CreateGroupParamsWrapper.createGroupParamsFromJson(
 						groupOptionsJson)
 				let group = try await client.conversations.newGroup(
-					with: peerAddresses,
+					with: peerInboxIds,
 					permissions: permissionLevel,
 					name: createGroupParams.groupName,
-					imageUrlSquare: createGroupParams.groupImageUrlSquare,
+					imageUrlSquare: createGroupParams.groupImageUrl,
 					description: createGroupParams.groupDescription,
 					disappearingMessageSettings: createGroupParams
 						.disappearingMessageSettings
@@ -1185,7 +1194,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("createGroupCustomPermissions") {
 			(
-				installationId: String, peerAddresses: [String],
+				installationId: String, peerInboxIds: [String],
 				permissionPolicySetJson: String, groupOptionsJson: String
 			) -> String in
 			guard
@@ -1202,10 +1211,10 @@ public class XMTPModule: Module {
 						from: permissionPolicySetJson)
 				let group = try await client.conversations
 					.newGroupCustomPermissions(
-						with: peerAddresses,
+						with: peerInboxIds,
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
-						imageUrlSquare: createGroupParams.groupImageUrlSquare,
+						imageUrlSquare: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
 							.disappearingMessageSettings
@@ -1217,9 +1226,9 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("createGroupWithInboxIds") {
+		AsyncFunction("createGroupWithIdentities") {
 			(
-				installationId: String, inboxIds: [String],
+				installationId: String, peerIdentities: [String],
 				permission: String,
 				groupOptionsJson: String
 			) -> String in
@@ -1236,15 +1245,18 @@ public class XMTPModule: Module {
 					return .allMembers
 				}
 			}()
+			let identities =
+				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+
 			do {
 				let createGroupParams =
 					CreateGroupParamsWrapper.createGroupParamsFromJson(
 						groupOptionsJson)
-				let group = try await client.conversations.newGroupWithInboxIds(
-					with: inboxIds,
+				let group = try await client.conversations.newGroupWithIdentities(
+					with: identities,
 					permissions: permissionLevel,
 					name: createGroupParams.groupName,
-					imageUrlSquare: createGroupParams.groupImageUrlSquare,
+					imageUrlSquare: createGroupParams.groupImageUrl,
 					description: createGroupParams.groupDescription,
 					disappearingMessageSettings: createGroupParams
 						.disappearingMessageSettings
@@ -1258,7 +1270,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("createGroupCustomPermissionsWithInboxIds") {
 			(
-				installationId: String, inboxIds: [String],
+				installationId: String, peerIdentities: [String],
 				permissionPolicySetJson: String, groupOptionsJson: String
 			) -> String in
 			guard
@@ -1266,6 +1278,8 @@ public class XMTPModule: Module {
 			else {
 				throw Error.noClient
 			}
+			let identities =
+				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
 			do {
 				let createGroupParams =
 					CreateGroupParamsWrapper.createGroupParamsFromJson(
@@ -1274,11 +1288,11 @@ public class XMTPModule: Module {
 					try PermissionPolicySetWrapper.createPermissionPolicySet(
 						from: permissionPolicySetJson)
 				let group = try await client.conversations
-					.newGroupCustomPermissionsWithInboxIds(
-						with: inboxIds,
+					.newGroupCustomPermissionsWithIdentities(
+						with: identities,
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
-						imageUrlSquare: createGroupParams.groupImageUrlSquare,
+						imageUrlSquare: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
 							.disappearingMessageSettings
@@ -1403,7 +1417,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addGroupMembers") {
-			(installationId: String, id: String, peerAddresses: [String]) in
+			(installationId: String, id: String, peerInboxIds: [String]) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1416,11 +1430,11 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.addMembers(addresses: peerAddresses)
+			try await group.addMembers(inboxIds: peerInboxIds)
 		}
 
 		AsyncFunction("removeGroupMembers") {
-			(installationId: String, id: String, peerAddresses: [String]) in
+			(installationId: String, id: String, peerInboxIds: [String]) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1433,16 +1447,19 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.removeMembers(addresses: peerAddresses)
+			try await group.removeMembers(inboxIds: peerInboxIds)
 		}
 
-		AsyncFunction("addGroupMembersByInboxId") {
-			(installationId: String, id: String, inboxIds: [String]) in
+		AsyncFunction("addGroupMembersByIdentity") {
+			(installationId: String, id: String, peerIdentities: [String]) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
+			let identities =
+				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+
 			guard
 				let group = try await client.conversations.findGroup(
 					groupId: id)
@@ -1450,16 +1467,19 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.addMembersByInboxId(inboxIds: inboxIds)
+			try await group.addMembersByIdentity(identities: identities)
 		}
 
-		AsyncFunction("removeGroupMembersByInboxId") {
-			(installationId: String, id: String, inboxIds: [String]) in
+		AsyncFunction("removeGroupMembersByIdentity") {
+			(installationId: String, id: String, peerIdentities: [String]) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
+			let identities =
+				peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson($0) }
+
 			guard
 				let group = try await client.conversations.findGroup(
 					groupId: id)
@@ -1468,7 +1488,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			try await group.removeMembersByInboxId(inboxIds: inboxIds)
+			try await group.removeMembersByIdentity(identities: identities)
 		}
 
 		AsyncFunction("groupName") {
@@ -1486,7 +1506,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			return try group.groupName()
+			return try group.name()
 		}
 
 		AsyncFunction("updateGroupName") {
@@ -1504,10 +1524,10 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			try await group.updateGroupName(groupName: groupName)
+			try await group.updateName(name: groupName)
 		}
 
-		AsyncFunction("groupImageUrlSquare") {
+		AsyncFunction("groupImageUrl") {
 			(installationId: String, id: String) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1522,10 +1542,10 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			return try group.groupImageUrlSquare()
+			return try group.imageUrl()
 		}
 
-		AsyncFunction("updateGroupImageUrlSquare") {
+		AsyncFunction("updateGroupImageUrl") {
 			(installationId: String, id: String, groupImageUrl: String) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1540,8 +1560,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			try await group.updateGroupImageUrlSquare(
-				imageUrlSquare: groupImageUrl)
+			try await group.updateImageUrl(imageUrl: groupImageUrl)
 		}
 
 		AsyncFunction("groupDescription") {
@@ -1559,7 +1578,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			return try group.groupDescription()
+			return try group.description()
 		}
 
 		AsyncFunction("updateGroupDescription") {
@@ -1577,8 +1596,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			try await group.updateGroupDescription(
-				groupDescription: description)
+			try await group.updateDescription(description: description)
 		}
 
 		AsyncFunction("disappearingMessageSettings") {
@@ -1954,12 +1972,12 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.updateGroupNamePermission(
+			try await group.updateNamePermission(
 				newPermissionOption: getPermissionOption(
 					permission: newPermission))
 		}
 
-		AsyncFunction("updateGroupImageUrlSquarePermission") {
+		AsyncFunction("updateGroupImageUrlPermission") {
 			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
 				let client = await clientsManager.getClient(
@@ -1974,7 +1992,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.updateGroupImageUrlSquarePermission(
+			try await group.updateImageUrlPermission(
 				newPermissionOption: getPermissionOption(
 					permission: newPermission))
 		}
@@ -1994,7 +2012,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.updateGroupDescriptionPermission(
+			try await group.updateDescriptionPermission(
 				newPermissionOption: getPermissionOption(
 					permission: newPermission))
 		}
@@ -2111,18 +2129,6 @@ public class XMTPModule: Module {
 					)
 				]
 			)
-		}
-
-		AsyncFunction("consentAddressState") {
-			(installationId: String, address: String) -> String in
-			guard
-				let client = await clientsManager.getClient(key: installationId)
-			else {
-				throw Error.noClient
-			}
-			return try await ConsentWrapper.consentStateToString(
-				state: client.preferences.addressState(
-					address: address))
 		}
 
 		AsyncFunction("consentInboxIdState") {

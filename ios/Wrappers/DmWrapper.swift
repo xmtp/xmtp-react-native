@@ -12,7 +12,7 @@ import XMTP
 struct DmWrapper {
 	static func encodeToObj(_ dm: XMTP.Dm, client: XMTP.Client, conversationParams: ConversationParamsWrapper = ConversationParamsWrapper()) async throws -> [String: Any] {
 		var result: [String: Any] = [
-			"clientAddress": client.address,
+			"clientInboxId": client.inboxID,
 			"id": dm.id,
 			"createdAt": UInt64(dm.createdAt.timeIntervalSince1970 * 1000),
 			"version": "DM",

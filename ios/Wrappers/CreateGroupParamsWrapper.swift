@@ -3,7 +3,7 @@ import XMTP
 
 struct CreateGroupParamsWrapper {
 	let groupName: String
-	let groupImageUrlSquare: String
+	let groupImageUrl: String
 	let groupDescription: String
 	let disappearingMessageSettings: DisappearingMessageSettings
 
@@ -23,12 +23,12 @@ struct CreateGroupParamsWrapper {
 		)
 
 		let groupName = jsonOptions["name"] as? String ?? ""
-		let groupImageUrlSquare = jsonOptions["imageUrlSquare"] as? String ?? ""
+		let groupImageUrl = jsonOptions["imageUrl"] as? String ?? ""
 		let groupDescription = jsonOptions["description"] as? String ?? ""
 
 		return CreateGroupParamsWrapper(
 			groupName: groupName,
-			groupImageUrlSquare: groupImageUrlSquare,
+			groupImageUrl: groupImageUrl,
 			groupDescription: groupDescription,
 			disappearingMessageSettings: settings
 		)

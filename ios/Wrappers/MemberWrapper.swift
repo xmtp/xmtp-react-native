@@ -21,7 +21,9 @@ struct MemberWrapper {
 		}
 		return [
 			"inboxId": member.inboxId,
-			"addresses": member.addresses,
+			"identities": try member.identities.map {
+				try PublicIdentityWrapper.encode(publicIdentity: $0)
+			},
 			"permissionLevel": permissionString,
 			"consentState": ConsentWrapper.consentStateToString(state: member.consentState)
 		]

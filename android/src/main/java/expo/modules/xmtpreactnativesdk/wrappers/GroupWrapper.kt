@@ -23,7 +23,7 @@ class GroupWrapper {
                 if (groupParams.isActive) put("isActive", group.isActive())
                 if (groupParams.addedByInboxId) put("addedByInboxId", group.addedByInboxId())
                 if (groupParams.name) put("groupName", group.name)
-                if (groupParams.imageUrl) put("imageUrl", group.imageUrl)
+                if (groupParams.imageUrl) put("groupImageUrl", group.imageUrl)
                 if (groupParams.description) put("groupDescription", group.description)
                 if (groupParams.consentState) {
                     put("consentState", consentStateToString(group.consentState()))

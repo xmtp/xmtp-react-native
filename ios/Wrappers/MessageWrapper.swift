@@ -5,7 +5,7 @@ import LibXMTP
 // Wrapper around XMTP.DecodedMessage to allow passing these objects back
 // into react native.
 struct MessageWrapper {
-	static func encodeToObj(_ model: XMTP.Message) throws -> [String: Any] {
+	static func encodeToObj(_ model: XMTP.DecodedMessage) throws -> [String: Any] {
     // Swift Protos don't support null values and will always put the default ""
     // Check if there is a fallback, if there is then make it the set fallback, if not null
 		let fallback = try model.encodedContent.hasFallback ? model.encodedContent.fallback : nil
@@ -24,7 +24,7 @@ struct MessageWrapper {
         ]
 	}
 
-	static func encode(_ model: XMTP.Message) throws -> String {
+	static func encode(_ model: XMTP.DecodedMessage) throws -> String {
 		let obj = try encodeToObj(model)
 		return try obj.toJson()
 	}

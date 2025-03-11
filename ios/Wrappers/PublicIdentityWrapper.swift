@@ -40,19 +40,19 @@ struct PublicIdentityWrapper {
 		return PublicIdentity(kind: kind, identifier: identifier)
 	}
 
-	private static func encodeToObj(publicIdentity: PublicIdentity) -> [String: Any] {
+	static func encodeToObj(publicIdentity: PublicIdentity) -> [String: Any] {
 		return [
 			"identifier": publicIdentity.identifier,
 			"kind": publicIdentity.kind
 		]
 	}
 
-	static func encode(publicIdentity: PublicIdentity) -> String? {
+	static func encode(publicIdentity: PublicIdentity) throws -> String {
 		let obj = encodeToObj(publicIdentity: publicIdentity)
-		if let jsonData = try? JSONSerialization.data(withJSONObject: obj, options: []),
-		   let jsonString = String(data: jsonData, encoding: .utf8) {
-			return jsonString
+		let data = try JSONSerialization.data(withJSONObject: obj)
+		guard let result = String(data: data, encoding: .utf8) else {
+			throw WrapperError.encodeError("could not encode publicIdentity")
 		}
-		return nil
+		return result
 	}
 }
