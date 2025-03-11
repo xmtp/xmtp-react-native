@@ -30,7 +30,8 @@ export default function ConversationCreateScreen({
         setAlert(`${toAddress} cannot be added to a group conversation yet`)
         return
       }
-      const group = await client.conversations.newGroupWithIdentities(toIdentities)
+      const group =
+        await client.conversations.newGroupWithIdentities(toIdentities)
       navigation.navigate('group', { id: group.id })
     } else {
       const canMessage = await client.canMessage([
