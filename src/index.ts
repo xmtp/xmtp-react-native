@@ -1463,6 +1463,13 @@ export async function exportNativeLogs() {
   return XMTPModule.exportNativeLogs()
 }
 
+export async function pausedForVersion(
+  installationId: InstallationId,
+  id: ConversationId
+) {
+  return XMTPModule.pausedForVersion(installationId, id)
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 interface AuthParams {

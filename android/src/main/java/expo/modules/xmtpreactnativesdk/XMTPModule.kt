@@ -1508,6 +1508,16 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("pausedForVersion") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("pausedForVersion")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                    ?: throw XMTPException("no group found for $conversationId")
+                conversation.pausedForVersion()
+            }
+        }
+
         Function("subscribeToPreferenceUpdates") { installationId: String ->
             logV("subscribeToPreferenceUpdates")
 

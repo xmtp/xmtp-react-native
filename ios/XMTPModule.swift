@@ -2213,6 +2213,26 @@ public class XMTPModule: Module {
 				state: getConsentState(state: state))
 		}
 
+		AsyncFunction("pausedForVersion") {
+			(installationId: String, conversationId: String) -> String? in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+
+			guard
+				let conversation = try await client.conversations
+					.findConversation(
+						conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
+			}
+
+            return try await conversation.pausedForVersion()
+		}
+
 		AsyncFunction("subscribeToPreferenceUpdates") {
 			(installationId: String) in
 

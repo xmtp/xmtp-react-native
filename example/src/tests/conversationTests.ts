@@ -1216,3 +1216,11 @@ test('test stream messages in parallel', async () => {
   caro.conversations.cancelStreamAllMessages()
   return true
 })
+
+test('test pausedForVersion', async () => {
+  const [alix, bo] = await createClients(2)
+  const group = await alix.conversations.newGroup([bo.inboxId])
+  const version = await group.pausedForVersion()
+  assert(version === null, `Expected null, got ${version}`)
+  return true
+})

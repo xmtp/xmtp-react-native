@@ -723,4 +723,15 @@ export class Group<
       this.id
     )
   }
+
+  /**
+   *
+   * @returns {Promise<String>} A Promise that resolves to null unless
+   * the group is paused because of a minimum libxmtp version for the group. 
+   * If the group is paused, the Promise resolves to the version string of the libxmtp 
+   * that is required to join the group.
+   */
+  async pausedForVersion(): Promise<string> {
+    return await XMTP.pausedForVersion(this.client.installationId, this.id)
+  }
 }
