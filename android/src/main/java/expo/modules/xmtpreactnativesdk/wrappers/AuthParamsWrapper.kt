@@ -1,7 +1,7 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.JsonParser
-import org.xmtp.android.library.WalletType
+import org.xmtp.android.library.SignerType
 
 class AuthParamsWrapper(
     val environment: String,
@@ -23,7 +23,7 @@ class AuthParamsWrapper(
 }
 
 class WalletParamsWrapper(
-    val walletType: WalletType = WalletType.EOA,
+    val walletType: SignerType = SignerType.EOA,
     val chainId: Long?,
     val blockNumber: Long?,
 
@@ -34,11 +34,11 @@ class WalletParamsWrapper(
             return WalletParamsWrapper(
                 if (jsonOptions.has("walletType")) {
                     when (jsonOptions.get("walletType").asString) {
-                        "SCW" -> WalletType.SCW
-                        else -> WalletType.EOA
+                        "SCW" -> SignerType.SCW
+                        else -> SignerType.EOA
                     }
                 } else {
-                    WalletType.EOA
+                    SignerType.EOA
                 },
                 if (jsonOptions.has("chainId")) jsonOptions.get("chainId").asLong else null,
                 if (jsonOptions.has("blockNumber")) jsonOptions.get("blockNumber").asLong else null,
