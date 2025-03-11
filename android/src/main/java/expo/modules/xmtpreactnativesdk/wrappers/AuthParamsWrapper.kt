@@ -1,11 +1,10 @@
 package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.JsonParser
-import org.xmtp.android.library.WalletType
+import org.xmtp.android.library.SignerType
 
 class AuthParamsWrapper(
     val environment: String,
-    val appVersion: String?,
     val dbDirectory: String?,
     val historySyncUrl: String?,
 ) {
@@ -14,7 +13,6 @@ class AuthParamsWrapper(
             val jsonOptions = JsonParser.parseString(authParams).asJsonObject
             return AuthParamsWrapper(
                 jsonOptions.get("environment").asString,
-                if (jsonOptions.has("appVersion")) jsonOptions.get("appVersion").asString else null,
                 if (jsonOptions.has("dbDirectory")) jsonOptions.get("dbDirectory").asString else null,
                 if (jsonOptions.has("historySyncUrl")) jsonOptions.get("historySyncUrl").asString else null,
             )
@@ -23,7 +21,7 @@ class AuthParamsWrapper(
 }
 
 class WalletParamsWrapper(
-    val walletType: WalletType = WalletType.EOA,
+    val signerType: SignerType = SignerType.EOA,
     val chainId: Long?,
     val blockNumber: Long?,
 
@@ -32,13 +30,13 @@ class WalletParamsWrapper(
         fun walletParamsFromJson(walletParams: String): WalletParamsWrapper {
             val jsonOptions = JsonParser.parseString(walletParams).asJsonObject
             return WalletParamsWrapper(
-                if (jsonOptions.has("walletType")) {
-                    when (jsonOptions.get("walletType").asString) {
-                        "SCW" -> WalletType.SCW
-                        else -> WalletType.EOA
+                if (jsonOptions.has("signerType")) {
+                    when (jsonOptions.get("signerType").asString) {
+                        "SCW" -> SignerType.SCW
+                        else -> SignerType.EOA
                     }
                 } else {
-                    WalletType.EOA
+                    SignerType.EOA
                 },
                 if (jsonOptions.has("chainId")) jsonOptions.get("chainId").asLong else null,
                 if (jsonOptions.has("blockNumber")) jsonOptions.get("blockNumber").asLong else null,

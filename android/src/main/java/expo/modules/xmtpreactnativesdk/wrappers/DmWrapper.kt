@@ -12,7 +12,7 @@ class DmWrapper {
             dmParams: ConversationParamsWrapper = ConversationParamsWrapper(),
         ): Map<String, Any> {
             return buildMap {
-                put("clientAddress", client.address)
+                put("clientInboxId", client.inboxId)
                 put("id", dm.id)
                 put("createdAt", dm.createdAt.time)
                 put("version", "DM")

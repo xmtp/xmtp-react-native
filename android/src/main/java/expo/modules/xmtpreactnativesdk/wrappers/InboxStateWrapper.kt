@@ -10,7 +10,7 @@ class InboxStateWrapper {
         private fun encodeToObj(inboxState: InboxState): Map<String, Any> {
             return mapOf(
                 "inboxId" to inboxState.inboxId,
-                "addresses" to inboxState.addresses,
+                "identities" to inboxState.identities.map { PublicIdentityWrapper.encode(it) },
                 "installations" to inboxState.installations.map {
                     gson.toJson(
                         mapOf(
@@ -19,7 +19,7 @@ class InboxStateWrapper {
                         )
                     )
                 },
-                "recoveryAddress" to inboxState.recoveryAddress
+                "recoveryIdentity" to PublicIdentityWrapper.encode(inboxState.recoveryPublicIdentity)
             )
         }
 

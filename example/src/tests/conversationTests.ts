@@ -122,7 +122,7 @@ test('register and use custom content types', async () => {
 
   await delayToPropogate()
 
-  const boConvo = await bo.conversations.newConversation(alix.address)
+  const boConvo = await bo.conversations.newConversation(alix.inboxId)
   await delayToPropogate()
   await boConvo.send(
     { topNumber: { bottomNumber: 12 } },
@@ -168,7 +168,7 @@ test('register and use custom content types with prepare', async () => {
 
   await delayToPropogate()
 
-  const boConvo = await bo.conversations.newConversation(alix.address)
+  const boConvo = await bo.conversations.newConversation(alix.inboxId)
   await delayToPropogate()
   await boConvo.prepareMessage(
     { topNumber: { bottomNumber: 12 } },
@@ -208,13 +208,13 @@ test('handle fallback types appropriately', async () => {
     ],
     dbEncryptionKey: keyBytes,
   })
-  const alice = await Client.createRandom({
+  const alix = await Client.createRandom({
     env: 'local',
     dbEncryptionKey: keyBytes,
   })
   Client.register(new NumberCodecEmptyFallback())
   Client.register(new NumberCodecUndefinedFallback())
-  const bobConvo = await bob.conversations.newConversation(alice.address)
+  const bobConvo = await bob.conversations.newConversation(alix.inboxId)
 
   // @ts-ignore
   await bobConvo.send(12, { contentType: ContentTypeNumberWithEmptyFallback })
@@ -224,8 +224,8 @@ test('handle fallback types appropriately', async () => {
     contentType: ContentTypeNumberWithUndefinedFallback,
   })
 
-  await alice.conversations.syncAllConversations()
-  const aliceConvo = await alice.conversations.findConversation(bobConvo.id)
+  await alix.conversations.syncAllConversations()
+  const aliceConvo = await alix.conversations.findConversation(bobConvo.id)
 
   const messages = await aliceConvo!.messages()
   assert(messages.length === 2, 'did not get messages')
@@ -263,8 +263,8 @@ test('handle fallback types appropriately', async () => {
 
 test('can find a conversations by id', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
-  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
+  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.inboxId)
 
   await boClient.conversations.sync()
   const boGroup = await boClient.conversations.findConversation(alixGroup.id)
@@ -290,8 +290,8 @@ test('can find a conversations by id', async () => {
 
 test('can find a conversation by topic', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
-  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
+  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.inboxId)
 
   await boClient.conversations.sync()
   const boGroup = await boClient.conversations.findConversationByTopic(
@@ -316,7 +316,7 @@ test('can find a conversation by topic', async () => {
 
 test('can find a dm by inbox id', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
+  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.inboxId)
 
   await boClient.conversations.sync()
   const boDm = await boClient.conversations.findDmByInboxId(alixClient.inboxId)
@@ -331,10 +331,12 @@ test('can find a dm by inbox id', async () => {
 
 test('can find a dm by address', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
+  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.inboxId)
 
   await boClient.conversations.sync()
-  const boDm = await boClient.conversations.findDmByAddress(alixClient.address)
+  const boDm = await boClient.conversations.findDmByIdentity(
+    alixClient.publicIdentity
+  )
 
   assert(
     boDm?.id === alixDm.id,
@@ -349,18 +351,18 @@ test('can filter conversations by consent', async () => {
 
   // Bo allowed + 1
   const boGroupWithAlixAllowed = await boClient.conversations.newGroup([
-    alixClient.address,
+    alixClient.inboxId,
   ])
   // Bo unknown + 1
   const alixGroupWithBo = await alixClient.conversations.newGroup([
-    boClient.address,
+    boClient.inboxId,
   ])
   // Bo allowed + 1
   const boDmWithAlixAllowed = await boClient.conversations.findOrCreateDm(
-    alixClient.address
+    alixClient.inboxId
   )
   // Bo unknown + 1
-  await caroClient.conversations.findOrCreateDm(boClient.address)
+  await caroClient.conversations.findOrCreateDm(boClient.inboxId)
   await boClient.conversations.sync()
   const boDmWithCaroUnknownThenDenied =
     await boClient.conversations.findDmByInboxId(caroClient.inboxId)
@@ -442,13 +444,13 @@ test('can filter sync all by consent', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
   // Bo allowed + 1
-  await boClient.conversations.newGroup([alixClient.address])
+  await boClient.conversations.newGroup([alixClient.inboxId])
   // Bo unknown + 1
-  const otherGroup = await alixClient.conversations.newGroup([boClient.address])
+  const otherGroup = await alixClient.conversations.newGroup([boClient.inboxId])
   // Bo allowed + 1
-  await boClient.conversations.findOrCreateDm(alixClient.address)
+  await boClient.conversations.findOrCreateDm(alixClient.inboxId)
   // Bo unknown + 1
-  await caroClient.conversations.findOrCreateDm(boClient.address)
+  await caroClient.conversations.findOrCreateDm(boClient.inboxId)
 
   await boClient.conversations.sync()
   const boDmWithCaro = await boClient.conversations.findDmByInboxId(
@@ -489,10 +491,10 @@ test('can filter sync all by consent', async () => {
 test('can list conversations with params', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
-  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
-  const boGroup2 = await boClient.conversations.newGroup([alixClient.address])
-  const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.address)
-  const boDm2 = await boClient.conversations.findOrCreateDm(caroClient.address)
+  const boGroup1 = await boClient.conversations.newGroup([alixClient.inboxId])
+  const boGroup2 = await boClient.conversations.newGroup([alixClient.inboxId])
+  const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.inboxId)
+  const boDm2 = await boClient.conversations.findOrCreateDm(caroClient.inboxId)
 
   await boGroup1.send({ text: `first message` })
   await boGroup1.send({ text: `second message` })
@@ -545,13 +547,13 @@ test('can list conversations with params', async () => {
 test('can list groups', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
-  const boGroup = await boClient.conversations.newGroup([alixClient.address])
+  const boGroup = await boClient.conversations.newGroup([alixClient.inboxId])
   await boClient.conversations.newGroup([
-    caroClient.address,
-    alixClient.address,
+    caroClient.inboxId,
+    alixClient.inboxId,
   ])
-  await boClient.conversations.findOrCreateDm(caroClient.address)
-  const boDm = await boClient.conversations.findOrCreateDm(alixClient.address)
+  await boClient.conversations.findOrCreateDm(caroClient.inboxId)
+  const boDm = await boClient.conversations.findOrCreateDm(alixClient.inboxId)
 
   const boConversations = await boClient.conversations.list()
   await alixClient.conversations.sync()
@@ -582,8 +584,8 @@ test('can list groups', async () => {
 test('can list conversation messages', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
-  const boGroup = await boClient.conversations.newGroup([alixClient.address])
-  const boDm = await boClient.conversations.findOrCreateDm(caroClient.address)
+  const boGroup = await boClient.conversations.newGroup([alixClient.inboxId])
+  const boDm = await boClient.conversations.findOrCreateDm(caroClient.inboxId)
   const boGroupConversation = await boClient.conversations.findConversation(
     boGroup.id
   )
@@ -625,8 +627,8 @@ test('can stream both conversations and messages at same time', async () => {
     messageCallbacks++
   })
 
-  const group = await alix.conversations.newGroup([bo.address])
-  const dm = await alix.conversations.findOrCreateDm(bo.address)
+  const group = await alix.conversations.newGroup([bo.inboxId])
+  const dm = await alix.conversations.findOrCreateDm(bo.inboxId)
   await delayToPropogate()
   await group.send('hello')
   await dm.send('hello')
@@ -648,8 +650,8 @@ test('can stream both conversations and messages at same time', async () => {
 test('can stream conversation messages', async () => {
   const [alixClient, boClient] = await createClients(2)
 
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
-  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
+  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.inboxId)
   const alixGroupConversation = await alixClient.conversations.findConversation(
     alixGroup.id
   )
@@ -692,7 +694,7 @@ test('can stream all groups and conversations', async () => {
     }
   )
 
-  await boClient.conversations.newGroup([alixClient.address])
+  await boClient.conversations.newGroup([alixClient.inboxId])
   await delayToPropogate()
   if ((containers.length as number) !== 1) {
     throw Error(
@@ -700,7 +702,7 @@ test('can stream all groups and conversations', async () => {
     )
   }
 
-  await boClient.conversations.findOrCreateDm(alixClient.address)
+  await boClient.conversations.findOrCreateDm(alixClient.inboxId)
   await delayToPropogate()
   if ((containers.length as number) !== 2) {
     throw Error(
@@ -708,7 +710,7 @@ test('can stream all groups and conversations', async () => {
     )
   }
 
-  await alixClient.conversations.findOrCreateDm(caroClient.address)
+  await alixClient.conversations.findOrCreateDm(caroClient.inboxId)
   await delayToPropogate()
   if (containers.length !== 3) {
     throw Error(
@@ -719,7 +721,7 @@ test('can stream all groups and conversations', async () => {
   alixClient.conversations.cancelStream()
   await delayToPropogate()
 
-  await caroClient.conversations.newGroup([alixClient.address])
+  await caroClient.conversations.newGroup([alixClient.inboxId])
   await delayToPropogate()
   if ((containers.length as number) !== 3) {
     throw Error(
@@ -745,7 +747,7 @@ test('can streamAll from multiple clients', async () => {
   })
 
   // Start Caro starts a new conversation.
-  await caro.conversations.newConversation(alix.address)
+  await caro.conversations.newConversation(alix.inboxId)
   await delayToPropogate()
   if (allBoConversations.length !== 0) {
     throw Error(
@@ -779,7 +781,7 @@ test('can streamAll from multiple clients - swapped orderring', async () => {
   })
 
   // Start Caro starts a new conversation.
-  await caro.conversations.newConversation(alix.address)
+  await caro.conversations.newConversation(alix.inboxId)
   await delayToPropogate()
   if (allBoConversations.length !== 0) {
     throw Error(
@@ -813,7 +815,7 @@ test('can streamAllMessages from multiple clients', async () => {
 
   // Start Caro starts a new conversation.
   const caroConversation = await caro.conversations.newConversation(
-    alix.address
+    alix.inboxId
   )
   await caroConversation.send({ text: `Message` })
   await delayToPropogate()
@@ -838,7 +840,7 @@ test('can streamAllMessages from multiple clients - swapped', async () => {
   // Setup stream
   const allBoMessages: any[] = []
   const allAliMessages: any[] = []
-  const caroGroup = await caro.conversations.newGroup([alix.address])
+  const caroGroup = await caro.conversations.newGroup([alix.inboxId])
 
   await alix.conversations.streamAllMessages(async (conversation) => {
     allAliMessages.push(conversation)
@@ -848,7 +850,7 @@ test('can streamAllMessages from multiple clients - swapped', async () => {
   })
 
   // Start Caro starts a new conversation.
-  const caroConvo = await caro.conversations.newConversation(alix.address)
+  const caroConvo = await caro.conversations.newConversation(alix.inboxId)
   await delayToPropogate()
   await caroConvo.send({ text: `Message` })
   await caroGroup.send({ text: `Message` })
@@ -891,14 +893,13 @@ test('can sync consent (expected to fail unless historySyncUrl is set)', async (
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
     historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   // Create DM conversation
-  const dm = await alix.conversations.findOrCreateDm(bo.address)
+  const dm = await alix.conversations.findOrCreateDm(bo.inboxId)
   await dm.updateConsent('denied')
   const consentState = await dm.consentState()
   assert(consentState === 'denied', `Expected 'denied', got ${consentState}`)
@@ -908,7 +909,6 @@ test('can sync consent (expected to fail unless historySyncUrl is set)', async (
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
     historySyncUrl: 'http://10.0.2.2:5558',
@@ -970,17 +970,15 @@ test('can stream consent (expected to fail unless historySyncUrl is set)', async
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
     historySyncUrl: 'http://10.0.2.2:5558',
   })
 
-  const alixGroup = await alix.conversations.newGroup([bo.address])
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
     historySyncUrl: 'http://10.0.2.2:5558',
@@ -1001,7 +999,7 @@ test('can stream consent (expected to fail unless historySyncUrl is set)', async
   await delayToPropogate()
 
   await alix2Group!.updateConsent('denied')
-  const dm = await alix2.conversations.newConversation(bo.address)
+  const dm = await alix2.conversations.newConversation(bo.inboxId)
   await dm!.updateConsent('denied')
 
   await delayToPropogate(3000)
@@ -1043,7 +1041,6 @@ test('can preference updates (expected to fail unless historySyncUrl is set)', a
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
     historySyncUrl: 'http://10.0.2.2:5558',
@@ -1058,7 +1055,6 @@ test('can preference updates (expected to fail unless historySyncUrl is set)', a
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
     historySyncUrl: 'http://10.0.2.2:5558',
@@ -1086,7 +1082,7 @@ test('get all HMAC keys', async () => {
 
   for (let i = 0; i < 5; i++) {
     const [client] = await createClients(1)
-    const convo = await alix.conversations.newConversation(client.address)
+    const convo = await alix.conversations.newConversation(client.inboxId)
     conversations.push(convo)
   }
 
@@ -1106,13 +1102,13 @@ test('test stream messages in parallel', async () => {
 
   // Create groups
   const alixGroup = await alix.conversations.newGroup([
-    caro.address,
-    bo.address,
+    caro.inboxId,
+    bo.inboxId,
   ])
 
   const caroGroup2 = await caro.conversations.newGroup([
-    alix.address,
-    bo.address,
+    alix.inboxId,
+    bo.inboxId,
   ])
 
   // Sync all clients
@@ -1166,7 +1162,7 @@ test('test stream messages in parallel', async () => {
       console.log('Davon is sending spam groups...')
       for (let i = 0; i < 10; i++) {
         const spamMessage = `Davon Spam Message ${i}`
-        const spamGroup = await davon.conversations.newGroup([caro.address])
+        const spamGroup = await davon.conversations.newGroup([caro.inboxId])
         await spamGroup.send(spamMessage)
         console.log(`Davon spam: ${spamMessage}`)
       }
@@ -1218,5 +1214,13 @@ test('test stream messages in parallel', async () => {
 
   console.log('Test passed: Streams and messages handled correctly.')
   caro.conversations.cancelStreamAllMessages()
+  return true
+})
+
+test('test pausedForVersion', async () => {
+  const [alix, bo] = await createClients(2)
+  const group = await alix.conversations.newGroup([bo.inboxId])
+  const version = await group.pausedForVersion()
+  assert(version === null, `Expected null, got ${version}`)
   return true
 })

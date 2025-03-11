@@ -367,4 +367,15 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
       this.id
     )
   }
+
+  /**
+   *
+   * @returns {Promise<String>} A Promise that resolves to null unless
+   * the dm is paused because of a minimum libxmtp version for the dm.
+   * If the dm is paused, the Promise resolves to the version string of the libxmtp
+   * that is required to join the dm.
+   */
+  async pausedForVersion(): Promise<string> {
+    return await XMTP.pausedForVersion(this.client.installationId, this.id)
+  }
 }

@@ -15,10 +15,9 @@ import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
-import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
-import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.DisappearingMessageSettingsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
@@ -26,7 +25,10 @@ import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.MembershipResultWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PermissionPolicySetWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.PublicIdentityWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.WalletParamsWrapper
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -40,14 +42,14 @@ import org.xmtp.android.library.ClientOptions
 import org.xmtp.android.library.ConsentRecord
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
-import org.xmtp.android.library.Conversations.*
-import org.xmtp.android.library.DelicateApi
+import org.xmtp.android.library.Conversations.ConversationFilterType
 import org.xmtp.android.library.EntryType
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreferenceType
 import org.xmtp.android.library.SendOptions
+import org.xmtp.android.library.SignedData
+import org.xmtp.android.library.SignerType
 import org.xmtp.android.library.SigningKey
-import org.xmtp.android.library.WalletType
 import org.xmtp.android.library.XMTPEnvironment
 import org.xmtp.android.library.XMTPException
 import org.xmtp.android.library.codecs.Attachment
@@ -57,13 +59,13 @@ import org.xmtp.android.library.codecs.EncryptedEncodedContent
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.hexToByteArray
+import org.xmtp.android.library.libxmtp.DecodedMessage
 import org.xmtp.android.library.libxmtp.DisappearingMessageSettings
 import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
-import org.xmtp.android.library.libxmtp.Message
 import org.xmtp.android.library.libxmtp.PermissionOption
+import org.xmtp.android.library.libxmtp.PublicIdentity
 import org.xmtp.android.library.libxmtp.SignatureRequest
 import org.xmtp.android.library.messages.PrivateKeyBuilder
-import org.xmtp.android.library.messages.Signature
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
 import java.io.BufferedReader
@@ -72,61 +74,39 @@ import java.io.InputStreamReader
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 
 class ReactNativeSigner(
-    var module: XMTPModule,
-    override var address: String,
-    override var type: WalletType = WalletType.EOA,
+    private val module: XMTPModule,
+    override var publicIdentity: PublicIdentity,
+    override var type: SignerType = SignerType.EOA,
     override var chainId: Long? = null,
     override var blockNumber: Long? = null,
 ) : SigningKey {
-    private val continuations: MutableMap<String, Continuation<Signature>> = mutableMapOf()
-    private val scwContinuations: MutableMap<String, Continuation<ByteArray>> = mutableMapOf()
+    private val continuations: MutableMap<String, Continuation<SignedData>> = mutableMapOf()
 
     fun handle(id: String, signature: String) {
-        val continuation = continuations[id] ?: return
-        val signatureData = Base64.decode(signature.toByteArray(), NO_WRAP)
-        if (signatureData == null || signatureData.size != 65) {
-            continuation.resumeWithException(XMTPException("Invalid Signature"))
-            continuations.remove(id)
-            return
-        }
-        val sig = Signature.newBuilder().also {
-            it.ecdsaCompact = it.ecdsaCompact.toBuilder().also { builder ->
-                builder.bytes = signatureData.take(64).toByteArray().toByteString()
-                builder.recovery = signatureData[64].toInt()
-            }.build()
-        }.build()
-        continuation.resume(sig)
-        continuations.remove(id)
+        val continuation = continuations.remove(id) ?: return
+        val signatureData = Base64.decode(signature, Base64.NO_WRAP)
+
+        val signedData = SignedData(
+            rawData = signatureData,
+            publicKey = publicIdentity.identifier.hexToByteArray(),
+            authenticatorData = null,
+            clientDataJson = null
+        )
+
+        continuation.resume(signedData)
     }
 
-    fun handleSCW(id: String, signature: String) {
-        val continuation = scwContinuations[id] ?: return
-        continuation.resume(signature.hexToByteArray())
-        scwContinuations.remove(id)
-    }
-
-    override suspend fun signSCW(message: String): ByteArray {
+    override suspend fun sign(message: String): SignedData {
         val request = SignatureRequest(message = message)
         module.sendEvent("sign", mapOf("id" to request.id, "message" to request.message))
-        return suspendCancellableCoroutine { continuation ->
-            scwContinuations[request.id] = continuation
-        }
-    }
 
-    override suspend fun sign(data: ByteArray): Signature {
-        val request = SignatureRequest(message = String(data, Charsets.UTF_8))
-        module.sendEvent("sign", mapOf("id" to request.id, "message" to request.message))
         return suspendCancellableCoroutine { continuation ->
             continuations[request.id] = continuation
         }
     }
-
-    override suspend fun sign(message: String): Signature =
-        sign(message.toByteArray())
 }
 
 data class SignatureRequest(
@@ -143,24 +123,21 @@ class XMTPModule : Module() {
     private val context: Context
         get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
 
-    private fun apiEnvironments(env: String, appVersion: String?): ClientOptions.Api {
+    private fun apiEnvironments(env: String): ClientOptions.Api {
         return when (env) {
             "local" -> ClientOptions.Api(
                 env = XMTPEnvironment.LOCAL,
                 isSecure = false,
-                appVersion = appVersion
             )
 
             "production" -> ClientOptions.Api(
                 env = XMTPEnvironment.PRODUCTION,
                 isSecure = true,
-                appVersion = appVersion
             )
 
             else -> ClientOptions.Api(
                 env = XMTPEnvironment.DEV,
                 isSecure = true,
-                appVersion = appVersion
             )
         }
     }
@@ -186,7 +163,7 @@ class XMTPModule : Module() {
                 else -> "https://message-history.dev.ephemera.network/"
             }
         return ClientOptions(
-            api = apiEnvironments(authOptions.environment, authOptions.appVersion),
+            api = apiEnvironments(authOptions.environment),
             preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
             appContext = context,
             dbEncryptionKey = encryptionKeyBytes,
@@ -218,23 +195,18 @@ class XMTPModule : Module() {
             "preferences",
         )
 
-        Function("address") { installationId: String ->
-            logV("address")
-            val client = clients[installationId]
-            client?.address ?: "No Client."
-        }
-
         Function("inboxId") { installationId: String ->
             logV("inboxId")
             val client = clients[installationId]
             client?.inboxId ?: "No Client."
         }
 
-        AsyncFunction("findInboxIdFromAddress") Coroutine { installationId: String, address: String ->
+        AsyncFunction("findInboxIdFromIdentity") Coroutine { installationId: String, publicIdentity: String ->
             withContext(Dispatchers.IO) {
-                logV("findInboxIdFromAddress")
+                logV("findInboxIdFromIdentity")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                client.inboxIdFromAddress(address)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
+                client.inboxIdFromIdentity(identity)
             }
         }
 
@@ -286,11 +258,6 @@ class XMTPModule : Module() {
             signer?.handle(id = requestID, signature = signature)
         }
 
-        Function("receiveSCWSignature") { requestID: String, signature: String ->
-            logV("receiveSCWSignature")
-            signer?.handleSCW(id = requestID, signature = signature)
-        }
-
         AsyncFunction("createRandom") Coroutine { hasPreAuthenticateToInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("createRandom")
@@ -309,14 +276,16 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("create") Coroutine { address: String, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String, walletParams: String ->
+        AsyncFunction("create") Coroutine { publicIdentity: String, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String, walletParams: String ->
             withContext(Dispatchers.IO) {
                 logV("create")
                 val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
+
                 val reactSigner = ReactNativeSigner(
                     module = this@XMTPModule,
-                    address = address,
-                    type = walletOptions.walletType,
+                    publicIdentity = identity,
+                    type = walletOptions.signerType,
                     chainId = walletOptions.chainId,
                     blockNumber = walletOptions.blockNumber
                 )
@@ -335,15 +304,16 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("build") Coroutine { address: String, inboxId: String?, dbEncryptionKey: List<Int>, authParams: String ->
+        AsyncFunction("build") Coroutine { publicIdentity: String, inboxId: String?, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("build")
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
                 )
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
                 val client = Client.build(
-                    address = address,
+                    publicIdentity = identity,
                     options = options,
                     inboxId = inboxId,
                 )
@@ -353,15 +323,16 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("ffiCreateClient") Coroutine { address: String, dbEncryptionKey: List<Int>, authParams: String ->
+        AsyncFunction("ffiCreateClient") Coroutine { publicIdentity: String, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("ffiCreateClient")
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
                 )
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
                 val client = Client.ffiCreateClient(
-                    address = address,
+                    publicIdentity = identity,
                     clientOptions = options,
                 )
                 ContentJson.Companion
@@ -419,16 +390,17 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("revokeInstallations") Coroutine { installationId: String, walletParams: String, installationIds: List<String> ->
+        AsyncFunction("revokeInstallations") Coroutine { installationId: String, walletParams: String, installationIds: List<String>, publicIdentity: String ->
             withContext(Dispatchers.IO) {
                 logV("revokeInstallations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
                 val reactSigner =
                     ReactNativeSigner(
                         module = this@XMTPModule,
-                        address = client.address,
-                        type = walletOptions.walletType,
+                        publicIdentity = identity,
+                        type = walletOptions.signerType,
                         chainId = walletOptions.chainId,
                         blockNumber = walletOptions.blockNumber
                     )
@@ -439,16 +411,17 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("revokeAllOtherInstallations") Coroutine { installationId: String, walletParams: String ->
+        AsyncFunction("revokeAllOtherInstallations") Coroutine { installationId: String, walletParams: String, publicIdentity: String ->
             withContext(Dispatchers.IO) {
                 logV("revokeAllOtherInstallations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
                 val reactSigner =
                     ReactNativeSigner(
                         module = this@XMTPModule,
-                        address = client.address,
-                        type = walletOptions.walletType,
+                        publicIdentity = identity,
+                        type = walletOptions.signerType,
                         chainId = walletOptions.chainId,
                         blockNumber = walletOptions.blockNumber
                     )
@@ -459,16 +432,17 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("addAccount") Coroutine { installationId: String, newAddress: String, walletParams: String, allowReassignInboxId: Boolean ->
+        AsyncFunction("addAccount") Coroutine { installationId: String, newIdentity: String, walletParams: String, allowReassignInboxId: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("addAccount")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(newIdentity)
                 val reactSigner =
                     ReactNativeSigner(
                         module = this@XMTPModule,
-                        address = newAddress,
-                        type = walletOptions.walletType,
+                        publicIdentity = identity,
+                        type = walletOptions.signerType,
                         chainId = walletOptions.chainId,
                         blockNumber = walletOptions.blockNumber
                     )
@@ -479,22 +453,25 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("removeAccount") Coroutine { installationId: String, addressToRemove: String, walletParams: String ->
+        AsyncFunction("removeAccount") Coroutine { installationId: String, identityToRemove: String, walletParams: String, publicIdentity: String ->
             withContext(Dispatchers.IO) {
                 logV("removeAccount")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
+                val remove = PublicIdentityWrapper.publicIdentityFromJson(identityToRemove)
+
                 val reactSigner =
                     ReactNativeSigner(
                         module = this@XMTPModule,
-                        address = client.address,
-                        type = walletOptions.walletType,
+                        publicIdentity = identity,
+                        type = walletOptions.signerType,
                         chainId = walletOptions.chainId,
                         blockNumber = walletOptions.blockNumber
                     )
                 signer = reactSigner
 
-                client.removeAccount(reactSigner, addressToRemove)
+                client.removeAccount(reactSigner, remove)
                 signer = null
             }
         }
@@ -524,11 +501,12 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("ffiRevokeWalletSignatureText") Coroutine { installationId: String, addressToRemove: String ->
+        AsyncFunction("ffiRevokeWalletSignatureText") Coroutine { installationId: String, identityToRemove: String ->
             withContext(Dispatchers.IO) {
                 logV("ffiRevokeWalletSignatureText")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val sigRequest = client.ffiRevokeWallet(addressToRemove)
+                val remove = PublicIdentityWrapper.publicIdentityFromJson(identityToRemove)
+                val sigRequest = client.ffiRevokeIdentity(remove)
                 sigRequest.let {
                     clientSignatureRequests[installationId] = it
                     it.signatureText()
@@ -536,11 +514,12 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("ffiAddWalletSignatureText") Coroutine { installationId: String, addressToAdd: String ->
+        AsyncFunction("ffiAddWalletSignatureText") Coroutine { installationId: String, newIdentity: String, allowReassignInboxId: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("ffiAddWalletSignatureText")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val sigRequest = client.ffiAddWallet(addressToAdd)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(newIdentity)
+                val sigRequest = client.ffiAddIdentity(identity, allowReassignInboxId)
                 sigRequest.let {
                     clientSignatureRequests[installationId] = it
                     it.signatureText()
@@ -588,20 +567,26 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("canMessage") Coroutine { installationId: String, peerAddresses: List<String> ->
+        AsyncFunction("canMessage") Coroutine { installationId: String, peerIdentities: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("canMessage")
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                client.canMessage(peerAddresses)
+                client.canMessage(identities)
             }
         }
 
-        AsyncFunction("staticCanMessage") Coroutine { environment: String, peerAddresses: List<String> ->
+        AsyncFunction("staticCanMessage") Coroutine { environment: String, peerIdentities: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("staticCanMessage")
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+
                 Client.canMessage(
-                    peerAddresses,
-                    apiEnvironments(environment, null),
+                    identities,
+                    apiEnvironments(environment),
                 )
             }
         }
@@ -611,19 +596,20 @@ class XMTPModule : Module() {
                 logV("staticInboxStatesForInboxIds")
                 val inboxStates = Client.inboxStatesForInboxIds(
                     inboxIds,
-                    apiEnvironments(environment, null),
+                    apiEnvironments(environment),
                 )
                 inboxStates.map { InboxStateWrapper.encode(it) }
             }
         }
 
-        AsyncFunction("getOrCreateInboxId") Coroutine { address: String, environment: String ->
+        AsyncFunction("getOrCreateInboxId") Coroutine { publicIdentity: String, environment: String ->
             withContext(Dispatchers.IO) {
                 try {
                     logV("getOrCreateInboxId")
+                    val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
                     Client.getOrCreateInboxId(
-                        api = apiEnvironments(environment, null),
-                        address = address
+                        api = apiEnvironments(environment),
+                        identity
                     )
                 } catch (e: Exception) {
                     throw XMTPException("Failed to getOrCreateInboxId: ${e.message}")
@@ -747,7 +733,7 @@ class XMTPModule : Module() {
                     limit = limit,
                     beforeNs = beforeNs,
                     afterNs = afterNs,
-                    direction = Message.SortDirection.valueOf(
+                    direction = DecodedMessage.SortDirection.valueOf(
                         direction ?: "DESCENDING"
                     )
                 )?.map { MessageWrapper.encode(it) }
@@ -763,7 +749,7 @@ class XMTPModule : Module() {
                     limit = limit,
                     beforeNs = beforeNs,
                     afterNs = afterNs,
-                    direction = Message.SortDirection.valueOf(
+                    direction = DecodedMessage.SortDirection.valueOf(
                         direction ?: "DESCENDING"
                     )
                 )?.map { MessageWrapper.encode(it) }
@@ -825,11 +811,12 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("findDmByAddress") Coroutine { installationId: String, peerAddress: String ->
+        AsyncFunction("findDmByIdentity") Coroutine { installationId: String, peerIdentity: String ->
             withContext(Dispatchers.IO) {
-                logV("findDmByAddress")
+                logV("findDmByIdentity")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val dm = client.conversations.findDmByAddress(peerAddress)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(peerIdentity)
+                val dm = client.conversations.findDmByIdentity(identity)
                 dm?.let {
                     DmWrapper.encode(client, dm)
                 }
@@ -914,7 +901,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("findOrCreateDm") Coroutine { installationId: String, peerAddress: String, disappearStartingAtNs: Long?, retentionDurationInNs: Long? ->
+        AsyncFunction("findOrCreateDm") Coroutine { installationId: String, peerInboxId: String, disappearStartingAtNs: Long?, retentionDurationInNs: Long? ->
             withContext(Dispatchers.IO) {
                 logV("findOrCreateDm")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -923,26 +910,27 @@ class XMTPModule : Module() {
                 } else {
                     null
                 }
-                val dm = client.conversations.findOrCreateDm(peerAddress, settings)
+                val dm = client.conversations.findOrCreateDm(peerInboxId, settings)
                 DmWrapper.encode(client, dm)
             }
         }
 
-        AsyncFunction("findOrCreateDmWithInboxId") Coroutine { installationId: String, peerInboxId: String, disappearStartingAtNs: Long?, retentionDurationInNs: Long? ->
+        AsyncFunction("findOrCreateDmWithIdentity") Coroutine { installationId: String, peerIdentity: String, disappearStartingAtNs: Long?, retentionDurationInNs: Long? ->
             withContext(Dispatchers.IO) {
-                logV("findOrCreateDmWithInboxId")
+                logV("findOrCreateDmWithIdentity")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val settings = if (disappearStartingAtNs != null && retentionDurationInNs != null) {
                     DisappearingMessageSettings(disappearStartingAtNs, retentionDurationInNs)
                 } else {
                     null
                 }
-                val dm = client.conversations.findOrCreateDmWithInboxId(peerInboxId, settings)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(peerIdentity)
+                val dm = client.conversations.findOrCreateDmWithIdentity(identity, settings)
                 DmWrapper.encode(client, dm)
             }
         }
 
-        AsyncFunction("createGroup") Coroutine { installationId: String, peerAddresses: List<String>, permission: String, groupOptionsJson: String ->
+        AsyncFunction("createGroup") Coroutine { installationId: String, peerInboxIds: List<String>, permission: String, groupOptionsJson: String ->
             withContext(Dispatchers.IO) {
                 logV("createGroup")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -953,10 +941,10 @@ class XMTPModule : Module() {
                 val createGroupParams =
                     CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
                 val group = client.conversations.newGroup(
-                    peerAddresses,
+                    peerInboxIds,
                     permissionLevel,
                     createGroupParams.groupName,
-                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
                     createGroupParams.disappearingMessageSettings
                 )
@@ -964,7 +952,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createGroupCustomPermissions") Coroutine { installationId: String, peerAddresses: List<String>, permissionPolicySetJson: String, groupOptionsJson: String ->
+        AsyncFunction("createGroupCustomPermissions") Coroutine { installationId: String, peerInboxIds: List<String>, permissionPolicySetJson: String, groupOptionsJson: String ->
             withContext(Dispatchers.IO) {
                 logV("createGroup")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -975,10 +963,10 @@ class XMTPModule : Module() {
                         permissionPolicySetJson
                     )
                 val group = client.conversations.newGroupCustomPermissions(
-                    peerAddresses,
+                    peerInboxIds,
                     permissionPolicySet,
                     createGroupParams.groupName,
-                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
                     createGroupParams.disappearingMessageSettings
                 )
@@ -986,9 +974,9 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createGroupWithInboxIds") Coroutine { installationId: String, inboxIds: List<String>, permission: String, groupOptionsJson: String ->
+        AsyncFunction("createGroupWithIdentities") Coroutine { installationId: String, peerIdentities: List<String>, permission: String, groupOptionsJson: String ->
             withContext(Dispatchers.IO) {
-                logV("createGroupWithInboxIds")
+                logV("createGroupWithIdentities")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val permissionLevel = when (permission) {
                     "admin_only" -> GroupPermissionPreconfiguration.ADMIN_ONLY
@@ -996,11 +984,13 @@ class XMTPModule : Module() {
                 }
                 val createGroupParams =
                     CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
-                val group = client.conversations.newGroupWithInboxIds(
-                    inboxIds,
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                val group = client.conversations.newGroupWithIdentities(
+                    identities,
                     permissionLevel,
                     createGroupParams.groupName,
-                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
                     createGroupParams.disappearingMessageSettings
                 )
@@ -1008,9 +998,9 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createGroupCustomPermissionsWithInboxIds") Coroutine { installationId: String, inboxIds: List<String>, permissionPolicySetJson: String, groupOptionsJson: String ->
+        AsyncFunction("createGroupCustomPermissionsWithIdentities") Coroutine { installationId: String, peerIdentities: List<String>, permissionPolicySetJson: String, groupOptionsJson: String ->
             withContext(Dispatchers.IO) {
-                logV("createGroupCustomPermissionsWithInboxIds")
+                logV("createGroupCustomPermissionsWithIdentities")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val createGroupParams =
                     CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
@@ -1018,11 +1008,13 @@ class XMTPModule : Module() {
                     PermissionPolicySetWrapper.createPermissionPolicySetFromJson(
                         permissionPolicySetJson
                     )
-                val group = client.conversations.newGroupCustomPermissionsWithInboxIds(
-                    inboxIds,
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                val group = client.conversations.newGroupCustomPermissionsWithIdentities(
+                    identities,
                     permissionPolicySet,
                     createGroupParams.groupName,
-                    createGroupParams.groupImageUrlSquare,
+                    createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
                     createGroupParams.disappearingMessageSettings
                 )
@@ -1090,43 +1082,47 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("addGroupMembers") Coroutine { installationId: String, groupId: String, peerAddresses: List<String> ->
+        AsyncFunction("addGroupMembers") Coroutine { installationId: String, groupId: String, peerInboxIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("addGroupMembers")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.addMembers(peerAddresses)
+                MembershipResultWrapper.encode(group.addMembers(peerInboxIds))
             }
         }
 
-        AsyncFunction("removeGroupMembers") Coroutine { installationId: String, groupId: String, peerAddresses: List<String> ->
+        AsyncFunction("removeGroupMembers") Coroutine { installationId: String, groupId: String, peerInboxIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("removeGroupMembers")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.removeMembers(peerAddresses)
+                group.removeMembers(peerInboxIds)
             }
         }
 
-        AsyncFunction("addGroupMembersByInboxId") Coroutine { installationId: String, groupId: String, peerInboxIds: List<String> ->
+        AsyncFunction("addGroupMembersByIdentity") Coroutine { installationId: String, groupId: String, peerIdentities: List<String> ->
             withContext(Dispatchers.IO) {
-                logV("addGroupMembersByInboxId")
+                logV("addGroupMembersByIdentity")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.addMembersByInboxId(peerInboxIds)
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                MembershipResultWrapper.encode(group.addMembersByIdentity(identities))
             }
         }
 
-        AsyncFunction("removeGroupMembersByInboxId") Coroutine { installationId: String, groupId: String, peerInboxIds: List<String> ->
+        AsyncFunction("removeGroupMembersByIdentity") Coroutine { installationId: String, groupId: String, peerIdentities: List<String> ->
             withContext(Dispatchers.IO) {
-                logV("removeGroupMembersByInboxId")
+                logV("removeGroupMembersByIdentity")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.removeMembersByInboxId(peerInboxIds)
+                val identities =
+                    peerIdentities.map { PublicIdentityWrapper.publicIdentityFromJson(it) }
+                group.removeMembersByIdentity(identities)
             }
         }
 
@@ -1146,27 +1142,27 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.updateGroupName(groupName)
+                group.updateName(groupName)
             }
         }
 
-        AsyncFunction("groupImageUrlSquare") Coroutine { installationId: String, groupId: String ->
+        AsyncFunction("groupImageUrl") Coroutine { installationId: String, groupId: String ->
             withContext(Dispatchers.IO) {
-                logV("groupImageUrlSquare")
+                logV("groupImageUrl")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.imageUrlSquare
+                group.imageUrl
             }
         }
 
-        AsyncFunction("updateGroupImageUrlSquare") Coroutine { installationId: String, groupId: String, groupImageUrl: String ->
+        AsyncFunction("updateGroupImageUrl") Coroutine { installationId: String, groupId: String, groupImageUrl: String ->
             withContext(Dispatchers.IO) {
-                logV("updateGroupImageUrlSquare")
+                logV("updateGroupImageUrl")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.updateGroupImageUrlSquare(groupImageUrl)
+                group.updateImageUrl(groupImageUrl)
             }
         }
 
@@ -1186,7 +1182,7 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.updateGroupDescription(groupDescription)
+                group.updateDescription(groupDescription)
             }
         }
 
@@ -1392,17 +1388,17 @@ class XMTPModule : Module() {
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.updateGroupNamePermission(getPermissionOption(newPermission))
+                group.updateNamePermission(getPermissionOption(newPermission))
             }
         }
 
-        AsyncFunction("updateGroupImageUrlSquarePermission") Coroutine { clientInstallationId: String, groupId: String, newPermission: String ->
+        AsyncFunction("updateGroupImageUrlPermission") Coroutine { clientInstallationId: String, groupId: String, newPermission: String ->
             withContext(Dispatchers.IO) {
-                logV("updateGroupImageUrlSquarePermission")
+                logV("updateGroupImageUrlPermission")
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.updateGroupImageUrlSquarePermission(getPermissionOption(newPermission))
+                group.updateImageUrlPermission(getPermissionOption(newPermission))
             }
         }
 
@@ -1412,13 +1408,13 @@ class XMTPModule : Module() {
                 val client = clients[clientInstallationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
-                group.updateGroupDescriptionPermission(getPermissionOption(newPermission))
+                group.updateDescriptionPermission(getPermissionOption(newPermission))
             }
         }
 
         AsyncFunction("permissionPolicySet") Coroutine { installationId: String, groupId: String ->
             withContext(Dispatchers.IO) {
-                logV("groupImageUrlSquare")
+                logV("permissionPolicySet")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
@@ -1478,13 +1474,6 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("consentAddressState") Coroutine { installationId: String, peerAddress: String ->
-            withContext(Dispatchers.IO) {
-                val client = clients[installationId] ?: throw XMTPException("No client")
-                consentStateToString(client.preferences.addressState(peerAddress))
-            }
-        }
-
         AsyncFunction("consentInboxIdState") Coroutine { installationId: String, peerInboxId: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -1516,6 +1505,16 @@ class XMTPModule : Module() {
                     ?: throw XMTPException("no group found for $conversationId")
 
                 conversation.updateConsentState(getConsentState(state))
+            }
+        }
+
+        AsyncFunction("pausedForVersion") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("pausedForVersion")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                    ?: throw XMTPException("no group found for $conversationId")
+                conversation.pausedForVersion()
             }
         }
 
@@ -1652,11 +1651,11 @@ class XMTPModule : Module() {
         }
     }
 
-    private fun getStreamType(typeString: String): ConversationType {
+    private fun getStreamType(typeString: String): ConversationFilterType {
         return when (typeString) {
-            "groups" -> ConversationType.GROUPS
-            "dms" -> ConversationType.DMS
-            else -> ConversationType.ALL
+            "groups" -> ConversationFilterType.GROUPS
+            "dms" -> ConversationFilterType.DMS
+            else -> ConversationFilterType.ALL
         }
     }
 
@@ -1676,7 +1675,6 @@ class XMTPModule : Module() {
 
     private fun getEntryType(entryString: String): EntryType {
         return when (entryString) {
-            "address" -> EntryType.ADDRESS
             "conversation_id" -> EntryType.CONVERSATION_ID
             "inbox_id" -> EntryType.INBOX_ID
             else -> throw XMTPException("Invalid entry type: $entryString")
@@ -1743,7 +1741,7 @@ class XMTPModule : Module() {
             }
     }
 
-    private fun subscribeToConversations(installationId: String, type: ConversationType) {
+    private fun subscribeToConversations(installationId: String, type: ConversationFilterType) {
         val client = clients[installationId] ?: throw XMTPException("No client")
 
         subscriptions[getConversationsKey(installationId)]?.cancel()
@@ -1769,7 +1767,7 @@ class XMTPModule : Module() {
             }
     }
 
-    private fun subscribeToAllMessages(installationId: String, type: ConversationType) {
+    private fun subscribeToAllMessages(installationId: String, type: ConversationFilterType) {
         val client = clients[installationId] ?: throw XMTPException("No client")
 
         subscriptions[getMessagesKey(installationId)]?.cancel()

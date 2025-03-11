@@ -5,7 +5,7 @@ import org.xmtp.android.library.libxmtp.DisappearingMessageSettings
 
 class CreateGroupParamsWrapper(
     val groupName: String,
-    val groupImageUrlSquare: String,
+    val groupImageUrl: String,
     val groupDescription: String,
     val disappearingMessageSettings: DisappearingMessageSettings,
 ) {
@@ -19,7 +19,7 @@ class CreateGroupParamsWrapper(
 
             return CreateGroupParamsWrapper(
                 if (jsonOptions.has("name")) jsonOptions.get("name").asString else "",
-                if (jsonOptions.has("imageUrlSquare")) jsonOptions.get("imageUrlSquare").asString else "",
+                if (jsonOptions.has("imageUrl")) jsonOptions.get("imageUrl").asString else "",
                 if (jsonOptions.has("description")) jsonOptions.get("description").asString else "",
                 settings
             )

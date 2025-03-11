@@ -1,9 +1,8 @@
-import { Address, Client, InboxId } from './Client'
+import { Client, InboxId } from './Client'
 import { ConsentRecord, ConsentState } from './ConsentRecord'
 import { EventTypes } from './types/EventTypes'
 import * as XMTPModule from '../index'
 import { ConversationId } from '../index'
-import { getAddress } from '../utils/address'
 
 export type PreferenceUpdates = 'hmac_keys'
 
@@ -28,13 +27,6 @@ export default class PrivatePreferences {
     return await XMTPModule.consentInboxIdState(
       this.client.installationId,
       inboxId
-    )
-  }
-
-  async addressConsentState(address: Address): Promise<ConsentState> {
-    return await XMTPModule.consentAddressState(
-      this.client.installationId,
-      getAddress(address)
     )
   }
 

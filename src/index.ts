@@ -21,11 +21,12 @@ import { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
 import { Dm } from './lib/Dm'
 import { Group, PermissionUpdateOption } from './lib/Group'
 import { InboxState } from './lib/InboxState'
-import { Member } from './lib/Member'
-import { WalletType } from './lib/Signer'
+import { Member, MembershipResult } from './lib/Member'
+import { PublicIdentity } from './lib/PublicIdentity'
+import { SignerType } from './lib/Signer'
 import {
   ConversationOptions,
-  ConversationType,
+  ConversationFilterType,
   ConversationId,
   ConversationTopic,
 } from './lib/types/ConversationOptions'
@@ -33,7 +34,6 @@ import { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
-import { getAddress } from './utils/address'
 
 export * from './context'
 export * from './hooks'
@@ -50,19 +50,18 @@ export * from './lib/Signer'
 
 const EncodedContent = content.EncodedContent
 
-export function address(): string {
-  return XMTPModule.address()
-}
-
 export function inboxId(): InboxId {
   return XMTPModule.inboxId()
 }
 
-export async function findInboxIdFromAddress(
+export async function findInboxIdFromIdentity(
   installationId: InstallationId,
-  address: string
+  publicIdentity: PublicIdentity
 ): Promise<InboxId | undefined> {
-  return XMTPModule.findInboxIdFromAddress(installationId, address)
+  return XMTPModule.findInboxIdFromIdentity(
+    installationId,
+    JSON.stringify(publicIdentity)
+  )
 }
 
 export async function deleteLocalDatabase(installationId: InstallationId) {
@@ -113,24 +112,15 @@ export async function receiveSignature(requestID: string, signature: string) {
   return await XMTPModule.receiveSignature(requestID, signature)
 }
 
-export async function receiveSCWSignature(
-  requestID: string,
-  signature: string
-) {
-  return await XMTPModule.receiveSCWSignature(requestID, signature)
-}
-
 export async function createRandom(
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
-  appVersion?: string | undefined,
   hasPreAuthenticateToInboxCallback?: boolean | undefined,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
-    appVersion,
     dbDirectory,
     historySyncUrl,
   }
@@ -142,54 +132,50 @@ export async function createRandom(
 }
 
 export async function create(
-  address: Address,
+  identity: PublicIdentity,
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
-  appVersion?: string | undefined,
   hasPreAuthenticateToInboxCallback?: boolean | undefined,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined,
-  walletType?: WalletType | undefined,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
-    appVersion,
     dbDirectory,
     historySyncUrl,
   }
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return await XMTPModule.create(
-    address,
+    JSON.stringify(identity),
     hasPreAuthenticateToInboxCallback,
     Array.from(dbEncryptionKey),
     JSON.stringify(authParams),
-    JSON.stringify(walletParams)
+    JSON.stringify(signerParams)
   )
 }
 
 export async function build(
-  address: Address,
+  identity: PublicIdentity,
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
-  appVersion?: string | undefined,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined,
   inboxId?: InboxId | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
-    appVersion,
     dbDirectory,
     historySyncUrl,
   }
   return await XMTPModule.build(
-    address,
+    JSON.stringify(identity),
     inboxId,
     Array.from(dbEncryptionKey),
     JSON.stringify(authParams)
@@ -197,21 +183,19 @@ export async function build(
 }
 
 export async function ffiCreateClient(
-  address: Address,
+  identity: PublicIdentity,
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
-  appVersion?: string | undefined,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
-    appVersion,
     dbDirectory,
     historySyncUrl,
   }
   return await XMTPModule.ffiCreateClient(
-    address,
+    JSON.stringify(identity),
     Array.from(dbEncryptionKey),
     JSON.stringify(authParams)
   )
@@ -258,76 +242,82 @@ export async function ffiRegisterIdentity(
 export async function revokeInstallations(
   installationId: InstallationId,
   installationIds: InstallationId[],
-  walletType?: WalletType | undefined,
+  identity: PublicIdentity,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined
 ) {
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return XMTPModule.revokeInstallations(
     installationId,
-    JSON.stringify(walletParams),
-    installationIds
+    JSON.stringify(signerParams),
+    installationIds,
+    JSON.stringify(identity)
   )
 }
 
 export async function revokeAllOtherInstallations(
   installationId: InstallationId,
-  walletType?: WalletType | undefined,
+  identity: PublicIdentity,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined
 ) {
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return XMTPModule.revokeAllOtherInstallations(
     installationId,
-    JSON.stringify(walletParams)
+    JSON.stringify(signerParams),
+    JSON.stringify(identity)
   )
 }
 
 export async function addAccount(
   installationId: InstallationId,
-  newAddress: Address,
-  walletType?: WalletType | undefined,
+  newIdentity: PublicIdentity,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined,
   allowReassignInboxId: boolean = false
 ) {
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return XMTPModule.addAccount(
     installationId,
-    newAddress,
-    JSON.stringify(walletParams),
+    JSON.stringify(newIdentity),
+    JSON.stringify(signerParams),
     allowReassignInboxId
   )
 }
 
 export async function removeAccount(
   installationId: InstallationId,
-  addressToRemove: Address,
-  walletType?: WalletType | undefined,
+  identityToRemove: PublicIdentity,
+  identity: PublicIdentity,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined
 ) {
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return XMTPModule.removeAccount(
     installationId,
-    addressToRemove,
-    JSON.stringify(walletParams)
+    JSON.stringify(identityToRemove),
+    JSON.stringify(signerParams),
+    JSON.stringify(identity)
   )
 }
 
@@ -351,21 +341,23 @@ export async function ffiRevokeAllOtherInstallationsSignatureText(
 
 export async function ffiRevokeWalletSignatureText(
   installationId: InstallationId,
-  addressToRemove: Address
+  identityToRemove: PublicIdentity
 ): Promise<string> {
   return await XMTPModule.ffiRevokeWalletSignatureText(
     installationId,
-    addressToRemove
+    JSON.stringify(identityToRemove)
   )
 }
 
 export async function ffiAddWalletSignatureText(
   installationId: InstallationId,
-  addressToAdd: Address
+  identityToAdd: PublicIdentity,
+  allowReassignInboxId: boolean
 ): Promise<string> {
   return await XMTPModule.ffiAddWalletSignatureText(
     installationId,
-    addressToAdd
+    JSON.stringify(identityToAdd),
+    allowReassignInboxId
   )
 }
 
@@ -404,16 +396,18 @@ export async function verifySignature(
 
 export async function canMessage(
   installationId: InstallationId,
-  peerAddresses: Address[]
-): Promise<{ [key: Address]: boolean }> {
-  return await XMTPModule.canMessage(installationId, peerAddresses)
+  peerIdentities: PublicIdentity[]
+): Promise<{ [key: string]: boolean }> {
+  const identities = peerIdentities.map((identity) => JSON.stringify(identity))
+  return await XMTPModule.canMessage(installationId, identities)
 }
 
 export async function staticCanMessage(
   environment: XMTPEnvironment,
-  peerAddresses: Address[]
-): Promise<{ [key: Address]: boolean }> {
-  return await XMTPModule.staticCanMessage(environment, peerAddresses)
+  peerIdentities: PublicIdentity[]
+): Promise<{ [key: string]: boolean }> {
+  const identities = peerIdentities.map((identity) => JSON.stringify(identity))
+  return await XMTPModule.staticCanMessage(environment, identities)
 }
 
 export async function staticInboxStatesForInboxIds(
@@ -430,10 +424,13 @@ export async function staticInboxStatesForInboxIds(
 }
 
 export async function getOrCreateInboxId(
-  address: Address,
+  publicIdentity: PublicIdentity,
   environment: XMTPEnvironment
 ): Promise<InboxId> {
-  return await XMTPModule.getOrCreateInboxId(getAddress(address), environment)
+  return await XMTPModule.getOrCreateInboxId(
+    JSON.stringify(publicIdentity),
+    environment
+  )
 }
 
 export async function encryptAttachment(
@@ -688,13 +685,16 @@ export async function findDmByInboxId<
   return new Dm(client, dm)
 }
 
-export async function findDmByAddress<
+export async function findDmByIdentity<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  address: Address
+  publicIdentity: PublicIdentity
 ): Promise<Dm<ContentTypes> | undefined> {
-  const json = await XMTPModule.findDmByAddress(client.installationId, address)
+  const json = await XMTPModule.findDmByIdentity(
+    client.installationId,
+    JSON.stringify(publicIdentity)
+  )
   const dm = JSON.parse(json)
   if (!dm || Object.keys(dm).length === 0) {
     return undefined
@@ -788,14 +788,14 @@ export async function findOrCreateDm<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerAddress: Address,
+  peerInboxId: InboxId,
   disappearStartingAtNs: number | undefined,
   retentionDurationInNs: number | undefined
 ): Promise<Dm<ContentTypes>> {
   const dm = JSON.parse(
     await XMTPModule.findOrCreateDm(
       client.installationId,
-      peerAddress,
+      peerInboxId,
       disappearStartingAtNs,
       retentionDurationInNs
     )
@@ -803,18 +803,18 @@ export async function findOrCreateDm<
   return new Dm(client, dm)
 }
 
-export async function findOrCreateDmWithInboxId<
+export async function findOrCreateDmWithIdentity<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerInboxId: InboxId,
+  peerIdentity: PublicIdentity,
   disappearStartingAtNs: number | undefined,
   retentionDurationInNs: number | undefined
 ): Promise<Dm<ContentTypes>> {
   const dm = JSON.parse(
-    await XMTPModule.findOrCreateDmWithInboxId(
+    await XMTPModule.findOrCreateDmWithIdentity(
       client.installationId,
-      peerInboxId,
+      JSON.stringify(peerIdentity),
       disappearStartingAtNs,
       retentionDurationInNs
     )
@@ -826,17 +826,17 @@ export async function createGroup<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerAddresses: Address[],
+  peerInboxIds: InboxId[],
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
-  imageUrlSquare: string = '',
+  imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number = 0,
   retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
-    imageUrlSquare,
+    imageUrl,
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
@@ -844,7 +844,7 @@ export async function createGroup<
   const group = JSON.parse(
     await XMTPModule.createGroup(
       client.installationId,
-      peerAddresses,
+      peerInboxIds,
       permissionLevel,
       JSON.stringify(options)
     )
@@ -853,29 +853,30 @@ export async function createGroup<
   return new Group(client, group)
 }
 
-export async function createGroupCustomPermissionsWithInboxIds<
+export async function createGroupCustomPermissionsWithIdentities<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  inboxIds: InboxId[],
+  peerIdentities: PublicIdentity[],
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
-  imageUrlSquare: string = '',
+  imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number = 0,
   retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
-    imageUrlSquare,
+    imageUrl,
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
   }
+  const identities = peerIdentities.map((identity) => JSON.stringify(identity))
   const group = JSON.parse(
-    await XMTPModule.createGroupCustomPermissionsWithInboxIds(
+    await XMTPModule.createGroupCustomPermissionsWithIdentities(
       client.installationId,
-      inboxIds,
+      identities,
       JSON.stringify(permissionPolicySet),
       JSON.stringify(options)
     )
@@ -884,29 +885,30 @@ export async function createGroupCustomPermissionsWithInboxIds<
   return new Group(client, group)
 }
 
-export async function createGroupWithInboxIds<
+export async function createGroupWithIdentities<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  inboxIds: InboxId[],
+  peerIdentities: PublicIdentity[],
   permissionLevel: 'all_members' | 'admin_only' = 'all_members',
   name: string = '',
-  imageUrlSquare: string = '',
+  imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number = 0,
   retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
-    imageUrlSquare,
+    imageUrl,
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
   }
+  const identities = peerIdentities.map((identity) => JSON.stringify(identity))
   const group = JSON.parse(
-    await XMTPModule.createGroupWithInboxIds(
+    await XMTPModule.createGroupWithIdentities(
       client.installationId,
-      inboxIds,
+      identities,
       permissionLevel,
       JSON.stringify(options)
     )
@@ -919,17 +921,17 @@ export async function createGroupCustomPermissions<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
   client: Client<ContentTypes>,
-  peerAddresses: Address[],
+  inboxIds: InboxId[],
   permissionPolicySet: PermissionPolicySet,
   name: string = '',
-  imageUrlSquare: string = '',
+  imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number = 0,
   retentionDurationInNs: number = 0
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
-    imageUrlSquare,
+    imageUrl,
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
@@ -937,7 +939,7 @@ export async function createGroupCustomPermissions<
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissions(
       client.installationId,
-      peerAddresses,
+      inboxIds,
       JSON.stringify(permissionPolicySet),
       JSON.stringify(options)
     )
@@ -992,33 +994,41 @@ export async function syncConversation(
 export async function addGroupMembers(
   installationId: InstallationId,
   id: ConversationId,
-  addresses: Address[]
-): Promise<void> {
-  return XMTPModule.addGroupMembers(installationId, id, addresses)
+  inboxIds: InboxId[]
+): Promise<MembershipResult> {
+  const result = await XMTPModule.addGroupMembers(installationId, id, inboxIds)
+  return MembershipResult.from(result)
 }
 
 export async function removeGroupMembers(
   installationId: InstallationId,
   id: ConversationId,
-  addresses: Address[]
-): Promise<void> {
-  return XMTPModule.removeGroupMembers(installationId, id, addresses)
-}
-
-export async function addGroupMembersByInboxId(
-  installationId: InstallationId,
-  id: ConversationId,
   inboxIds: InboxId[]
 ): Promise<void> {
-  return XMTPModule.addGroupMembersByInboxId(installationId, id, inboxIds)
+  return await XMTPModule.removeGroupMembers(installationId, id, inboxIds)
 }
 
-export async function removeGroupMembersByInboxId(
+export async function addGroupMembersByIdentity(
   installationId: InstallationId,
   id: ConversationId,
-  inboxIds: InboxId[]
+  identities: PublicIdentity[]
+): Promise<MembershipResult> {
+  const ids = identities.map((identity) => JSON.stringify(identity))
+  const result = await XMTPModule.addGroupMembersByIdentity(
+    installationId,
+    id,
+    ids
+  )
+  return MembershipResult.from(result)
+}
+
+export async function removeGroupMembersByIdentity(
+  installationId: InstallationId,
+  id: ConversationId,
+  identities: PublicIdentity[]
 ): Promise<void> {
-  return XMTPModule.removeGroupMembersByInboxId(installationId, id, inboxIds)
+  const ids = identities.map((identity) => JSON.stringify(identity))
+  return await XMTPModule.removeGroupMembersByIdentity(installationId, id, ids)
 }
 
 export function groupName(
@@ -1036,23 +1046,19 @@ export function updateGroupName(
   return XMTPModule.updateGroupName(installationId, id, groupName)
 }
 
-export function groupImageUrlSquare(
+export function groupImageUrl(
   installationId: InstallationId,
   id: ConversationId
 ): string | PromiseLike<string> {
-  return XMTPModule.groupImageUrlSquare(installationId, id)
+  return XMTPModule.groupImageUrl(installationId, id)
 }
 
-export function updateGroupImageUrlSquare(
+export function updateGroupImageUrl(
   installationId: InstallationId,
   id: ConversationId,
-  imageUrlSquare: string
+  imageUrl: string
 ): Promise<void> {
-  return XMTPModule.updateGroupImageUrlSquare(
-    installationId,
-    id,
-    imageUrlSquare
-  )
+  return XMTPModule.updateGroupImageUrl(installationId, id, imageUrl)
 }
 
 export function groupDescription(
@@ -1265,12 +1271,12 @@ export async function updateGroupNamePermission(
   )
 }
 
-export async function updateGroupImageUrlSquarePermission(
+export async function updateGroupImageUrlPermission(
   clientInstallationId: InstallationId,
   id: ConversationId,
   permissionOption: PermissionUpdateOption
 ): Promise<void> {
-  return XMTPModule.updateGroupImageUrlSquarePermission(
+  return XMTPModule.updateGroupImageUrlPermission(
     clientInstallationId,
     id,
     permissionOption
@@ -1351,12 +1357,6 @@ export async function setConsentState(
   )
 }
 
-export async function consentAddressState(
-  installationId: InstallationId,
-  address: Address
-): Promise<ConsentState> {
-  return await XMTPModule.consentAddressState(installationId, address)
-}
 export async function consentInboxIdState(
   installationId: InstallationId,
   peerInboxId: InboxId
@@ -1404,14 +1404,14 @@ export function subscribeToConsent(installationId: InstallationId) {
 
 export function subscribeToConversations(
   installationId: InstallationId,
-  type: ConversationType
+  type: ConversationFilterType
 ) {
   return XMTPModule.subscribeToConversations(installationId, type)
 }
 
 export function subscribeToAllMessages(
   installationId: InstallationId,
-  type: ConversationType
+  type: ConversationFilterType
 ) {
   return XMTPModule.subscribeToAllMessages(installationId, type)
 }
@@ -1463,24 +1463,30 @@ export async function exportNativeLogs() {
   return XMTPModule.exportNativeLogs()
 }
 
+export async function pausedForVersion(
+  installationId: InstallationId,
+  id: ConversationId
+) {
+  return XMTPModule.pausedForVersion(installationId, id)
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 interface AuthParams {
   environment: string
-  appVersion?: string
   dbDirectory?: string
   historySyncUrl?: string
 }
 
-interface WalletParams {
-  walletType?: string
+interface SignerParams {
+  signerType?: string
   chainId?: number
   blockNumber?: number
 }
 
 interface CreateGroupParams {
   name: string
-  imageUrlSquare: string
+  imageUrl: string
   description: string
   disappearStartingAtNs: number
   retentionDurationInNs: number
@@ -1493,14 +1499,15 @@ export { XMTPPush } from './lib/XMTPPush'
 export { ConsentRecord, DecodedMessage, MessageDeliveryStatus, ConsentState }
 export { Group } from './lib/Group'
 export { Dm } from './lib/Dm'
-export { Member } from './lib/Member'
+export { Member, MembershipResult } from './lib/Member'
 export { Address, InboxId, XMTPEnvironment } from './lib/Client'
 export {
   ConversationOptions,
   ConversationId,
   ConversationTopic,
-  ConversationType,
+  ConversationFilterType,
 } from './lib/types/ConversationOptions'
 export { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 export { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 export { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
+export { PublicIdentity } from './lib/PublicIdentity'

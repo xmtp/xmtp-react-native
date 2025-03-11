@@ -41,7 +41,6 @@ test('building and creating', async () => {
   const start1 = performance.now()
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'dev',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
     codecs: [
@@ -56,9 +55,8 @@ test('building and creating', async () => {
   console.log(`Created a new client in ${end1 - start1}ms`)
 
   const start2 = performance.now()
-  await Client.build(alixWallet.address, {
+  await Client.build(alix.publicIdentity, {
     env: 'dev',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
     codecs: [
@@ -74,10 +72,9 @@ test('building and creating', async () => {
 
   const start3 = performance.now()
   await Client.build(
-    alixWallet.address,
+    alix.publicIdentity,
     {
       env: 'dev',
-      appVersion: 'Testing/0.0.0',
       dbEncryptionKey: keyBytes,
       dbDirectory: dbDirPath,
       codecs: [
@@ -113,31 +110,31 @@ test('creating a new conversation', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3, 'dev')
 
   const start1 = performance.now()
-  await alixClient.conversations.newConversation(boClient.address)
+  await alixClient.conversations.newConversation(boClient.inboxId)
   const end1 = performance.now()
   console.log(`Alix created a dm with Bo in ${end1 - start1}ms`)
 
   await boClient.conversations.syncAllConversations()
   const start2 = performance.now()
-  await boClient.conversations.newConversation(alixClient.address)
+  await boClient.conversations.newConversation(alixClient.inboxId)
   const end2 = performance.now()
   console.log(`Bo found a dm with Alix in ${end2 - start2}ms`)
 
   const start3 = performance.now()
   await alixClient.conversations.newGroup([
-    boClient.address,
-    caroClient.address,
+    boClient.inboxId,
+    caroClient.inboxId,
   ])
   const end3 = performance.now()
   console.log(`Alix created a group with Bo and Caro in ${end3 - start3}ms`)
 
   const start4 = performance.now()
   await alixClient.conversations.newGroup(
-    [boClient.address, caroClient.address],
+    [boClient.inboxId, caroClient.inboxId],
     {
       permissionLevel: 'admin_only',
       name: 'Group Name',
-      imageUrlSquare: 'imageurl.com',
+      imageUrl: 'imageurl.com',
       description: 'group description',
     }
   )
@@ -167,11 +164,11 @@ test('creating a new conversation', async () => {
 test('sending messages in conversations', async () => {
   const [alixClient, boClient, caroClient] = await createClients(10, 'local')
   const alixDm = await alixClient.conversations.newConversation(
-    boClient.address
+    boClient.inboxId
   )
   const alixGroup = await alixClient.conversations.newGroup([
-    boClient.address,
-    caroClient.address,
+    boClient.inboxId,
+    caroClient.inboxId,
   ])
   await boClient.conversations.syncAllConversations()
   await caroClient.conversations.syncAllConversations()

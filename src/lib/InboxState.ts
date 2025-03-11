@@ -1,32 +1,35 @@
-import { Address, InboxId } from './Client'
+import { InboxId } from './Client'
+import { PublicIdentity } from './PublicIdentity'
 
 export class InboxState {
   inboxId: InboxId
-  addresses: Address[]
+  identities: PublicIdentity[]
   installations: Installation[]
-  recoveryAddress: Address
+  recoveryIdentity: PublicIdentity
 
   constructor(
     inboxId: InboxId,
-    addresses: Address[],
+    identities: PublicIdentity[],
     installations: Installation[],
-    recoveryAddress: Address
+    recoveryIdentity: PublicIdentity
   ) {
     this.inboxId = inboxId
-    this.addresses = addresses
+    this.identities = identities
     this.installations = installations
-    this.recoveryAddress = recoveryAddress
+    this.recoveryIdentity = recoveryIdentity
   }
 
   static from(json: string): InboxState {
     const entry = JSON.parse(json)
     return new InboxState(
       entry.inboxId,
-      entry.addresses,
+      entry.identities.map((id: string) => {
+        return PublicIdentity.from(id)
+      }),
       entry.installations.map((inst: string) => {
         return Installation.from(inst)
       }),
-      entry.recoveryAddress
+      PublicIdentity.from(entry.recoveryIdentity)
     )
   }
 }

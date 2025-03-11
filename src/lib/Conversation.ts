@@ -57,6 +57,7 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
     encryptedMessage: string
   ): Promise<DecodedMessage<ContentTypes[number]>>
   members(): Promise<Member[]>
+  pausedForVersion(): Promise<string>
 }
 
 export type Conversation<

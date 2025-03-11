@@ -14,15 +14,14 @@ import { EventTypes } from './types/EventTypes'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
 import * as XMTPModule from '../index'
 import {
-  Address,
   ConsentState,
   Conversation,
   ConversationId,
   ConversationTopic,
-  ConversationType,
+  ConversationFilterType,
   MessageId,
+  PublicIdentity,
 } from '../index'
-import { getAddress } from '../utils/address'
 
 export default class Conversations<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
@@ -59,15 +58,15 @@ export default class Conversations<
   }
 
   /**
-   * This method returns a Dm by the address if that dm exists in the local database.
+   * This method returns a Dm by the identity if that dm exists in the local database.
    * To get the latest list of dms from the network, call sync() first.
    *
    * @returns {Promise<Dm>} A Promise that resolves to a Dm or undefined if not found.
    */
-  async findDmByAddress(
-    address: Address
+  async findDmByIdentity(
+    publicIdentity: PublicIdentity
   ): Promise<Dm<ContentTypes> | undefined> {
-    return await XMTPModule.findDmByAddress(this.client, address)
+    return await XMTPModule.findDmByIdentity(this.client, publicIdentity)
   }
 
   /**
@@ -123,41 +122,19 @@ export default class Conversations<
   /**
    * Creates a new conversation.
    *
-   * This method creates a new conversation with the specified peer address and context.
+   * This method creates a new conversation with the specified peer inboxId and context.
    *
-   * @param {Address} peerAddress - The address of the peer to create a conversation with.
+   * @param {InboxId} peerInboxId - The inboxId of the peer to create a conversation with.
    * @param {DisappearingMessageSettings} disappearingMessageSettings - The disappearing message settings for this dm or undefined.
    * @returns {Promise<Conversation>} A Promise that resolves to a Conversation object.
    */
   async newConversation(
-    peerAddress: Address,
+    peerInboxId: InboxId,
     disappearingMessageSettings?: DisappearingMessageSettings | undefined
   ): Promise<Conversation<ContentTypes>> {
-    const checksumAddress = getAddress(peerAddress)
     return await XMTPModule.findOrCreateDm(
       this.client,
-      checksumAddress,
-      disappearingMessageSettings?.disappearStartingAtNs,
-      disappearingMessageSettings?.retentionDurationInNs
-    )
-  }
-
-  /**
-   * Creates a new conversation.
-   *
-   * This method creates a new conversation with the specified peer address.
-   *
-   * @param {Address} peerAddress - The address of the peer to create a conversation with.
-   * @param {DisappearingMessageSettings} disappearingMessageSettings - The disappearing message settings for this dm or undefined.
-   * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
-   */
-  async findOrCreateDm(
-    peerAddress: Address,
-    disappearingMessageSettings?: DisappearingMessageSettings | undefined
-  ): Promise<Dm<ContentTypes>> {
-    return await XMTPModule.findOrCreateDm(
-      this.client,
-      peerAddress,
+      peerInboxId,
       disappearingMessageSettings?.disappearStartingAtNs,
       disappearingMessageSettings?.retentionDurationInNs
     )
@@ -172,11 +149,11 @@ export default class Conversations<
    * @param {DisappearingMessageSettings} disappearingMessageSettings - The disappearing message settings for this dm or undefined.
    * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
    */
-  async findOrCreateDmWithInboxId(
+  async findOrCreateDm(
     peerInboxId: InboxId,
     disappearingMessageSettings?: DisappearingMessageSettings | undefined
   ): Promise<Dm<ContentTypes>> {
-    return await XMTPModule.findOrCreateDmWithInboxId(
+    return await XMTPModule.findOrCreateDm(
       this.client,
       peerInboxId,
       disappearingMessageSettings?.disappearStartingAtNs,
@@ -185,24 +162,45 @@ export default class Conversations<
   }
 
   /**
+   * Creates a new conversation.
+   *
+   * This method creates a new conversation with the specified peer identity.
+   *
+   * @param {PublicIdentity} peerIdentity - The identity of the peer to create a conversation with.
+   * @param {DisappearingMessageSettings} disappearingMessageSettings - The disappearing message settings for this dm or undefined.
+   * @returns {Promise<Dm>} A Promise that resolves to a Dm object.
+   */
+  async findOrCreateDmWithIdentity(
+    peerIdentity: PublicIdentity,
+    disappearingMessageSettings?: DisappearingMessageSettings | undefined
+  ): Promise<Dm<ContentTypes>> {
+    return await XMTPModule.findOrCreateDmWithIdentity(
+      this.client,
+      peerIdentity,
+      disappearingMessageSettings?.disappearStartingAtNs,
+      disappearingMessageSettings?.retentionDurationInNs
+    )
+  }
+
+  /**
    * Creates a new group.
    *
-   * This method creates a new group with the specified peer addresses and options.
+   * This method creates a new group with the specified peer inbox and options.
    *
-   * @param {Address[]} peerAddresses - The addresses of the peers to create a group with.
+   * @param {InboxId[]} peerInboxIds - The inboxIds of the peers to create a group with.
    * @param {CreateGroupOptions} opts - The options to use for the group.
    * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
    */
   async newGroup(
-    peerAddresses: Address[],
+    peerInboxIds: InboxId[],
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroup(
       this.client,
-      peerAddresses,
+      peerInboxIds,
       opts?.permissionLevel,
       opts?.name,
-      opts?.imageUrlSquare,
+      opts?.imageUrl,
       opts?.description,
       opts?.disappearingMessageSettings?.disappearStartingAtNs,
       opts?.disappearingMessageSettings?.retentionDurationInNs
@@ -212,24 +210,24 @@ export default class Conversations<
   /**
    * Creates a new group with custom permissions.
    *
-   * This method creates a new group with the specified peer addresses and options.
+   * This method creates a new group with the specified peer inboxIds and options.
    *
-   * @param {Address[]} peerAddresses - The addresses of the peers to create a group with.
+   * @param {InboxId[]} peerInboxIds - The inboxIds of the peers to create a group with.
    * @param {PermissionPolicySet} permissionPolicySet - The permission policy set to use for the group.
    * @param {CreateGroupOptions} opts - The options to use for the group.
    * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
    */
   async newGroupCustomPermissions(
-    peerAddresses: Address[],
+    peerInboxIds: InboxId[],
     permissionPolicySet: PermissionPolicySet,
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
     return await XMTPModule.createGroupCustomPermissions(
       this.client,
-      peerAddresses,
+      peerInboxIds,
       permissionPolicySet,
       opts?.name,
-      opts?.imageUrlSquare,
+      opts?.imageUrl,
       opts?.description,
       opts?.disappearingMessageSettings?.disappearStartingAtNs,
       opts?.disappearingMessageSettings?.retentionDurationInNs
@@ -241,20 +239,20 @@ export default class Conversations<
    *
    * This method creates a new group with the specified peer inboxIds and options.
    *
-   * @param {InboxId[]} peerInboxIds - The inboxIds of the peers to create a group with.
+   * @param {PublicIdentity[]} peerIdentities - The identities of the peers to create a group with.
    * @param {CreateGroupOptions} opts - The options to use for the group.
    * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
    */
-  async newGroupWithInboxIds(
-    peerInboxIds: InboxId[],
+  async newGroupWithIdentities(
+    peerIdentities: PublicIdentity[],
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
-    return await XMTPModule.createGroupWithInboxIds(
+    return await XMTPModule.createGroupWithIdentities(
       this.client,
-      peerInboxIds,
+      peerIdentities,
       opts?.permissionLevel,
       opts?.name,
-      opts?.imageUrlSquare,
+      opts?.imageUrl,
       opts?.description,
       opts?.disappearingMessageSettings?.disappearStartingAtNs,
       opts?.disappearingMessageSettings?.retentionDurationInNs
@@ -264,24 +262,24 @@ export default class Conversations<
   /**
    * Creates a new group with custom permissions.
    *
-   * This method creates a new group with the specified peer inboxIds and options.
+   * This method creates a new group with the specified peer identities and options.
    *
-   * @param {InboxId[]} peerInboxIds - The inboxIds of the peers to create a group with.
+   * @param {PublicIdentity[]} peerIdentities - The identities of the peers to create a group with.
    * @param {PermissionPolicySet} permissionPolicySet - The permission policy set to use for the group.
    * @param {CreateGroupOptions} opts - The options to use for the group.
    * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
    */
-  async newGroupCustomPermissionsWithInboxIds(
-    peerInboxIds: InboxId[],
+  async newGroupCustomPermissionsWithIdentities(
+    peerIdentities: PublicIdentity[],
     permissionPolicySet: PermissionPolicySet,
     opts?: CreateGroupOptions | undefined
   ): Promise<Group<ContentTypes>> {
-    return await XMTPModule.createGroupCustomPermissionsWithInboxIds(
+    return await XMTPModule.createGroupCustomPermissionsWithIdentities(
       this.client,
-      peerInboxIds,
+      peerIdentities,
       permissionPolicySet,
       opts?.name,
-      opts?.imageUrlSquare,
+      opts?.imageUrl,
       opts?.description,
       opts?.disappearingMessageSettings?.disappearStartingAtNs,
       opts?.disappearingMessageSettings?.retentionDurationInNs
@@ -375,12 +373,12 @@ export default class Conversations<
 
   /**
    * This method streams conversations that the client is a member of.
-   * @param {type} ConversationType - Whether to stream groups, dms, or both
+   * @param {type} ConversationFilterType - Whether to stream groups, dms, or both
    * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
    */
   async stream(
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>,
-    type: ConversationType = 'all'
+    type: ConversationFilterType = 'all'
   ): Promise<void> {
     XMTPModule.subscribeToConversations(this.client.installationId, type)
     const subscription = XMTPModule.emitter.addListener(
@@ -413,13 +411,13 @@ export default class Conversations<
    * Listen for new messages in all conversations.
    *
    * This method subscribes to all conversations in real-time and listens for incoming and outgoing messages.
-   * @param {type} ConversationType - Whether to stream messages from groups, dms, or both
+   * @param {type} ConversationFilterType - Whether to stream messages from groups, dms, or both
    * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
    * @returns {Promise<void>} A Promise that resolves when the stream is set up.
    */
   async streamAllMessages(
     callback: (message: DecodedMessageUnion<ContentTypes>) => Promise<void>,
-    type: ConversationType = 'all'
+    type: ConversationFilterType = 'all'
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(this.client.installationId, type)
     const subscription = XMTPModule.emitter.addListener(

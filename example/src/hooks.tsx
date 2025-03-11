@@ -27,7 +27,7 @@ export function useConversationList(): UseQueryResult<
 > {
   const { client } = useXmtp()
   return useQuery<Conversation<SupportedContentTypes>[]>(
-    ['xmtp', 'conversations', client?.address],
+    ['xmtp', 'conversations', client?.publicIdentity.identifier],
     async () => {
       await client?.conversations.sync()
       return (await client?.conversations.list()) || []
@@ -49,7 +49,7 @@ export function useGroup({
     unknown,
     Group<SupportedContentTypes> | undefined
   >(
-    ['xmtp', 'group', client?.address, groupId],
+    ['xmtp', 'group', client?.publicIdentity.identifier, groupId],
     async () => {
       const groups = await client?.conversations.listGroups()
       return groups || []
@@ -78,7 +78,7 @@ export function useConversation({
     unknown,
     Conversation<SupportedContentTypes> | undefined
   >(
-    ['xmtp', 'conversations', client?.address, topic],
+    ['xmtp', 'conversations', client?.publicIdentity.identifier, topic],
     () => client!.conversations.list(),
     {
       select: (conversations) => conversations.find((c) => c.topic === topic),
@@ -100,7 +100,12 @@ export function useMessages({
   const { client } = useXmtp()
   const { data: conversation } = useConversation({ topic })
   return useQuery<DecodedMessage[]>(
-    ['xmtp', 'messages', client?.address, conversation?.topic],
+    [
+      'xmtp',
+      'messages',
+      client?.publicIdentity.identifier,
+      conversation?.topic,
+    ],
     async () => {
       await conversation!.sync()
       return conversation!.messages()
@@ -119,7 +124,7 @@ export function useGroupMessages({
   const { client } = useXmtp()
   const { data: group } = useGroup({ groupId: id })
   return useQuery<DecodedMessage[]>(
-    ['xmtp', 'groupMessages', client?.address, group?.id],
+    ['xmtp', 'groupMessages', client?.publicIdentity.identifier, group?.id],
     async () => {
       await group!.sync()
       const messages = await group!.messages()
@@ -173,7 +178,7 @@ export function useMessage({
             console.log('Error refreshing messages', err)
           )
         }))
-  const isSenderMe = message?.senderInboxId === client?.address
+  const isSenderMe = message?.senderInboxId === client?.inboxId
   return {
     message,
     performReaction,
@@ -219,7 +224,7 @@ export function useGroupMessage({
             console.log('Error refreshing messages', err)
           )
         }))
-  const isSenderMe = message?.senderInboxId === client?.address
+  const isSenderMe = message?.senderInboxId === client?.inboxId
   return {
     message,
     performReaction,
@@ -245,7 +250,13 @@ export function useConversationReactions({ topic }: { topic: string }) {
       includesMe: boolean
     }[]
   }>(
-    ['xmtp', 'reactions', client?.address, topic, reactions.length],
+    [
+      'xmtp',
+      'reactions',
+      client?.publicIdentity.identifier,
+      topic,
+      reactions.length,
+    ],
     () => {
       // SELECT messageId, reaction, senderInboxId FROM reactions GROUP BY messageId, reaction
       const byId = {} as {
@@ -291,7 +302,7 @@ export function useConversationReactions({ topic }: { topic: string }) {
             return {
               reaction,
               count: addresses.length,
-              includesMe: addresses.includes(client!.address),
+              includesMe: addresses.includes(client!.publicIdentity.identifier),
             }
           })
           .filter(({ count }) => count > 0)
@@ -318,7 +329,13 @@ export function useGroupReactions({ groupId }: { groupId: string }) {
       includesMe: boolean
     }[]
   }>(
-    ['xmtp', 'reactions', client?.address, groupId, reactions.length],
+    [
+      'xmtp',
+      'reactions',
+      client?.publicIdentity.identifier,
+      groupId,
+      reactions.length,
+    ],
     () => {
       // SELECT messageId, reaction, senderInboxId FROM reactions GROUP BY messageId, reaction
       const byId = {} as {
@@ -364,7 +381,7 @@ export function useGroupReactions({ groupId }: { groupId: string }) {
             return {
               reaction,
               count: addresses.length,
-              includesMe: addresses.includes(client!.address),
+              includesMe: addresses.includes(client!.publicIdentity.identifier),
             }
           })
           .filter(({ count }) => count > 0)

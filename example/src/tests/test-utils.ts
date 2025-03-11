@@ -10,6 +10,7 @@ import {
   ReactionCodec,
   ReactionV2Codec,
   MultiRemoteAttachmentCodec,
+  PublicIdentity,
 } from 'xmtp-react-native-sdk'
 
 export type Test = {
@@ -63,11 +64,11 @@ export async function createGroups(
   numGroups: number
 ): Promise<Group[]> {
   const groups = []
-  const addresses: string[] = peers.map((client) => client.address)
+  const inboxIds: string[] = peers.map((client) => client.inboxId)
   for (let i = 0; i < numGroups; i++) {
-    const group = await client.conversations.newGroup(addresses, {
+    const group = await client.conversations.newGroup(inboxIds, {
       name: `group ${i}`,
-      imageUrlSquare: `www.group${i}.com`,
+      imageUrl: `www.group${i}.com`,
       description: `group ${i}`,
     })
     groups.push(group)
@@ -77,10 +78,10 @@ export async function createGroups(
 
 export function adaptEthersWalletToSigner(wallet: Wallet): Signer {
   return {
-    getAddress: async () => wallet.address,
+    getIdentifier: async () => new PublicIdentity(wallet.address, 'ETHEREUM'),
     getChainId: () => undefined, // Provide a chain ID if available or return undefined
     getBlockNumber: () => undefined, // Block number is typically not available in Wallet, return undefined
-    walletType: () => 'EOA', // "EOA" indicates an externally owned account
+    signerType: () => 'EOA', // "EOA" indicates an externally owned account
     signMessage: async (message: string) => wallet.signMessage(message),
   }
 }

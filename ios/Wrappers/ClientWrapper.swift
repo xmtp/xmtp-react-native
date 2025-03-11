@@ -13,9 +13,9 @@ struct ClientWrapper {
 	static func encodeToObj(_ client: XMTP.Client) throws -> [String: String] {
 		return [
 			"inboxId": client.inboxID,
-			"address": client.address,
 			"installationId": client.installationID,
 			"dbPath": client.dbPath,
+			"publicIdentity": try PublicIdentityWrapper.encode(publicIdentity: client.publicIdentity)
 		]
 	}
 

@@ -38,13 +38,3 @@ export function checksumAddress(address_: string, chainId?: number): string {
 
   return `0x${address.join('')}`
 }
-
-const addressCache = new Map<string, string>()
-
-export function getAddress(address: string, chainId?: number): string {
-  if (addressCache.has(address)) return addressCache.get(address) as string
-  if (!isAddress(address)) throw new Error('Invalid address' + address)
-  const checksumedAddress = checksumAddress(address, chainId)
-  addressCache.set(address, checksumedAddress)
-  return checksumedAddress
-}

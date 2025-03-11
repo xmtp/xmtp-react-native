@@ -23,7 +23,7 @@ test('can fetch messages with reactions', async () => {
   const [alix, bo] = await createClients(2)
 
   // Create group and sync
-  const group = await alix.conversations.newGroup([bo.address])
+  const group = await alix.conversations.newGroup([bo.inboxId])
   await bo.conversations.sync()
   const boGroup = await bo.conversations.findGroup(group.id)
 
@@ -121,7 +121,7 @@ test('can use reaction v2 from rust/proto', async () => {
   const [alix, bo] = await createClients(2)
 
   // Create group and sync
-  const group = await alix.conversations.newGroup([bo.address])
+  const group = await alix.conversations.newGroup([bo.inboxId])
   await bo.conversations.sync()
   const boGroup = await bo.conversations.findGroup(group.id)
 
@@ -231,7 +231,7 @@ test('can use reaction v2 from rust/proto', async () => {
 
 test('remote attachments should work', async () => {
   const [alix, bo] = await createClients(2)
-  const convo = await alix.conversations.newConversation(bo.address)
+  const convo = await alix.conversations.newConversation(bo.inboxId)
 
   // Alice is sending Bob a file from her phone.
   const filename = `${Date.now()}.txt`
@@ -265,7 +265,7 @@ test('remote attachments should work', async () => {
 
   // Now we should see the remote attachment message.
   const messages = await convo.messages()
-  if (messages.length !== 1) {
+  if (messages.length !== 2) {
     throw new Error('Expected 1 message')
   }
   const message = messages[0]
@@ -334,7 +334,7 @@ type fileInfo = {
 
 test('multi remote attachments should work', async () => {
   const [alix, bo] = await createClients(2)
-  const convo = await alix.conversations.newConversation(bo.address)
+  const convo = await alix.conversations.newConversation(bo.inboxId)
 
   // Alice is sending Bob two files from her phone.
   const filename1 = `${Date.now()}.txt`
@@ -378,8 +378,8 @@ test('multi remote attachments should work', async () => {
 
   // Now we should see the remote attachment message.
   const messages = await convo.messages()
-  if (messages.length !== 1) {
-    throw new Error('Expected 1 message')
+  if (messages.length !== 2) {
+    throw new Error('Expected 2 message')
   }
   const message = messages[0]
 

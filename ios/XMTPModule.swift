@@ -124,15 +124,6 @@ public class XMTPModule: Module {
 			"preferences"
 		)
 
-		AsyncFunction("address") { (installationId: String) -> String in
-			if let client = await clientsManager.getClient(key: installationId)
-			{
-				return client.address
-			} else {
-				return "No Client."
-			}
-		}
-
 		AsyncFunction("inboxId") { (installationId: String) -> String in
 			if let client = await clientsManager.getClient(key: installationId)
 			{
@@ -142,14 +133,16 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("findInboxIdFromAddress") {
-			(installationId: String, address: String) -> String? in
+		AsyncFunction("findInboxIdFromIdentity") {
+			(installationId: String, publicIdentity: String) -> String? in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			return try await client.inboxIdFromAddress(address: address)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
+			return try await client.inboxIdFromIdentity(identity: identity)
 		}
 
 		AsyncFunction("deleteLocalDatabase") { (installationId: String) in
@@ -222,11 +215,6 @@ public class XMTPModule: Module {
 			try signer?.handle(id: requestID, signature: signature)
 		}
 
-		Function("receiveSCWSignature") {
-			(requestID: String, signature: String) in
-			try signer?.handleSCW(id: requestID, signature: signature)
-		}
-
 		AsyncFunction("createRandom") {
 			(
 				hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8],
@@ -257,15 +245,17 @@ public class XMTPModule: Module {
 
 		AsyncFunction("create") {
 			(
-				address: String, hasAuthenticateToInboxCallback: Bool?,
+				publicIdentity: String, hasAuthenticateToInboxCallback: Bool?,
 				dbEncryptionKey: [UInt8], authParams: String,
 				walletParams: String
 			) in
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: address,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
@@ -293,20 +283,22 @@ public class XMTPModule: Module {
 
 		AsyncFunction("build") {
 			(
-				address: String, inboxId: String?, dbEncryptionKey: [UInt8],
+				publicIdentity: String, inboxId: String?,
+				dbEncryptionKey: [UInt8],
 				authParams: String
 			)
 				-> [String: String] in
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let encryptionKeyData = Data(dbEncryptionKey)
-
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let options = self.createClientConfig(
 				authParams: authParams,
 				dbEncryptionKey: encryptionKeyData,
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.build(
-				address: address, options: options, inboxId: inboxId)
+				publicIdentity: identity, options: options, inboxId: inboxId)
 			await clientsManager.updateClient(
 				key: client.installationID, client: client)
 			return try ClientWrapper.encodeToObj(client)
@@ -314,19 +306,21 @@ public class XMTPModule: Module {
 
 		AsyncFunction("ffiCreateClient") {
 			(
-				address: String, dbEncryptionKey: [UInt8],
+				publicIdentity: String, dbEncryptionKey: [UInt8],
 				authParams: String
 			)
 				-> [String: String] in
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let encryptionKeyData = Data(dbEncryptionKey)
-
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let options = self.createClientConfig(
 				authParams: authParams,
 				dbEncryptionKey: encryptionKeyData
 			)
 			let client = try await XMTP.Client.ffiCreateClient(
-				address: address, clientOptions: options)
+				identity: identity,
+				clientOptions: options)
 			await clientsManager.updateClient(
 				key: client.installationID, client: client)
 			return try ClientWrapper.encodeToObj(client)
@@ -385,7 +379,7 @@ public class XMTPModule: Module {
 		AsyncFunction("revokeInstallations") {
 			(
 				installationId: String, walletParams: String,
-				installationIds: [String]
+				installationIds: [String], publicIdentity: String
 			) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -394,9 +388,11 @@ public class XMTPModule: Module {
 			}
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: client.address,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
@@ -407,7 +403,10 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("revokeAllOtherInstallations") {
-			(installationId: String, walletParams: String) in
+			(
+				installationId: String, walletParams: String,
+				publicIdentity: String
+			) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -415,9 +414,11 @@ public class XMTPModule: Module {
 			}
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: client.address,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
@@ -428,7 +429,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("addAccount") {
 			(
-				installationId: String, newAddress: String,
+				installationId: String, newIdentity: String,
 				walletParams: String, allowReassignInboxId: Bool
 			)
 			in
@@ -439,9 +440,11 @@ public class XMTPModule: Module {
 			}
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				newIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: newAddress,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
@@ -453,8 +456,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("removeAccount") {
 			(
-				installationId: String, addressToRemove: String,
-				walletParams: String
+				installationId: String, identityToRemove: String,
+				walletParams: String, publicIdentity: String
 			) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -463,15 +466,19 @@ public class XMTPModule: Module {
 			}
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
+			let remove = try PublicIdentityWrapper.publicIdentityFromJson(
+				identityToRemove)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
 			let signer = ReactNativeSigner(
-				module: self, address: client.address,
-				walletType: walletOptions.walletType,
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
 
 			try await client.removeAccount(
-				recoveryAccount: signer, addressToRemove: addressToRemove)
+				recoveryAccount: signer, identityToRemove: remove)
 			self.signer = nil
 		}
 
@@ -503,28 +510,36 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("ffiRevokeWalletSignatureText") {
-			(installationId: String, addressToRemove: String) -> String in
+			(installationId: String, identityToRemove: String) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			let sigRequest = try await client.ffiRevokeWallet(
-				addressToRemove: addressToRemove)
+			let remove = try PublicIdentityWrapper.publicIdentityFromJson(
+				identityToRemove)
+			let sigRequest = try await client.ffiRevokeIdentity(
+				identityToRemove: remove)
 			await clientsManager.updateSignatureRequest(
 				key: client.installationID, signatureRequest: sigRequest)
 			return try await sigRequest.signatureText()
 		}
 
 		AsyncFunction("ffiAddWalletSignatureText") {
-			(installationId: String, addressToAdd: String) -> String in
+			(
+				installationId: String, newIdentity: String,
+				allowReassignInboxId: Bool
+			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			let sigRequest = try await client.ffiAddWallet(
-				addressToAdd: addressToAdd)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				newIdentity)
+			let sigRequest = try await client.ffiAddIdentity(
+				identityToAdd: identity,
+				allowReassignInboxId: allowReassignInboxId)
 			await clientsManager.updateSignatureRequest(
 				key: client.installationID, signatureRequest: sigRequest)
 			return try await sigRequest.signatureText()
@@ -576,21 +591,30 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("canMessage") {
-			(installationId: String, peerAddresses: [String]) -> [String: Bool]
+			(installationId: String, peerIdentities: [String]) -> [String: Bool]
 			in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
+			let identities =
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
 
-			return try await client.canMessage(addresses: peerAddresses)
+			return try await client.canMessage(identities: identities)
 		}
 
 		AsyncFunction("staticCanMessage") {
-			(environment: String, peerAddresses: [String]) -> [String: Bool] in
+			(environment: String, peerIdentities: [String]) -> [String: Bool] in
+			let identities =
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
+
 			return try await XMTP.Client.canMessage(
-				accountAddresses: peerAddresses,
+				accountIdentities: identities,
 				api: createApiClient(env: environment)
 			)
 		}
@@ -603,11 +627,13 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("getOrCreateInboxId") {
-			(address: String, environment: String) -> String in
+			(publicIdentity: String, environment: String) -> String in
 			do {
+				let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+					publicIdentity)
 				let api = createApiClient(env: environment)
 				return try await XMTP.Client.getOrCreateInboxId(
-					api: api, address: address)
+					api: api, publicIdentity: identity)
 			} catch {
 				throw Error.noClient
 			}
@@ -943,15 +969,17 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("findDmByAddress") {
-			(installationId: String, peerAddress: String) -> String? in
+		AsyncFunction("findDmByIdentity") {
+			(installationId: String, peerIdentity: String) -> String? in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			if let dm = try await client.conversations.findDmByAddress(
-				address: peerAddress)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				peerIdentity)
+			if let dm = try await client.conversations.findDmByIdentity(
+				publicIdentity: identity)
 			{
 				return try await DmWrapper.encode(dm, client: client)
 			} else {
@@ -1077,32 +1105,6 @@ public class XMTPModule: Module {
 
 		AsyncFunction("findOrCreateDm") {
 			(
-				installationId: String, peerAddress: String,
-				disappearStartingAtNs: Int64?, retentionDurationInNs: Int64?
-			) -> String in
-			guard
-				let client = await clientsManager.getClient(key: installationId)
-			else {
-				throw Error.noClient
-			}
-			let settings =
-				(disappearStartingAtNs != nil && retentionDurationInNs != nil)
-				? DisappearingMessageSettings(
-					disappearStartingAtNs: disappearStartingAtNs!,
-					retentionDurationInNs: retentionDurationInNs!) : nil
-
-			do {
-				let dm = try await client.conversations.findOrCreateDm(
-					with: peerAddress, disappearingMessageSettings: settings)
-				return try await DmWrapper.encode(dm, client: client)
-			} catch {
-				print("ERRRO!: \(error.localizedDescription)")
-				throw error
-			}
-		}
-
-		AsyncFunction("findOrCreateDmWithInboxId") {
-			(
 				installationId: String, peerInboxId: String,
 				disappearStartingAtNs: Int64?, retentionDurationInNs: Int64?
 			) -> String in
@@ -1118,9 +1120,36 @@ public class XMTPModule: Module {
 					retentionDurationInNs: retentionDurationInNs!) : nil
 
 			do {
+				let dm = try await client.conversations.findOrCreateDm(
+					with: peerInboxId, disappearingMessageSettings: settings)
+				return try await DmWrapper.encode(dm, client: client)
+			} catch {
+				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
+
+		AsyncFunction("findOrCreateDmWithIdentity") {
+			(
+				installationId: String, peerIdentity: String,
+				disappearStartingAtNs: Int64?, retentionDurationInNs: Int64?
+			) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			let settings =
+				(disappearStartingAtNs != nil && retentionDurationInNs != nil)
+				? DisappearingMessageSettings(
+					disappearStartingAtNs: disappearStartingAtNs!,
+					retentionDurationInNs: retentionDurationInNs!) : nil
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				peerIdentity)
+			do {
 				let dm = try await client.conversations
-					.findOrCreateDmWithInboxId(
-						with: peerInboxId, disappearingMessageSettings: settings
+					.findOrCreateDmWithIdentity(
+						with: identity, disappearingMessageSettings: settings
 					)
 				return try await DmWrapper.encode(dm, client: client)
 			} catch {
@@ -1131,7 +1160,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("createGroup") {
 			(
-				installationId: String, peerAddresses: [String],
+				installationId: String, peerInboxIds: [String],
 				permission: String,
 				groupOptionsJson: String
 			) -> String in
@@ -1153,10 +1182,10 @@ public class XMTPModule: Module {
 					CreateGroupParamsWrapper.createGroupParamsFromJson(
 						groupOptionsJson)
 				let group = try await client.conversations.newGroup(
-					with: peerAddresses,
+					with: peerInboxIds,
 					permissions: permissionLevel,
 					name: createGroupParams.groupName,
-					imageUrlSquare: createGroupParams.groupImageUrlSquare,
+					imageUrl: createGroupParams.groupImageUrl,
 					description: createGroupParams.groupDescription,
 					disappearingMessageSettings: createGroupParams
 						.disappearingMessageSettings
@@ -1170,7 +1199,7 @@ public class XMTPModule: Module {
 
 		AsyncFunction("createGroupCustomPermissions") {
 			(
-				installationId: String, peerAddresses: [String],
+				installationId: String, peerInboxIds: [String],
 				permissionPolicySetJson: String, groupOptionsJson: String
 			) -> String in
 			guard
@@ -1187,10 +1216,10 @@ public class XMTPModule: Module {
 						from: permissionPolicySetJson)
 				let group = try await client.conversations
 					.newGroupCustomPermissions(
-						with: peerAddresses,
+						with: peerInboxIds,
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
-						imageUrlSquare: createGroupParams.groupImageUrlSquare,
+						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
 							.disappearingMessageSettings
@@ -1202,9 +1231,9 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("createGroupWithInboxIds") {
+		AsyncFunction("createGroupWithIdentities") {
 			(
-				installationId: String, inboxIds: [String],
+				installationId: String, peerIdentities: [String],
 				permission: String,
 				groupOptionsJson: String
 			) -> String in
@@ -1221,19 +1250,25 @@ public class XMTPModule: Module {
 					return .allMembers
 				}
 			}()
+			let identities =
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
+
 			do {
 				let createGroupParams =
 					CreateGroupParamsWrapper.createGroupParamsFromJson(
 						groupOptionsJson)
-				let group = try await client.conversations.newGroupWithInboxIds(
-					with: inboxIds,
-					permissions: permissionLevel,
-					name: createGroupParams.groupName,
-					imageUrlSquare: createGroupParams.groupImageUrlSquare,
-					description: createGroupParams.groupDescription,
-					disappearingMessageSettings: createGroupParams
-						.disappearingMessageSettings
-				)
+				let group = try await client.conversations
+					.newGroupWithIdentities(
+						with: identities,
+						permissions: permissionLevel,
+						name: createGroupParams.groupName,
+						imageUrl: createGroupParams.groupImageUrl,
+						description: createGroupParams.groupDescription,
+						disappearingMessageSettings: createGroupParams
+							.disappearingMessageSettings
+					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -1241,9 +1276,9 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("createGroupCustomPermissionsWithInboxIds") {
+		AsyncFunction("createGroupCustomPermissionsWithIdentities") {
 			(
-				installationId: String, inboxIds: [String],
+				installationId: String, peerIdentities: [String],
 				permissionPolicySetJson: String, groupOptionsJson: String
 			) -> String in
 			guard
@@ -1251,6 +1286,10 @@ public class XMTPModule: Module {
 			else {
 				throw Error.noClient
 			}
+			let identities =
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
 			do {
 				let createGroupParams =
 					CreateGroupParamsWrapper.createGroupParamsFromJson(
@@ -1259,11 +1298,11 @@ public class XMTPModule: Module {
 					try PermissionPolicySetWrapper.createPermissionPolicySet(
 						from: permissionPolicySetJson)
 				let group = try await client.conversations
-					.newGroupCustomPermissionsWithInboxIds(
-						with: inboxIds,
+					.newGroupCustomPermissionsWithIdentities(
+						with: identities,
 						permissionPolicySet: permissionPolicySet,
 						name: createGroupParams.groupName,
-						imageUrlSquare: createGroupParams.groupImageUrlSquare,
+						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
 							.disappearingMessageSettings
@@ -1388,7 +1427,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addGroupMembers") {
-			(installationId: String, id: String, peerAddresses: [String]) in
+			(installationId: String, id: String, peerInboxIds: [String]) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1401,11 +1440,12 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.addMembers(addresses: peerAddresses)
+			let result = try await group.addMembers(inboxIds: peerInboxIds)
+			return try MembershipResultWrapper.encode(result)
 		}
 
 		AsyncFunction("removeGroupMembers") {
-			(installationId: String, id: String, peerAddresses: [String]) in
+			(installationId: String, id: String, peerInboxIds: [String]) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1418,16 +1458,21 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.removeMembers(addresses: peerAddresses)
+			try await group.removeMembers(inboxIds: peerInboxIds)
 		}
 
-		AsyncFunction("addGroupMembersByInboxId") {
-			(installationId: String, id: String, inboxIds: [String]) in
+		AsyncFunction("addGroupMembersByIdentity") {
+			(installationId: String, id: String, peerIdentities: [String]) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
+			let identities =
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
+
 			guard
 				let group = try await client.conversations.findGroup(
 					groupId: id)
@@ -1435,16 +1480,22 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.addMembersByInboxId(inboxIds: inboxIds)
+			let result = try await group.addMembersByIdentity(identities: identities)
+			return try MembershipResultWrapper.encode(result)
 		}
 
-		AsyncFunction("removeGroupMembersByInboxId") {
-			(installationId: String, id: String, inboxIds: [String]) in
+		AsyncFunction("removeGroupMembersByIdentity") {
+			(installationId: String, id: String, peerIdentities: [String]) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
+			let identities =
+				try peerIdentities.map {
+					try PublicIdentityWrapper.publicIdentityFromJson($0)
+				}
+
 			guard
 				let group = try await client.conversations.findGroup(
 					groupId: id)
@@ -1453,7 +1504,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			try await group.removeMembersByInboxId(inboxIds: inboxIds)
+			try await group.removeMembersByIdentity(identities: identities)
 		}
 
 		AsyncFunction("groupName") {
@@ -1471,7 +1522,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			return try group.groupName()
+			return try group.name()
 		}
 
 		AsyncFunction("updateGroupName") {
@@ -1489,10 +1540,10 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			try await group.updateGroupName(groupName: groupName)
+			try await group.updateName(name: groupName)
 		}
 
-		AsyncFunction("groupImageUrlSquare") {
+		AsyncFunction("groupImageUrl") {
 			(installationId: String, id: String) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1507,10 +1558,10 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			return try group.groupImageUrlSquare()
+			return try group.imageUrl()
 		}
 
-		AsyncFunction("updateGroupImageUrlSquare") {
+		AsyncFunction("updateGroupImageUrl") {
 			(installationId: String, id: String, groupImageUrl: String) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1525,8 +1576,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			try await group.updateGroupImageUrlSquare(
-				imageUrlSquare: groupImageUrl)
+			try await group.updateImageUrl(imageUrl: groupImageUrl)
 		}
 
 		AsyncFunction("groupDescription") {
@@ -1544,7 +1594,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			return try group.groupDescription()
+			return try group.description()
 		}
 
 		AsyncFunction("updateGroupDescription") {
@@ -1562,8 +1612,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 
-			try await group.updateGroupDescription(
-				groupDescription: description)
+			try await group.updateDescription(description: description)
 		}
 
 		AsyncFunction("disappearingMessageSettings") {
@@ -1939,12 +1988,12 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.updateGroupNamePermission(
+			try await group.updateNamePermission(
 				newPermissionOption: getPermissionOption(
 					permission: newPermission))
 		}
 
-		AsyncFunction("updateGroupImageUrlSquarePermission") {
+		AsyncFunction("updateGroupImageUrlPermission") {
 			(clientInstallationId: String, id: String, newPermission: String) in
 			guard
 				let client = await clientsManager.getClient(
@@ -1959,7 +2008,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.updateGroupImageUrlSquarePermission(
+			try await group.updateImageUrlPermission(
 				newPermissionOption: getPermissionOption(
 					permission: newPermission))
 		}
@@ -1979,7 +2028,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.updateGroupDescriptionPermission(
+			try await group.updateDescriptionPermission(
 				newPermissionOption: getPermissionOption(
 					permission: newPermission))
 		}
@@ -2098,18 +2147,6 @@ public class XMTPModule: Module {
 			)
 		}
 
-		AsyncFunction("consentAddressState") {
-			(installationId: String, address: String) -> String in
-			guard
-				let client = await clientsManager.getClient(key: installationId)
-			else {
-				throw Error.noClient
-			}
-			return try await ConsentWrapper.consentStateToString(
-				state: client.preferences.addressState(
-					address: address))
-		}
-
 		AsyncFunction("consentInboxIdState") {
 			(installationId: String, peerInboxId: String) -> String in
 			guard
@@ -2174,6 +2211,26 @@ public class XMTPModule: Module {
 
 			try await conversation.updateConsentState(
 				state: getConsentState(state: state))
+		}
+
+		AsyncFunction("pausedForVersion") {
+			(installationId: String, conversationId: String) -> String? in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+
+			guard
+				let conversation = try await client.conversations
+					.findConversation(
+						conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
+			}
+
+            return try await conversation.pausedForVersion()
 		}
 
 		AsyncFunction("subscribeToPreferenceUpdates") {
@@ -2365,8 +2422,6 @@ public class XMTPModule: Module {
 			return .inbox_id
 		case "conversation_id":
 			return .conversation_id
-		case "address":
-			return .address
 		default:
 			throw Error.invalidPermissionOption
 		}
@@ -2381,7 +2436,9 @@ public class XMTPModule: Module {
 		}
 	}
 
-	private func getConversationType(type: String) throws -> ConversationType {
+	private func getConversationType(type: String) throws
+		-> ConversationFilterType
+	{
 		switch type {
 		case "groups":
 			return .groups
@@ -2400,27 +2457,24 @@ public class XMTPModule: Module {
 		}
 	}
 
-	func createApiClient(env: String, appVersion: String? = nil)
+	func createApiClient(env: String)
 		-> XMTP.ClientOptions.Api
 	{
 		switch env {
 		case "local":
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.local,
-				isSecure: false,
-				appVersion: appVersion
+				isSecure: false
 			)
 		case "production":
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
-				isSecure: true,
-				appVersion: appVersion
+				isSecure: true
 			)
 		default:
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
-				isSecure: true,
-				appVersion: appVersion
+				isSecure: true
 			)
 		}
 	}
@@ -2433,7 +2487,7 @@ public class XMTPModule: Module {
 
 		return XMTP.ClientOptions(
 			api: createApiClient(
-				env: authOptions.environment, appVersion: authOptions.appVersion
+				env: authOptions.environment
 			),
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 			dbEncryptionKey: dbEncryptionKey,
@@ -2510,7 +2564,7 @@ public class XMTPModule: Module {
 	}
 
 	func subscribeToConversations(
-		installationId: String, type: ConversationType
+		installationId: String, type: ConversationFilterType
 	)
 		async throws
 	{
@@ -2546,7 +2600,9 @@ public class XMTPModule: Module {
 			})
 	}
 
-	func subscribeToAllMessages(installationId: String, type: ConversationType)
+	func subscribeToAllMessages(
+		installationId: String, type: ConversationFilterType
+	)
 		async throws
 	{
 		guard let client = await clientsManager.getClient(key: installationId)

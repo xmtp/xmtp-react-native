@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import React, { useState } from 'react'
 import { Button, ScrollView, Switch, Text, TextInput, View } from 'react-native'
-import { useXmtp } from 'xmtp-react-native-sdk'
+import { PublicIdentity, useXmtp } from 'xmtp-react-native-sdk'
 
 import { NavigationParamList } from './Navigation'
 
@@ -22,20 +22,28 @@ export default function ConversationCreateScreen({
     }
     if (groupsEnabled) {
       const toAddresses = toAddress.split(',')
-      const canMessage = await client.canMessage(toAddresses)
+      const toIdentities = toAddresses.map(
+        (address: string) => new PublicIdentity(address, 'ETHEREUM')
+      )
+      const canMessage = await client.canMessage(toIdentities)
       if (!canMessage) {
         setAlert(`${toAddress} cannot be added to a group conversation yet`)
         return
       }
-      const group = await client.conversations.newGroup(toAddresses)
+      const group =
+        await client.conversations.newGroupWithIdentities(toIdentities)
       navigation.navigate('group', { id: group.id })
     } else {
-      const canMessage = await client.canMessage([toAddress])
+      const canMessage = await client.canMessage([
+        new PublicIdentity(toAddress, 'ETHEREUM'),
+      ])
       if (!canMessage) {
         setAlert(`${toAddress} is not on the XMTP network yet`)
         return
       }
-      const convo = await client.conversations.newConversation(toAddress)
+      const convo = await client.conversations.findOrCreateDmWithIdentity(
+        new PublicIdentity(toAddress, 'ETHEREUM')
+      )
       navigation.navigate('conversation', { topic: convo.topic })
     }
   }

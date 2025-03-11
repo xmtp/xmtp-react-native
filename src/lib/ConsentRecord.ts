@@ -1,6 +1,6 @@
 export type ConsentState = 'allowed' | 'denied' | 'unknown'
 
-export type ConsentType = 'address' | 'conversation_id' | 'inbox_id'
+export type ConsentType = 'conversation_id' | 'inbox_id'
 
 export class ConsentRecord {
   value: string

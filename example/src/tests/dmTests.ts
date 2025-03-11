@@ -19,10 +19,10 @@ function test(name: string, perform: () => Promise<boolean>) {
 test('can filter dms by consent', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
-  await boClient.conversations.newGroup([alixClient.address])
-  const otherGroup = await alixClient.conversations.newGroup([boClient.address])
-  const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.address)
-  await caroClient.conversations.findOrCreateDm(boClient.address)
+  await boClient.conversations.newGroup([alixClient.inboxId])
+  const otherGroup = await alixClient.conversations.newGroup([boClient.inboxId])
+  const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.inboxId)
+  await caroClient.conversations.findOrCreateDm(boClient.inboxId)
   await boClient.conversations.sync()
   const boDm2 = await boClient.conversations.findDmByInboxId(caroClient.inboxId)
   await boClient.conversations.findGroup(otherGroup.id)
@@ -72,10 +72,10 @@ test('can filter dms by consent', async () => {
 test('can list dms with params', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
-  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
-  const boGroup2 = await boClient.conversations.newGroup([alixClient.address])
-  const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.address)
-  const boDm2 = await boClient.conversations.findOrCreateDm(caroClient.address)
+  const boGroup1 = await boClient.conversations.newGroup([alixClient.inboxId])
+  const boGroup2 = await boClient.conversations.newGroup([alixClient.inboxId])
+  const boDm1 = await boClient.conversations.findOrCreateDm(alixClient.inboxId)
+  const boDm2 = await boClient.conversations.findOrCreateDm(caroClient.inboxId)
 
   await boGroup1.send({ text: `first message` })
   await boGroup1.send({ text: `second message` })
@@ -129,8 +129,8 @@ test('can stream all dm messages', async () => {
     messageCallbacks++
   }, 'dms')
 
-  const group = await alix.conversations.newGroup([bo.address])
-  const dm = await alix.conversations.findOrCreateDm(bo.address)
+  const group = await alix.conversations.newGroup([bo.inboxId])
+  const dm = await alix.conversations.findOrCreateDm(bo.inboxId)
   await delayToPropogate()
   await group.send('hello')
   await dm.send('hello')
@@ -151,8 +151,8 @@ test('can stream all dm messages', async () => {
 test('can stream dm messages', async () => {
   const [alixClient, boClient] = await createClients(2)
 
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
-  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.address)
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
+  const alixDm = await alixClient.conversations.findOrCreateDm(boClient.inboxId)
   const alixConversation = await alixClient.conversations.findConversation(
     alixGroup.id
   )
@@ -192,7 +192,7 @@ test('can stream all dms', async () => {
     }
   )
 
-  await boClient.conversations.newGroup([alixClient.address])
+  await boClient.conversations.newGroup([alixClient.inboxId])
   await delayToPropogate()
   if ((containers.length as number) !== 1) {
     throw Error(
@@ -200,7 +200,7 @@ test('can stream all dms', async () => {
     )
   }
 
-  await boClient.conversations.findOrCreateDm(alixClient.address)
+  await boClient.conversations.findOrCreateDm(alixClient.inboxId)
   await delayToPropogate()
   if ((containers.length as number) !== 2) {
     throw Error(
@@ -208,7 +208,7 @@ test('can stream all dms', async () => {
     )
   }
 
-  await alixClient.conversations.findOrCreateDm(caroClient.address)
+  await alixClient.conversations.findOrCreateDm(caroClient.inboxId)
   await delayToPropogate()
   if (containers.length !== 3) {
     throw Error(
@@ -219,7 +219,7 @@ test('can stream all dms', async () => {
   alixClient.conversations.cancelStream()
   await delayToPropogate()
 
-  await caroClient.conversations.newGroup([alixClient.address])
+  await caroClient.conversations.newGroup([alixClient.inboxId])
   await delayToPropogate()
   if ((containers.length as number) !== 3) {
     throw Error(
@@ -240,12 +240,12 @@ test('handles disappearing messages in a dm', async () => {
 
   // Create group with disappearing messages enabled
   const boDm = await boClient.conversations.findOrCreateDm(
-    alixClient.address,
+    alixClient.inboxId,
     initialSettings
   )
 
-  await boClient.conversations.findOrCreateDmWithInboxId(
-    caroClient.inboxId,
+  await boClient.conversations.findOrCreateDmWithIdentity(
+    caroClient.publicIdentity,
     initialSettings
   )
 

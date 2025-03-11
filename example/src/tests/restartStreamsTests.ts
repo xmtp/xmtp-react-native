@@ -16,13 +16,13 @@ test('Can cancel a stream and restart', async () => {
     numEvents1++
   })
   await delayToPropogate()
-  await alix.conversations.newConversation(bo.address)
+  await alix.conversations.newConversation(bo.inboxId)
   await delayToPropogate()
   assert(numEvents1 === 1, 'expected 1 event, first stream')
 
   // Cancel stream
   alix.conversations.cancelStream()
-  await alix.conversations.newConversation(caro.address)
+  await alix.conversations.newConversation(caro.inboxId)
   await delayToPropogate()
   assert(numEvents1 === 1, 'expected 1 event, first stream after cancel')
 
@@ -33,7 +33,7 @@ test('Can cancel a stream and restart', async () => {
   })
   await delayToPropogate()
 
-  await alix.conversations.newConversation(davon.address)
+  await alix.conversations.newConversation(davon.inboxId)
   await delayToPropogate()
 
   // Verify correct number of events from each stream
@@ -61,13 +61,13 @@ test('Can cancel a stream and restart', async () => {
     numEvents1++
   })
   await delayToPropogate()
-  await bo.conversations.newGroup([alix.address])
+  await bo.conversations.newGroup([alix.inboxId])
   await delayToPropogate()
   assert(numEvents1 === 1, 'expected 1 event, first stream')
 
   // Cancel stream
   alix.conversations.cancelStream()
-  await caro.conversations.newGroup([alix.address])
+  await caro.conversations.newGroup([alix.inboxId])
   await delayToPropogate()
   assert(numEvents1 === 1, 'expected 1 event, first stream after cancel')
 
@@ -78,7 +78,7 @@ test('Can cancel a stream and restart', async () => {
   })
   await delayToPropogate()
 
-  await davon.conversations.newGroup([alix.address])
+  await davon.conversations.newGroup([alix.inboxId])
   await delayToPropogate()
 
   // Verify correct number of events from each stream
@@ -100,8 +100,8 @@ test('Can cancel a streamAllMessages and restart', async () => {
 
   // Create a group
   await delayToPropogate()
-  await bo.conversations.newGroup([alix.address])
-  await bo.conversations.newConversation(alix.address)
+  await bo.conversations.newGroup([alix.inboxId])
+  await bo.conversations.newConversation(alix.inboxId)
   await delayToPropogate()
 
   // Start stream

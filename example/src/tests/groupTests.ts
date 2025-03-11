@@ -19,6 +19,7 @@ import {
   GroupUpdatedCodec,
   DecodedMessage,
   ConsentRecord,
+  PublicIdentity,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -41,7 +42,9 @@ test('can create a group with inbox ids default permissions', async () => {
   const [alix, bo, caro] = await createClients(3)
 
   // Create group with inbox ID
-  const boGroup = await bo.conversations.newGroupWithInboxIds([alix.inboxId])
+  const boGroup = await bo.conversations.newGroupWithIdentities([
+    alix.publicIdentity,
+  ])
 
   await alix.conversations.sync()
   await boGroup.sync()
@@ -54,7 +57,7 @@ test('can create a group with inbox ids default permissions', async () => {
   assert(alixGroup.id !== '', 'alix group ID should not be empty')
 
   // Add caro to group
-  await alixGroup.addMembers([caro.address])
+  await alixGroup.addMembers([caro.inboxId])
   await boGroup.sync()
 
   // Verify member counts
@@ -69,7 +72,7 @@ test('can create a group with inbox ids default permissions', async () => {
 
   // Verify remove members throws error (admin only)
   try {
-    await alixGroup.removeMembers([caro.address])
+    await alixGroup.removeMembers([caro.inboxId])
     await boGroup.sync()
     throw new Error('Should not be able to remove members')
   } catch {
@@ -124,15 +127,15 @@ test('groups cannot fork', async () => {
   const [alix, bo, caro] = await createClients(3)
   // Create group with 3 users
   const { id: groupId } = await alix.conversations.newGroup([
-    bo.address,
-    caro.address,
+    bo.inboxId,
+    caro.inboxId,
   ])
 
   const getGroupForClient = async (client: Client) => {
     // Always sync the client before getting the group
     await client.conversations.sync()
     const group = await client.conversations.findGroup(groupId)
-    assert(group !== undefined, `Group not found for ${client.address}`)
+    assert(group !== undefined, `Group not found for ${client.inboxId}`)
     return group as Group<DefaultContentTypes>
   }
 
@@ -201,8 +204,8 @@ test('groups cannot fork', async () => {
   // Add back several members
   console.log('Adding new members to the group...')
   for (const client of newClients) {
-    console.log(`Adding member ${client.address}...`)
-    await addMemberToGroup(alix, [client.address])
+    console.log(`Adding member ${client.inboxId}...`)
+    await addMemberToGroup(alix, [client.inboxId])
   }
   await delayToPropogate()
 
@@ -216,16 +219,16 @@ test('groups cannot fork', async () => {
 
     await Promise.all(
       newClients.map((client) => {
-        console.log(`Removing member ${client.address}...`)
-        return removeMemberFromGroup(alix, [client.address])
+        console.log(`Removing member ${client.inboxId}...`)
+        return removeMemberFromGroup(alix, [client.inboxId])
       })
     )
   } else {
     console.log('Removing members one by one')
 
     for (const client of newClients) {
-      console.log(`Removing member ${client.address}...`)
-      await removeMemberFromGroup(alix, [client.address])
+      console.log(`Removing member ${client.inboxId}...`)
+      await removeMemberFromGroup(alix, [client.inboxId])
     }
   }
 
@@ -259,9 +262,9 @@ test('groups cannot fork short version', async () => {
   const [alix, bo, new_one, new_two] = await createClients(4)
   // Create group with 2 users
   const alixGroup = await alix.conversations.newGroup([
-    bo.address,
-    new_one.address,
-    new_two.address,
+    bo.inboxId,
+    new_one.inboxId,
+    new_two.inboxId,
   ])
 
   // sync clients
@@ -277,8 +280,8 @@ test('groups cannot fork short version', async () => {
     '*************libxmtp*********************: Removing members in parallel'
   )
   await Promise.all([
-    alixGroup.removeMembers([new_one.address]),
-    alixGroup.removeMembers([new_two.address]),
+    alixGroup.removeMembers([new_one.inboxId]),
+    alixGroup.removeMembers([new_two.inboxId]),
   ])
 
   // Helper to send a message from a bunch of senders and make sure it is received by all receivers
@@ -334,9 +337,9 @@ test('groups cannot fork short version - update metadata', async () => {
   const [alix, bo, new_one, new_two] = await createClients(6)
   // Create group with 2 users
   const alixGroup = await alix.conversations.newGroup([
-    bo.address,
-    new_one.address,
-    new_two.address,
+    bo.inboxId,
+    new_one.inboxId,
+    new_two.inboxId,
   ])
 
   // sync clients
@@ -352,8 +355,8 @@ test('groups cannot fork short version - update metadata', async () => {
     '*************libxmtp*********************: Updating metadata in parallel'
   )
   await Promise.all([
-    alixGroup.updateGroupName('new name'),
-    alixGroup.updateGroupName('new name 2'),
+    alixGroup.updateName('new name'),
+    alixGroup.updateName('new name 2'),
   ])
 
   // Helper to send a message from a bunch of senders and make sure it is received by all receivers
@@ -413,7 +416,7 @@ test('can cancel streams', async () => {
     messageCallbacks++
   })
 
-  const group = await alix.conversations.newGroup([bo.address])
+  const group = await alix.conversations.newGroup([bo.inboxId])
   await group.send('hello')
   await delayToPropogate()
 
@@ -455,7 +458,7 @@ test('can cancel streams', async () => {
 
 test('group message delivery status', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
 
   await alixGroup.send('hello, world')
 
@@ -499,7 +502,7 @@ test('group message delivery status', async () => {
 
 test('can find a group by id', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
 
   await boClient.conversations.sync()
   const boGroup = await boClient.conversations.findGroup(alixGroup.id)
@@ -513,7 +516,7 @@ test('can find a group by id', async () => {
 
 test('can find a message by id', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
   const alixMessageId = await alixGroup.send('Hello')
 
   await boClient.conversations.sync()
@@ -530,7 +533,7 @@ test('can find a message by id', async () => {
 
 test('who added me to a group', async () => {
   const [alixClient, boClient] = await createClients(2)
-  await alixClient.conversations.newGroup([boClient.address])
+  await alixClient.conversations.newGroup([boClient.inboxId])
 
   await boClient.conversations.sync()
   const boGroup = (await boClient.conversations.listGroups())[0]
@@ -545,7 +548,7 @@ test('who added me to a group', async () => {
 
 test('can get members of a group', async () => {
   const [alixClient, boClient] = await createClients(2)
-  const group = await alixClient.conversations.newGroup([boClient.address])
+  const group = await alixClient.conversations.newGroup([boClient.inboxId])
 
   const members = await group.members()
 
@@ -555,8 +558,8 @@ test('can get members of a group', async () => {
   for (const member of members) {
     // Alix created the group so they are a super admin
     if (
-      member.addresses[0].toLocaleLowerCase() ===
-      alixClient.address.toLocaleLowerCase()
+      member.identities[0].identifier.toLocaleLowerCase() ===
+      alixClient.inboxId.toLocaleLowerCase()
     ) {
       assert(
         member.permissionLevel === 'super_admin',
@@ -565,8 +568,8 @@ test('can get members of a group', async () => {
     }
     // Bo did not create the group so he defaults to permission level "member"
     if (
-      member.addresses[0].toLocaleLowerCase() ===
-      boClient.address.toLocaleLowerCase()
+      member.identities[0].identifier.toLocaleLowerCase() ===
+      boClient.inboxId.toLocaleLowerCase()
     ) {
       assert(
         member.permissionLevel === 'member',
@@ -588,8 +591,8 @@ test('can message in a group', async () => {
 
   // alix creates a group
   const alixGroup = await alixClient.conversations.newGroup([
-    boClient.address,
-    caroClient.address,
+    boClient.inboxId,
+    caroClient.inboxId,
   ])
 
   // alix's num groups == 1
@@ -685,7 +688,7 @@ test('unpublished messages handling', async () => {
   const [alixClient, boClient] = await createClients(3)
 
   // Create a new group with Bob and Alice
-  const boGroup = await boClient.conversations.newGroup([alixClient.address])
+  const boGroup = await boClient.conversations.newGroup([alixClient.inboxId])
   assert(
     (await boGroup.consentState()) === 'allowed',
     'consent should be allowed'
@@ -765,7 +768,7 @@ test('can add members to a group', async () => {
   }
 
   // alix creates a group
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
 
   // alix's num groups == 1
   await alixClient.conversations.sync()
@@ -802,7 +805,12 @@ test('can add members to a group', async () => {
     )
   }
 
-  await alixGroup.addMembers([caroClient.address])
+  const memberResult = await alixGroup.addMembers([caroClient.inboxId])
+
+  assert(
+    memberResult.addedMembers[0] === caroClient.inboxId,
+    `Added member should be ${memberResult.addedMembers[0]}`
+  )
 
   // caro's num groups == 1
   await caroClient.conversations.sync()
@@ -849,8 +857,8 @@ test('can remove members from a group', async () => {
 
   // alix creates a group
   const alixGroup = await alixClient.conversations.newGroup([
-    boClient.address,
-    caroClient.address,
+    boClient.inboxId,
+    caroClient.inboxId,
   ])
 
   // alix's num groups == 1
@@ -902,7 +910,7 @@ test('can remove members from a group', async () => {
     throw new Error('caros group should be active')
   }
 
-  await alixGroup.removeMembers([caroClient.address])
+  await alixGroup.removeMembers([caroClient.inboxId])
   await alixGroup.sync()
   const alixGroupMembers = await alixGroup.memberInboxIds()
   if (alixGroupMembers.length !== 2) {
@@ -932,8 +940,8 @@ test('can remove and add members from a group by inbox id', async () => {
 
   // alix creates a group
   const alixGroup = await alixClient.conversations.newGroup([
-    boClient.address,
-    caroClient.address,
+    boClient.inboxId,
+    caroClient.inboxId,
   ])
 
   // alix can confirm memberInboxIds
@@ -943,14 +951,14 @@ test('can remove and add members from a group by inbox id', async () => {
     throw new Error('num group members should be 3')
   }
 
-  await alixGroup.removeMembersByInboxId([caroClient.inboxId])
+  await alixGroup.removeMembersByIdentity([caroClient.publicIdentity])
   await alixGroup.sync()
   const alixGroupMembers = await alixGroup.memberInboxIds()
   if (alixGroupMembers.length !== 2) {
     throw new Error('num group members should be 2')
   }
 
-  await alixGroup.addMembersByInboxId([caroClient.inboxId])
+  await alixGroup.addMembersByIdentity([caroClient.publicIdentity])
   await alixGroup.sync()
   const alixGroupMembers2 = await alixGroup.memberInboxIds()
   if (alixGroupMembers2.length !== 3) {
@@ -973,7 +981,7 @@ test('can stream both groups and messages at same time', async () => {
     messageCallbacks++
   })
 
-  const group = await alix.conversations.newGroup([bo.address])
+  const group = await alix.conversations.newGroup([bo.inboxId])
   await group.send('hello')
 
   await delayToPropogate()
@@ -998,7 +1006,7 @@ test('can stream groups', async () => {
   // caro creates a group with alix, so stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const caroGroup = await caroClient.conversations.newGroup([
-    alixClient.address,
+    alixClient.inboxId,
   ])
   await delayToPropogate()
   if ((groups.length as number) !== 1) {
@@ -1009,7 +1017,7 @@ test('can stream groups', async () => {
 
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const boGroup = await boClient.conversations.newGroup([alixClient.address])
+  const boGroup = await boClient.conversations.newGroup([alixClient.inboxId])
   await delayToPropogate()
   if ((groups.length as number) !== 2) {
     throw Error('Unexpected num groups (should be 2): ' + groups.length)
@@ -1022,8 +1030,8 @@ test('can stream groups', async () => {
   // alix creates a group
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const alixGroup = await alixClient.conversations.newGroup([
-    boClient.address,
-    caroClient.address,
+    boClient.inboxId,
+    caroClient.inboxId,
   ])
   await delayToPropogate()
   if (groups.length !== 3) {
@@ -1043,7 +1051,7 @@ test('can stream groups', async () => {
   // Creating a group should no longer trigger stream groups
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const caroSecond = await caroClient.conversations.newGroup([
-    alixClient.address,
+    alixClient.inboxId,
   ])
   await delayToPropogate()
   if ((groups.length as number) !== 4) {
@@ -1056,10 +1064,10 @@ test('can stream groups', async () => {
 test('can filter groups by consent', async () => {
   const [alixClient, boClient, caroClient] = await createClients(3)
 
-  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
-  const otherGroup = await alixClient.conversations.newGroup([boClient.address])
-  await boClient.conversations.findOrCreateDm(alixClient.address)
-  await caroClient.conversations.findOrCreateDm(boClient.address)
+  const boGroup1 = await boClient.conversations.newGroup([alixClient.inboxId])
+  const otherGroup = await alixClient.conversations.newGroup([boClient.inboxId])
+  await boClient.conversations.findOrCreateDm(alixClient.inboxId)
+  await caroClient.conversations.findOrCreateDm(boClient.inboxId)
   await boClient.conversations.sync()
   await boClient.conversations.findDmByInboxId(caroClient.inboxId)
   const boGroup2 = await boClient.conversations.findGroup(otherGroup.id)
@@ -1109,8 +1117,8 @@ test('can filter groups by consent', async () => {
 test('can list groups with params', async () => {
   const [alixClient, boClient] = await createClients(2)
 
-  const boGroup1 = await boClient.conversations.newGroup([alixClient.address])
-  const boGroup2 = await boClient.conversations.newGroup([alixClient.address])
+  const boGroup1 = await boClient.conversations.newGroup([alixClient.inboxId])
+  const boGroup2 = await boClient.conversations.newGroup([alixClient.inboxId])
 
   await boGroup1.send({ text: `first message` })
   await boGroup1.send({ text: `second message` })
@@ -1150,13 +1158,13 @@ test('can list groups with params', async () => {
 test('can list groups', async () => {
   const [alixClient, boClient] = await createClients(2)
 
-  const group1 = await boClient.conversations.newGroup([alixClient.address], {
+  const group1 = await boClient.conversations.newGroup([alixClient.inboxId], {
     name: 'group1 name',
-    imageUrlSquare: 'www.group1image.com',
+    imageUrl: 'www.group1image.com',
   })
-  const group2 = await boClient.conversations.newGroup([alixClient.address], {
+  const group2 = await boClient.conversations.newGroup([alixClient.inboxId], {
     name: 'group2 name',
-    imageUrlSquare: 'www.group2image.com',
+    imageUrl: 'www.group2image.com',
   })
 
   const boGroups = await boClient.conversations.listGroups()
@@ -1175,23 +1183,23 @@ test('can list groups', async () => {
   const alixGroup2 = await alixClient.conversations.findGroup(group2.id)
 
   assert(
-    boGroup2?.name === 'group2 name',
+    boGroup2?.groupName === 'group2 name',
     `Group 2 name for bo should be group2 name but was ${boGroup2?.name}`
   )
 
   assert(
-    boGroup1?.imageUrlSquare === 'www.group1image.com',
-    `Group 2 url for bo should be www.group1image.com but was ${boGroup1?.imageUrlSquare}`
+    boGroup1?.groupImageUrl === 'www.group1image.com',
+    `Group 2 url for bo should be www.group1image.com but was ${boGroup1?.imageUrl}`
   )
 
   assert(
-    alixGroup1?.name === 'group1 name',
+    alixGroup1?.groupName === 'group1 name',
     `Group 1 name for alix should be group1 name but was ${alixGroup1?.name}`
   )
 
   assert(
-    alixGroup2?.imageUrlSquare === 'www.group2image.com',
-    `Group 2 url for alix should be www.group2image.com but was ${alixGroup2?.imageUrlSquare}`
+    alixGroup2?.groupImageUrl === 'www.group2image.com',
+    `Group 2 url for alix should be www.group2image.com but was ${alixGroup2?.imageUrl}`
   )
 
   assert(boGroup1?.isGroupActive === true, `Group 1 should be active for bo`)
@@ -1213,7 +1221,7 @@ test('can stream groups and messages', async () => {
 
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  await boClient.conversations.newGroup([alixClient.address])
+  await boClient.conversations.newGroup([alixClient.inboxId])
   await delayToPropogate()
   if ((groups.length as number) !== 1) {
     throw Error(`Unexpected num groups (should be 1): ${groups.length}`)
@@ -1226,9 +1234,12 @@ test('canMessage', async () => {
   const [alix, caro] = await createClients(3)
 
   const canMessageV3 = await caro.canMessage([
-    caro.address,
-    alix.address,
-    '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67',
+    caro.publicIdentity,
+    alix.publicIdentity,
+    new PublicIdentity(
+      '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67',
+      'ETHEREUM'
+    ),
   ])
 
   assert(
@@ -1238,13 +1249,13 @@ test('canMessage', async () => {
   )
 
   assert(
-    canMessageV3[caro.address.toLowerCase()] === true,
-    `should be able to message ${caro.address}`
+    canMessageV3[caro.publicIdentity.identifier.toLowerCase()] === true,
+    `should be able to message ${caro.publicIdentity.identifier}`
   )
 
   assert(
-    canMessageV3[alix.address.toLowerCase()] === true,
-    `should be able to message ${alix.address}`
+    canMessageV3[alix.publicIdentity.identifier.toLowerCase()] === true,
+    `should be able to message ${alix.publicIdentity.identifier}`
   )
 
   return true
@@ -1256,8 +1267,8 @@ test('can stream group messages', async () => {
 
   // alix creates a group
   const alixGroup = await alixClient.conversations.newGroup([
-    boClient.address,
-    caroClient.address,
+    boClient.inboxId,
+    caroClient.inboxId,
   ])
 
   // Record message stream for this group
@@ -1304,15 +1315,15 @@ test('can make a group with metadata', async () => {
   const [alix, bo] = await createClients(2)
   Client.register(new GroupUpdatedCodec())
 
-  const alixGroup = await alix.conversations.newGroup([bo.address], {
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId], {
     name: 'Start Name',
-    imageUrlSquare: 'starturl.com',
+    imageUrl: 'starturl.com',
     description: 'a fun description',
   })
 
-  const groupName1 = await alixGroup.groupName()
-  const groupImageUrl1 = await alixGroup.groupImageUrlSquare()
-  const groupDescription1 = await alixGroup.groupDescription()
+  const groupName1 = await alixGroup.name()
+  const groupImageUrl1 = await alixGroup.imageUrl()
+  const groupDescription1 = await alixGroup.description()
   assert(
     groupName1 === 'Start Name',
     `the group should start with a name of Start Name not ${groupName1}`
@@ -1328,18 +1339,18 @@ test('can make a group with metadata', async () => {
     `the group should start with a name of a fun description not ${groupDescription1}`
   )
 
-  await alixGroup.updateGroupName('New Name')
-  await alixGroup.updateGroupImageUrlSquare('newurl.com')
-  await alixGroup.updateGroupDescription('a new group description')
+  await alixGroup.updateName('New Name')
+  await alixGroup.updateImageUrl('newurl.com')
+  await alixGroup.updateDescription('a new group description')
   await alixGroup.sync()
   await bo.conversations.sync()
   const boGroups = await bo.conversations.listGroups()
   const boGroup = boGroups[0]
   await boGroup.sync()
 
-  const groupName2 = await alixGroup.groupName()
-  const groupImageUrl2 = await alixGroup.groupImageUrlSquare()
-  const groupDescription2 = await alixGroup.groupDescription()
+  const groupName2 = await alixGroup.name()
+  const groupImageUrl2 = await alixGroup.imageUrl()
+  const groupDescription2 = await alixGroup.description()
   assert(
     groupName2 === 'New Name',
     `the group should start with a name of New Name not ${groupName2}`
@@ -1355,8 +1366,8 @@ test('can make a group with metadata', async () => {
     `the group should start with a name of a new group description not ${groupDescription2}`
   )
 
-  const groupName3 = await boGroup.groupName()
-  const groupImageUrl3 = await boGroup.groupImageUrlSquare()
+  const groupName3 = await boGroup.name()
+  const groupImageUrl3 = await boGroup.imageUrl()
   assert(
     groupName3 === 'New Name',
     `the group should start with a name of New Name not ${groupName3}`
@@ -1390,7 +1401,7 @@ test('can make a group with admin permissions', async () => {
   const [adminClient, anotherClient] = await createClients(2)
 
   const group = await adminClient.conversations.newGroup(
-    [anotherClient.address],
+    [anotherClient.inboxId],
     { permissionLevel: 'admin_only' }
   )
 
@@ -1422,7 +1433,7 @@ test('can paginate group messages', async () => {
   const [alixClient, boClient] = await createClients(2)
 
   // alix creates a group
-  const alixGroup = await alixClient.conversations.newGroup([boClient.address])
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
 
   // alix can send messages
   await alixGroup.send('hello, world')
@@ -1455,11 +1466,11 @@ test('can stream all group messages', async () => {
   await delayToPropogate()
 
   // Start bo starts a new group.
-  const boGroup = await bo.conversations.newGroup([alix.address])
+  const boGroup = await bo.conversations.newGroup([alix.inboxId])
   await delayToPropogate()
 
   // Starts a new conversation.
-  const caroGroup = await caro.conversations.newGroup([alix.address])
+  const caroGroup = await caro.conversations.newGroup([alix.inboxId])
 
   // Record message stream across all conversations
   const allMessages: DecodedMessage[] = []
@@ -1469,6 +1480,7 @@ test('can stream all group messages', async () => {
   await alix.conversations.streamAllMessages(async (message) => {
     allMessages.push(message)
   }, 'groups')
+  await delayToPropogate()
 
   for (let i = 0; i < 5; i++) {
     await boGroup.send({ text: `Message ${i}` })
@@ -1510,7 +1522,7 @@ test('can stream all group messages', async () => {
 test('creating a group should allow group', async () => {
   const [alix, bo] = await createClients(2)
 
-  const group = await alix.conversations.newGroup([bo.address])
+  const group = await alix.conversations.newGroup([bo.inboxId])
   await alix.conversations.sync()
   const consent = await alix.preferences.conversationConsentState(group.id)
   const groupConsent = await group.consentState()
@@ -1529,7 +1541,7 @@ test('creating a group should allow group', async () => {
 
 test('can group consent', async () => {
   const [alix, bo] = await createClients(2)
-  const group = await bo.conversations.newGroup([alix.address])
+  const group = await bo.conversations.newGroup([alix.inboxId])
   await alix.conversations.sync()
   let isAllowed = await alix.preferences.conversationConsentState(group.id)
   assert(
@@ -1573,7 +1585,7 @@ test('can group consent', async () => {
 
 test('can allow and deny a inbox id', async () => {
   const [alix, bo] = await createClients(2)
-  const boGroup = await bo.conversations.newGroup([alix.address])
+  const boGroup = await bo.conversations.newGroup([alix.inboxId])
 
   let isInboxAllowed = await bo.preferences.inboxIdConsentState(alix.inboxId)
   assert(
@@ -1599,12 +1611,6 @@ test('can allow and deny a inbox id', async () => {
     `isInboxAllowed2 should be true but was ${isInboxAllowed}`
   )
 
-  let isAddressAllowed = await bo.preferences.addressConsentState(alix.address)
-  assert(
-    isAddressAllowed === 'allowed',
-    `isAddressAllowed should be true but was ${isAddressAllowed}`
-  )
-
   await bo.preferences.setConsentState(
     new ConsentRecord(alix.inboxId, 'inbox_id', 'denied')
   )
@@ -1623,27 +1629,12 @@ test('can allow and deny a inbox id', async () => {
     `isInboxAllowed3 should be false but was ${isInboxAllowed}`
   )
 
-  await bo.preferences.setConsentState(
-    new ConsentRecord(alix.address, 'address', 'allowed')
-  )
-
-  isAddressAllowed = await bo.preferences.addressConsentState(alix.address)
-  assert(
-    isAddressAllowed === 'allowed',
-    `isAddressAllowed2 should be true but was ${isAddressAllowed}`
-  )
-  isInboxAllowed = await bo.preferences.inboxIdConsentState(alix.inboxId)
-  assert(
-    isInboxAllowed === 'allowed',
-    `isInboxAllowed4 should be false but was ${isInboxAllowed}`
-  )
-
   return true
 })
 
 test('sync function behaves as expected', async () => {
   const [alix, bo, caro] = await createClients(3)
-  const alixGroup = await alix.conversations.newGroup([bo.address])
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
 
   await alixGroup.send({ text: 'hello' })
 
@@ -1676,7 +1667,7 @@ test('sync function behaves as expected', async () => {
   numMessages = (await boGroups[0].messages()).length
   assert(numMessages === 1, 'num members should be 1')
 
-  await alixGroup.addMembers([caro.address])
+  await alixGroup.addMembers([caro.inboxId])
 
   numMembers = (await boGroups[0].memberInboxIds()).length
   assert(numMembers === 2, 'num members should be 2')
@@ -1694,8 +1685,8 @@ test('sync function behaves as expected', async () => {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _alixGroup2 = await alix.conversations.newGroup([
-    bo.address,
-    caro.address,
+    bo.inboxId,
+    caro.inboxId,
   ])
   await bo.conversations.sync()
   boGroups = await bo.conversations.listGroups()
@@ -1710,17 +1701,17 @@ test('sync function behaves as expected', async () => {
 
 test('can read and update group name', async () => {
   const [alix, bo, caro] = await createClients(3)
-  const alixGroup = await alix.conversations.newGroup([bo.address])
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
 
   await alixGroup.sync()
-  let groupName = await alixGroup.groupName()
+  let groupName = await alixGroup.name()
 
   assert(groupName === '', 'group name should be empty string')
 
-  await alixGroup.updateGroupName('Test name update 1')
+  await alixGroup.updateName('Test name update 1')
 
   await alixGroup.sync()
-  groupName = await alixGroup.groupName()
+  groupName = await alixGroup.name()
 
   assert(
     groupName === 'Test name update 1',
@@ -1729,25 +1720,25 @@ test('can read and update group name', async () => {
 
   await bo.conversations.sync()
   const boGroup = (await bo.conversations.listGroups())[0]
-  groupName = await boGroup.groupName()
+  groupName = await boGroup.name()
 
   assert(groupName === '', 'group name should be empty string')
 
   await boGroup.sync()
 
-  groupName = await boGroup.groupName()
+  groupName = await boGroup.name()
 
   assert(
     groupName === 'Test name update 1',
     'group name should be "Test name update 1"'
   )
 
-  await alixGroup.addMembers([caro.address])
+  await alixGroup.addMembers([caro.inboxId])
   await caro.conversations.sync()
   const caroGroup = (await caro.conversations.listGroups())[0]
 
   await caroGroup.sync()
-  groupName = await caroGroup.groupName()
+  groupName = await caroGroup.name()
   assert(
     groupName === 'Test name update 1',
     'group name should be "Test name update 1"'
@@ -1770,8 +1761,8 @@ test('can list groups does not fork', async () => {
   })
   //#endregion
   // #region create group
-  const alixGroup = await alix.conversations.newGroup([bo.address])
-  await alixGroup.updateGroupName('hello')
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+  await alixGroup.updateName('hello')
   await alixGroup.send('hello1')
   console.log('sent group message')
   // #endregion
@@ -1874,7 +1865,7 @@ test('can sync all groups', async () => {
   )
 
   for (const group of groups) {
-    await group.removeMembers([bo.address])
+    await group.removeMembers([bo.inboxId])
   }
 
   // First syncAllConversations after removal will still sync each group to set group inactive
@@ -1908,8 +1899,9 @@ test('only streams groups that can be decrypted', async () => {
   await caroClient.conversations.stream(async (group: Conversation<any>) => {
     caroGroups.push(group)
   })
+  await delayToPropogate()
 
-  await alixClient.conversations.newGroup([boClient.address])
+  await alixClient.conversations.newGroup([boClient.inboxId])
   await delayToPropogate()
   assert(
     alixGroups.length === 1,
@@ -1945,7 +1937,7 @@ test('can stream groups and messages', async () => {
 
     // bo creates a group with alix so a stream callback is fired
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    await boClient.conversations.newGroup([alixClient.address])
+    await boClient.conversations.newGroup([alixClient.inboxId])
     await delayToPropogate(500)
     if ((groups.length as number) !== 1) {
       throw Error(`Unexpected num groups (should be 1): ${groups.length}`)
@@ -1965,16 +1957,14 @@ test('can create new installation without breaking group', async () => {
 
   const client1 = await Client.create(adaptEthersWalletToSigner(wallet1), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
   const client2 = await Client.create(adaptEthersWalletToSigner(wallet2), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
-  const group = await client1.conversations.newGroup([wallet2.address])
+  const group = await client1.conversations.newGroup([client2.inboxId])
 
   await client1.conversations.sync()
   await client2.conversations.sync()
@@ -2002,7 +1992,6 @@ test('can create new installation without breaking group', async () => {
   // Recreating a client with wallet 2 (new installation!)
   await Client.create(adaptEthersWalletToSigner(wallet2), {
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 
@@ -2036,21 +2025,24 @@ test('handles disappearing messages in a group', async () => {
   }
 
   // Create group with disappearing messages enabled
-  const boGroup = await boClient.conversations.newGroup([alixClient.address], {
+  const boGroup = await boClient.conversations.newGroup([alixClient.inboxId], {
     disappearingMessageSettings: initialSettings,
   })
-  await boClient.conversations.newGroupWithInboxIds([alixClient.inboxId], {
-    disappearingMessageSettings: initialSettings,
-  })
+  await boClient.conversations.newGroupWithIdentities(
+    [alixClient.publicIdentity],
+    {
+      disappearingMessageSettings: initialSettings,
+    }
+  )
   await boClient.conversations.newGroupCustomPermissions(
-    [alixClient.address],
+    [alixClient.inboxId],
     customPermissionsPolicySet,
     {
       disappearingMessageSettings: initialSettings,
     }
   )
-  await boClient.conversations.newGroupCustomPermissionsWithInboxIds(
-    [alixClient.inboxId],
+  await boClient.conversations.newGroupCustomPermissionsWithIdentities(
+    [alixClient.publicIdentity],
     customPermissionsPolicySet,
     {
       disappearingMessageSettings: initialSettings,
@@ -2266,7 +2258,7 @@ test('handles disappearing messages in a group', async () => {
 //   const allBoMessages: any[] = []
 //   const allAliMessages: any[] = []
 
-//   const group = await caro.conversations.newGroup([alix.address])
+//   const group = await caro.conversations.newGroup([alix.inboxId])
 //   await bo.conversations.streamAllMessages(async (conversation) => {
 //     allBoMessages.push(conversation)
 //   }, true)
@@ -2278,7 +2270,7 @@ test('handles disappearing messages in a group', async () => {
 //   await delayToPropogate(15 * 1000 * 60)
 
 //   // Start Caro starts a new conversation.
-//   const convo = await caro.conversations.newConversation(alix.address)
+//   const convo = await caro.conversations.newConversation(alix.inboxId)
 //   await group.send({ text: 'hello' })
 //   await convo.send({ text: 'hello' })
 //   await delayToPropogate()
