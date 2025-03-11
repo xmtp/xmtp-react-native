@@ -10,6 +10,7 @@ import XMTP
 
 // Wrapper around XMTP.Group to allow passing these objects back into react native.
 struct GroupWrapper {
+    // The String values in this function should match xmtp-react-native/src/lib/Group.ts: GroupParams
 	static func encodeToObj(_ group: XMTP.Group, client: XMTP.Client, conversationParams: ConversationParamsWrapper = ConversationParamsWrapper()) async throws -> [String: Any] {
 		var result: [String: Any] = [
 			"clientInboxId": client.inboxID,
@@ -26,13 +27,13 @@ struct GroupWrapper {
 			result["addedByInboxId"] = try group.addedByInboxId()
 		}
 		if conversationParams.name {
-			result["groupName"] = try group.name()
+			result["name"] = try group.name()
 		}
 		if conversationParams.imageUrl {
-			result["groupImageUrl"] = try group.imageUrl()
+			result["imageUrl"] = try group.imageUrl()
 		}
 		if conversationParams.description {
-			result["groupDescription"] = try group.description()
+			result["description"] = try group.description()
 		}
 		if conversationParams.consentState {
 			result["consentState"] = ConsentWrapper.consentStateToString(state: try group.consentState())

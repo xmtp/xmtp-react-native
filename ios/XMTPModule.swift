@@ -1441,7 +1441,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 			let result = try await group.addMembers(inboxIds: peerInboxIds)
-			MembershipResultWrapper.encode(result)
+			return try MembershipResultWrapper.encode(result)
 		}
 
 		AsyncFunction("removeGroupMembers") {
@@ -1481,7 +1481,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(id)")
 			}
 			let result = try await group.addMembersByIdentity(identities: identities)
-			MembershipResultWrapper.encode(result)
+			return try MembershipResultWrapper.encode(result)
 		}
 
 		AsyncFunction("removeGroupMembersByIdentity") {
