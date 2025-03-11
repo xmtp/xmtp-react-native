@@ -28,7 +28,6 @@ test('can make a client', async () => {
   ])
   const client = await Client.createRandom({
     env: 'local',
-    appVersion: 'Testing/0.0.0',
     dbEncryptionKey: keyBytes,
   })
 

@@ -1,12 +1,14 @@
 import type { WalletClient } from 'viem'
 
-export type WalletType = 'EOA' | 'SCW'
+import { PublicIdentity } from './PublicIdentity'
+
+export type SignerType = 'EOA' | 'SCW'
 
 export interface Signer {
-  getAddress: () => Promise<string>
+  getIdentifier: () => Promise<PublicIdentity>
   getChainId: () => number | undefined
   getBlockNumber: () => number | undefined
-  walletType: () => WalletType | undefined
+  signerType: () => SignerType | undefined
   signMessage: (message: string) => Promise<string>
 }
 
@@ -17,7 +19,7 @@ export function getSigner(wallet: Signer | WalletClient | null): Signer | null {
   if (isWalletClient(wallet)) {
     return convertWalletClientToSigner(wallet)
   }
-  if (typeof wallet.getAddress !== 'function') {
+  if (typeof wallet.getIdentifier !== 'function') {
     throw new Error('Unknown wallet type')
   }
   return wallet
@@ -36,7 +38,9 @@ export function convertWalletClientToSigner(
   }
 
   return {
-    getAddress: async () => account.address,
+    getIdentifier: async () => {
+      return new PublicIdentity(account.address, 'ETHEREUM')
+    },
     signMessage: async (message: string | Uint8Array) =>
       walletClient.signMessage({
         message: typeof message === 'string' ? message : { raw: message },
@@ -44,6 +48,6 @@ export function convertWalletClientToSigner(
       }),
     getChainId: () => undefined,
     getBlockNumber: () => undefined,
-    walletType: () => undefined,
+    signerType: () => undefined,
   }
 }

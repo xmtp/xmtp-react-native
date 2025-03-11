@@ -22,7 +22,7 @@ import { Dm } from './lib/Dm'
 import { Group, PermissionUpdateOption } from './lib/Group'
 import { InboxState } from './lib/InboxState'
 import { Member } from './lib/Member'
-import { WalletType } from './lib/Signer'
+import { SignerType } from './lib/Signer'
 import {
   ConversationOptions,
   ConversationType,
@@ -34,6 +34,7 @@ import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 import { getAddress } from './utils/address'
+import { PublicIdentity } from './lib/PublicIdentity'
 
 export * from './context'
 export * from './hooks'
@@ -123,14 +124,12 @@ export async function receiveSCWSignature(
 export async function createRandom(
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
-  appVersion?: string | undefined,
   hasPreAuthenticateToInboxCallback?: boolean | undefined,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
-    appVersion,
     dbDirectory,
     historySyncUrl,
   }
@@ -142,54 +141,50 @@ export async function createRandom(
 }
 
 export async function create(
-  address: Address,
+  identity: PublicIdentity,
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
-  appVersion?: string | undefined,
   hasPreAuthenticateToInboxCallback?: boolean | undefined,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined,
-  walletType?: WalletType | undefined,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
-    appVersion,
     dbDirectory,
     historySyncUrl,
   }
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return await XMTPModule.create(
-    address,
+    JSON.stringify(identity),
     hasPreAuthenticateToInboxCallback,
     Array.from(dbEncryptionKey),
     JSON.stringify(authParams),
-    JSON.stringify(walletParams)
+    JSON.stringify(signerParams)
   )
 }
 
 export async function build(
-  address: Address,
+  identity: PublicIdentity,
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
-  appVersion?: string | undefined,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined,
   inboxId?: InboxId | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
-    appVersion,
     dbDirectory,
     historySyncUrl,
   }
   return await XMTPModule.build(
-    address,
+    JSON.stringify(identity),
     inboxId,
     Array.from(dbEncryptionKey),
     JSON.stringify(authParams)
@@ -197,21 +192,19 @@ export async function build(
 }
 
 export async function ffiCreateClient(
-  address: Address,
+  identity: PublicIdentity,
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
-  appVersion?: string | undefined,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
-    appVersion,
     dbDirectory,
     historySyncUrl,
   }
   return await XMTPModule.ffiCreateClient(
-    address,
+    JSON.stringify(identity),
     Array.from(dbEncryptionKey),
     JSON.stringify(authParams)
   )
@@ -258,76 +251,76 @@ export async function ffiRegisterIdentity(
 export async function revokeInstallations(
   installationId: InstallationId,
   installationIds: InstallationId[],
-  walletType?: WalletType | undefined,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined
 ) {
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return XMTPModule.revokeInstallations(
     installationId,
-    JSON.stringify(walletParams),
+    JSON.stringify(signerParams),
     installationIds
   )
 }
 
 export async function revokeAllOtherInstallations(
   installationId: InstallationId,
-  walletType?: WalletType | undefined,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined
 ) {
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return XMTPModule.revokeAllOtherInstallations(
     installationId,
-    JSON.stringify(walletParams)
+    JSON.stringify(signerParams)
   )
 }
 
 export async function addAccount(
   installationId: InstallationId,
-  newAddress: Address,
-  walletType?: WalletType | undefined,
+  newIdentity: PublicIdentity,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined,
   allowReassignInboxId: boolean = false
 ) {
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return XMTPModule.addAccount(
     installationId,
-    newAddress,
-    JSON.stringify(walletParams),
+    JSON.stringify(newIdentity),
+    JSON.stringify(signerParams),
     allowReassignInboxId
   )
 }
 
 export async function removeAccount(
   installationId: InstallationId,
-  addressToRemove: Address,
-  walletType?: WalletType | undefined,
+  identityToRemove: PublicIdentity,
+  signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined
 ) {
-  const walletParams: WalletParams = {
-    walletType,
+  const signerParams: SignerParams = {
+    signerType,
     chainId: typeof chainId === 'number' ? chainId : undefined,
     blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
   }
   return XMTPModule.removeAccount(
     installationId,
-    addressToRemove,
-    JSON.stringify(walletParams)
+    JSON.stringify(identityToRemove),
+    JSON.stringify(signerParams)
   )
 }
 
@@ -1467,13 +1460,12 @@ export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 interface AuthParams {
   environment: string
-  appVersion?: string
   dbDirectory?: string
   historySyncUrl?: string
 }
 
-interface WalletParams {
-  walletType?: string
+interface SignerParams {
+  signerType?: string
   chainId?: number
   blockNumber?: number
 }
@@ -1504,3 +1496,4 @@ export {
 export { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 export { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 export { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
+export { PublicIdentity } from './lib/PublicIdentity'

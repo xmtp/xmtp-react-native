@@ -10,6 +10,7 @@ import Conversations from './Conversations'
 import { InboxState } from './InboxState'
 import { TextCodec } from './NativeCodecs/TextCodec'
 import PrivatePreferences from './PrivatePreferences'
+import { PublicIdentity } from './PublicIdentity'
 import { Signer, getSigner } from './Signer'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
@@ -30,7 +31,6 @@ export type Address = string
 export class Client<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 > {
-  address: Address
   inboxId: InboxId
   installationId: InstallationId
   dbPath: string
@@ -95,7 +95,6 @@ export class Client<
     const client = await XMTPModule.createRandom(
       options.env,
       options.dbEncryptionKey,
-      options.appVersion,
       Boolean(authInboxSubscription),
       options.dbDirectory,
       options.historySyncUrl
@@ -103,7 +102,6 @@ export class Client<
     this.removeSubscription(authInboxSubscription)
 
     return new Client(
-      client['address'],
       client['inboxId'],
       client['installationId'],
       client['dbPath'],
@@ -162,7 +160,6 @@ export class Client<
             this.removeAllSubscriptions(authInboxSubscription)
             resolve(
               new Client(
-                message.address,
                 message.inboxId as InboxId,
                 message.installationId as InstallationId,
                 message.dbPath,
@@ -173,14 +170,13 @@ export class Client<
         )
 
         await XMTPModule.create(
-          await signer.getAddress(),
+          await signer.getIdentifier(),
           options.env,
           options.dbEncryptionKey,
-          options.appVersion,
           Boolean(authInboxSubscription),
           options.dbDirectory,
           options.historySyncUrl,
-          signer.walletType?.(),
+          signer.signerType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.()
         )
@@ -195,7 +191,7 @@ export class Client<
   /**
    * Builds a instance of the Client class using the provided address and chainId if SCW.
    *
-   * @param {string} address - The address of the account to build
+   * @param {PublicIdentity} identity - The identity of the account to build
    * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance.
    *
@@ -204,7 +200,7 @@ export class Client<
   static async build<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
-    address: Address,
+    identity: PublicIdentity,
     options: ClientOptions & { codecs?: ContentCodecs },
     inboxId?: InboxId | undefined
   ): Promise<Client<ContentCodecs>> {
@@ -212,17 +208,15 @@ export class Client<
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
     const client = await XMTPModule.build(
-      address,
+      identity,
       options.env,
       options.dbEncryptionKey,
-      options.appVersion,
       options.dbDirectory,
       options.historySyncUrl,
       inboxId
     )
 
     return new Client(
-      client['address'],
       client['inboxId'],
       client['installationId'],
       client['dbPath'],
@@ -234,16 +228,16 @@ export class Client<
    * ⚠️ This function is delicate and should be used with caution.
    * Creating an FfiClient without signing or registering will create a broken experience use `create()` instead
    *
-   * Creates a new instance of the Client class using the provided address.
+   * Creates a new instance of the Client class using the provided identity.
    *
-   * @param {Address} address - The address of the account to create
+   * @param {PublicIdentity} identity - The identity of the account to create
    * @param {Partial<ClientOptions>} opts - Configuration options for the Client. Must include an encryption key.
    * @returns {Promise<Client>} A Promise that resolves to a new Client instance.
    */
   static async ffiCreateClient<
     ContentCodecs extends DefaultContentTypes = DefaultContentTypes,
   >(
-    address: Address,
+    identity: PublicIdentity,
     options: ClientOptions & { codecs?: ContentCodecs }
   ): Promise<Client<ContentCodecs>> {
     console.warn(
@@ -255,16 +249,14 @@ export class Client<
       throw new Error('Must pass an encryption key that is exactly 32 bytes.')
     }
     const client = await XMTPModule.ffiCreateClient(
-      address,
+      identity,
       options.env,
       options.dbEncryptionKey,
-      options.appVersion,
       options.dbDirectory,
       options.historySyncUrl
     )
 
     return new Client(
-      client['address'],
       client['inboxId'],
       client['installationId'],
       client['dbPath'],
@@ -368,13 +360,11 @@ export class Client<
   }
 
   constructor(
-    address: Address,
     inboxId: InboxId,
     installationId: InstallationId,
     dbPath: string,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {
-    this.address = address
     this.inboxId = inboxId
     this.installationId = installationId
     this.dbPath = dbPath
@@ -434,8 +424,8 @@ export class Client<
 
         await XMTPModule.addAccount(
           this.installationId,
-          await signer.getAddress(),
-          signer.walletType?.(),
+          await signer.getIdentifier(),
+          signer.signerType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.(),
           allowReassignInboxId
@@ -452,9 +442,12 @@ export class Client<
   /**
    * Remove this account from the current inboxId.
    * @param {Signer} wallet - The signer object used for authenticate the removal.
-   * @param {Address} addressToRemove - The address of the wallet you'd like to remove from the account.
+   * @param {PublicIdentity} identityToRemove - The identity of the signer you'd like to remove from the account.
    */
-  async removeAccount(wallet: Signer | WalletClient, addressToRemove: Address) {
+  async removeAccount(
+    wallet: Signer | WalletClient,
+    identityToRemove: PublicIdentity
+  ) {
     const signer = getSigner(wallet)
     if (!signer) {
       throw new Error('Signer is not configured')
@@ -479,8 +472,8 @@ export class Client<
 
         await XMTPModule.removeAccount(
           this.installationId,
-          addressToRemove,
-          signer.walletType?.(),
+          identityToRemove,
+          signer.signerType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.()
         )
@@ -527,7 +520,7 @@ export class Client<
         await XMTPModule.revokeInstallations(
           this.installationId,
           installationIds,
-          signer.walletType?.(),
+          signer.signerType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.()
         )
@@ -569,7 +562,7 @@ export class Client<
 
         await XMTPModule.revokeAllOtherInstallations(
           this.installationId,
-          signer.walletType?.(),
+          signer.signerType?.(),
           signer.getChainId?.(),
           signer.getBlockNumber?.()
         )
@@ -879,17 +872,6 @@ export type ClientOptions = {
    */
   dbEncryptionKey: Uint8Array
   /**
-   * identifier that's included with API requests.
-   *
-   * For example, you can use the following format:
-   * `appVersion: APP_NAME + '/' + APP_VERSION`.
-   * Setting this value provides telemetry that shows which apps are
-   * using the XMTP client SDK. This information can help XMTP developers
-   * provide app support, especially around communicating important
-   * SDK updates, including deprecations and required upgrades.
-   */
-  appVersion?: string
-  /**
    * Set optional callbacks for handling identity setup
    */
   preAuthenticateToInboxCallback?: () => Promise<void> | void
@@ -901,9 +883,4 @@ export type ClientOptions = {
    * OPTIONAL specify a url to sync message history from
    */
   historySyncUrl?: string
-}
-
-export type KeyType = {
-  kind: 'identity' | 'prekey'
-  prekeyIndex?: number
 }
