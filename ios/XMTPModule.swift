@@ -2006,7 +2006,7 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			try await group.updateImageUrlSquarePermission(
+			try await group.updateImageUrlPermission(
 				newPermissionOption: getPermissionOption(
 					permission: newPermission))
 		}
