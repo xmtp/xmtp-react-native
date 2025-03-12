@@ -1,5 +1,12 @@
 # @xmtp/react-native-sdk
 
+## 4.0.0-rc2
+
+### Pre Release
+
+- Fixed SCW signatures
+- Adds ability to extend to passkey signatures in the future
+
 ## 4.0.0-rc1
 
 ### Pre Release
