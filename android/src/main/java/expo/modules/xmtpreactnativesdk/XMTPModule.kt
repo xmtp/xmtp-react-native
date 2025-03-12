@@ -74,6 +74,7 @@ import java.io.InputStreamReader
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 
 class ReactNativeSigner(
@@ -87,14 +88,32 @@ class ReactNativeSigner(
 
     fun handle(id: String, signature: String) {
         val continuation = continuations.remove(id) ?: return
-        val signatureData = Base64.decode(signature, Base64.NO_WRAP)
+        val signedData: SignedData
 
-        val signedData = SignedData(
-            rawData = signatureData,
-            publicKey = publicIdentity.identifier.hexToByteArray(),
-            authenticatorData = null,
-            clientDataJson = null
-        )
+        when (this.type) {
+            SignerType.EOA -> {
+                val signatureData = Base64.decode(signature, Base64.NO_WRAP)
+                if (signatureData.size != 65) {
+                    continuation.resumeWithException(XMTPException("Invalid Signature"))
+                    return
+                }
+                signedData = SignedData(
+                    rawData = signatureData,
+                    publicKey = publicIdentity.identifier.hexToByteArray(),
+                    authenticatorData = null,
+                    clientDataJson = null
+                )
+            }
+
+            SignerType.SCW -> {
+                signedData = SignedData(
+                    rawData = signature.hexToByteArray(),
+                    publicKey = publicIdentity.identifier.hexToByteArray(),
+                    authenticatorData = null,
+                    clientDataJson = null
+                )
+            }
+        }
 
         continuation.resume(signedData)
     }
