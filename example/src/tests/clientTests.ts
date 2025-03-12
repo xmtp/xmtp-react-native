@@ -602,7 +602,7 @@ test('can manage clients manually', async () => {
   })
   const sigText = await client.ffiCreateSignatureText()
   const signedMessage = await signer.signMessage(sigText)
-  const { r, s, v } = ethers.utils.splitSignature(signedMessage)
+  const { r, s, v } = ethers.utils.splitSignature(signedMessage.signature)
   const signature = ethers.utils.arrayify(
     ethers.utils.joinSignature({ r, s, v })
   )
@@ -649,7 +649,7 @@ test('can manage add remove manually', async () => {
   )
   const signedMessage = await boSigner.signMessage(sigText)
 
-  let { r, s, v } = ethers.utils.splitSignature(signedMessage)
+  let { r, s, v } = ethers.utils.splitSignature(signedMessage.signature)
   const signature = ethers.utils.arrayify(
     ethers.utils.joinSignature({ r, s, v })
   )
@@ -668,7 +668,7 @@ test('can manage add remove manually', async () => {
   )
   const signedMessage2 = await alixSigner.signMessage(sigText2)
 
-  ;({ r, s, v } = ethers.utils.splitSignature(signedMessage2))
+  ;({ r, s, v } = ethers.utils.splitSignature(signedMessage2.signature))
   const signature2 = ethers.utils.arrayify(
     ethers.utils.joinSignature({ r, s, v })
   )
@@ -738,7 +738,7 @@ test('can manage revoke manually', async () => {
   ])
   const signedMessage = await alixSigner.signMessage(sigText)
 
-  let { r, s, v } = ethers.utils.splitSignature(signedMessage)
+  let { r, s, v } = ethers.utils.splitSignature(signedMessage.signature)
   const signature = ethers.utils.arrayify(
     ethers.utils.joinSignature({ r, s, v })
   )
@@ -755,7 +755,7 @@ test('can manage revoke manually', async () => {
   const sigText2 = await alix.ffiRevokeAllOtherInstallationsSignatureText()
   const signedMessage2 = await alixSigner.signMessage(sigText2)
 
-  ;({ r, s, v } = ethers.utils.splitSignature(signedMessage2))
+  ;({ r, s, v } = ethers.utils.splitSignature(signedMessage2.signature))
   const signature2 = ethers.utils.arrayify(
     ethers.utils.joinSignature({ r, s, v })
   )

@@ -62,12 +62,12 @@ export class Client<
     signer: any,
     request: { id: string; message: string }
   ): Promise<void> {
-    const signatureString = await signer.signMessage(request.message)
+    const signedData = await signer.signMessage(request.message)
 
     if (signer.signerType?.() === 'SCW') {
-      await XMTPModule.receiveSignature(request.id, signatureString)
+      await XMTPModule.receiveSignature(request.id, signedData.signature)
     } else {
-      const eSig = splitSignature(signatureString)
+      const eSig = splitSignature(signedData.signature)
       const r = hexToBytes(eSig.r)
       const s = hexToBytes(eSig.s)
       const sigBytes = new Uint8Array(65)
