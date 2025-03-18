@@ -3,9 +3,7 @@ package expo.modules.xmtpreactnativesdk.wrappers
 import com.google.gson.GsonBuilder
 import org.xmtp.android.library.libxmtp.Member
 import org.xmtp.android.library.libxmtp.PermissionLevel
-import org.xmtp.android.library.toHex
-import uniffi.xmtpv3.FfiUpdateGroupMembershipResult
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.GroupMembershipResult
+import org.xmtp.android.library.libxmtp.GroupMembershipResult
 
 class MemberWrapper {
     companion object {
