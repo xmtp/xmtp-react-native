@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.0.0
+
+### Major Changes
+
+- af11736: - 4.0.0 Release
+
 ## 4.0.0-rc2
 
 ### Pre Release
