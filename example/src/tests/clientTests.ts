@@ -95,70 +95,6 @@ test('static inboxStates for inboxIds', async () => {
   return true
 })
 
-test('can revoke installations', async () => {
-  const keyBytes = new Uint8Array([
-    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
-  ])
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-  const dbDirPath3 = `${RNFS.DocumentDirectoryPath}/xmtp_db3`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
-  }
-  const directoryExists2 = await RNFS.exists(dbDirPath2)
-  if (!directoryExists2) {
-    await RNFS.mkdir(dbDirPath2)
-  }
-  const directoryExists3 = await RNFS.exists(dbDirPath3)
-  if (!directoryExists3) {
-    await RNFS.mkdir(dbDirPath3)
-  }
-  const alixWallet = Wallet.createRandom()
-
-  // create a v3 client
-  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath,
-  })
-
-  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath2,
-  })
-
-  const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath3,
-  })
-
-  const inboxState2 = await alix3.inboxState(true)
-  assert(
-    inboxState2.installations.length === 3,
-    `installations length should be 3 but was ${inboxState2.installations.length}`
-  )
-
-  await alix3.revokeInstallations(adaptEthersWalletToSigner(alixWallet), [
-    alix2.installationId,
-  ])
-
-  const inboxState3 = await alix3.inboxState(true)
-  assert(
-    inboxState3.installations.length === 2,
-    `installations length should be 2 but was ${inboxState3.installations.length}`
-  )
-  await alix.deleteLocalDatabase()
-  await alix2.deleteLocalDatabase()
-  await alix3.deleteLocalDatabase()
-
-  return true
-})
-
 test('can revoke all other installations', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -172,14 +108,23 @@ test('can revoke all other installations', async () => {
     dbEncryptionKey: keyBytes,
   })
 
+  await alix.dropLocalDatabaseConnection()
+
   await alix.deleteLocalDatabase()
+
+  await new Promise((resolve) => setTimeout(resolve, 1000))
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     dbEncryptionKey: keyBytes,
   })
 
+  await alix2.dropLocalDatabaseConnection()
+
   await alix2.deleteLocalDatabase()
+
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
 
   const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
@@ -254,7 +199,10 @@ test('can delete a local database', async () => {
     client.dbPath !== '',
     `client dbPath should be set but was ${client.dbPath}`
   )
+  await client.dropLocalDatabaseConnection()
   await client.deleteLocalDatabase()
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
   client = await Client.createRandom({
     env: 'local',
     dbEncryptionKey: new Uint8Array([
@@ -323,48 +271,6 @@ test('can make a client with encryption key and database directory', async () =>
     }`
   )
   return true
-})
-
-test('can drop a local database', async () => {
-  const [client, anotherClient] = await createClients(2)
-
-  const group = await client.conversations.newGroup([anotherClient.inboxId])
-  await client.conversations.sync()
-  assert(
-    (await client.conversations.listGroups()).length === 1,
-    `should have a group size of 1 but was ${
-      (await client.conversations.listGroups()).length
-    }`
-  )
-
-  await client.dropLocalDatabaseConnection()
-
-  try {
-    await group.send('hi')
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    await client.reconnectLocalDatabase()
-    await group.send('hi')
-    return true
-  }
-  throw new Error('should throw when local database not connected')
-})
-
-test('can drop client from memory', async () => {
-  const [client, anotherClient] = await createClients(2)
-  await client.dropLocalDatabaseConnection()
-  await anotherClient.dropLocalDatabaseConnection()
-
-  await client.reconnectLocalDatabase()
-  await Client.dropClient(anotherClient.installationId)
-  try {
-    await anotherClient.reconnectLocalDatabase()
-    return false
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    // We cannot reconnect anotherClient because it was successfully dropped
-    return true
-  }
 })
 
 test('can get a inboxId from an address', async () => {
@@ -768,6 +674,122 @@ test('can manage revoke manually', async () => {
     inboxState.installations.length === 1,
     `installations length should be 1 but was ${inboxState.installations.length}`
   )
+
+  return true
+})
+
+test('can drop client from memory', async () => {
+  const [client, anotherClient] = await createClients(2)
+  await client.dropLocalDatabaseConnection()
+  await anotherClient.dropLocalDatabaseConnection()
+
+  await client.reconnectLocalDatabase()
+  await Client.dropClient(anotherClient.installationId)
+  try {
+    await anotherClient.reconnectLocalDatabase()
+    return false
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    // We cannot reconnect anotherClient because it was successfully dropped
+    return true
+  }
+})
+
+test('can drop a local database', async () => {
+  const [client, anotherClient] = await createClients(2)
+
+  const group = await client.conversations.newGroup([anotherClient.inboxId])
+  await client.conversations.sync()
+  assert(
+    (await client.conversations.listGroups()).length === 1,
+    `should have a group size of 1 but was ${
+      (await client.conversations.listGroups()).length
+    }`
+  )
+
+  await client.dropLocalDatabaseConnection()
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  try {
+    await group.send('hi')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    await client.reconnectLocalDatabase()
+    await group.send('hi')
+    return true
+  }
+  throw new Error('should throw when local database not connected')
+})
+
+test('can revoke installations', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
+  const dbDirPath3 = `${RNFS.DocumentDirectoryPath}/xmtp_db3`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  const directoryExists2 = await RNFS.exists(dbDirPath2)
+  if (!directoryExists2) {
+    await RNFS.mkdir(dbDirPath2)
+  }
+  const directoryExists3 = await RNFS.exists(dbDirPath3)
+  if (!directoryExists3) {
+    await RNFS.mkdir(dbDirPath3)
+  }
+  const alixWallet = Wallet.createRandom()
+
+  // create a v3 client
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+  })
+
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath2,
+  })
+
+  const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath3,
+  })
+
+  const inboxState2 = await alix3.inboxState(true)
+  assert(
+    inboxState2.installations.length === 3,
+    `installations length should be 3 but was ${inboxState2.installations.length}`
+  )
+
+  await alix3.revokeInstallations(adaptEthersWalletToSigner(alixWallet), [
+    alix2.installationId,
+  ])
+
+  const inboxState3 = await alix3.inboxState(true)
+  assert(
+    inboxState3.installations.length === 2,
+    `installations length should be 2 but was ${inboxState3.installations.length}`
+  )
+
+  await alix.dropLocalDatabaseConnection()
+  await alix2.dropLocalDatabaseConnection()
+  await alix3.dropLocalDatabaseConnection()
+
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  await alix.deleteLocalDatabase()
+  await alix2.deleteLocalDatabase()
+  await alix3.deleteLocalDatabase()
+
+  await new Promise((resolve) => setTimeout(resolve, 1000))
 
   return true
 })
