@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.0.1
+
+### Patch Changes
+
+- 267a30c: Refactored welcome message processing to prevent key package deletion on failure
+
 ## 4.0.0
 
 ### Major Changes
