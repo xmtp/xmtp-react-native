@@ -117,12 +117,14 @@ export async function createRandom(
   dbEncryptionKey: Uint8Array,
   hasPreAuthenticateToInboxCallback?: boolean | undefined,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined
+  historySyncUrl?: string | undefined,
+  customLocalUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
     dbDirectory,
     historySyncUrl,
+    customLocalUrl,
   }
   return await XMTPModule.createRandom(
     hasPreAuthenticateToInboxCallback,
@@ -140,12 +142,14 @@ export async function create(
   historySyncUrl?: string | undefined,
   signerType?: SignerType | undefined,
   chainId?: number | undefined,
-  blockNumber?: number | undefined
+  blockNumber?: number | undefined,
+  customLocalUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
     dbDirectory,
     historySyncUrl,
+    customLocalUrl,
   }
   const signerParams: SignerParams = {
     signerType,
@@ -167,12 +171,14 @@ export async function build(
   dbEncryptionKey: Uint8Array,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined,
-  inboxId?: InboxId | undefined
+  inboxId?: InboxId | undefined,
+  customLocalUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
     dbDirectory,
     historySyncUrl,
+    customLocalUrl,
   }
   return await XMTPModule.build(
     JSON.stringify(identity),
@@ -187,12 +193,14 @@ export async function ffiCreateClient(
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined
+  historySyncUrl?: string | undefined,
+  customLocalUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
     dbDirectory,
     historySyncUrl,
+    customLocalUrl,
   }
   return await XMTPModule.ffiCreateClient(
     JSON.stringify(identity),
@@ -1476,6 +1484,7 @@ interface AuthParams {
   environment: string
   dbDirectory?: string
   historySyncUrl?: string
+  customLocalUrl?: string
 }
 
 interface SignerParams {
