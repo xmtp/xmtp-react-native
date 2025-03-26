@@ -7,6 +7,7 @@ class AuthParamsWrapper(
     val environment: String,
     val dbDirectory: String?,
     val historySyncUrl: String?,
+    val customLocalUrl: String?,
 ) {
     companion object {
         fun authParamsFromJson(authParams: String): AuthParamsWrapper {
@@ -15,6 +16,7 @@ class AuthParamsWrapper(
                 jsonOptions.get("environment").asString,
                 if (jsonOptions.has("dbDirectory")) jsonOptions.get("dbDirectory").asString else null,
                 if (jsonOptions.has("historySyncUrl")) jsonOptions.get("historySyncUrl").asString else null,
+                if (jsonOptions.has("customLocalUrl")) jsonOptions.get("customLocalUrl").asString else null,
             )
         }
     }
@@ -24,8 +26,7 @@ class WalletParamsWrapper(
     val signerType: SignerType = SignerType.EOA,
     val chainId: Long?,
     val blockNumber: Long?,
-
-    ) {
+) {
     companion object {
         fun walletParamsFromJson(walletParams: String): WalletParamsWrapper {
             val jsonOptions = JsonParser.parseString(walletParams).asJsonObject

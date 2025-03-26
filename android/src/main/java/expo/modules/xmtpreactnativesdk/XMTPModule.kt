@@ -142,12 +142,21 @@ class XMTPModule : Module() {
     private val context: Context
         get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
 
-    private fun apiEnvironments(env: String): ClientOptions.Api {
+    private fun apiEnvironments(env: String, customLocalUrl: String? = null): ClientOptions.Api {
         return when (env) {
-            "local" -> ClientOptions.Api(
-                env = XMTPEnvironment.LOCAL,
-                isSecure = false,
-            )
+            "local" -> {
+                if (customLocalUrl.isNullOrBlank()) {
+                    ClientOptions.Api(
+                        env = XMTPEnvironment.LOCAL,
+                        isSecure = false,
+                    )
+                } else {
+                    ClientOptions.Api(
+                        env = XMTPEnvironment.LOCAL.withValue(customLocalUrl),
+                        isSecure = false,
+                    )
+                }
+            }
 
             "production" -> ClientOptions.Api(
                 env = XMTPEnvironment.PRODUCTION,
@@ -182,7 +191,7 @@ class XMTPModule : Module() {
                 else -> "https://message-history.dev.ephemera.network/"
             }
         return ClientOptions(
-            api = apiEnvironments(authOptions.environment),
+            api = apiEnvironments(authOptions.environment, authOptions.customLocalUrl),
             preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
             appContext = context,
             dbEncryptionKey = encryptionKeyBytes,

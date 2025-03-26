@@ -12,14 +12,16 @@ struct AuthParamsWrapper {
 	let environment: String
 	let dbDirectory: String?
 	let historySyncUrl: String?
+	let customLocalUrl: String?
 
 	init(
 		environment: String, dbDirectory: String?,
-		historySyncUrl: String?
+		historySyncUrl: String?, customLocalUrl: String?
 	) {
 		self.environment = environment
 		self.dbDirectory = dbDirectory
 		self.historySyncUrl = historySyncUrl
+		self.customLocalUrl = customLocalUrl
 	}
 
 	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper {
@@ -29,17 +31,19 @@ struct AuthParamsWrapper {
 		else {
 			return AuthParamsWrapper(
 				environment: "dev", dbDirectory: nil,
-				historySyncUrl: nil)
+				historySyncUrl: nil, customLocalUrl: nil)
 		}
 
 		let environment = jsonOptions["environment"] as? String ?? "dev"
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
 		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
+		let customLocalUrl = jsonOptions["customLocalUrl"] as? String
 
 		return AuthParamsWrapper(
 			environment: environment,
 			dbDirectory: dbDirectory,
-			historySyncUrl: historySyncUrl
+			historySyncUrl: historySyncUrl,
+			customLocalUrl: customLocalUrl
 		)
 	}
 }

@@ -1427,7 +1427,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addGroupMembers") {
-			(installationId: String, id: String, peerInboxIds: [String]) -> String in
+			(installationId: String, id: String, peerInboxIds: [String])
+				-> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1462,7 +1463,8 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("addGroupMembersByIdentity") {
-			(installationId: String, id: String, peerIdentities: [String]) -> String in
+			(installationId: String, id: String, peerIdentities: [String])
+				-> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1480,7 +1482,8 @@ public class XMTPModule: Module {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
-			let result = try await group.addMembersByIdentity(identities: identities)
+			let result = try await group.addMembersByIdentity(
+				identities: identities)
 			return try MembershipResultWrapper.encode(result)
 		}
 
@@ -2230,7 +2233,7 @@ public class XMTPModule: Module {
 					"no conversation found for \(conversationId)")
 			}
 
-            return try await conversation.pausedForVersion()
+			return try await conversation.pausedForVersion()
 		}
 
 		AsyncFunction("subscribeToPreferenceUpdates") {
@@ -2457,11 +2460,14 @@ public class XMTPModule: Module {
 		}
 	}
 
-	func createApiClient(env: String)
+	func createApiClient(env: String, customLocalUrl: String? = nil)
 		-> XMTP.ClientOptions.Api
 	{
 		switch env {
 		case "local":
+			if let customLocalUrl = customLocalUrl, !customLocalUrl.isEmpty {
+				XMTP.XMTPEnvironment.customLocalAddress = customLocalUrl
+			}
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.local,
 				isSecure: false
@@ -2487,7 +2493,8 @@ public class XMTPModule: Module {
 
 		return XMTP.ClientOptions(
 			api: createApiClient(
-				env: authOptions.environment
+				env: authOptions.environment,
+				customLocalUrl: authOptions.customLocalUrl
 			),
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 			dbEncryptionKey: dbEncryptionKey,
