@@ -99,7 +99,7 @@ export class Client<
       Boolean(authInboxSubscription),
       options.dbDirectory,
       options.historySyncUrl,
-      options.customLocalUrl
+      options.customLocalHost
     )
     this.removeSubscription(authInboxSubscription)
 
@@ -183,7 +183,7 @@ export class Client<
           signingKey.signerType?.(),
           signingKey.getChainId?.(),
           signingKey.getBlockNumber?.(),
-          options.customLocalUrl
+          options.customLocalHost
         )
       })().catch((error) => {
         this.removeAllSubscriptions(authInboxSubscription)
@@ -219,7 +219,7 @@ export class Client<
       options.dbDirectory,
       options.historySyncUrl,
       inboxId,
-      options.customLocalUrl
+      options.customLocalHost
     )
 
     return new Client(
@@ -261,7 +261,7 @@ export class Client<
       options.dbEncryptionKey,
       options.dbDirectory,
       options.historySyncUrl,
-      options.customLocalUrl
+      options.customLocalHost
     )
 
     return new Client(
@@ -904,7 +904,7 @@ export type ClientOptions = {
    */
   historySyncUrl?: string
   /**
-   * OPTIONAL specify a custom local url for testing on physical devices
+   * OPTIONAL specify a custom local host for testing on physical devices for example `localhost`
    */
-  customLocalUrl?: string
+  customLocalHost?: string
 }
