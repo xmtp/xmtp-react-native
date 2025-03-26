@@ -118,13 +118,13 @@ export async function createRandom(
   hasPreAuthenticateToInboxCallback?: boolean | undefined,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined,
-  customLocalUrl?: string | undefined
+  customLocalHost?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
     dbDirectory,
     historySyncUrl,
-    customLocalUrl,
+    customLocalHost,
   }
   return await XMTPModule.createRandom(
     hasPreAuthenticateToInboxCallback,
@@ -143,13 +143,13 @@ export async function create(
   signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined,
-  customLocalUrl?: string | undefined
+  customLocalHost?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
     dbDirectory,
     historySyncUrl,
-    customLocalUrl,
+    customLocalHost,
   }
   const signerParams: SignerParams = {
     signerType,
@@ -172,13 +172,13 @@ export async function build(
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined,
   inboxId?: InboxId | undefined,
-  customLocalUrl?: string | undefined
+  customLocalHost?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
     dbDirectory,
     historySyncUrl,
-    customLocalUrl,
+    customLocalHost,
   }
   return await XMTPModule.build(
     JSON.stringify(identity),
@@ -194,13 +194,13 @@ export async function ffiCreateClient(
   dbEncryptionKey: Uint8Array,
   dbDirectory?: string | undefined,
   historySyncUrl?: string | undefined,
-  customLocalUrl?: string | undefined
+  customLocalHost?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
     dbDirectory,
     historySyncUrl,
-    customLocalUrl,
+    customLocalHost,
   }
   return await XMTPModule.ffiCreateClient(
     JSON.stringify(identity),
@@ -1484,7 +1484,7 @@ interface AuthParams {
   environment: string
   dbDirectory?: string
   historySyncUrl?: string
-  customLocalUrl?: string
+  customLocalHost?: string
 }
 
 interface SignerParams {
