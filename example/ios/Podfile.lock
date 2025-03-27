@@ -55,7 +55,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.14)
   - hermes-engine/Pre-built (0.71.14)
   - libevent (2.1.12)
-  - LibXMTP (3.0.29)
+  - LibXMTP (3.1.0)
   - MessagePacker (0.4.7)
   - MMKV (2.1.0):
     - MMKVCore (~> 2.1.0)
@@ -448,18 +448,18 @@ PODS:
   - SQLCipher/standard (4.5.7):
     - SQLCipher/common
   - SwiftProtobuf (1.28.2)
-  - XMTP (3.0.32):
+  - XMTP (3.1.0):
     - Connect-Swift (= 1.0.0)
     - CryptoSwift (= 1.8.3)
     - CSecp256k1 (~> 0.2)
-    - LibXMTP (= 3.0.29)
+    - LibXMTP (= 3.1.0)
     - SQLCipher (= 4.5.7)
-  - XMTPReactNative (3.1.14):
+  - XMTPReactNative (3.1.17):
     - CSecp256k1 (~> 0.2)
     - ExpoModulesCore
     - MessagePacker
     - SQLCipher (= 4.5.7)
-    - XMTP (= 3.0.32)
+    - XMTP (= 3.1.0)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -685,7 +685,7 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  boost: 57d2868c099736d80fcd648bf211b4431e51a558
+  boost: 7dcd2de282d72e344012f7d6564d024930a6a440
   CoinbaseWalletSDK: ea1f37512bbc69ebe07416e3b29bf840f5cc3152
   CoinbaseWalletSDKExpo: c79420eb009f482f768c23b6768fc5b2d7c98777
   Connect-Swift: 84e043b904f63dc93a2c01c6c125da25e765b50d
@@ -711,7 +711,7 @@ SPEC CHECKSUMS:
   glog: 04b94705f318337d7ead9e6d17c019bd9b1f6b1b
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  LibXMTP: 2e96dae8ac607f0f391d91fcb7d3894daeb62c8f
+  LibXMTP: 91a1663c23fd77bd7de99c3a61921d7363a2585f
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: ce484c1ac40bf76d5f09a0195d2ec5b3d3840d55
   MMKVCore: 1eb661c6c498ab88e3df9ce5d8ff94d05fcc0567
@@ -762,10 +762,10 @@ SPEC CHECKSUMS:
   RNSVG: d00c8f91c3cbf6d476451313a18f04d220d4f396
   SQLCipher: 5e6bfb47323635c8b657b1b27d25c5f1baf63bf5
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
-  XMTP: 687755f2647973fbd245542e1d07bd5cd31c88b7
-  XMTPReactNative: b5a713ed6870c2b9cf7b0ef69436ff48a2730ec7
+  XMTP: dda9e161e40888846c666189518b92a47e4020b1
+  XMTPReactNative: f8218aad550bf4aecfb1aa9d0183a429f0bdf0e6
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 2d04c11c2661aeaad852cd3ada0b0f1b06e0cf24
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2
