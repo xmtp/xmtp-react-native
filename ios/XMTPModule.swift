@@ -2357,14 +2357,20 @@ public class XMTPModule: Module {
 					let logStore = try OSLogStore(
 						scope: .currentProcessIdentifier)
 					let position = logStore.position(
-						timeIntervalSinceLatestBoot: -300)  // Last 5 min of logs
+						timeIntervalSinceLatestBoot: -1200)  // Last 20 min of logs
 					let entries = try logStore.getEntries(at: position)
 
 					for entry in entries {
 						if let logEntry = entry as? OSLogEntryLog {
-							logOutput.append(
-								"\(logEntry.date): \(logEntry.composedMessage)\n"
-							)
+							// Filter logs for subsystems starting with org.xmtp.xmtpv3
+							if logEntry.subsystem.hasPrefix("org.xmtp.xmtpv3") {
+								// Convert log level to string representation
+								let levelString = logLevelToString(logEntry.level)
+								
+								logOutput.append(
+									"\(logEntry.date) [\(levelString)] [thread:\(logEntry.threadIdentifier)] [\(logEntry.subsystem):\(logEntry.category)] \(logEntry.composedMessage)\n"
+								)
+							}
 						}
 					}
 				} catch {
@@ -2730,5 +2736,26 @@ public class XMTPModule: Module {
 	func preAuthenticateToInboxCallback() {
 		sendEvent("preAuthenticateToInboxCallback")
 		self.preAuthenticateToInboxCallbackDeferred?.wait()
+	}
+
+	// Helper function to convert OSLogEntryLog.Level to a string
+	@available(iOS 15.0, *)
+	private func logLevelToString(_ level: OSLogEntryLog.Level) -> String {
+		switch level {
+		case .undefined:
+			return "UNDEFINED"
+		case .debug:
+			return "DEBUG"
+		case .info:
+			return "INFO"
+		case .notice:
+			return "NOTICE"
+		case .error:
+			return "ERROR"
+		case .fault:
+			return "FAULT"
+		@unknown default:
+			return "UNKNOWN"
+		}
 	}
 }
