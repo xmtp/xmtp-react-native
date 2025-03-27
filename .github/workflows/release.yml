@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - hot-fix-key-package
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
