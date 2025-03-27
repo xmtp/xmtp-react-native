@@ -2368,7 +2368,7 @@ public class XMTPModule: Module {
 								let levelString = logLevelToString(logEntry.level)
 								
 								logOutput.append(
-									"\(logEntry.date) [\(levelString)] [thread:\(logEntry.threadIdentifier)] [\(logEntry.subsystem):\(logEntry.category)] \(logEntry.composedMessage)\n"
+									"\(logEntry.date) [thread:\(logEntry.threadIdentifier)] [\(levelString)] \(logEntry.composedMessage)\n"
 								)
 							}
 						}
