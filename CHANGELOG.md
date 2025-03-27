@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 3.2.0
+
+### Minor Changes
+
+- 77b7801: A hot fix release for keyPackages
+
 ## 3.1.17
 
 ### Patch Changes
