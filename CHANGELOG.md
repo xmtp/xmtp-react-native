@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 3.2.1
+
+### Patch Changes
+
+- 7714065: A hot fix release for fixing removing inboxes with invalid key packages from groups
+
 ## 3.2.0
 
 ### Minor Changes
