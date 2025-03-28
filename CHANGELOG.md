@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.0.2
+
+### Patch Changes
+
+- 53a3917: - Fix invalid key packages
+
 ## 4.0.1
 
 ### Patch Changes
