@@ -15,6 +15,7 @@ import { Signer, getSigner } from './Signer'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
+import { LogLevel, LogRotation } from './types'
 
 declare const Buffer
 
@@ -366,6 +367,34 @@ export class Client<
     inboxIds: InboxId[]
   ): Promise<InboxState[]> {
     return await XMTPModule.staticInboxStatesForInboxIds(env, inboxIds)
+  }
+
+  static activatePersistentLibXMTPLogWriter(
+    logLevel: LogLevel,
+    logRotation: LogRotation,
+    logMaxFiles: number
+  ) {
+    return XMTPModule.staticActivatePersistentLibXMTPLogWriter(
+      logLevel,
+      logRotation,
+      logMaxFiles
+    )
+  }
+
+  static deactivatePersistentLibXMTPLogWriter() {
+    return XMTPModule.staticDeactivatePersistentLibXMTPLogWriter()
+  }
+
+  static getXMTPLogFilePaths(): string[] {
+    return XMTPModule.staticGetXMTPLogFilePaths()
+  }
+
+  static readXMTPLogFile(filePath: string): Promise<string> {
+    return XMTPModule.readXMTPLogFile(filePath)
+  }
+
+  static clearXMTPLogs(): number {
+    return XMTPModule.staticClearXMTPLogs()
   }
 
   constructor(

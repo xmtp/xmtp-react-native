@@ -1,6 +1,7 @@
 package expo.modules.xmtpreactnativesdk
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Base64
 import android.util.Base64.NO_WRAP
@@ -24,6 +25,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.KeyPackageStatusWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MembershipResultWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
@@ -68,6 +70,9 @@ import org.xmtp.android.library.libxmtp.SignatureRequest
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
+import uniffi.xmtpv3.FfiKeyPackageStatus
+import uniffi.xmtpv3.FfiLogLevel
+import uniffi.xmtpv3.FfiLogRotation
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -138,6 +143,11 @@ fun Conversation.cacheKey(installationId: String): String {
 }
 
 class XMTPModule : Module() {
+    private val PREFS_NAME = "XMTPModulePrefs"
+    private val LOG_WRITER_ACTIVE_KEY = "logWriterActive"
+    private val LOG_LEVEL_KEY = "logLevel"
+    private val LOG_ROTATION_KEY = "logRotation"
+    private val LOG_MAX_FILES_KEY = "logMaxFiles"
 
     private val context: Context
         get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
@@ -307,6 +317,7 @@ class XMTPModule : Module() {
         AsyncFunction("create") Coroutine { publicIdentity: String, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String, walletParams: String ->
             withContext(Dispatchers.IO) {
                 logV("create")
+                activateLogWriterIfEnabled()
                 val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
                 val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
 
@@ -335,6 +346,7 @@ class XMTPModule : Module() {
         AsyncFunction("build") Coroutine { publicIdentity: String, inboxId: String?, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("build")
+                activateLogWriterIfEnabled()
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
@@ -354,6 +366,7 @@ class XMTPModule : Module() {
         AsyncFunction("ffiCreateClient") Coroutine { publicIdentity: String, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("ffiCreateClient")
+                activateLogWriterIfEnabled()
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
@@ -628,6 +641,78 @@ class XMTPModule : Module() {
                 )
                 inboxStates.map { InboxStateWrapper.encode(it) }
             }
+        }
+
+        AsyncFunction("staticKeyPackageStatus") Coroutine { environment: String, installationIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("staticKeyPackageStatus")
+                val keyPackageStatus: Map<String, FfiKeyPackageStatus> = Client.keyPackageStatusesForInstallationIds(
+                    installationIds,
+                    apiEnvironments(environment),
+                )
+                keyPackageStatus.mapValues { KeyPackageStatusWrapper.encode(it.value) }
+            }
+        }
+
+        Function("staticActivatePersistentLibXMTPLogWriter") { logLevel: Int, logRotation: Int, maxFiles: Int ->
+            logV("activateLogs")
+            val ffiLogLevel = getFfiLogLevel(logLevel)
+            val ffiLogRotation = getFfiLogRotation(logRotation)
+            
+            Client.activatePersistentLibXMTPLogWriter(context, ffiLogLevel, ffiLogRotation, maxFiles)
+            
+            // Save all settings
+            setLogWriterActive(true)
+            saveLogSettings(logLevel, logRotation, maxFiles)
+        }
+
+        Function("staticDeactivatePersistentLibXMTPLogWriter") {
+            Client.deactivatePersistentLibXMTPLogWriter()
+            // Save the state
+            setLogWriterActive(false)
+        }
+
+        Function("getLogSettings") {
+            mapOf(
+                "active" to isLogWriterActive(),
+                "logLevel" to getLogLevel(),
+                "logRotation" to getLogRotation(),
+                "maxFiles" to getLogMaxFiles()
+            )
+        }
+
+        Function("isLogWriterActive") {
+            isLogWriterActive()
+        }
+
+        Function("staticGetXMTPLogFilePaths") { ->
+            Client.getXMTPLogFilePaths(context)
+        }
+
+        Function("staticClearXMTPLogs") { ->
+            Client.clearXMTPLogs(context)
+        }
+
+        // Add a new function to read log file contents
+        AsyncFunction("readXMTPLogFile") Coroutine { filePath: String ->
+            withContext(Dispatchers.IO) {
+                logV("readXMTPLogFile")
+                try {
+                    val file = File(filePath)
+                    if (file.exists() && file.canRead()) {
+                        file.readText()
+                    } else {
+                        "Cannot read file: $filePath (exists: ${file.exists()}, canRead: ${file.canRead()})"
+                    }
+                } catch (e: Exception) {
+                    "Error reading log file: ${e.message}"
+                }
+            }
+        }
+
+        Function("unsubscribeFromConsent") { installationId: String ->
+            logV("unsubscribeFromConsent")
+            subscriptions[getConsentKey(installationId)]?.cancel()
         }
 
         AsyncFunction("getOrCreateInboxId") Coroutine { publicIdentity: String, environment: String ->
@@ -1669,6 +1754,62 @@ class XMTPModule : Module() {
     // Helpers
     //
 
+    // Add this method to get SharedPreferences
+    private fun getSharedPreferences(): SharedPreferences {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    // Add this to check if log writer was active
+    private fun isLogWriterActive(): Boolean {
+        return getSharedPreferences().getBoolean(LOG_WRITER_ACTIVE_KEY, false)
+    }
+
+    // Add this to save log writer state
+    private fun setLogWriterActive(active: Boolean) {
+        getSharedPreferences().edit().putBoolean(LOG_WRITER_ACTIVE_KEY, active).apply()
+    }
+
+    private fun saveLogSettings(logLevel: Int, logRotation: Int, maxFiles: Int) {
+        getSharedPreferences().edit()
+            .putInt(LOG_LEVEL_KEY, logLevel)
+            .putInt(LOG_ROTATION_KEY, logRotation)
+            .putInt(LOG_MAX_FILES_KEY, maxFiles)
+            .apply()
+    }
+
+    private fun getLogLevel(): Int {
+        return getSharedPreferences().getInt(LOG_LEVEL_KEY, 3) // Default to DEBUG (3)
+    }
+
+    private fun getLogRotation(): Int {
+        return getSharedPreferences().getInt(LOG_ROTATION_KEY, 2) // Default to HOURLY (2)
+    }
+
+    private fun getLogMaxFiles(): Int {
+        return getSharedPreferences().getInt(LOG_MAX_FILES_KEY, 5) // Default to 5 files
+    }
+
+    private fun getFfiLogLevel(logLevel: Int): FfiLogLevel {
+        return when (logLevel) {
+            0 -> FfiLogLevel.ERROR
+            1 -> FfiLogLevel.WARN
+            2 -> FfiLogLevel.INFO
+            3 -> FfiLogLevel.DEBUG
+            4 -> FfiLogLevel.TRACE
+            else -> FfiLogLevel.DEBUG
+        }
+    }
+
+    private fun getFfiLogRotation(logRotation: Int): FfiLogRotation {
+        return when (logRotation) {
+            0 -> FfiLogRotation.NEVER
+            1 -> FfiLogRotation.DAILY
+            2 -> FfiLogRotation.HOURLY
+            3 -> FfiLogRotation.MINUTELY
+            else -> FfiLogRotation.HOURLY
+        }
+    }
+
     private fun getPermissionOption(permissionString: String): PermissionOption {
         return when (permissionString) {
             "allow" -> PermissionOption.Allow
@@ -1877,6 +2018,16 @@ class XMTPModule : Module() {
         sendEvent("preAuthenticateToInboxCallback")
         preAuthenticateToInboxCallbackDeferred?.await()
         preAuthenticateToInboxCallbackDeferred = null
+    }
+
+    private fun activateLogWriterIfEnabled() {
+        if (isLogWriterActive()) {
+            val logLevel = getFfiLogLevel(getLogLevel())
+            val logRotation = getFfiLogRotation(getLogRotation())
+            val maxFiles = getLogMaxFiles()
+            
+            Client.activatePersistentLibXMTPLogWriter(context, logLevel, logRotation, maxFiles)
+        }
     }
 }
 
