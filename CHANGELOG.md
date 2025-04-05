@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.0.3
+
+### Patch Changes
+
+- a7d1e76: - Fixes legacy db paths
+
 ## 4.0.2
 
 ### Patch Changes
