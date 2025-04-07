@@ -1,14 +1,18 @@
 import { NavigationContainer } from '@react-navigation/native'
-import { Ethereum } from '@thirdweb-dev/chains'
-import {
-  ThirdwebProvider,
-  metamaskWallet,
-  rainbowWallet,
-} from '@thirdweb-dev/react-native'
+// import { Ethereum } from '@thirdweb-dev/chains'
+import 'react-native-get-random-values';
+import '@ethersproject/shims';
+import { Buffer as BufferPolyfill } from 'buffer'
+// Make Buffer globally available
+global.Buffer = global.Buffer || BufferPolyfill
+// import {
+//   ThirdwebProvider,
+//   metamaskWallet,
+//   rainbowWallet,
+// } from '@thirdweb-dev/react-native'
 import { Button, Platform, ActionSheetIOS, Modal, View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native'
 import Config from 'react-native-config'
 // Used to polyfill webCrypto in react-native
-import PolyfillCrypto from 'react-native-webview-crypto'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { XmtpProvider, Client } from 'xmtp-react-native-sdk'
 import { useState, useEffect } from 'react'
@@ -291,20 +295,20 @@ export default function App() {
   }
   
   return (
-    <ThirdwebProvider
-      activeChain={Ethereum}
-      supportedChains={[Ethereum]}
-      clientId={Config.THIRD_WEB_CLIENT_ID}
-      dAppMeta={{
-        name: 'XMTP Example',
-        description: 'Example app from xmtp-react-native repo',
-        logoUrl:
-          'https://pbs.twimg.com/profile_images/1668323456935510016/2c_Ue8dF_400x400.jpg',
-        url: 'https://xmtp.org',
-      }}
-      supportedWallets={[metamaskWallet(), rainbowWallet()]}
-    >
-      <PolyfillCrypto />
+    // <ThirdwebProvider
+    //   activeChain={Ethereum}
+    //   supportedChains={[Ethereum]}
+    //   clientId={Config.THIRD_WEB_CLIENT_ID}
+    //   dAppMeta={{
+    //     name: 'XMTP Example',
+    //     description: 'Example app from xmtp-react-native repo',
+    //     logoUrl:
+    //       'https://pbs.twimg.com/profile_images/1668323456935510016/2c_Ue8dF_400x400.jpg',
+    //     url: 'https://xmtp.org',
+    //   }}
+    //   supportedWallets={[metamaskWallet(), rainbowWallet()]}
+    // >
+      
       <QueryClientProvider client={queryClient}>
         <XmtpProvider>
           <NavigationContainer>
@@ -475,7 +479,7 @@ export default function App() {
             </Navigator.Navigator>
           </NavigationContainer>
         </XmtpProvider>
-      </QueryClientProvider>
-    </ThirdwebProvider>
+       </QueryClientProvider>
+    // </ThirdwebProvider>
   )
 }

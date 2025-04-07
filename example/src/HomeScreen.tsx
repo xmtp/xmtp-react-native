@@ -1,4 +1,3 @@
-import Clipboard from '@react-native-community/clipboard'
 import { NavigationContext } from '@react-navigation/native'
 import moment from 'moment'
 import React, { useContext, useEffect, useState } from 'react'
