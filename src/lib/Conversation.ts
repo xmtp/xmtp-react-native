@@ -5,8 +5,6 @@ import {
   MessagesOptions,
   SendOptions,
 } from './types'
-import { DecodedMessageUnion } from './types/DecodedMessageUnion'
-import { DefaultContentTypes } from './types/DefaultContentType'
 import {
   DecodedMessage,
   Member,
@@ -15,6 +13,8 @@ import {
   Client,
   DisappearingMessageSettings,
 } from '../index'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
+import { DefaultContentTypes } from './types/DefaultContentType'
 
 export enum ConversationVersion {
   GROUP = 'GROUP',

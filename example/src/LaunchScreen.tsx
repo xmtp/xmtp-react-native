@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { ConnectWallet, useSigner } from '@thirdweb-dev/react-native'
+// import { ConnectWallet, useSigner } from '@thirdweb-dev/react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
 import ModalSelector from 'react-native-modal-selector'
@@ -9,7 +9,7 @@ import { PublicIdentity, useXmtp } from 'xmtp-react-native-sdk'
 import { NavigationParamList } from './Navigation'
 import { TestCategory } from './TestScreen'
 import { supportedCodecs } from './contentTypes/contentTypes'
-import { getDbEncryptionKey, useSavedAddress } from './hooks'
+import { getDbEncryptionKey } from './hooks'
 
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
 export default function LaunchScreen(
@@ -22,10 +22,29 @@ export default function LaunchScreen(
   const [selectedNetwork, setSelectedNetwork] = useState<
     'dev' | 'local' | 'production'
   >('dev')
-  const signer = useSigner()
+  // const signer = useSigner()
   const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
   const { setClient } = useXmtp()
-  const savedKeys = useSavedAddress()
+
+  // Create a simple implementation of savedKeys functionality
+  const [savedAddress, setSavedAddress] = useState<string | null>(null)
+
+  // Simple implementation of the savedKeys object
+  const savedKeys = {
+    address: savedAddress,
+    save: async (address: string) => {
+      console.log('Saving address', address)
+      setSavedAddress(address)
+      // Here you would typically save to AsyncStorage or similar
+      return true
+    },
+    clear: () => {
+      console.log('Clearing saved address')
+      setSavedAddress(null)
+      // Here you would typically clear from AsyncStorage or similar
+    },
+  }
+
   const configureWallet = useCallback(
     (label: string, configuring: Promise<XMTP.Client<any>>) => {
       console.log('Connecting XMTP client', label)
@@ -43,7 +62,7 @@ export default function LaunchScreen(
           console.log('Unable to connect XMTP client', label, err)
         )
     },
-    []
+    [navigation, setClient]
   )
 
   const preAuthenticateToInboxCallback = async () => {
@@ -63,19 +82,19 @@ export default function LaunchScreen(
     })
   )
 
-  useEffect(() => {
-    ;(async () => {
-      if (signer) {
-        const address = await signer.getAddress()
-        const addressDisplay = address.slice(0, 6) + '...' + address.slice(-4)
-        setSignerAddressDisplay(addressDisplay)
-      } else {
-        setSignerAddressDisplay('loading...')
-      }
-    })().catch((e) => {
-      console.error("Error displaying signers's address", e)
-    })
-  }, [signer])
+  // useEffect(() => {
+  //   ;(async () => {
+  //     if (signer) {
+  //       const address = await signer.getAddress()
+  //       const addressDisplay = address.slice(0, 6) + '...' + address.slice(-4)
+  //       setSignerAddressDisplay(addressDisplay)
+  //     } else {
+  //       setSignerAddressDisplay('loading...')
+  //     }
+  //   })().catch((e) => {
+  //     console.error("Error displaying signers's address", e)
+  //   })
+  // }, [signer])
 
   return (
     <ScrollView>
@@ -125,11 +144,11 @@ export default function LaunchScreen(
           }
         />
       </View>
-      <View style={styles.row}>
+      {/* <View style={styles.row}>
         <Text style={styles.label}>External Wallet:</Text>
         <ConnectWallet theme="dark" />
-      </View>
-      {signer && (
+      </View> */}
+      {/* {signer && (
         <>
           <View key="connected-dev" style={{ margin: 16 }}>
             <Button
@@ -158,7 +177,7 @@ export default function LaunchScreen(
             />
           </View>
         </>
-      )}
+      )} */}
       <View key="generated-dev" style={{ margin: 16 }}>
         <Button
           title="Use Random Wallet"

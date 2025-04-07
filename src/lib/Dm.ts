@@ -3,18 +3,18 @@ import { ConsentState } from './ConsentRecord'
 import { ConversationVersion, ConversationBase } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Member } from './Member'
-import { ConversationSendPayload } from './types/ConversationCodecs'
-import { DecodedMessageUnion } from './types/DecodedMessageUnion'
-import { DefaultContentTypes } from './types/DefaultContentType'
-import { EventTypes } from './types/EventTypes'
-import { MessageId, MessagesOptions } from './types/MessagesOptions'
-import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 import {
   ConversationId,
   ConversationTopic,
   DisappearingMessageSettings,
 } from '../index'
+import { ConversationSendPayload } from './types/ConversationCodecs'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
+import { DefaultContentTypes } from './types/DefaultContentType'
+import { EventTypes } from './types/EventTypes'
+import { MessageId, MessagesOptions } from './types/MessagesOptions'
+import { SendOptions } from './types/SendOptions'
 
 export interface DmParams {
   id: ConversationId
