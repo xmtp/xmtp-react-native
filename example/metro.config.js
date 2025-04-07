@@ -2,7 +2,9 @@
 const { getDefaultConfig } = require('expo/metro-config')
 const path = require('path')
 
-const config = getDefaultConfig(__dirname)
+/** @type {import('expo/metro-config').MetroConfig} */
+const config = getDefaultConfig(__dirname);
+
 const extraNodeModules = require('node-libs-browser')
 config.resolver.extraNodeModules = extraNodeModules
 // npm v7+ will install ../node_modules/react-native because of peerDependencies.

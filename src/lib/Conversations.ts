@@ -6,12 +6,6 @@ import { DecodedMessage } from './DecodedMessage'
 import { DisappearingMessageSettings } from './DisappearingMessageSettings'
 import { Dm, DmParams } from './Dm'
 import { Group, GroupParams } from './Group'
-import { ConversationOptions } from './types/ConversationOptions'
-import { CreateGroupOptions } from './types/CreateGroupOptions'
-import { DecodedMessageUnion } from './types/DecodedMessageUnion'
-import { DefaultContentTypes } from './types/DefaultContentType'
-import { EventTypes } from './types/EventTypes'
-import { PermissionPolicySet } from './types/PermissionPolicySet'
 import * as XMTPModule from '../index'
 import {
   ConsentState,
@@ -22,6 +16,12 @@ import {
   MessageId,
   PublicIdentity,
 } from '../index'
+import { ConversationOptions } from './types/ConversationOptions'
+import { CreateGroupOptions } from './types/CreateGroupOptions'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
+import { DefaultContentTypes } from './types/DefaultContentType'
+import { EventTypes } from './types/EventTypes'
+import { PermissionPolicySet } from './types/PermissionPolicySet'
 
 export default class Conversations<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,

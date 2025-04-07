@@ -3,13 +3,6 @@ import { ConsentState } from './ConsentRecord'
 import { ConversationBase, ConversationVersion } from './Conversation'
 import { DecodedMessage } from './DecodedMessage'
 import { Member, MembershipResult } from './Member'
-import { ConversationSendPayload } from './types/ConversationCodecs'
-import { DecodedMessageUnion } from './types/DecodedMessageUnion'
-import { DefaultContentTypes } from './types/DefaultContentType'
-import { EventTypes } from './types/EventTypes'
-import { MessageId, MessagesOptions } from './types/MessagesOptions'
-import { PermissionPolicySet } from './types/PermissionPolicySet'
-import { SendOptions } from './types/SendOptions'
 import * as XMTP from '../index'
 import {
   ConversationId,
@@ -17,6 +10,13 @@ import {
   DisappearingMessageSettings,
   PublicIdentity,
 } from '../index'
+import { ConversationSendPayload } from './types/ConversationCodecs'
+import { DecodedMessageUnion } from './types/DecodedMessageUnion'
+import { DefaultContentTypes } from './types/DefaultContentType'
+import { EventTypes } from './types/EventTypes'
+import { MessageId, MessagesOptions } from './types/MessagesOptions'
+import { PermissionPolicySet } from './types/PermissionPolicySet'
+import { SendOptions } from './types/SendOptions'
 
 export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
 

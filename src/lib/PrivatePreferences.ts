@@ -1,8 +1,8 @@
 import { Client, InboxId } from './Client'
 import { ConsentRecord, ConsentState } from './ConsentRecord'
-import { EventTypes } from './types/EventTypes'
 import * as XMTPModule from '../index'
 import { ConversationId } from '../index'
+import { EventTypes } from './types/EventTypes'
 
 export type PreferenceUpdates = 'hmac_keys'
 
