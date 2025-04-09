@@ -150,7 +150,14 @@ class XMTPModule : Module() {
     private val LOG_MAX_FILES_KEY = "logMaxFiles"
 
     private val context: Context
-        get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+        get() {
+            val reactContext = appContext.reactContext
+            if (reactContext == null) {
+                logV("React context is null when attempting to access context")
+                throw Exceptions.ReactContextLost()
+            }
+            return reactContext
+        }
 
     private fun apiEnvironments(env: String, customLocalUrl: String? = null): ClientOptions.Api {
         return when (env) {
@@ -222,6 +229,14 @@ class XMTPModule : Module() {
 
     override fun definition() = ModuleDefinition {
         Name("XMTP")
+        
+        OnCreate {
+            // This runs when the module is created AND the context is available
+            logV("Module created with context available")
+            // Check if logging should be activated on startup
+            activateLogWriterIfEnabled()
+        }
+        
         Events(
             "sign",
             "authed",
@@ -317,7 +332,6 @@ class XMTPModule : Module() {
         AsyncFunction("create") Coroutine { publicIdentity: String, hasAuthInboxCallback: Boolean?, dbEncryptionKey: List<Int>, authParams: String, walletParams: String ->
             withContext(Dispatchers.IO) {
                 logV("create")
-                activateLogWriterIfEnabled()
                 val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
                 val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
 
@@ -346,7 +360,6 @@ class XMTPModule : Module() {
         AsyncFunction("build") Coroutine { publicIdentity: String, inboxId: String?, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("build")
-                activateLogWriterIfEnabled()
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,
@@ -366,7 +379,6 @@ class XMTPModule : Module() {
         AsyncFunction("ffiCreateClient") Coroutine { publicIdentity: String, dbEncryptionKey: List<Int>, authParams: String ->
             withContext(Dispatchers.IO) {
                 logV("ffiCreateClient")
-                activateLogWriterIfEnabled()
                 val options = clientOptions(
                     dbEncryptionKey,
                     authParams,

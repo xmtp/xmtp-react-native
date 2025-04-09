@@ -385,6 +385,10 @@ export class Client<
     return XMTPModule.staticDeactivatePersistentLibXMTPLogWriter()
   }
 
+  static isLogWriterActive() {
+    return XMTPModule.staticIsLogWriterActive()
+  }
+
   static getXMTPLogFilePaths(): string[] {
     return XMTPModule.staticGetXMTPLogFilePaths()
   }

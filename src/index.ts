@@ -447,6 +447,10 @@ export function staticDeactivatePersistentLibXMTPLogWriter() {
   XMTPModule.staticDeactivatePersistentLibXMTPLogWriter()
 }
 
+export function staticIsLogWriterActive() {
+  return XMTPModule.isLogWriterActive()
+}
+
 export function staticGetXMTPLogFilePaths(): string[] {
   return XMTPModule.staticGetXMTPLogFilePaths()
 }

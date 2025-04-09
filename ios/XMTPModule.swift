@@ -29,6 +29,14 @@ actor IsolatedManager<T> {
 }
 
 public class XMTPModule: Module {
+	// Constants
+    private struct Constants {
+        static let fileLoggerEnabledKey = "XMTPFileLoggerEnabled"
+		static let logLevelKey = "XMTPLogLevel"
+		static let logRotationKey = "XMTPLogRotation"
+		static let maxFilesKey = "XMTPMaxFiles"
+    }
+
 	var signer: ReactNativeSigner?
 	let clientsManager = ClientsManager()
 	let subscriptionsManager = IsolatedManager<Task<Void, Never>>()
@@ -112,6 +120,13 @@ public class XMTPModule: Module {
 
 	public func definition() -> ModuleDefinition {
 		Name("XMTP")
+		
+		OnCreate {
+			// This runs when the module is created and ready
+			print("XMTP Module created and context available")
+			// Check if logging should be activated on startup
+			activateLogWriterIfEnabled()
+		}
 
 		Events(
 			"sign",
@@ -288,6 +303,7 @@ public class XMTPModule: Module {
 				authParams: String
 			)
 				-> [String: String] in
+            // activateLogWriterIfEnabled()
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let encryptionKeyData = Data(dbEncryptionKey)
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
@@ -310,6 +326,7 @@ public class XMTPModule: Module {
 				authParams: String
 			)
 				-> [String: String] in
+            // activateLogWriterIfEnabled()
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let encryptionKeyData = Data(dbEncryptionKey)
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
@@ -625,6 +642,57 @@ public class XMTPModule: Module {
 				inboxIds: inboxIds, api: createApiClient(env: environment))
 			return try inboxStates.map { try InboxStateWrapper.encode($0) }
 		}
+        
+        Function("staticActivatePersistentLibXMTPLogWriter") {
+            (logLevelInt: Int, logRotationInt: Int, maxFiles: Int) in
+            let logLevel: Client.LogLevel = getLogLevelFromInt(logLevel: logLevelInt)
+            let ffiLogRotation: FfiLogRotation = getFfiLogRotationFromInt(logRotation: logRotationInt)
+            
+            Client.activatePersistentLibXMTPLogWriter(logLevel: logLevel, rotationSchedule: ffiLogRotation, maxFiles: maxFiles)
+            
+            // Save all settings
+            setLogWriterActive(active: true)
+            saveLogSettings(logLevel: logLevelInt, logRotation: logRotationInt, maxFiles: maxFiles)
+        }
+        
+        Function("staticDeactivatePersistentLibXMTPLogWriter") {
+            Client.deactivatePersistentLibXMTPLogWriter()
+            setLogWriterActive(active: false)
+        }
+        
+        Function("getLogSettings") { () -> [String: Any] in
+            return [
+                "active": isLogWriterActive(),
+                "logLevel": getLogLevel(),
+                "logRotation": getLogRotation(),
+                "maxFiles": getLogMaxFiles()
+            ]
+        }
+        
+        Function("isLogWriterActive") { () -> Bool in
+            return isLogWriterActive()
+        }
+        
+        Function("staticGetXMTPLogFilePaths") { () -> [String] in
+            return Client.getXMTPLogFilePaths()
+        }
+        
+        Function("staticClearXMTPLogs") { () -> Int in
+            return Client.clearXMTPLogs()
+        }
+        
+        AsyncFunction("readXMTPLogFile") { (filePath: String) -> String in
+            do {
+                let fileManager = FileManager.default
+                if fileManager.fileExists(atPath: filePath) && fileManager.isReadableFile(atPath: filePath) {
+                    return try String(contentsOfFile: filePath, encoding: .utf8)
+                } else {
+                    return "Cannot read file: \(filePath) (exists: \(fileManager.fileExists(atPath: filePath)), readable: \(fileManager.isReadableFile(atPath: filePath)))"
+                }
+            } catch {
+                return "Error reading log file: \(error.localizedDescription)"
+            }
+        }
 
 		AsyncFunction("getOrCreateInboxId") {
 			(publicIdentity: String, environment: String) -> String in
@@ -2390,6 +2458,73 @@ public class XMTPModule: Module {
 	//
 	// Helpers
 	//
+
+	private func isLogWriterActive() -> Bool {
+		return UserDefaults.standard.bool(forKey: Constants.fileLoggerEnabledKey)
+	}
+
+	private func setLogWriterActive(active: Bool) {
+		UserDefaults.standard.set(active, forKey: Constants.fileLoggerEnabledKey)
+	}
+
+	private func saveLogSettings(logLevel: Int, logRotation: Int, maxFiles: Int) {
+		UserDefaults.standard.set(logLevel, forKey: Constants.logLevelKey)
+		UserDefaults.standard.set(logRotation, forKey: Constants.logRotationKey)
+		UserDefaults.standard.set(maxFiles, forKey: Constants.maxFilesKey)
+	}
+
+	private func getLogLevel() -> Int {
+		return UserDefaults.standard.integer(forKey: Constants.logLevelKey)
+	}
+
+	private func getLogRotation() -> Int {
+		return UserDefaults.standard.integer(forKey: Constants.logRotationKey)
+	}
+
+	private func getLogMaxFiles() -> Int {
+		return UserDefaults.standard.integer(forKey: Constants.maxFilesKey)
+	}
+    
+    private func getLogLevelFromInt(logLevel: Int) -> Client.LogLevel {
+        // libxmtp trace level does not seem to be working on ios, so if passed in will default to debug
+        switch logLevel {
+        case 0:
+            return .error
+        case 1:
+            return .warn
+        case 2:
+            return .info
+        case 3:
+            return .debug
+        default:
+            return .debug
+        }
+    }
+    
+    private func getFfiLogRotationFromInt(logRotation: Int) -> FfiLogRotation {
+        switch logRotation {
+        case 0:
+            return .never
+        case 1:
+            return .daily
+        case 2:
+            return .hourly
+        case 3:
+            return .minutely
+        default:
+            return .hourly
+        }
+    }
+    
+    private func activateLogWriterIfEnabled() {
+            if (isLogWriterActive()) {
+                let logLevel = getLogLevelFromInt(logLevel: getLogLevel())
+                let logRotation = getFfiLogRotationFromInt(logRotation: getLogRotation())
+                let maxFiles = getLogMaxFiles()
+                
+                Client.activatePersistentLibXMTPLogWriter(logLevel: logLevel, rotationSchedule: logRotation, maxFiles: maxFiles)
+            }
+    }
 
 	private func getPermissionOption(permission: String) throws
 		-> PermissionOption

@@ -26,6 +26,7 @@ import LaunchScreen from './src/LaunchScreen'
 import { Navigator } from './src/Navigation'
 import StreamScreen from './src/StreamScreen'
 import TestScreen from './src/TestScreen'
+import { LogLevel, LogRotation } from 'xmtp-react-native-sdk/lib/types/LogTypes';
 
 const queryClient = new QueryClient()
 
@@ -50,41 +51,73 @@ interface AndroidDropdownProps {
 const LogFilesModal: React.FC<LogFilesModalProps> = ({ visible, onClose }) => {
   const [logFiles, setLogFiles] = useState<string[]>([])
   const [fileSizes, setFileSizes] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [logStatus, setLogStatus] = useState<string>('')
   
   // Fetch log files when modal becomes visible
   useEffect(() => {
     if (visible) {
       const fetchLogFiles = async (): Promise<void> => {
         try {
+          setIsLoading(true)
+          setFileSizes({}) // Reset file sizes when reopening
+          setLogStatus('Checking log status...')
+          
+          // Check if logging is active
+          const isActive = await Client.isLogWriterActive()
+          setLogStatus(`Logging ${isActive ? 'is active' : 'is NOT active'}`)
+          
           const files = await Client.getXMTPLogFilePaths()
+          console.log('Found log files:', files)
           setLogFiles(files)
           
-          // Initialize file sizes
-          const sizes: Record<string, string> = {}
-          for (const path of files) {
-            sizes[path] = 'Loading...'
+          if (files.length === 0) {
+            setLogStatus(prev => `${prev}\nNo log files found. Try activating logs first.`)
+          } else {
+            setLogStatus(prev => `${prev}\nFound ${files.length} log file(s)`)
           }
-          setFileSizes(sizes)
           
-          // Load file sizes asynchronously
-          for (const path of files) {
+          // Load file sizes in parallel
+          const sizePromises = files.map(async (path) => {
             try {
               const content = await Client.readXMTPLogFile(path)
-              setFileSizes(prev => ({
-                ...prev,
-                [path]: `${(content.length / 1024).toFixed(2)} KB`
-              }))
+              console.log(`Log file ${path} size: ${content.length} bytes`)
+              return { 
+                path, 
+                size: `${(content.length / 1024).toFixed(2)} KB`,
+                isEmpty: content.length === 0
+              }
             } catch (error) {
-              setFileSizes(prev => ({
-                ...prev,
-                [path]: 'Error loading size'
-              }))
+              console.error(`Error loading size for ${path}:`, error)
+              return { path, size: 'Error loading size', isEmpty: true }
             }
+          })
+          
+          const results = await Promise.all(sizePromises)
+          
+          // Update all sizes at once
+          const newSizes: Record<string, string> = {}
+          let emptyCount = 0
+          
+          results.forEach(({ path, size, isEmpty }) => {
+            newSizes[path] = isEmpty ? `${size} (empty)` : size
+            if (isEmpty) emptyCount++
+          })
+          
+          setFileSizes(newSizes)
+          
+          if (emptyCount > 0) {
+            setLogStatus(prev => `${prev}\n${emptyCount} empty log file(s) found. Make sure logging is properly activated.`)
           }
+          
         } catch (error) {
           console.error('Error fetching log files:', error)
+          setLogStatus(`Error: ${error instanceof Error ? error.message : String(error)}`)
+        } finally {
+          setIsLoading(false)
         }
       }
+      
       fetchLogFiles()
     }
   }, [visible])
@@ -94,6 +127,11 @@ const LogFilesModal: React.FC<LogFilesModalProps> = ({ visible, onClose }) => {
     try {
       // Read the log file content
       const content = await Client.readXMTPLogFile(filePath)
+      
+      if (content.length === 0) {
+        alert('This log file is empty. Try generating some logs first.')
+        return
+      }
       
       // Use the Share API to open the native share dialog
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
@@ -122,7 +160,16 @@ const LogFilesModal: React.FC<LogFilesModalProps> = ({ visible, onClose }) => {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Log Files</Text>
           
-          {logFiles.length === 0 ? (
+          {/* Display log status information */}
+          {logStatus ? (
+            <View style={styles.statusContainer}>
+              <Text style={styles.statusText}>{logStatus}</Text>
+            </View>
+          ) : null}
+          
+          {isLoading ? (
+            <Text style={styles.noLogsText}>Loading log files...</Text>
+          ) : logFiles.length === 0 ? (
             <Text style={styles.noLogsText}>No log files found</Text>
           ) : (
             <FlatList
@@ -211,6 +258,16 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+  statusContainer: {
+    backgroundColor: '#f5f5f5',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 15,
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#333',
+  },
 })
 
 // Custom dropdown for Android
@@ -279,7 +336,6 @@ export default function App() {
       }
       
       let successCount = await Client.clearXMTPLogs()
-
       
       if (successCount === files.length) {
         alert('All log files cleared successfully')
@@ -344,8 +400,8 @@ export default function App() {
                     },
                     {
                       title: 'Activate Logs',
-                      onPress: () => {
-                        Client.activatePersistentLibXMTPLogWriter(3, 1, 5) // Using default values
+                      onPress: async () => {
+                        await Client.activatePersistentLibXMTPLogWriter(LogLevel.DEBUG, LogRotation.MINUTELY, 5) // Using default values
                         alert('Logs activated')
                       }
                     },
