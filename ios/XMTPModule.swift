@@ -303,7 +303,6 @@ public class XMTPModule: Module {
 				authParams: String
 			)
 				-> [String: String] in
-            // activateLogWriterIfEnabled()
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let encryptionKeyData = Data(dbEncryptionKey)
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
@@ -326,7 +325,6 @@ public class XMTPModule: Module {
 				authParams: String
 			)
 				-> [String: String] in
-            // activateLogWriterIfEnabled()
 			let authOptions = AuthParamsWrapper.authParamsFromJson(authParams)
 			let encryptionKeyData = Data(dbEncryptionKey)
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
