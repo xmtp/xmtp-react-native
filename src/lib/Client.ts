@@ -369,6 +369,14 @@ export class Client<
     return await XMTPModule.staticInboxStatesForInboxIds(env, inboxIds)
   }
 
+  /**
+   * Activates persistent logging for libXMTP with specified configuration.
+   * 
+   * @param {LogLevel} logLevel - The minimum log level to record (e.g., debug, info, warn, error)
+   * @param {LogRotation} logRotation - How often the log files will rotate into a new file
+   * @param {number} logMaxFiles - Maximum number of log files to keep before rotation
+   * @returns Promise that resolves when logging is activated
+   */
   static activatePersistentLibXMTPLogWriter(
     logLevel: LogLevel,
     logRotation: LogRotation,
@@ -381,22 +389,51 @@ export class Client<
     )
   }
 
+  /**
+   * Deactivates the persistent log writer for libXMTP.
+   * This stops recording logs to persistent storage.
+   * 
+   * @returns Promise that resolves when logging is deactivated
+   */
   static deactivatePersistentLibXMTPLogWriter() {
     return XMTPModule.staticDeactivatePersistentLibXMTPLogWriter()
   }
 
+  /**
+   * Checks if the persistent log writer is currently active.
+   * Note that persistent logging may be killed by OS when app is backgrounded.
+   * When app is foregrounded, logging will resume if isLogWriterActive is set to true.
+   * 
+   * @returns {boolean} True if logging is active, false otherwise
+   */
   static isLogWriterActive() {
     return XMTPModule.staticIsLogWriterActive()
   }
 
+  /**
+   * Gets the file paths of all XMTP log files.
+   * 
+   * @returns {string[]} Array of file paths to log files
+   */
   static getXMTPLogFilePaths(): string[] {
     return XMTPModule.staticGetXMTPLogFilePaths()
   }
 
+  /**
+   * Reads the contents of a specific XMTP log file.
+   * 
+   * @param {string} filePath - Path to the log file to read
+   * @returns {Promise<string>} Promise resolving to the contents of the log file
+   */
   static readXMTPLogFile(filePath: string): Promise<string> {
     return XMTPModule.readXMTPLogFile(filePath)
   }
 
+  /**
+   * Clears all XMTP log files.
+   * 
+   * @returns {number} Number of log files that were cleared
+   */
   static clearXMTPLogs(): number {
     return XMTPModule.staticClearXMTPLogs()
   }
