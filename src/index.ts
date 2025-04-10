@@ -32,6 +32,7 @@ import {
 } from './lib/types/ConversationOptions'
 import { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
+import { LogLevel, LogRotation } from './lib/types/LogTypes'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 
@@ -47,7 +48,6 @@ export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
 export { StaticAttachmentCodec } from './lib/NativeCodecs/StaticAttachmentCodec'
 export { TextCodec } from './lib/NativeCodecs/TextCodec'
 export * from './lib/Signer'
-
 const EncodedContent = content.EncodedContent
 
 export function inboxId(): InboxId {
@@ -429,6 +429,38 @@ export async function staticInboxStatesForInboxIds(
   return inboxStates.map((json: string) => {
     return InboxState.from(json)
   })
+}
+
+export function staticActivatePersistentLibXMTPLogWriter(
+  logLevel: LogLevel,
+  logRotation: LogRotation,
+  logMaxFiles: number
+) {
+  XMTPModule.staticActivatePersistentLibXMTPLogWriter(
+    logLevel,
+    logRotation,
+    logMaxFiles
+  )
+}
+
+export function staticDeactivatePersistentLibXMTPLogWriter() {
+  XMTPModule.staticDeactivatePersistentLibXMTPLogWriter()
+}
+
+export function staticIsLogWriterActive() {
+  return XMTPModule.isLogWriterActive()
+}
+
+export function staticGetXMTPLogFilePaths(): string[] {
+  return XMTPModule.staticGetXMTPLogFilePaths()
+}
+
+export function readXMTPLogFile(filePath: string): Promise<string> {
+  return XMTPModule.readXMTPLogFile(filePath)
+}
+
+export function staticClearXMTPLogs(): number {
+  return XMTPModule.staticClearXMTPLogs()
 }
 
 export async function getOrCreateInboxId(

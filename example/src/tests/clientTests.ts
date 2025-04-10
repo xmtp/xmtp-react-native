@@ -9,6 +9,7 @@ import {
   assertEqual,
 } from './test-utils'
 import { Client, PublicIdentity } from '../../../src/index'
+import { LogLevel, LogRotation } from '../../../src/lib/types/LogTypes'
 
 export const clientTests: Test[] = []
 let counter = 1
@@ -92,6 +93,67 @@ test('static inboxStates for inboxIds', async () => {
     `inbox state should be ${bo.publicIdentity.identifier} but was ${inboxStates[1].recoveryIdentity.identifier}`
   )
 
+  return true
+})
+
+test('static can get log files', async () => {
+  Client.deactivatePersistentLibXMTPLogWriter()
+  Client.clearXMTPLogs()
+  const originalLogFilePaths = Client.getXMTPLogFilePaths()
+  assert(originalLogFilePaths.length === 0, 'should have log files')
+  await Client.activatePersistentLibXMTPLogWriter(
+    LogLevel.DEBUG,
+    LogRotation.MINUTELY,
+    10
+  )
+  const [alix, bo] = await createClients(2)
+
+  const addressMap = await Client.canMessage('local', [
+    alix.publicIdentity,
+    new PublicIdentity(
+      '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67',
+      'ETHEREUM'
+    ),
+    bo.publicIdentity,
+  ])
+
+  assert(
+    addressMap[
+      '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67'.toLocaleLowerCase()
+    ] === false,
+    `should not be able to message 0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67`
+  )
+
+  assert(
+    addressMap[alix.publicIdentity.identifier] === true,
+    `should be able to message ${alix.publicIdentity.identifier}`
+  )
+
+  assert(
+    addressMap[bo.publicIdentity.identifier] === true,
+    `should be able to message ${bo.publicIdentity.identifier}`
+  )
+
+  const logFilePaths = Client.getXMTPLogFilePaths()
+  assert(logFilePaths.length > 0, 'should have log files')
+
+  // Read the first log file and check its contents
+  if (logFilePaths.length > 0) {
+    console.log('num log files', logFilePaths.length)
+    console.log('logFilePaths', logFilePaths[0])
+    Client.deactivatePersistentLibXMTPLogWriter()
+
+    const logContent = await Client.readXMTPLogFile(logFilePaths[0])
+    console.log('logContent length:', logContent.length)
+    console.log('logContent sample:', logContent.substring(0, 200))
+    console.log('logContent', logContent)
+    assert(
+      logContent.includes(alix.inboxId),
+      'Log file should contain the inboxId: ' + alix.inboxId
+    )
+  }
+  Client.deactivatePersistentLibXMTPLogWriter()
+  Client.clearXMTPLogs()
   return true
 })
 
