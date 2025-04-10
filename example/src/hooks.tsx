@@ -567,7 +567,9 @@ export function useLoadMultiRemoteAttachment({
       }
     }
 
-    void loadAttachments()
+    loadAttachments().catch((err) => {
+      console.error('Error in loadAttachments:', err)
+    })
   }, [enabled, remoteAttachments, client])
 
   return { decrypted }
@@ -742,7 +744,9 @@ export function usePrepareMultiRemoteAttachment({
       }
     }
 
-    void prepareAttachments()
+    prepareAttachments().catch((err) => {
+      console.error('Error in prepareAttachments:', err)
+    })
   }, [filesRef.current, encryptAttachment, uploadAttachment])
 
   return { remoteAttachments }

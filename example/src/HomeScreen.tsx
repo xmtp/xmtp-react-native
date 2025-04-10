@@ -1,7 +1,7 @@
 import { NavigationContext } from '@react-navigation/native'
+import * as Clipboard from 'expo-clipboard'
 import moment from 'moment'
 import React, { useContext, useEffect, useState } from 'react'
-import * as Clipboard from 'expo-clipboard';
 import {
   Button,
   FlatList,
@@ -62,9 +62,11 @@ export default function HomeScreen() {
                   {client?.publicIdentity.identifier}
                 </Text>
                 <TouchableOpacity
-                  onPress={() => {
+                  onPress={async () => {
                     if (client?.publicIdentity.identifier) {
-                      Clipboard.setStringAsync(client.publicIdentity.identifier)
+                      await Clipboard.setStringAsync(
+                        client.publicIdentity.identifier
+                      )
                     }
                   }}
                   style={{

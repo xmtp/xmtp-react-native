@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 // import { ConnectWallet, useSigner } from '@thirdweb-dev/react-native'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
 import ModalSelector from 'react-native-modal-selector'
 import * as XMTP from 'xmtp-react-native-sdk'
@@ -23,7 +23,7 @@ export default function LaunchScreen(
     'dev' | 'local' | 'production'
   >('dev')
   // const signer = useSigner()
-  const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
+  // const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
   const { setClient } = useXmtp()
 
   // Create a simple implementation of savedKeys functionality

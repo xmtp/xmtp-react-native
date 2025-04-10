@@ -46,7 +46,7 @@ import {
   useMessages,
   useLoadRemoteAttachment,
   useLoadMultiRemoteAttachment,
-  usePrepareRemoteAttachment,
+  // usePrepareRemoteAttachment,
   usePrepareMultiRemoteAttachment,
 } from './hooks'
 
@@ -76,10 +76,10 @@ export default function ConversationScreen({
 
   const [isAttachmentPreviewing, setAttachmentPreviewing] = useState(false)
   const [isSending, setSending] = useState(false)
-  const { remoteAttachment } = usePrepareRemoteAttachment({
-    fileUri: attachment?.image?.uri || attachment?.file?.uri,
-    mimeType: attachment?.file?.mimeType,
-  })
+  // const { remoteAttachment } = usePrepareRemoteAttachment({
+  //   fileUri: attachment?.image?.uri || attachment?.file?.uri,
+  //   mimeType: attachment?.file?.mimeType,
+  // })
   // Update state to handle multiple attachments
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [previewingAttachmentIndex, setPreviewingAttachmentIndex] = useState<
@@ -163,15 +163,15 @@ export default function ConversationScreen({
       setSending(false)
     }
   }
-  const sendRemoteAttachmentMessage = () => {
-    if (remoteAttachment) {
-      sendMessage({ remoteAttachment })
-        .then(() => setAttachment(null))
-        .catch((e) => {
-          console.error('Error sending message: ', e)
-        })
-    }
-  }
+  // const sendRemoteAttachmentMessage = () => {
+  //   if (remoteAttachment) {
+  //     sendMessage({ remoteAttachment })
+  //       .then(() => setAttachment(null))
+  //       .catch((e) => {
+  //         console.error('Error sending message: ', e)
+  //       })
+  //   }
+  // }
   const sendTextMessage = () => sendMessage({ text }).then(() => setText(''))
   const scrollToMessageId = useCallback(
     (messageId: string) => {

@@ -371,7 +371,7 @@ export class Client<
 
   /**
    * Activates persistent logging for libXMTP with specified configuration.
-   * 
+   *
    * @param {LogLevel} logLevel - The minimum log level to record (e.g., debug, info, warn, error)
    * @param {LogRotation} logRotation - How often the log files will rotate into a new file
    * @param {number} logMaxFiles - Maximum number of log files to keep before rotation
@@ -392,7 +392,7 @@ export class Client<
   /**
    * Deactivates the persistent log writer for libXMTP.
    * This stops recording logs to persistent storage.
-   * 
+   *
    * @returns Promise that resolves when logging is deactivated
    */
   static deactivatePersistentLibXMTPLogWriter() {
@@ -403,7 +403,7 @@ export class Client<
    * Checks if the persistent log writer is currently active.
    * Note that persistent logging may be killed by OS when app is backgrounded.
    * When app is foregrounded, logging will resume if isLogWriterActive is set to true.
-   * 
+   *
    * @returns {boolean} True if logging is active, false otherwise
    */
   static isLogWriterActive() {
@@ -412,7 +412,7 @@ export class Client<
 
   /**
    * Gets the file paths of all XMTP log files.
-   * 
+   *
    * @returns {string[]} Array of file paths to log files
    */
   static getXMTPLogFilePaths(): string[] {
@@ -421,7 +421,7 @@ export class Client<
 
   /**
    * Reads the contents of a specific XMTP log file.
-   * 
+   *
    * @param {string} filePath - Path to the log file to read
    * @returns {Promise<string>} Promise resolving to the contents of the log file
    */
@@ -431,7 +431,7 @@ export class Client<
 
   /**
    * Clears all XMTP log files.
-   * 
+   *
    * @returns {number} Number of log files that were cleared
    */
   static clearXMTPLogs(): number {

@@ -46,13 +46,16 @@ test('can make a client', async () => {
 test('static can get log files', async () => {
   Client.deactivatePersistentLibXMTPLogWriter()
   Client.clearXMTPLogs()
-  let originalLogFilePaths = Client.getXMTPLogFilePaths()
-  assert(originalLogFilePaths.length == 0, 'should have log files')
+  const originalLogFilePaths = Client.getXMTPLogFilePaths()
+  assert(originalLogFilePaths.length === 0, 'should have log files')
   // await new Promise(resolve => setTimeout(resolve, 3000))
-  await Client.activatePersistentLibXMTPLogWriter(LogLevel.DEBUG, LogRotation.MINUTELY, 10)
+  await Client.activatePersistentLibXMTPLogWriter(
+    LogLevel.DEBUG,
+    LogRotation.MINUTELY,
+    10
+  )
   // await new Promise(resolve => setTimeout(resolve, 3000))
   const [alix, bo] = await createClients(2)
-
 
   const addressMap = await Client.canMessage('local', [
     alix.publicIdentity,
@@ -80,10 +83,9 @@ test('static can get log files', async () => {
     `should be able to message ${bo.publicIdentity.identifier}`
   )
 
-  let logFilePaths = Client.getXMTPLogFilePaths()
+  const logFilePaths = Client.getXMTPLogFilePaths()
   assert(logFilePaths.length > 0, 'should have log files')
   // await new Promise(resolve => setTimeout(resolve, 3000))
-
 
   // Read the first log file and check its contents
   if (logFilePaths.length > 0) {
@@ -91,14 +93,13 @@ test('static can get log files', async () => {
     console.log('logFilePaths', logFilePaths[0])
     Client.deactivatePersistentLibXMTPLogWriter()
 
-
     const logContent = await Client.readXMTPLogFile(logFilePaths[0])
     console.log('logContent length:', logContent.length)
     console.log('logContent sample:', logContent.substring(0, 200))
     console.log('logContent', logContent)
     assert(
       logContent.includes(alix.inboxId),
-      'Log file should contain the inboxId: ' +  alix.inboxId
+      'Log file should contain the inboxId: ' + alix.inboxId
     )
   }
   Client.deactivatePersistentLibXMTPLogWriter()
@@ -479,13 +480,6 @@ test('errors if dbEncryptionKey is lost', async () => {
   } else {
     return false
   }
-
-  // Client.clearXMTPLogs()
-
-  // logFilePaths = Client.getXMTPLogFilePaths()
-  // assert(logFilePaths.length === 0, 'should have no log files')
-
-  return true
 })
 
 test('static can message', async () => {
@@ -570,7 +564,6 @@ test('can revoke all other installations', async () => {
   await alix2.deleteLocalDatabase()
 
   await new Promise((resolve) => setTimeout(resolve, 1000))
-
 
   const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',

@@ -32,9 +32,9 @@ import {
 } from './lib/types/ConversationOptions'
 import { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
+import { LogLevel, LogRotation } from './lib/types/LogTypes'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
-import { LogLevel, LogRotation } from './lib/types/LogTypes'
 
 export * from './context'
 export * from './hooks'
