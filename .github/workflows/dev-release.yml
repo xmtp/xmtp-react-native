@@ -1,0 +1,89 @@
+name: Dev Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dev-release:
+    name: Dev Release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+      
+      - name: Update npm to latest
+        run: npm install -g npm@latest
+      
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      
+      - name: Validate package version format
+        id: validate-version
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          echo "Current package version: $PACKAGE_VERSION"
+          
+          if [[ ! $PACKAGE_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+-dev$ ]]; then
+            echo "Error: Package version must be in format MAJOR.MINOR.PATCH-dev"
+            echo "Current version is $PACKAGE_VERSION"
+            exit 1
+          fi
+          
+          echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Get commit SHA
+        id: get-sha
+        run: |
+          SHA=$(git rev-parse --short=7 HEAD)
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+      
+      - name: Create updated version
+        id: create-version
+        run: |
+          UPDATED_VERSION="${{ steps.validate-version.outputs.package_version }}.${{ steps.get-sha.outputs.sha }}"
+          echo "Updated version will be: $UPDATED_VERSION"
+          echo "updated_version=$UPDATED_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Update package.json version
+        run: |
+          UPDATED_VERSION="${{ steps.create-version.outputs.updated_version }}"
+          node -e "
+            const fs = require('fs');
+            const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+            packageJson.version = '$UPDATED_VERSION';
+            fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2) + '\n');
+          "
+          echo "Updated package.json version to $UPDATED_VERSION"
+      
+      - name: Create Git tag
+        run: |
+          UPDATED_VERSION="${{ steps.create-version.outputs.updated_version }}"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git tag -a "v$UPDATED_VERSION" -m "Dev release v$UPDATED_VERSION"
+      
+      - name: Build package
+        run: yarn build
+      
+      - name: Publish to NPM
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          tag: prerelease
+          dry-run: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
