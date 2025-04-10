@@ -87,6 +87,6 @@ jobs:
         with:
           token: ${{ secrets.NPM_TOKEN }}
           tag: prerelease
-          dry-run: true
+          dry-run: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
