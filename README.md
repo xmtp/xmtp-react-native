@@ -1,6 +1,6 @@
 # xmtp-react-native
  
-![Lint](https://github.com/xmtp/xmtp-android/actions/workflows/lint.yml/badge.svg) ![Status](https://img.shields.io/badge/Project_Status-Production-brightgreen)
+![Test](https://github.com/xmtp/xmtp-react-native/actions/workflows/test.yml/badge.svg) ![Lint](https://github.com/xmtp/xmtp-android/actions/workflows/lint.yml/badge.svg)
 
 This repo provides a package you can use to build with XMTP in a React Native or Expo app.
 
