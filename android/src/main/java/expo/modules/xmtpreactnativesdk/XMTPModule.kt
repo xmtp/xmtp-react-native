@@ -1584,6 +1584,13 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("syncPreferences") Coroutine { installationId: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                client.preferences.sync()
+            }
+        }
+
         AsyncFunction("setConsentState") Coroutine { installationId: String, value: String, entryType: String, consentType: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
