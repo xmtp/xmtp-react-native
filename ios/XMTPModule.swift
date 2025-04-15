@@ -2181,6 +2181,16 @@ public class XMTPModule: Module {
 				conversation, client: client)
 		}
 
+		AsyncFunction("syncPreferences") { (installationId: String) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+
+			try await client.preferences.sync()
+		}
+		
 		AsyncFunction("syncConsent") { (installationId: String) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
