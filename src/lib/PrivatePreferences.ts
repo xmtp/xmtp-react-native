@@ -39,6 +39,16 @@ export default class PrivatePreferences {
     )
   }
 
+  /**
+   * Syncs the local database between installations
+   */
+  async sync(): Promise<void> {
+    return await XMTPModule.syncPreferences(this.client.installationId)
+  }
+
+  /**
+   * @deprecated This method is deprecated. Use `sync()` instead.
+   */
   async syncConsent(): Promise<void> {
     return await XMTPModule.syncConsent(this.client.installationId)
   }

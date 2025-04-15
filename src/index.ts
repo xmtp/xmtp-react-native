@@ -1383,6 +1383,12 @@ export async function syncConsent(
   return await XMTPModule.syncConsent(installationId)
 }
 
+export async function syncPreferences(
+  installationId: InstallationId
+): Promise<void> {
+  return await XMTPModule.syncPreferences(installationId)
+}
+
 export async function setConsentState(
   installationId: InstallationId,
   value: string,

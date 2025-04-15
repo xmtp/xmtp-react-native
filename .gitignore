@@ -60,6 +60,7 @@ android/keystores/debug.keystore
 
 # Expo
 .expo/*
+.env
 
 # Typedocs
 docs/

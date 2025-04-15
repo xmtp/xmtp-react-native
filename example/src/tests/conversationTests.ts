@@ -923,7 +923,7 @@ test('can sync consent (expected to fail unless historySyncUrl is set)', async (
   // Sync conversations
   await bo.conversations.sync()
   if (boDm) await boDm.sync()
-  await alix2.preferences.syncConsent()
+  await alix2.preferences.sync()
   await alix.conversations.syncAllConversations()
   await delayToPropogate(2000)
   await alix2.conversations.syncAllConversations()
