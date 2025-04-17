@@ -1,6 +1,6 @@
 # xmtp-react-native
  
-![Lint](https://github.com/xmtp/xmtp-android/actions/workflows/lint.yml/badge.svg) ![Status](https://img.shields.io/badge/Project_Status-Production-brightgreen)
+![Test](https://github.com/xmtp/xmtp-react-native/actions/workflows/test.yml/badge.svg) ![Lint](https://github.com/xmtp/xmtp-android/actions/workflows/lint.yml/badge.svg)
 
 This repo provides a package you can use to build with XMTP in a React Native or Expo app.
 
@@ -85,9 +85,11 @@ Your app must use Android `minSdkVersion = 22` to work with the `xmtp-react-nati
 
 Because `xmtp-react-native` is in active development, you should expect breaking revisions that might require you to adopt the latest SDK release to enable your app to continue working as expected.
 
-XMTP communicates about breaking revisions in the [XMTP Discord community](https://discord.gg/xmtp), providing as much advance notice as possible. Additionally, breaking revisions in an `xmtp-react-native` release are described on the [Releases page](https://github.com/xmtp/xmtp-react-native/releases).
+Breaking revisions in an `xmtp-react-native` release are described on the [Releases page](https://github.com/xmtp/xmtp-react-native/releases).
 
 ## Deprecation
+
+XMTP communicates about deprecations in the [XMTP Community Forums](https://community.xmtp.org/), providing as much advance notice as possible.
 
 Older versions of the SDK will eventually be deprecated, which means:
 
@@ -98,6 +100,6 @@ The following table provides the deprecation schedule.
 
 | Announced              | Effective     | Minimum Version | Rationale                                                                                                                                                                  |
 |------------------------|---------------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| No more support for V2 | March 1, 2025 | 3.0.0           | In a move towards better security with MLS and the ability to decentralize we will be shutting down V2 and moving entirely to V3 MLS. You can see the legacy branch here: https://github.com/xmtp/xmtp-react-native/tree/xmtp-legacy |
+| No more support for XMTP V2 | May 1, 2025 | >=4.0.2           | In a move toward better security with MLS and the ability to decentralize, we will be shutting down XMTP V2 and moving entirely to XMTP V3. To learn more about V2 deprecation, see [XIP-53: XMTP V2 deprecation plan](https://community.xmtp.org/t/xip-53-xmtp-v2-deprecation-plan/867). To learn how to upgrade, see [xmtp-react-native v4.0.2](https://github.com/xmtp/xmtp-react-native/releases/tag/v4.0.2). For reference, you can view the [legacy branch](https://github.com/xmtp/xmtp-react-native/tree/xmtp-legacy). |
 
-Issues and PRs are welcome in accordance with our [contribution guidelines](https://github.com/xmtp/.github/blob/main/CONTRIBUTING.md).
+Issues and PRs are welcome in accordance with [XMTP contribution guidelines](https://github.com/xmtp/.github/blob/main/CONTRIBUTING.md).
