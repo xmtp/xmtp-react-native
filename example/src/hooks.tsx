@@ -777,21 +777,33 @@ export async function getDbEncryptionKey(
   network: string,
   clear: boolean = false
 ): Promise<Uint8Array> {
-  const key = `xmtp-${network}`
+  try {
+    const key = `xmtp-${network}`
 
-  const result = await EncryptedStorage.getItem(key)
-  if ((result && clear === true) || !result) {
-    if (result) {
-      console.log('Removing existing dbEncryptionKey', key)
-      await EncryptedStorage.removeItem(key)
+    const result = await EncryptedStorage.getItem(key)
+    if ((result && clear === true) || !result) {
+      if (result) {
+        console.log('Removing existing dbEncryptionKey', key)
+        await EncryptedStorage.removeItem(key)
+      }
+
+      // Generate random bytes for the encryption key
+      const randomBytes = new Uint8Array(32)
+      crypto.getRandomValues(randomBytes)
+
+      // Convert to string for storage
+      const randomBytesString = uint8ArrayToHexString(randomBytes)
+      await EncryptedStorage.setItem(key, randomBytesString)
+
+      return randomBytes
+    } else {
+      // Convert stored string back to Uint8Array
+      return hexStringToUint8Array(result)
     }
-
-    const randomBytes = crypto.getRandomValues(new Uint8Array(32))
-    const randomBytesString = uint8ArrayToHexString(randomBytes)
-    await EncryptedStorage.setItem(key, randomBytesString)
-    return randomBytes
-  } else {
-    return hexStringToUint8Array(result)
+  } catch (error) {
+    console.error('Error in getDbEncryptionKey:', error)
+    // Re-throw or handle as needed
+    throw error
   }
 }
 

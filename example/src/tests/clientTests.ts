@@ -125,7 +125,6 @@ test('can revoke all other installations', async () => {
 
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
-
   const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
     env: 'local',
     dbEncryptionKey: keyBytes,

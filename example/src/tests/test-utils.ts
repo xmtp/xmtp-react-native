@@ -83,10 +83,16 @@ export function adaptEthersWalletToSigner(wallet: Wallet): Signer {
     getBlockNumber: () => undefined, // Block number is typically not available in Wallet, return undefined
     signerType: () => 'EOA', // "EOA" indicates an externally owned account
     signMessage: async (message: string) => {
-      const signature = await wallet.signMessage(message)
-
-      return {
-        signature,
+      console.log('attempting tosignMessage', message)
+      try {
+        const signature = await wallet.signMessage(message)
+        console.log('signature', signature)
+        return {
+          signature,
+        }
+      } catch (error) {
+        console.log('error', error)
+        throw error
       }
     },
   }
