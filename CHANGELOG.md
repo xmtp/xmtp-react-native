@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.0.4
+
+### Patch Changes
+
+- 1db431b: Adjust cursor updates in message processing to prevent potential forked groups
+
 ## 4.0.3
 
 ### Patch Changes
