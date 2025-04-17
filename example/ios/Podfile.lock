@@ -55,7 +55,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.71.14)
   - hermes-engine/Pre-built (0.71.14)
   - libevent (2.1.12)
-  - LibXMTP (4.0.3)
+  - LibXMTP (4.0.4)
   - MessagePacker (0.4.7)
   - MMKV (2.1.0):
     - MMKVCore (~> 2.1.0)
@@ -448,18 +448,18 @@ PODS:
   - SQLCipher/standard (4.5.7):
     - SQLCipher/common
   - SwiftProtobuf (1.28.2)
-  - XMTP (4.0.5):
+  - XMTP (4.0.6):
     - Connect-Swift (= 1.0.0)
     - CryptoSwift (= 1.8.3)
     - CSecp256k1 (~> 0.2)
-    - LibXMTP (= 4.0.3)
+    - LibXMTP (= 4.0.4)
     - SQLCipher (= 4.5.7)
-  - XMTPReactNative (4.0.2):
+  - XMTPReactNative (4.0.3):
     - CSecp256k1 (~> 0.2)
     - ExpoModulesCore
     - MessagePacker
     - SQLCipher (= 4.5.7)
-    - XMTP (= 4.0.5)
+    - XMTP (= 4.0.6)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -687,66 +687,66 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   boost: 7dcd2de282d72e344012f7d6564d024930a6a440
   CoinbaseWalletSDK: ea1f37512bbc69ebe07416e3b29bf840f5cc3152
-  CoinbaseWalletSDKExpo: c79420eb009f482f768c23b6768fc5b2d7c98777
+  CoinbaseWalletSDKExpo: da4fcfffc53564be42f8913dd81a5a6200ec5761
   Connect-Swift: 84e043b904f63dc93a2c01c6c125da25e765b50d
   CryptoSwift: 967f37cea5a3294d9cce358f78861652155be483
   CSecp256k1: 2a59c03e52637ded98896a33be4b2649392cb843
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
-  EXApplication: 2a0d9abd4feace9c6faedfe541c1dec02e3702cd
-  EXConstants: f348da07e21b23d2b085e270d7b74f282df1a7d9
-  EXFileSystem: 844e86ca9b5375486ecc4ef06d3838d5597d895d
-  EXFont: 6ea3800df746be7233208d80fe379b8ed74f4272
-  EXImageLoader: 03063370bc06ea1825713d3f55fe0455f7c88d04
-  Expo: 0d9f112757acc6bf32103eabccf91267780bd580
-  ExpoClipboard: d2f0e44d50e5ba07b02f5fb7bd280178b420e24e
-  ExpoDocumentPicker: d3b6b0ed2dbbc2f05158e0294dd3f4673f386e5f
-  ExpoImagePicker: 9e5c745cb3e56ee00e1cfe5d6af59caab66ecf1a
-  ExpoKeepAwake: 69f5f627670d62318410392d03e0b5db0f85759a
-  ExpoModulesCore: 653958063a301098b541ae4dfed1ac0b98db607b
-  ExpoSecureStore: 5372610a4bbcf5e50fafbe6f38f8d9c22edf8253
-  EXSplashScreen: 0e0a9ba0cf7553094e93213099bd7b42e6e237e9
+  EXApplication: c60c2fc0a9ba64a1c17efd976b6521931b73d6b8
+  EXConstants: 0a70495c8b5dff454903ed9e798dbb39da9c3fd7
+  EXFileSystem: 6c8c6df1f092c49cbbb97df4273eee3b619369b9
+  EXFont: b5ea75d76062ca34e3bfbbff13566fff2ed3908e
+  EXImageLoader: 0bf290da061ebd43c1dc57a481bb83a210eee16c
+  Expo: 05b4981d69ae273c308cf71c970910e5eb842683
+  ExpoClipboard: 4b79477d83511daf0dad491932ad2404f8e71ca4
+  ExpoDocumentPicker: 3960375e9b35f836cf25f06a0da82657fb2d2bc8
+  ExpoImagePicker: 5b79d3ea005ec953a21e41c28b4c8312f101ea0a
+  ExpoKeepAwake: 481c67a960701751b2a16e6018c2068602beb279
+  ExpoModulesCore: 57b9b1b34195cd7c70e20b649934c37509988926
+  ExpoSecureStore: 0fcdedf77e48b9d4259fab210f7eb97c1d275d0b
+  EXSplashScreen: e4eb582134342e456ec72eda42ae017570c16eb0
   FBLazyVector: 12ea01e587c9594e7b144e1bfc86ac4d9ac28fde
   FBReactNativeSpec: b6ae48e67aaba46442f84d6f9ba598ccfbe2ee66
   fmt: ff9d55029c625d3757ed641535fd4a75fedc7ce9
   glog: 04b94705f318337d7ead9e6d17c019bd9b1f6b1b
   hermes-engine: d7cc127932c89c53374452d6f93473f1970d8e88
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  LibXMTP: 8afe9d029d10d2067d24b98c0d4cb9531d30c32f
+  LibXMTP: f483261aa52ed115a2fa937990121391d549c0f6
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: ce484c1ac40bf76d5f09a0195d2ec5b3d3840d55
   MMKVCore: 1eb661c6c498ab88e3df9ce5d8ff94d05fcc0567
   OpenSSL-Universal: 6e1ae0555546e604dbc632a2b9a24a9c46c41ef6
-  RCT-Folly: 424b8c9a7a0b9ab2886ffe9c3b041ef628fd4fb1
+  RCT-Folly: 8dc08ca5a393b48b1c523ab6220dfdcc0fe000ad
   RCTRequired: e9df143e880d0e879e7a498dc06923d728809c79
   RCTTypeSafety: c2d89c8308829c12c038ec1f431191eaa0d8c15c
   React: 52b89a818f4b2579c98567f3aa8bde880d9e843b
   React-callinvoker: 56e399c88c05e037fe99c31978f30e75fad5c286
-  React-Codegen: 7ece62f4d4896ad1933f834a7dad697676636318
-  React-Core: f06b7b00e0d49433a316760ae61a0f8f5dee6629
-  React-CoreModules: bd520e5688b5aa4666965a1b3b8e6d4a2e19df20
-  React-cxxreact: ba6a1663685837fa4c2ac97daa95dd2e47f1acdc
-  React-hermes: c862e573ca0228070936b5ec4f475c3e19e900e0
-  React-jsi: 533030c161bcfcbc3a4ad0b357ced8f7b2be457e
-  React-jsiexecutor: 94cfc1788637ceaf8841ef1f69b10cc0d62baadc
+  React-Codegen: 14eb9a991b03cde347851d89076b204dc99ee337
+  React-Core: ab6fd9b1d9e1d840dc0c4be322108d1e2998a94e
+  React-CoreModules: 5784d653a3e80595ab7238f676c6d55266fe86a8
+  React-cxxreact: 92fdda1d1226dec016fb014879de806ac9cf9d54
+  React-hermes: 3b49088bbaa8a0da1f7f5bc34421a2b66e9df5f8
+  React-jsi: 8b6a4c7d03b822e2466ce08ac9af0b49cbc22ebb
+  React-jsiexecutor: f408f7b6b7789b2ceae2a95505edae9c5288ffef
   React-jsinspector: 7bf923954b4e035f494b01ac16633963412660d7
-  React-logger: 655ff5db8bd922acfbe76a4983ffab048916343e
-  react-native-blob-util: d8fa1a7f726867907a8e43163fdd8b441d4489ea
-  react-native-config: 86038147314e2e6d10ea9972022aa171e6b1d4d8
-  react-native-encrypted-storage: db300a3f2f0aba1e818417c1c0a6be549038deb7
-  react-native-get-random-values: 21325b2244dfa6b58878f51f9aa42821e7ba3d06
-  react-native-mmkv: e97c0c79403fb94577e5d902ab1ebd42b0715b43
-  react-native-netinfo: 8a7fd3f7130ef4ad2fb4276d5c9f8d3f28d2df3d
-  react-native-quick-base64: 777057ea4286f806b00259ede65dc79c7c706320
-  react-native-quick-crypto: 455c1b411db006dba1026a30681ececb19180187
-  react-native-randombytes: 421f1c7d48c0af8dbcd471b0324393ebf8fe7846
-  react-native-safe-area-context: 39c2d8be3328df5d437ac1700f4f3a4f75716acc
-  react-native-sqlite-storage: f6d515e1c446d1e6d026aa5352908a25d4de3261
-  react-native-webview: bdc091de8cf7f8397653e30182efcd9f772e03b3
+  React-logger: ef3143e266e67db6440cd2ff5b516030de79e425
+  react-native-blob-util: b3ffacd7f910f88b44172fd414a4a828a9d28cfa
+  react-native-config: 136f9755ccc991cc6438053a44363259ad4c7813
+  react-native-encrypted-storage: 569d114e329b1c2c2d9f8c84bcdbe4478dda2258
+  react-native-get-random-values: d16467cf726c618e9c7a8c3c39c31faa2244bbba
+  react-native-mmkv: 5a46c73e3e12aa872c4485ae0e4414b4040af79a
+  react-native-netinfo: f084f2324cb11b986503a39a3ccbb5d15e2a56d3
+  react-native-quick-base64: daf67f19ee076b77f0755bf4056f3425f164e1d8
+  react-native-quick-crypto: eff065b704d3f1c6e336cfc612dce63228ab3482
+  react-native-randombytes: 3c8f3e89d12487fd03a2f966c288d495415fc116
+  react-native-safe-area-context: 863c9695a24b9e6bb6c412f1c8ddb4dfc3ae3862
+  react-native-sqlite-storage: 0c84826214baaa498796c7e46a5ccc9a82e114ed
+  react-native-webview: 11105d80264df1a56fbbb0c774311a52bb287388
   React-perflogger: 4987ad83731c23d11813c84263963b0d3028c966
   React-RCTActionSheet: 5ad952b2a9740d87a5bd77280c4bc23f6f89ea0c
   React-RCTAnimation: d2de22af3f536cc80bb5b3918e1a455114d1b985
-  React-RCTAppDelegate: 27f7d735cad3d522c13008ea80020d350017c422
-  React-RCTBlob: b697e0e2e38ec85bd726176851a3b476a490ad33
+  React-RCTAppDelegate: c1f61d369f5d5bfa1897c04443a1a444a361e87a
+  React-RCTBlob: 5f0d8c5bdd5e962b6e7099ce116b369a77040778
   React-RCTImage: a07e8c7d4768f62ebc6277e4680f6b979c619967
   React-RCTLinking: d00ae55db37b2c12ebab91135f06f75391c0708d
   React-RCTNetwork: b3a401276e5c08487d8a14fdec1720e78b5888db
@@ -754,18 +754,18 @@ SPEC CHECKSUMS:
   React-RCTText: b3bd40bc71bca0c3e2cc5ce2c40870a438f303b1
   React-RCTVibration: 64e412b9ac684c4edc938fa1187135ada9af7faf
   React-runtimeexecutor: ffe826b7b1cfbc32a35ed5b64d5886c0ff75f501
-  ReactCommon: 7f3dd5e98a9ec627c6b03d26c062bf37ea9fc888
-  RNCAsyncStorage: 618d03a5f52fbccb3d7010076bc54712844c18ef
-  RNCClipboard: 41d8d918092ae8e676f18adada19104fa3e68495
-  RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
-  RNScreens: 218801c16a2782546d30bd2026bb625c0302d70f
-  RNSVG: d00c8f91c3cbf6d476451313a18f04d220d4f396
+  ReactCommon: ce6e3a7ae388a450c1a01a4e8b9fa2309d2a9725
+  RNCAsyncStorage: a03b770a50541a761447cea9c24536047832124d
+  RNCClipboard: b0541df1bb88935d40bdc93b41b7d8e3334c998a
+  RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
+  RNScreens: c6ae949c292bee8ed7f355ab2adcfc9a51629951
+  RNSVG: 4cab00c621b328a4a2fedaaedc15d8822216723e
   SQLCipher: 5e6bfb47323635c8b657b1b27d25c5f1baf63bf5
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
-  XMTP: 070d4af15cd46ef7243621f1c44a4f5f8ec1e894
-  XMTPReactNative: a13ef70582f590a735fdeb40b93eb22197e2dbe8
+  XMTP: a9ae4752dea8f94ffd8ac8a80aa7fb87113d49d5
+  XMTPReactNative: 8b15c7a5134cbbc2b751b88a110a00199f5a11ee
   Yoga: e71803b4c1fff832ccf9b92541e00f9b873119b9
 
 PODFILE CHECKSUM: 2d04c11c2661aeaad852cd3ada0b0f1b06e0cf24
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2
