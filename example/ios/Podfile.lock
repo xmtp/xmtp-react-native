@@ -60,7 +60,7 @@ PODS:
   - hermes-engine (0.76.9):
     - hermes-engine/Pre-built (= 0.76.9)
   - hermes-engine/Pre-built (0.76.9)
-  - LibXMTP (4.2.0-dev.d811cc6)
+  - LibXMTP (4.2.0-dev.4ba3b55)
   - MessagePacker (0.4.7)
   - MMKV (2.1.0):
     - MMKVCore (~> 2.1.0)
@@ -1737,18 +1737,18 @@ PODS:
   - SQLCipher/standard (4.5.7):
     - SQLCipher/common
   - SwiftProtobuf (1.28.2)
-  - XMTP (4.2.0-dev.b090b8a):
+  - XMTP (4.2.0-dev.b10e719):
     - Connect-Swift (= 1.0.0)
     - CryptoSwift (= 1.8.3)
     - CSecp256k1 (~> 0.2)
-    - LibXMTP (= 4.2.0-dev.d811cc6)
+    - LibXMTP (= 4.2.0-dev.4ba3b55)
     - SQLCipher (= 4.5.7)
   - XMTPReactNative (4.2.0-dev):
     - CSecp256k1 (~> 0.2)
     - ExpoModulesCore
     - MessagePacker
     - SQLCipher (= 4.5.7)
-    - XMTP (= 4.2.0-dev.b090b8a)
+    - XMTP (= 4.2.0-dev.b10e719)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2080,7 +2080,7 @@ SPEC CHECKSUMS:
   fmt: 01b82d4ca6470831d1cc0852a1af644be019e8f6
   glog: 08b301085f15bcbb6ff8632a8ebaf239aae04e6a
   hermes-engine: 9e868dc7be781364296d6ee2f56d0c1a9ef0bb11
-  LibXMTP: 5c439d35b78ab4d1e6e320992ad96dd60d279311
+  LibXMTP: 80e594671ce3f19f58fa4068403f98d5629d5111
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
   MMKV: ce484c1ac40bf76d5f09a0195d2ec5b3d3840d55
   MMKVCore: 1eb661c6c498ab88e3df9ce5d8ff94d05fcc0567
@@ -2160,8 +2160,8 @@ SPEC CHECKSUMS:
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SQLCipher: 5e6bfb47323635c8b657b1b27d25c5f1baf63bf5
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
-  XMTP: bae9813adcd4af0a3f72931218318ef8a41f3dc2
-  XMTPReactNative: 734462bb4cdbdb9ba1b59345cf22856a09c04254
+  XMTP: 71a89fc9b80df8edabc63fe2c63dbb7359fd0442
+  XMTPReactNative: 46f5f600450d114d29eff2ca7e87c8a2ae4e937c
   Yoga: feb4910aba9742cfedc059e2b2902e22ffe9954a
 
 PODFILE CHECKSUM: 283c313cbc1ba9857a692b5901eb740dad922eca
