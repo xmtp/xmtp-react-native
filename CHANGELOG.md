@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.0.5
+
+### Patch Changes
+
+- 30b9ef1: Welcome processing fix patch release
+
 ## 4.0.4
 
 ### Patch Changes
