@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 30b9ef1: Welcome processing fix patch release
+- 30b9ef1: Prevents errors from streaming new groups out of order
 
 ## 4.0.4
 
