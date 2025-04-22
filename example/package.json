@@ -17,6 +17,7 @@
     "@react-native-community/netinfo": "9.3.7",
     "@react-navigation/native": "^6.1.6",
     "@react-navigation/native-stack": "^6.9.12",
+    "@xmtp/content-type-wallet-send-calls": "^1.0.1",
     "@xmtp/proto": "3.54.0",
     "buffer": "^6.0.3",
     "ethers": "^5.8.0",

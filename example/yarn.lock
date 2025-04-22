@@ -2271,10 +2271,34 @@
   resolved "https://registry.npmjs.org/@xmldom/xmldom/-/xmldom-0.7.13.tgz#ff34942667a4e19a9f4a0996a76814daac364cf3"
   integrity sha512-lm2GW5PkosIzccsaZIz7tp8cPADSIlIHWDFTR1N0SzfinhhYgeIQjFMz4rYzanCScr3DqQLeomUDArp6MWKm+g==
 
+"@xmtp/content-type-primitives@^2.0.2":
+  version "2.0.2"
+  resolved "https://registry.npmjs.org/@xmtp/content-type-primitives/-/content-type-primitives-2.0.2.tgz#cfd6f9fc2b7d7ba1cb0d21325cb0e99458988602"
+  integrity sha512-OTUsCD48sO2Eg69dfre32OSnXSkmefbSZA4L0S58LqYK6+hMymFRRjEH4fvPzXc9WCw5FmCYEG7DFAaB680HiQ==
+  dependencies:
+    "@xmtp/proto" "^3.78.0"
+
+"@xmtp/content-type-wallet-send-calls@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/@xmtp/content-type-wallet-send-calls/-/content-type-wallet-send-calls-1.0.1.tgz#dcf33bf3927fa6ec253016d1a2b1cbfb2d0d8599"
+  integrity sha512-PVpp0WDMzcKBAO4dFWa2jXTtuLzwimdp+aucpBFlfEv4dJBi2QFaXHinJc79FXdz+UZx70ed1RkAqLmEHN8y8g==
+  dependencies:
+    "@xmtp/content-type-primitives" "^2.0.2"
+
 "@xmtp/proto@3.54.0":
   version "3.54.0"
   resolved "https://registry.npmjs.org/@xmtp/proto/-/proto-3.54.0.tgz#1b6be9fa2268a51b730bf484af3bf0ebc2621505"
   integrity sha512-X0jDRR19/tH0qRB8mM/H/vBueQAK22VZF4QUnDN7TgnbNaOYL5DvSmPfXFH+xzeGKQ5S0zgwc+qFJbI4xoKNHw==
+  dependencies:
+    long "^5.2.0"
+    protobufjs "^7.0.0"
+    rxjs "^7.8.0"
+    undici "^5.8.1"
+
+"@xmtp/proto@^3.78.0":
+  version "3.78.0"
+  resolved "https://registry.npmjs.org/@xmtp/proto/-/proto-3.78.0.tgz#6423d5c2fde40fcdcb953cb82a71f101f547c807"
+  integrity sha512-JHkkvbdyqpWo1YOg88uOrc2GAsPnfXhIWaUKyIjXQdt4LltR4iAMgXcr1CFN+xjUmOBkAwwJ2JywUYv/uA4yZA==
   dependencies:
     long "^5.2.0"
     protobufjs "^7.0.0"
