@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.0.5
+
+### Patch Changes
+
+- 30b9ef1: Prevents errors from streaming new groups out of order
+
 ## 4.0.4
 
 ### Patch Changes
