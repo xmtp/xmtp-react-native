@@ -591,6 +591,58 @@ export async function getHmacKeys(
   return keystore.GetConversationHmacKeysResponse.decode(array)
 }
 
+export type NativeMetrics = {
+  totalNativeDurationMs: number
+  encodingNativeDurationMs: number
+  messages: string[]
+}
+
+export type FullMetrics = NativeMetrics & {
+  bridgeMs: number
+  jsDecodeMs: number
+  totalMs: number
+}
+
+export async function conversationMessagesWithMetrics<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  clientInstallationId: InstallationId,
+  conversationId: ConversationId,
+  limit?: number | undefined,
+  beforeNs?: number | undefined,
+  afterNs?: number | undefined,
+  direction?: MessageOrder | undefined
+): Promise<{ messages: DecodedMessageUnion<ContentTypes>[]; metrics: FullMetrics }> {  
+  const callStart = performance.now();
+  const res: NativeMetrics = await XMTPModule.conversationMessages(
+    clientInstallationId,
+    conversationId,
+    limit,
+    beforeNs,
+    afterNs,
+    direction
+  )
+  const afterBridge = performance.now();
+  const bridgeMs = afterBridge - callStart - res.totalNativeDurationMs;
+
+
+  const decodeStart = performance.now();
+  const decoded: DecodedMessageUnion<ContentTypes>[] = res.messages.map((json: string) => {
+    return DecodedMessage.from(json)
+  })
+  const jsDecodeMs = performance.now() - decodeStart;
+
+  return {
+    messages: decoded,
+    metrics: {
+      ...res,           // totalNativeDurationMs, encodingNativeDurationMs
+      bridgeMs,
+      jsDecodeMs,
+      totalMs: performance.now() - callStart,
+    }
+  }
+}
+
 export async function conversationMessages<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
@@ -601,7 +653,7 @@ export async function conversationMessages<
   afterNs?: number | undefined,
   direction?: MessageOrder | undefined
 ): Promise<DecodedMessageUnion<ContentTypes>[]> {
-  const messages = await XMTPModule.conversationMessages(
+  const metrics = await conversationMessagesWithMetrics(
     clientInstallationId,
     conversationId,
     limit,
@@ -609,9 +661,7 @@ export async function conversationMessages<
     afterNs,
     direction
   )
-  return messages.map((json: string) => {
-    return DecodedMessage.from(json)
-  })
+  return metrics.messages as DecodedMessageUnion<ContentTypes>[]
 }
 
 export async function conversationMessagesWithReactions<

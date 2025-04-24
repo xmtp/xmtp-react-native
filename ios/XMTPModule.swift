@@ -28,6 +28,8 @@ actor IsolatedManager<T> {
 	}
 }
 
+private func nowMs() -> Double { CFAbsoluteTimeGetCurrent() * 1_000 }
+
 public class XMTPModule: Module {
 	// Constants
     private struct Constants {
@@ -877,7 +879,8 @@ public class XMTPModule: Module {
 			(
 				installationId: String, conversationId: String, limit: Int?,
 				beforeNs: Double?, afterNs: Double?, direction: String?
-			) -> [String] in
+			) -> [String: Any] in
+            let tStartMs    = nowMs()
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -899,17 +902,34 @@ public class XMTPModule: Module {
 				direction: getSortDirection(
 					direction: direction ?? "DESCENDING")
 			)
+            
+            // Start timing message encoding
+            let tEncodingStartMs = nowMs()
+            
+            let encoded_messages = messages.compactMap { msg in
+                do {
+                    return try MessageWrapper.encode(msg)
+                } catch {
+                    print(
+                        "discarding message, unable to encode wrapper \(msg.id)"
+                    )
+                    return nil
+                }
+            }
+            
+            // Get encoding duration
+            let tEncodingDoneMs = nowMs()
+            let encodingNativeDurationMs = tEncodingDoneMs - tEncodingStartMs
+            
+            // timings
+            let tNativeDoneMs  = nowMs()
+            let totalNativeDurationMs = tNativeDoneMs - tStartMs
 
-			return messages.compactMap { msg in
-				do {
-					return try MessageWrapper.encode(msg)
-				} catch {
-					print(
-						"discarding message, unable to encode wrapper \(msg.id)"
-					)
-					return nil
-				}
-			}
+			return [
+                "totalNativeDurationMs" : totalNativeDurationMs,
+                "encodingNativeDurationMs": encodingNativeDurationMs,
+                "messages"         : encoded_messages
+              ]
 		}
 
 		AsyncFunction("conversationMessagesWithReactions") {

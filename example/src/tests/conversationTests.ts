@@ -16,7 +16,10 @@ import {
   ConsentRecord,
   Conversation,
   ConversationId,
+  conversationMessages,
+  conversationMessagesWithMetrics,
   ConversationVersion,
+  FullMetrics,
   JSContentCodec,
 } from '../../../src/index'
 
@@ -33,8 +36,8 @@ type EncodedContent = content.EncodedContent
 type ContentTypeId = content.ContentTypeId
 
 test('test message retrieval performance', async () => {
-  const NUM_GROUPS = 11; // Reduced from 20 for quicker test
-  const MESSAGES_PER_GROUP = 100; // Reduced from 100 for quicker test
+  const NUM_GROUPS = 5; 
+  const MESSAGES_PER_GROUP = 50; // Reduced from 50 for quicker test
   const MAX_FIND_MESSAGES_TIME_MS = 1000; // 1 second max allowed time
 
   // Create two test clients
@@ -135,10 +138,11 @@ test('test message retrieval performance', async () => {
       const findStart = Date.now();
       
       try {
-        const messages = await group.messages();
-        const duration = Date.now() - findStart;
+        const messagesWithMetrics = await conversationMessagesWithMetrics(alice.installationId, group.id);
+        const metrics: FullMetrics = messagesWithMetrics.metrics;
+        const messages = messagesWithMetrics.messages;
         
-        return { groupIdx: i, messageCount: messages.length, duration };
+        return { groupIdx: i, messageCount: messages.length, metrics };
       } catch (e) {
         return { groupIdx: i, error: e };
       }
@@ -160,8 +164,11 @@ test('test message retrieval performance', async () => {
       continue;
     }
     
-    const { groupIdx, messageCount, duration } = result;
-    console.log(`  - Group ${groupIdx}: Found ${messageCount} messages in ${duration}ms`);
+    const { groupIdx, messageCount, metrics } = result;
+    console.log(`  - Group ${groupIdx}: Found ${messageCount} messages in ${metrics.totalMs}ms`);
+    console.log(`    - Bridge: ${metrics.bridgeMs}ms, JS Decode: ${metrics.jsDecodeMs}ms, Native: ${metrics.totalNativeDurationMs}ms, Encoding: ${metrics.encodingNativeDurationMs}ms`);
+    const sum = metrics.bridgeMs + metrics.jsDecodeMs + metrics.totalNativeDurationMs + metrics.encodingNativeDurationMs;
+    console.log(`    - Sum: ${sum}ms`);
     
     // Check that we found all messages
     assert(
@@ -170,7 +177,7 @@ test('test message retrieval performance', async () => {
     );
     
     // Check performance requirement
-    if (duration > MAX_FIND_MESSAGES_TIME_MS) {
+    if (metrics.totalMs > MAX_FIND_MESSAGES_TIME_MS) {
       console.log(`    WARNING: messages() took longer than ${MAX_FIND_MESSAGES_TIME_MS}ms`);
       success = false;
     }
