@@ -9,6 +9,7 @@ import { dmTests } from './tests/dmTests'
 import { groupPerformanceTests } from './tests/groupPerformanceTests'
 import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
+import { historySyncTests } from './tests/historySyncTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
 import { Test } from './tests/test-utils'
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
@@ -115,6 +116,7 @@ export enum TestCategory {
   groupPermissions = 'groupPermissions',
   groupPerformance = 'groupPerformance',
   contentType = 'contentType',
+  historySync = 'historySync',
 }
 
 export default function TestScreen(): JSX.Element {
@@ -131,6 +133,7 @@ export default function TestScreen(): JSX.Element {
     ...restartStreamTests,
     ...groupPermissionsTests,
     ...contentTypeTests,
+    ...historySyncTests,
   ]
   let activeTests, title
   switch (params.testSelection) {
@@ -169,6 +172,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.contentType:
       activeTests = contentTypeTests
       title = 'Content Type Unit Tests'
+      break
+    case TestCategory.historySync:
+      activeTests = historySyncTests
+      title = 'History Sync Unit Tests'
       break
   }
 
