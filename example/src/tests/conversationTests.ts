@@ -102,6 +102,108 @@ class NumberCodecEmptyFallback extends NumberCodec {
   }
 }
 
+test('returns all push topics and validates HMAC keys', async () => {
+  const keyBytes = crypto.getRandomValues(new Uint8Array(32))
+  const [bo] = await createClients(1)
+  const eriWallet = Wallet.createRandom()
+
+  const eriClient = await Client.create(adaptEthersWalletToSigner(eriWallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
+
+  await eriClient.conversations.newConversation(bo.inboxId)
+  await bo.conversations.newGroup([eriClient.inboxId])
+
+  const eriClient2 = await Client.create(adaptEthersWalletToSigner(eriWallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+  })
+  await eriClient2.conversations.newConversation(bo.inboxId)
+
+  await bo.conversations.syncAllConversations()
+  await eriClient.conversations.syncAllConversations()
+  await eriClient2.conversations.syncAllConversations()
+
+  const allTopics = await eriClient.conversations.getAllPushTopics()
+  const conversations = await eriClient.conversations.list()
+  const { hmacKeys } = await eriClient.conversations.getHmacKeys()
+
+  conversations.forEach((c) => {
+    assert(
+      Object.keys(hmacKeys).includes(c.topic),
+      `Missing topic ${c.topic} in HMAC keys`
+    )
+  })
+
+  assert(allTopics.length >= 3, 'Length should be greater than 3')
+  assert(conversations.length === 2, 'Length should be 2')
+  return true
+})
+
+test('streams all messages filtered by consent', async () => {
+  const [bo, caro, alix] = await createClients(3)
+  const allowedGroup = await bo.conversations.newGroup([caro.inboxId])
+  const allowedDm = await bo.conversations.findOrCreateDm(caro.inboxId)
+
+  const deniedGroup = await bo.conversations.newGroup([alix.inboxId])
+  const deniedDm = await bo.conversations.findOrCreateDm(alix.inboxId)
+
+  await deniedGroup.updateConsent('denied')
+  await deniedDm.updateConsent('denied')
+
+  await bo.conversations.syncAllConversations()
+
+  let messageCallbacks = 0
+  await bo.conversations.streamAllMessages(
+    async () => {
+      messageCallbacks++
+    },
+    undefined,
+    ['allowed'] // Only allow ALLOWED consent messages
+  )
+
+  await allowedGroup.send({ text: 'hi' })
+  await allowedDm.send({ text: 'hi' })
+  await deniedGroup.send({ text: 'hi' })
+  await deniedDm.send({ text: 'hi' })
+
+  await delayToPropogate(2000)
+
+  bo.conversations.cancelStreamAllMessages()
+
+  assert(
+    messageCallbacks === 2,
+    `Expected 2 allowed messages, got ${messageCallbacks}`
+  )
+  return true
+})
+
+test('can create optimistic group', async () => {
+  const [bo, alix] = await createClients(2)
+  const group = await bo.conversations.newGroupOptimistic({
+    name: 'Testing',
+  })
+
+  await group.prepareMessage({ text: 'testing' })
+
+  const initialMessages = await group.messages()
+  assert(initialMessages.length === 1, 'Expected 1 prepared message')
+
+  await group.addMembers([alix.inboxId])
+  await group.sync()
+  await group.publishPreparedMessages()
+
+  const messages = await group.messages()
+  const members = await group.members()
+
+  const name = await group.name()
+  assert(name === 'Testing', 'Group name should be Testing')
+  assert(messages.length === 2, 'Messages length should be 2 because of invite')
+  assert(members.length === 2, 'Members list should be 2')
+  return true
+})
+
 test('register and use custom content types', async () => {
   const keyBytes = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -284,6 +386,14 @@ test('can find a conversations by id', async () => {
     boDm?.id === alixDm.id,
     `bo dm id ${boDm?.id} does not match alix dm id ${alixDm.id}`
   )
+
+  const debugInfo = await alixDm.getDebugInformation()
+  assert(
+    debugInfo.epoch === 1,
+    `dm epoch should be 1 but was ${debugInfo.epoch}`
+  )
+  assert(debugInfo.maybeForked === false, `should not be forked`)
+  assert(debugInfo.forkDetails === '', `fork details should be empty`)
 
   return true
 })

@@ -16,6 +16,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationDebugInfoWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
@@ -1709,7 +1710,7 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no group found for $conversationId")
-                conversation.getDebugInformation()
+                ConversationDebugInfoWrapper.encode(conversation.getDebugInformation())
             }
         }
 
