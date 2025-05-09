@@ -873,6 +873,15 @@ public class XMTPModule: Module {
 			return try [UInt8](hmacKeys.serializedData())
 		}
 
+		AsyncFunction("getAllPushTopics") { (installationId: String) -> [String] in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			return try await client.conversations.allPushTopics()
+		}
+
 		AsyncFunction("conversationMessages") {
 			(
 				installationId: String, conversationId: String, limit: Int?,
@@ -1376,6 +1385,38 @@ public class XMTPModule: Module {
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
+				throw error
+			}
+		}
+
+		AsyncFunction("createGroupOptimistic") { (installationId: String, permission: String, groupOptionsJson: String) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			
+			let permissionLevel: GroupPermissionPreconfiguration = {
+				switch permission {
+				case "admin_only":
+					return .adminOnly
+				default:
+					return .allMembers
+				}
+			}()
+			
+			do {
+				let createGroupParams = CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
+				let group = try await client.conversations.newGroupOptimistic(
+					permissions: permissionLevel,
+                    groupName: createGroupParams.groupName,
+                    groupImageUrlSquare: createGroupParams.groupImageUrl,
+                    groupDescription: createGroupParams.groupDescription,
+					disappearingMessageSettings: createGroupParams.disappearingMessageSettings
+				)
+				return try await GroupWrapper.encode(group, client: client)
+			} catch {
+				print("ERROR!: \(error.localizedDescription)")
 				throw error
 			}
 		}
@@ -2312,6 +2353,52 @@ public class XMTPModule: Module {
 			return try await conversation.pausedForVersion()
 		}
 
+		AsyncFunction("getConversationHmacKeys") { (installationId: String, conversationId: String) -> [UInt8] in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			
+			guard
+				let conversation = try await client.conversations.findConversation(conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+			}
+			
+			let hmacKeys = try conversation.getHmacKeys()
+			return try [UInt8](hmacKeys.serializedData())
+		}
+
+		AsyncFunction("getConversationPushTopics") { (installationId: String, conversationId: String) -> [String] in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			
+			guard
+				let conversation = try await client.conversations.findConversation(conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+			}
+			
+			return try await conversation.getPushTopics()
+		}
+
+		AsyncFunction("getDebugInformation") { (installationId: String, conversationId: String) -> String in
+			guard let client = await clientsManager.getClient(key: installationId) else {
+				throw Error.noClient
+			}
+			
+			guard let conversation = try await client.conversations.findConversation(conversationId: conversationId) else {
+				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+			}
+			
+			let debugInfo = try await conversation.getDebugInformation()
+			return try ConversationDebugInfoWrapper.encode(debugInfo)
+		}
+
 		AsyncFunction("subscribeToPreferenceUpdates") {
 			(installationId: String) in
 
@@ -2335,10 +2422,12 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("subscribeToAllMessages") {
-			(installationId: String, type: String) in
+            (installationId: String, type: String, consentStates: [String]?) in
 			try await subscribeToAllMessages(
 				installationId: installationId,
-				type: getConversationType(type: type))
+				type: getConversationType(type: type),
+                consentStates: (consentStates == nil || consentStates!.isEmpty) ? nil : try getConsentStates(states: consentStates!)
+            )
 		}
 
 		AsyncFunction("subscribeToMessages") {
@@ -2757,7 +2846,9 @@ public class XMTPModule: Module {
 	}
 
 	func subscribeToAllMessages(
-		installationId: String, type: ConversationFilterType
+		installationId: String,
+        type: ConversationFilterType,
+        consentStates: [ConsentState]?
 	)
 		async throws
 	{
@@ -2774,7 +2865,7 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await message in await client.conversations
-						.streamAllMessages(type: type)
+						.streamAllMessages(type: type, consentStates: consentStates)
 					{
 						try sendEvent(
 							"message",

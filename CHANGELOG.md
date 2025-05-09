@@ -1,5 +1,19 @@
 # @xmtp/react-native-sdk
 
+## 4.2.0-rc2
+
+### Pre Release
+
+- Adds the ability to get all topics including duplicate dms for conversations
+- Adds ability to get all topics for a individual conversation
+- Adds ability to filter consent state from streamAll
+- Adds extra logging to signingkey errors
+- Adds ability to get HmacKeys for a individual conversation
+- Bumps bindings to latest
+- Add conversation debug information
+- Add history sync testing
+- Optimistic group creation
+
 ## 4.0.3
 
 ### Patch Changes

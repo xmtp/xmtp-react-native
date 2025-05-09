@@ -287,6 +287,28 @@ export default class Conversations<
   }
 
   /**
+   * Creates a new group optimistically in the local database without hitting the network
+   *
+   * Call sync() to publish to the network and addMembers() to add members to the group
+   *
+   * @param {CreateGroupOptions} opts - The options to use for the group.
+   * @returns {Promise<Group<ContentTypes>>} A Promise that resolves to a Group object.
+   */
+  async newGroupOptimistic(
+    opts?: CreateGroupOptions | undefined
+  ): Promise<Group<ContentTypes>> {
+    return await XMTPModule.createGroupOptimistic(
+      this.client,
+      opts?.permissionLevel,
+      opts?.name,
+      opts?.imageUrl,
+      opts?.description,
+      opts?.disappearingMessageSettings?.disappearStartingAtNs,
+      opts?.disappearingMessageSettings?.retentionDurationInNs
+    )
+  }
+
+  /**
    * This method returns a list of all groups that the client is a member of.
    * To get the latest list of groups from the network, call syncGroups() first.
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the groups in the list.
@@ -346,6 +368,13 @@ export default class Conversations<
    */
   async getHmacKeys(): Promise<keystore.GetConversationHmacKeysResponse> {
     return await XMTPModule.getHmacKeys(this.client.installationId)
+  }
+
+  /**
+   * This method returns a list of conversation topics for the conversation to help subscribe to push notifications
+   */
+  async getAllPushTopics(): Promise<ConversationTopic[]> {
+    return await XMTPModule.getAllPushTopics(this.client.installationId)
   }
 
   /**
@@ -412,14 +441,20 @@ export default class Conversations<
    *
    * This method subscribes to all conversations in real-time and listens for incoming and outgoing messages.
    * @param {type} ConversationFilterType - Whether to stream messages from groups, dms, or both
+   * @param {consentStates} ConsentState[] - Whether to stream messages from allowed, unknown, add denied groups. Defaults to allowed and unknown
    * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
    * @returns {Promise<void>} A Promise that resolves when the stream is set up.
    */
   async streamAllMessages(
     callback: (message: DecodedMessageUnion<ContentTypes>) => Promise<void>,
-    type: ConversationFilterType = 'all'
+    type: ConversationFilterType = 'all',
+    consentStates: ConsentState[] | undefined = undefined
   ): Promise<void> {
-    XMTPModule.subscribeToAllMessages(this.client.installationId, type)
+    XMTPModule.subscribeToAllMessages(
+      this.client.installationId,
+      type,
+      consentStates
+    )
     const subscription = XMTPModule.emitter.addListener(
       EventTypes.Message,
       async ({

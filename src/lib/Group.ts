@@ -5,6 +5,7 @@ import { DecodedMessage } from './DecodedMessage'
 import { Member, MembershipResult } from './Member'
 import * as XMTP from '../index'
 import {
+  ConversationDebugInfo,
   ConversationId,
   ConversationTopic,
   DisappearingMessageSettings,
@@ -17,6 +18,7 @@ import { EventTypes } from './types/EventTypes'
 import { MessageId, MessagesOptions } from './types/MessagesOptions'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
 import { SendOptions } from './types/SendOptions'
+import { keystore } from '@xmtp/proto'
 
 export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
 
@@ -733,5 +735,35 @@ export class Group<
    */
   async pausedForVersion(): Promise<string> {
     return await XMTP.pausedForVersion(this.client.installationId, this.id)
+  }
+
+  /**
+   * @returns {Promise<keystore.GetConversationHmacKeysResponse>} A Promise that resolves to a list
+   * of hmac keys for this conversation that can be used to filter out self push notifications.
+   */
+  async getConversationHmacKeys(): Promise<keystore.GetConversationHmacKeysResponse> {
+    return await XMTP.getConversationHmacKeys(
+      this.client.installationId,
+      this.id
+    )
+  }
+
+  /**
+   * @returns {Promise<ConversationTopic[]>} A Promise that resolves to a list
+   * of conversation topics that can be used to subscribe to push notifications.
+   */
+  async getConversationPushTopics(): Promise<ConversationTopic[]> {
+    return await XMTP.getConversationPushTopics(
+      this.client.installationId,
+      this.id
+    )
+  }
+
+  /**
+   * @returns {Promise<ConversationDebugInfo>} A Promise that resolves to debug
+   * information that can help debug issues with the conversation
+   */
+  async getDebugInformation(): Promise<ConversationDebugInfo> {
+    return await XMTP.getDebugInformation(this.client.installationId, this.id)
   }
 }

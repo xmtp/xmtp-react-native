@@ -1,7 +1,6 @@
 import { content } from '@xmtp/proto'
 import { Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
-import { PreferenceUpdates } from 'xmtp-react-native-sdk/lib/PrivatePreferences'
 
 import {
   Test,
@@ -13,7 +12,6 @@ import {
 } from './test-utils'
 import {
   Client,
-  ConsentRecord,
   Conversation,
   ConversationId,
   ConversationVersion,
@@ -101,6 +99,130 @@ class NumberCodecEmptyFallback extends NumberCodec {
     return ''
   }
 }
+
+test('returns all push topics and validates HMAC keys', async () => {
+  const keyBytes = crypto.getRandomValues(new Uint8Array(32))
+  const [bo] = await createClients(1)
+  const eriWallet = Wallet.createRandom()
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  const directoryExists2 = await RNFS.exists(dbDirPath2)
+  if (!directoryExists2) {
+    await RNFS.mkdir(dbDirPath2)
+  }
+
+  const eriClient = await Client.create(adaptEthersWalletToSigner(eriWallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+  })
+
+  await eriClient.conversations.newConversation(bo.inboxId)
+  await bo.conversations.newGroup([eriClient.inboxId])
+  await bo.conversations.sync()
+
+  const eriClient2 = await Client.create(adaptEthersWalletToSigner(eriWallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath2,
+  })
+  await eriClient2.conversations.newConversation(bo.inboxId)
+  const state = await eriClient2.inboxState(true)
+  assert(
+    state.installations.length === 2,
+    `Expected 2 installations, got ${state.installations.length}`
+  )
+
+  await bo.conversations.sync()
+  await eriClient.conversations.syncAllConversations()
+  await eriClient2.conversations.syncAllConversations()
+
+  const allTopics = await eriClient2.conversations.getAllPushTopics()
+  const conversations = await eriClient2.conversations.list()
+  const { hmacKeys } = await eriClient2.conversations.getHmacKeys()
+
+  conversations.forEach((c) => {
+    assert(
+      Object.keys(hmacKeys).includes(c.topic),
+      `Missing topic ${c.topic} in HMAC keys`
+    )
+  })
+
+  assert(allTopics.length === 3, `Expected 3 got ${allTopics.length}`)
+  assert(conversations.length === 2, `Expected 2 got ${conversations.length}`)
+  return true
+})
+
+test('streams all messages filtered by consent', async () => {
+  const [bo, caro, alix] = await createClients(3)
+  const allowedGroup = await bo.conversations.newGroup([caro.inboxId])
+  const allowedDm = await bo.conversations.findOrCreateDm(caro.inboxId)
+
+  const deniedGroup = await bo.conversations.newGroup([alix.inboxId])
+  const deniedDm = await bo.conversations.findOrCreateDm(alix.inboxId)
+
+  await deniedGroup.updateConsent('denied')
+  await deniedDm.updateConsent('denied')
+
+  await deniedGroup.sync()
+  await deniedDm.sync()
+
+  let messageCallbacks = 0
+  await bo.conversations.streamAllMessages(
+    async () => {
+      messageCallbacks++
+    },
+    undefined,
+    ['allowed'] // Only allow ALLOWED consent messages
+  )
+
+  await allowedGroup.send({ text: 'hi' })
+  await allowedDm.send({ text: 'hi' })
+
+  await delayToPropogate(2000)
+
+  await deniedGroup.send({ text: 'hi' })
+  await deniedDm.send({ text: 'hi' })
+
+  await delayToPropogate(2000)
+
+  assert(
+    messageCallbacks === 2,
+    `Expected 2 allowed messages, got ${messageCallbacks}`
+  )
+
+  bo.conversations.cancelStreamAllMessages()
+  return true
+})
+
+test('can create optimistic group', async () => {
+  const [bo, alix] = await createClients(2)
+  const group = await bo.conversations.newGroupOptimistic({
+    name: 'Testing',
+  })
+
+  await group.prepareMessage({ text: 'testing' })
+
+  const initialMessages = await group.messages()
+  assert(initialMessages.length === 1, 'Expected 1 prepared message')
+
+  await group.addMembers([alix.inboxId])
+  await group.sync()
+  await group.publishPreparedMessages()
+
+  const messages = await group.messages()
+  const members = await group.members()
+
+  const name = await group.name()
+  assert(name === 'Testing', 'Group name should be Testing')
+  assert(messages.length === 2, 'Messages length should be 2 because of invite')
+  assert(members.length === 2, 'Members list should be 2')
+  return true
+})
 
 test('register and use custom content types', async () => {
   const keyBytes = new Uint8Array([
@@ -285,6 +407,14 @@ test('can find a conversations by id', async () => {
     `bo dm id ${boDm?.id} does not match alix dm id ${alixDm.id}`
   )
 
+  const debugInfo = await alixDm.getDebugInformation()
+  assert(
+    debugInfo.epoch === 1,
+    `dm epoch should be 1 but was ${debugInfo.epoch}`
+  )
+  assert(debugInfo.maybeForked === false, `should not be forked`)
+  assert(debugInfo.forkDetails === '', `fork details should be empty`)
+
   return true
 })
 
@@ -373,7 +503,12 @@ test('can filter conversations by consent', async () => {
   // Bo denied + 1; Bo unknown - 1
   await boDmWithCaroUnknownThenDenied?.updateConsent('denied')
 
-  const boConvos = await boClient.conversations.list()
+  const boConvosDefault = await boClient.conversations.list()
+  const boConvosAll = await boClient.conversations.list({}, undefined, [
+    'allowed',
+    'denied',
+    'unknown',
+  ])
   const boConvosFilteredAllowed = await boClient.conversations.list(
     {},
     undefined,
@@ -391,18 +526,23 @@ test('can filter conversations by consent', async () => {
   )
 
   assert(
-    boConvos.length === 4,
-    `Conversation length should be 4 but was ${boConvos.length}`
+    boConvosDefault.length === 3,
+    `Conversation length should be 3 but was ${boConvosDefault.length}`
+  )
+
+  assert(
+    boConvosAll.length === 4,
+    `Conversation length should be 4 but was ${boConvosAll.length}`
   )
 
   assert(
     boConvosFilteredAllowed
       .map((conversation: any) => conversation.id)
       .toString() ===
-      [boGroupWithAlixAllowed.id, boDmWithAlixAllowed.id].toString(),
+      [boDmWithAlixAllowed.id, boGroupWithAlixAllowed.id].toString(),
     `Conversation allowed should be ${[
-      boGroupWithAlixAllowed.id,
       boDmWithAlixAllowed.id,
+      boGroupWithAlixAllowed.id,
     ].toString()} but was ${boConvosFilteredAllowed
       .map((convo: any) => convo.id)
       .toString()}`
@@ -424,14 +564,14 @@ test('can filter conversations by consent', async () => {
       .map((conversation: any) => conversation.id)
       .toString() ===
       [
-        boGroupWithAlixAllowed.id,
-        boDmWithAlixAllowed.id,
         boDmWithCaroUnknownThenDenied?.id,
+        boDmWithAlixAllowed.id,
+        boGroupWithAlixAllowed.id,
       ].toString(),
     `Conversation allowed or denied filter should be ${[
-      boGroupWithAlixAllowed.id,
-      boDmWithAlixAllowed.id,
       boDmWithCaroUnknownThenDenied?.id,
+      boDmWithAlixAllowed.id,
+      boGroupWithAlixAllowed.id,
     ].toString()} but was ${boConvosFilteredAllowedOrDenied
       .map((convo: any) => convo.id)
       .toString()}`
@@ -470,7 +610,11 @@ test('can filter sync all by consent', async () => {
   const boConvosFilteredAllowedOrDenied =
     await boClient.conversations.syncAllConversations(['allowed', 'denied'])
 
-  assert(boConvos === 5, `Conversation length should be 5 but was ${boConvos}`)
+  const boConvosFilteredAll = await boClient.conversations.syncAllConversations(
+    ['allowed', 'denied', 'unknown']
+  )
+
+  assert(boConvos === 4, `Conversation length should be 4 but was ${boConvos}`)
   assert(
     boConvosFilteredAllowed === 3,
     `Conversation length should be 3 but was ${boConvosFilteredAllowed}`
@@ -483,6 +627,11 @@ test('can filter sync all by consent', async () => {
   assert(
     boConvosFilteredAllowedOrDenied === 4,
     `Conversation length should be 4 but was ${boConvosFilteredAllowedOrDenied}`
+  )
+
+  assert(
+    boConvosFilteredAll === 5,
+    `Conversation length should be 5 but was ${boConvosFilteredAll}`
   )
 
   return true
@@ -868,209 +1017,6 @@ test('can streamAllMessages from multiple clients - swapped', async () => {
   }
   bo.conversations.cancelStreamAllMessages()
   alix.conversations.cancelStreamAllMessages()
-
-  return true
-})
-
-test('can sync consent (expected to fail unless historySyncUrl is set)', async () => {
-  const [bo] = await createClients(1)
-  const keyBytes = new Uint8Array([
-    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
-  ])
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
-  }
-  const directoryExists2 = await RNFS.exists(dbDirPath2)
-  if (!directoryExists2) {
-    await RNFS.mkdir(dbDirPath2)
-  }
-  const alixWallet = Wallet.createRandom()
-
-  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath,
-    historySyncUrl: 'http://10.0.2.2:5558',
-  })
-
-  // Create DM conversation
-  const dm = await alix.conversations.findOrCreateDm(bo.inboxId)
-  await dm.updateConsent('denied')
-  const consentState = await dm.consentState()
-  assert(consentState === 'denied', `Expected 'denied', got ${consentState}`)
-
-  await bo.conversations.sync()
-  const boDm = await bo.conversations.findConversation(dm.id)
-
-  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath2,
-    historySyncUrl: 'http://10.0.2.2:5558',
-  })
-
-  const state = await alix2.inboxState(true)
-  assert(
-    state.installations.length === 2,
-    `Expected 2 installations, got ${state.installations.length}`
-  )
-
-  // Sync conversations
-  await bo.conversations.sync()
-  if (boDm) await boDm.sync()
-  await alix2.preferences.sync()
-  await alix.conversations.syncAllConversations()
-  await delayToPropogate(2000)
-  await alix2.conversations.syncAllConversations()
-  await delayToPropogate(2000)
-
-  const dm2 = await alix2.conversations.findConversation(dm.id)
-  const consentState2 = await dm2?.consentState()
-  assert(consentState2 === 'denied', `Expected 'denied', got ${consentState2}`)
-
-  await alix2.preferences.setConsentState(
-    new ConsentRecord(dm2!.id, 'conversation_id', 'allowed')
-  )
-
-  const convoState = await alix2.preferences.conversationConsentState(dm2!.id)
-  assert(convoState === 'allowed', `Expected 'allowed', got ${convoState}`)
-
-  const updatedConsentState = await dm2?.consentState()
-  assert(
-    updatedConsentState === 'allowed',
-    `Expected 'allowed', got ${updatedConsentState}`
-  )
-
-  return true
-})
-
-test('can stream consent (expected to fail unless historySyncUrl is set)', async () => {
-  const [bo] = await createClients(1)
-  const keyBytes = new Uint8Array([
-    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
-  ])
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-
-  // Ensure the directories exist
-  if (!(await RNFS.exists(dbDirPath))) {
-    await RNFS.mkdir(dbDirPath)
-  }
-  if (!(await RNFS.exists(dbDirPath2))) {
-    await RNFS.mkdir(dbDirPath2)
-  }
-
-  const alixWallet = Wallet.createRandom()
-
-  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath,
-    historySyncUrl: 'http://10.0.2.2:5558',
-  })
-
-  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
-
-  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath2,
-    historySyncUrl: 'http://10.0.2.2:5558',
-  })
-
-  await alixGroup.send('Hello')
-  await alix.conversations.syncAllConversations()
-  await alix2.conversations.syncAllConversations()
-
-  const alix2Group = await alix2.conversations.findConversation(alixGroup.id)
-  await delayToPropogate()
-
-  const consent = []
-  await alix.preferences.streamConsent(async (entry: ConsentRecord) => {
-    consent.push(entry)
-  })
-
-  await delayToPropogate()
-
-  await alix2Group!.updateConsent('denied')
-  const dm = await alix2.conversations.newConversation(bo.inboxId)
-  await dm!.updateConsent('denied')
-
-  await delayToPropogate(3000)
-  await alix.conversations.syncAllConversations()
-  await alix2.conversations.syncAllConversations()
-
-  assert(
-    consent.length === 4,
-    `Expected 4 consent records, got ${consent.length}`
-  )
-  const updatedConsentState = await alixGroup.consentState()
-  assert(
-    updatedConsentState === 'denied',
-    `Expected 'denied', got ${updatedConsentState}`
-  )
-
-  alix.preferences.cancelStreamConsent()
-
-  return true
-})
-
-test('can preference updates (expected to fail unless historySyncUrl is set)', async () => {
-  const keyBytes = new Uint8Array([
-    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
-  ])
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-
-  // Ensure the directories exist
-  if (!(await RNFS.exists(dbDirPath))) {
-    await RNFS.mkdir(dbDirPath)
-  }
-  if (!(await RNFS.exists(dbDirPath2))) {
-    await RNFS.mkdir(dbDirPath2)
-  }
-
-  const alixWallet = Wallet.createRandom()
-
-  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath,
-    historySyncUrl: 'http://10.0.2.2:5558',
-  })
-
-  const types = []
-  await alix.preferences.streamPreferenceUpdates(
-    async (entry: PreferenceUpdates) => {
-      types.push(entry)
-    }
-  )
-
-  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbDirPath2,
-    historySyncUrl: 'http://10.0.2.2:5558',
-  })
-
-  await alix2.conversations.syncAllConversations()
-  await delayToPropogate(2000)
-  await alix.conversations.syncAllConversations()
-  await delayToPropogate(2000)
-
-  assert(
-    types.length === 2,
-    `Expected 2 preference update, got ${types.length}`
-  )
-
-  alix.preferences.cancelStreamConsent()
 
   return true
 })

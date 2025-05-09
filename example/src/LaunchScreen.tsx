@@ -11,6 +11,10 @@ import { TestCategory } from './TestScreen'
 import { supportedCodecs } from './contentTypes/contentTypes'
 import { getDbEncryptionKey } from './hooks'
 
+const SafeModalSelector = ({ key: _k, ...rest }: any) => (
+  <ModalSelector {...rest} />
+);
+
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
 export default function LaunchScreen(
   this: any,
@@ -70,17 +74,15 @@ export default function LaunchScreen(
   }
 
   const networkOptions = [
-    { key: 0, label: 'dev' },
-    { key: 1, label: 'local' },
-    { key: 2, label: 'production' },
-  ]
-
-  const testOptions = Object.entries(TestCategory).map(
-    ([key, value], index) => ({
-      key: index,
-      label: value,
-    })
-  )
+    { id: 'dev',        label: 'dev' },
+    { id: 'local',      label: 'local' },
+    { id: 'production', label: 'production' },
+  ];
+  
+  const testOptions = Object.entries(TestCategory).map(([enumKey, label]) => ({
+    id: enumKey,   // <- unique, but NOT named "key"
+    label,
+  }));
 
   // useEffect(() => {
   //   ;(async () => {
@@ -101,14 +103,15 @@ export default function LaunchScreen(
       <Text style={styles.title}>Automated Tests</Text>
       <View style={styles.row}>
         <Text style={styles.label}>Select Test:</Text>
-        <ModalSelector
+        <SafeModalSelector
           data={testOptions}
+          keyExtractor={(item: any) => item.id}
           selectStyle={styles.modalSelector}
           initValueTextStyle={styles.modalSelectText}
           selectTextStyle={styles.modalSelectText}
           backdropPressToClose
           initValue={selectedTest}
-          onChange={(option) => setSelectedTest(option.label as TestCategory)}
+          onChange={(option: any) => setSelectedTest(option.label as TestCategory)}
         />
       </View>
       <View key="run-tests" style={{ margin: 16 }}>
@@ -132,14 +135,15 @@ export default function LaunchScreen(
       <Text style={styles.title}>Test Conversations</Text>
       <View style={styles.row}>
         <Text style={styles.label}>Select Network:</Text>
-        <ModalSelector
+        <SafeModalSelector
           data={networkOptions}
+          keyExtractor={(item: any) => item.id}
           selectStyle={styles.modalSelector}
           initValueTextStyle={styles.modalSelectText}
           selectTextStyle={styles.modalSelectText}
           backdropPressToClose
           initValue={selectedNetwork}
-          onChange={(option) =>
+          onChange={(option: any) =>
             setSelectedNetwork(option.label as 'dev' | 'local' | 'production')
           }
         />

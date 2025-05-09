@@ -16,6 +16,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ContentJson
+import expo.modules.xmtpreactnativesdk.wrappers.ConversationDebugInfoWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConversationWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.CreateGroupParamsWrapper
@@ -229,14 +230,14 @@ class XMTPModule : Module() {
 
     override fun definition() = ModuleDefinition {
         Name("XMTP")
-        
+
         OnCreate {
             // This runs when the module is created AND the context is available
             logV("Module created with context available")
             // Check if logging should be activated on startup
             activateLogWriterIfEnabled()
         }
-        
+
         Events(
             "sign",
             "authed",
@@ -658,10 +659,11 @@ class XMTPModule : Module() {
         AsyncFunction("staticKeyPackageStatus") Coroutine { environment: String, installationIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("staticKeyPackageStatus")
-                val keyPackageStatus: Map<String, FfiKeyPackageStatus> = Client.keyPackageStatusesForInstallationIds(
-                    installationIds,
-                    apiEnvironments(environment),
-                )
+                val keyPackageStatus: Map<String, FfiKeyPackageStatus> =
+                    Client.keyPackageStatusesForInstallationIds(
+                        installationIds,
+                        apiEnvironments(environment),
+                    )
                 keyPackageStatus.mapValues { KeyPackageStatusWrapper.encode(it.value) }
             }
         }
@@ -670,9 +672,14 @@ class XMTPModule : Module() {
             logV("activateLogs")
             val ffiLogLevel = getFfiLogLevel(logLevel)
             val ffiLogRotation = getFfiLogRotation(logRotation)
-            
-            Client.activatePersistentLibXMTPLogWriter(context, ffiLogLevel, ffiLogRotation, maxFiles)
-            
+
+            Client.activatePersistentLibXMTPLogWriter(
+                context,
+                ffiLogLevel,
+                ffiLogRotation,
+                maxFiles
+            )
+
             // Save all settings
             setLogWriterActive(true)
             saveLogSettings(logLevel, logRotation, maxFiles)
@@ -847,6 +854,12 @@ class XMTPModule : Module() {
             val hmacKeys = client.conversations.getHmacKeys()
             logV("$hmacKeys")
             hmacKeys.toByteArray().map { it.toInt() and 0xFF }
+        }
+
+        AsyncFunction("getAllPushTopics") { inboxId: String ->
+            logV("getAllPushTopics")
+            val client = clients[inboxId] ?: throw XMTPException("No client")
+            client.conversations.allPushTopics()
         }
 
         AsyncFunction("conversationMessages") Coroutine { installationId: String, conversationId: String, limit: Int?, beforeNs: Long?, afterNs: Long?, direction: String? ->
@@ -1138,6 +1151,27 @@ class XMTPModule : Module() {
                 val group = client.conversations.newGroupCustomPermissionsWithIdentities(
                     identities,
                     permissionPolicySet,
+                    createGroupParams.groupName,
+                    createGroupParams.groupImageUrl,
+                    createGroupParams.groupDescription,
+                    createGroupParams.disappearingMessageSettings
+                )
+                GroupWrapper.encode(client, group)
+            }
+        }
+
+        AsyncFunction("createGroupOptimistic") Coroutine { installationId: String, permission: String, groupOptionsJson: String ->
+            withContext(Dispatchers.IO) {
+                logV("createGroupOptimistic")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val permissionLevel = when (permission) {
+                    "admin_only" -> GroupPermissionPreconfiguration.ADMIN_ONLY
+                    else -> GroupPermissionPreconfiguration.ALL_MEMBERS
+                }
+                val createGroupParams =
+                    CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
+                val group = client.conversations.newGroupOptimistic(
+                    permissionLevel,
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
@@ -1650,6 +1684,36 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("getConversationHmacKeys") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("getConversationHmacKeys")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                    ?: throw XMTPException("no group found for $conversationId")
+                conversation.getHmacKeys()
+            }
+        }
+
+        AsyncFunction("getConversationPushTopics") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("getConversationPushTopics")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                    ?: throw XMTPException("no group found for $conversationId")
+                conversation.getPushTopics()
+            }
+        }
+
+        AsyncFunction("getDebugInformation") Coroutine { installationId: String, conversationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("getDebugInformation")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                    ?: throw XMTPException("no group found for $conversationId")
+                ConversationDebugInfoWrapper.encode(conversation.getDebugInformation())
+            }
+        }
+
         Function("subscribeToPreferenceUpdates") { installationId: String ->
             logV("subscribeToPreferenceUpdates")
 
@@ -1668,9 +1732,13 @@ class XMTPModule : Module() {
             subscribeToConversations(installationId = installationId, getStreamType(type))
         }
 
-        Function("subscribeToAllMessages") { installationId: String, type: String ->
+        Function("subscribeToAllMessages") { installationId: String, type: String, consentStates: List<String>? ->
             logV("subscribeToAllMessages")
-            subscribeToAllMessages(installationId = installationId, getStreamType(type))
+            subscribeToAllMessages(
+                installationId = installationId,
+                getStreamType(type),
+                if (consentStates.isNullOrEmpty()) null else getConsentStates(consentStates)
+            )
         }
 
         AsyncFunction("subscribeToMessages") Coroutine { installationId: String, id: String ->
@@ -1955,13 +2023,17 @@ class XMTPModule : Module() {
             }
     }
 
-    private fun subscribeToAllMessages(installationId: String, type: ConversationFilterType) {
+    private fun subscribeToAllMessages(
+        installationId: String,
+        type: ConversationFilterType,
+        consentState: List<ConsentState>?,
+    ) {
         val client = clients[installationId] ?: throw XMTPException("No client")
 
         subscriptions[getMessagesKey(installationId)]?.cancel()
         subscriptions[getMessagesKey(installationId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.conversations.streamAllMessages(type).collect { message ->
+                client.conversations.streamAllMessages(type, consentState).collect { message ->
                     sendEvent(
                         "message",
                         mapOf(
@@ -2044,7 +2116,7 @@ class XMTPModule : Module() {
             val logLevel = getFfiLogLevel(getLogLevel())
             val logRotation = getFfiLogRotation(getLogRotation())
             val maxFiles = getLogMaxFiles()
-            
+
             Client.activatePersistentLibXMTPLogWriter(context, logLevel, logRotation, maxFiles)
         }
     }
