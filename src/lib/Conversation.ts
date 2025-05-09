@@ -1,6 +1,7 @@
 import { ConsentState } from './ConsentRecord'
 import {
   ConversationSendPayload,
+  ConversationTopic,
   MessageId,
   MessagesOptions,
   SendOptions,
@@ -12,9 +13,11 @@ import {
   Group,
   Client,
   DisappearingMessageSettings,
+  ConversationDebugInfo,
 } from '../index'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
+import { keystore } from '@xmtp/proto'
 
 export enum ConversationVersion {
   GROUP = 'GROUP',
@@ -58,6 +61,9 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   ): Promise<DecodedMessage<ContentTypes[number]>>
   members(): Promise<Member[]>
   pausedForVersion(): Promise<string>
+  getConversationHmacKeys(): Promise<keystore.GetConversationHmacKeysResponse>
+  getConversationPushTopics(): Promise<ConversationTopic[]>
+  getDebugInformation(): Promise<ConversationDebugInfo>
 }
 
 export type Conversation<

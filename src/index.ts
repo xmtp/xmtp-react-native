@@ -1493,9 +1493,10 @@ export function subscribeToConversations(
 
 export function subscribeToAllMessages(
   installationId: InstallationId,
-  type: ConversationFilterType
+  type: ConversationFilterType,
+  consentStates?: ConsentState[] | undefined
 ) {
-  return XMTPModule.subscribeToAllMessages(installationId, type)
+  return XMTPModule.subscribeToAllMessages(installationId, type, consentStates)
 }
 
 export async function subscribeToMessages(
@@ -1552,11 +1553,13 @@ export async function pausedForVersion(
   return XMTPModule.pausedForVersion(installationId, id)
 }
 
-export function getConversationHmacKeys(
+export async function getConversationHmacKeys(
   installationId: InstallationId,
   id: ConversationId
-) {
-  return XMTPModule.getConversationHmacKeys(installationId, id)
+): Promise<keystore.GetConversationHmacKeysResponse> {
+  const hmacKeysArray = await XMTPModule.getConversationHmacKeys(installationId, id)
+  const array = new Uint8Array(hmacKeysArray)
+  return keystore.GetConversationHmacKeysResponse.decode(array)
 }
 
 export async function getConversationPushTopics(

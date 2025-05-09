@@ -1731,12 +1731,12 @@ class XMTPModule : Module() {
             subscribeToConversations(installationId = installationId, getStreamType(type))
         }
 
-        Function("subscribeToAllMessages") { installationId: String, type: String, consentStates: List<String> ->
+        Function("subscribeToAllMessages") { installationId: String, type: String, consentStates: List<String>? ->
             logV("subscribeToAllMessages")
             subscribeToAllMessages(
                 installationId = installationId,
                 getStreamType(type),
-                if (consentStates.isNotEmpty()) getConsentStates(consentStates) else null
+                if (consentStates.isNullOrEmpty()) null else getConsentStates(consentStates)
             )
         }
 
