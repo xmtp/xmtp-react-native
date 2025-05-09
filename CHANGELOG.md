@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.2.0-rc3
+
+### Pre Release
+
+- Fix for DB Migration issue
+
 ## 4.2.0-rc2
 
 ### Pre Release
