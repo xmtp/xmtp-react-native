@@ -16,6 +16,7 @@ import {
   EncryptedLocalAttachment,
 } from './lib/ContentCodec'
 import { Conversation, ConversationVersion } from './lib/Conversation'
+import { ConversationDebugInfo } from './lib/ConversationDebugInfo'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
 import { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
 import { Dm } from './lib/Dm'
@@ -591,6 +592,12 @@ export async function getHmacKeys(
   return keystore.GetConversationHmacKeysResponse.decode(array)
 }
 
+export async function getAllPushTopics(
+  installationId: InstallationId
+): Promise<ConversationTopic[]> {
+  return await XMTPModule.getAllPushTopics(installationId)
+}
+
 export async function conversationMessages<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
@@ -981,6 +988,35 @@ export async function createGroupCustomPermissions<
       client.installationId,
       inboxIds,
       JSON.stringify(permissionPolicySet),
+      JSON.stringify(options)
+    )
+  )
+
+  return new Group(client, group)
+}
+
+export async function createGroupOptimistic<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  client: Client<ContentTypes>,
+  permissionLevel: 'all_members' | 'admin_only' = 'all_members',
+  name: string = '',
+  imageUrl: string = '',
+  description: string = '',
+  disappearStartingAtNs: number = 0,
+  retentionDurationInNs: number = 0
+): Promise<Group<ContentTypes>> {
+  const options: CreateGroupParams = {
+    name,
+    imageUrl,
+    description,
+    disappearStartingAtNs,
+    retentionDurationInNs,
+  }
+  const group = JSON.parse(
+    await XMTPModule.createGroupOptimistic(
+      client.installationId,
+      permissionLevel,
       JSON.stringify(options)
     )
   )
@@ -1516,6 +1552,28 @@ export async function pausedForVersion(
   return XMTPModule.pausedForVersion(installationId, id)
 }
 
+export function getConversationHmacKeys(
+  installationId: InstallationId,
+  id: ConversationId
+) {
+  return XMTPModule.getConversationHmacKeys(installationId, id)
+}
+
+export async function getConversationPushTopics(
+  installationId: InstallationId,
+  id: ConversationId
+): Promise<ConversationTopic[]> {
+  return await XMTPModule.getConversationPushTopics(installationId, id)
+}
+
+export async function getDebugInformation(
+  installationId: InstallationId,
+  id: ConversationId
+): Promise<ConversationDebugInfo> {
+  const info = await XMTPModule.getDebugInformation(installationId, id)
+  return ConversationDebugInfo.from(info)
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 interface AuthParams {
@@ -1543,7 +1601,13 @@ export { Client } from './lib/Client'
 export * from './lib/ContentCodec'
 export { Conversation, ConversationVersion } from './lib/Conversation'
 export { XMTPPush } from './lib/XMTPPush'
-export { ConsentRecord, DecodedMessage, MessageDeliveryStatus, ConsentState }
+export {
+  ConsentRecord,
+  DecodedMessage,
+  MessageDeliveryStatus,
+  ConsentState,
+  ConversationDebugInfo,
+}
 export { Group } from './lib/Group'
 export { Dm } from './lib/Dm'
 export { Member, MembershipResult } from './lib/Member'
