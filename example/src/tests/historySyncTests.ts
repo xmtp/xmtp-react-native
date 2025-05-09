@@ -43,7 +43,6 @@ test('can sync consent (expected to fail unless historySyncUrl is set)', async (
     env: 'local',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
-    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   // Create DM conversation
@@ -59,7 +58,6 @@ test('can sync consent (expected to fail unless historySyncUrl is set)', async (
     env: 'local',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
-    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   const state = await alix2.inboxState(true)
@@ -120,7 +118,6 @@ test('can stream consent (expected to fail unless historySyncUrl is set)', async
     env: 'local',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
-    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   const alixGroup = await alix.conversations.newGroup([bo.inboxId])
@@ -129,7 +126,6 @@ test('can stream consent (expected to fail unless historySyncUrl is set)', async
     env: 'local',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
-    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   await alixGroup.send('Hello')
@@ -191,7 +187,6 @@ test('can preference updates (expected to fail unless historySyncUrl is set)', a
     env: 'local',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
-    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   const types = []
@@ -205,7 +200,6 @@ test('can preference updates (expected to fail unless historySyncUrl is set)', a
     env: 'local',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
-    historySyncUrl: 'http://10.0.2.2:5558',
   })
 
   await alix2.conversations.syncAllConversations()

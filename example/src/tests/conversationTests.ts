@@ -1,7 +1,6 @@
 import { content } from '@xmtp/proto'
 import { Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
-import { PreferenceUpdates } from 'xmtp-react-native-sdk/lib/PrivatePreferences'
 
 import {
   Test,
@@ -13,7 +12,6 @@ import {
 } from './test-utils'
 import {
   Client,
-  ConsentRecord,
   Conversation,
   ConversationId,
   ConversationVersion,
@@ -106,22 +104,40 @@ test('returns all push topics and validates HMAC keys', async () => {
   const keyBytes = crypto.getRandomValues(new Uint8Array(32))
   const [bo] = await createClients(1)
   const eriWallet = Wallet.createRandom()
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  const directoryExists2 = await RNFS.exists(dbDirPath2)
+  if (!directoryExists2) {
+    await RNFS.mkdir(dbDirPath2)
+  }
 
   const eriClient = await Client.create(adaptEthersWalletToSigner(eriWallet), {
     env: 'local',
     dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
   })
 
   await eriClient.conversations.newConversation(bo.inboxId)
   await bo.conversations.newGroup([eriClient.inboxId])
+  await bo.conversations.sync()
 
   const eriClient2 = await Client.create(adaptEthersWalletToSigner(eriWallet), {
     env: 'local',
     dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath2,
   })
   await eriClient2.conversations.newConversation(bo.inboxId)
+  const state = await eriClient2.inboxState(true)
+  assert(
+    state.installations.length === 2,
+    `Expected 2 installations, got ${state.installations.length}`
+  )
 
-  await bo.conversations.syncAllConversations()
+  await bo.conversations.sync()
   await eriClient.conversations.syncAllConversations()
   await eriClient2.conversations.syncAllConversations()
 
@@ -136,8 +152,8 @@ test('returns all push topics and validates HMAC keys', async () => {
     )
   })
 
-  assert(allTopics.length === 3, 'Length should be 3')
-  assert(conversations.length === 2, 'Length should be 2')
+  assert(allTopics.length === 3, `Expected 3 got ${allTopics.length}`)
+  assert(conversations.length === 2, `Expected 2 got ${conversations.length}`)
   return true
 })
 
@@ -523,10 +539,10 @@ test('can filter conversations by consent', async () => {
     boConvosFilteredAllowed
       .map((conversation: any) => conversation.id)
       .toString() ===
-      [boGroupWithAlixAllowed.id, boDmWithAlixAllowed.id].toString(),
+      [boDmWithAlixAllowed.id, boGroupWithAlixAllowed.id].toString(),
     `Conversation allowed should be ${[
-      boGroupWithAlixAllowed.id,
       boDmWithAlixAllowed.id,
+      boGroupWithAlixAllowed.id,
     ].toString()} but was ${boConvosFilteredAllowed
       .map((convo: any) => convo.id)
       .toString()}`
@@ -548,14 +564,14 @@ test('can filter conversations by consent', async () => {
       .map((conversation: any) => conversation.id)
       .toString() ===
       [
-        boGroupWithAlixAllowed.id,
-        boDmWithAlixAllowed.id,
         boDmWithCaroUnknownThenDenied?.id,
+        boDmWithAlixAllowed.id,
+        boGroupWithAlixAllowed.id,
       ].toString(),
     `Conversation allowed or denied filter should be ${[
-      boGroupWithAlixAllowed.id,
-      boDmWithAlixAllowed.id,
       boDmWithCaroUnknownThenDenied?.id,
+      boDmWithAlixAllowed.id,
+      boGroupWithAlixAllowed.id,
     ].toString()} but was ${boConvosFilteredAllowedOrDenied
       .map((convo: any) => convo.id)
       .toString()}`
