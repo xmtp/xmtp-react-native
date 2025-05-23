@@ -12,6 +12,7 @@ import { TextCodec } from './NativeCodecs/TextCodec'
 import PrivatePreferences from './PrivatePreferences'
 import { PublicIdentity } from './PublicIdentity'
 import { Signer, getSigner } from './Signer'
+import XMTPDebugInformation from './XMTPDebugInformation'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
@@ -38,6 +39,7 @@ export class Client<
   publicIdentity: PublicIdentity
   conversations: Conversations<ContentTypes>
   preferences: PrivatePreferences
+  debugInformation: XMTPDebugInformation
   static codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
   private static signSubscription: Subscription | null = null
   private static authSubscription: Subscription | null = null
@@ -451,6 +453,7 @@ export class Client<
     this.publicIdentity = publicIdentity
     this.conversations = new Conversations(this)
     this.preferences = new PrivatePreferences(this)
+    this.debugInformation = new XMTPDebugInformation(this)
     Client.codecRegistry = {}
 
     Client.register(new TextCodec())
