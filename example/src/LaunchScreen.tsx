@@ -32,19 +32,23 @@ export default function LaunchScreen(
 
   // Create a simple implementation of savedKeys functionality
   const [savedAddress, setSavedAddress] = useState<string | null>(null)
+  const [savedInboxId, setSavedInboxId] = useState<string | null>(null)
 
   // Simple implementation of the savedKeys object
   const savedKeys = {
     address: savedAddress,
-    save: async (address: string) => {
+    inboxId: savedInboxId,
+    save: async (address: string, inboxId: string) => {
       console.log('Saving address', address)
       setSavedAddress(address)
+      setSavedInboxId(inboxId)
       // Here you would typically save to AsyncStorage or similar
       return true
     },
     clear: () => {
       console.log('Clearing saved address')
       setSavedAddress(null)
+      setSavedInboxId(null)
       // Here you would typically clear from AsyncStorage or similar
     },
   }
@@ -60,7 +64,7 @@ export default function LaunchScreen(
           setClient(client)
           navigation.navigate('home')
           // Save the configured client keys for use in later sessions.
-          await savedKeys.save(client.publicIdentity.identifier)
+          await savedKeys.save(client.publicIdentity.identifier, client.inboxId)
         })
         .catch((err) =>
           console.log('Unable to connect XMTP client', label, err)
@@ -225,7 +229,8 @@ export default function LaunchScreen(
                         env: selectedNetwork,
                         codecs: supportedCodecs,
                         dbEncryptionKey,
-                      }
+                      },
+                      savedKeys.inboxId!
                     )
                   )
                 })().catch(console.error) // Don't forget error handling

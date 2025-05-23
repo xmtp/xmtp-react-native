@@ -2,7 +2,7 @@ package expo.modules.xmtpreactnativesdk.wrappers
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import uniffi.xmtpv3.org.xmtp.android.library.libxmtp.ConversationDebugInfo
+import org.xmtp.android.library.libxmtp.ConversationDebugInfo
 
 class ConversationDebugInfoWrapper {
     companion object {
