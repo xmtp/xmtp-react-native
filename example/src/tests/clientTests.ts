@@ -7,6 +7,7 @@ import {
   createClients,
   adaptEthersWalletToSigner,
   assertEqual,
+  delayToPropogate,
 } from './test-utils'
 import { Client, PublicIdentity } from '../../../src/index'
 import { LogLevel, LogRotation } from '../../../src/lib/types/LogTypes'
@@ -101,7 +102,7 @@ test('static can get log files', async () => {
   Client.clearXMTPLogs()
   const originalLogFilePaths = Client.getXMTPLogFilePaths()
   assert(originalLogFilePaths.length === 0, 'should have log files')
-  await Client.activatePersistentLibXMTPLogWriter(
+  Client.activatePersistentLibXMTPLogWriter(
     LogLevel.DEBUG,
     LogRotation.MINUTELY,
     10
@@ -851,6 +852,82 @@ test('can revoke installations', async () => {
   await alix3.deleteLocalDatabase()
 
   await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  return true
+})
+
+test('can upload archive debug information', async () => {
+  const [alix] = await createClients(1)
+  const uploadKey = await alix.debugInformation.uploadDebugInformation()
+
+  assert(
+    typeof uploadKey === 'string' && uploadKey.length > 0,
+    'uploadKey should not be empty'
+  )
+
+  return true
+})
+
+test('can get network debug information', async () => {
+  const [alix] = await createClients(1)
+  const debugInfo = await alix.debugInformation.getNetworkDebugInformation()
+  const apiStatistics = debugInfo.apiStatistics
+  const identityStatistics = debugInfo.identityStatistics
+  const aggregateStatistics = debugInfo.aggregateStatistics
+
+  console.log(aggregateStatistics)
+  assert(
+    typeof aggregateStatistics === 'string' && aggregateStatistics.length > 0,
+    'aggregateStatistics should not be empty'
+  )
+  assert(
+    apiStatistics.uploadKeyPackage === 2,
+    `uploadKeyPackage should be 1 but was ${apiStatistics.uploadKeyPackage}`
+  )
+  assert(
+    apiStatistics.fetchKeyPackage === 0,
+    `fetchKeyPackage should be 0 but was ${apiStatistics.fetchKeyPackage}`
+  )
+  assert(
+    apiStatistics.sendGroupMessages === 2,
+    `sendGroupMessages should be 2 but was ${apiStatistics.sendGroupMessages}`
+  )
+  assert(
+    apiStatistics.sendWelcomeMessages === 0,
+    `sendWelcomeMessages should be 0 but was ${apiStatistics.sendWelcomeMessages}`
+  )
+  assert(
+    apiStatistics.queryGroupMessages === 4,
+    `queryGroupMessages should be 4 but was ${apiStatistics.queryGroupMessages}`
+  )
+  assert(
+    apiStatistics.queryWelcomeMessages === 0,
+    `queryWelcomeMessages should be 0 but was ${apiStatistics.queryWelcomeMessages}`
+  )
+  assert(
+    apiStatistics.subscribeMessages === 0,
+    `subscribeMessages should be 0 but was ${apiStatistics.subscribeMessages}`
+  )
+  assert(
+    apiStatistics.subscribeWelcomes === 0,
+    `subscribeWelcomes should be 0 but was ${apiStatistics.subscribeWelcomes}`
+  )
+  assert(
+    identityStatistics.publishIdentityUpdate === 2,
+    `publishIdentityUpdate should be 1 but was ${identityStatistics.publishIdentityUpdate}`
+  )
+  assert(
+    identityStatistics.getIdentityUpdatesV2 === 5,
+    `getIdentityUpdatesV2 should be 3 but was ${identityStatistics.getIdentityUpdatesV2}`
+  )
+  assert(
+    identityStatistics.getInboxIds === 4,
+    `getInboxIds should be 2 but was ${identityStatistics.getInboxIds}`
+  )
+  assert(
+    identityStatistics.verifySmartContractWalletSignature === 0,
+    `verifySmartContractWalletSignature should be 0 but was ${identityStatistics.verifySmartContractWalletSignature}`
+  )
 
   return true
 })

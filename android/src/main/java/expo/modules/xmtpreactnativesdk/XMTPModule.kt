@@ -30,6 +30,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.KeyPackageStatusWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MemberWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MembershipResultWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.MessageWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.NetworkDebugInfoWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PermissionPolicySetWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.PublicIdentityWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.WalletParamsWrapper
@@ -1833,6 +1834,22 @@ class XMTPModule : Module() {
                 } catch (e: Exception) {
                     e.message
                 }
+            }
+        }
+
+        AsyncFunction("getNetworkDebugInformation") Coroutine { installationId: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                NetworkDebugInfoWrapper.encode(client.XMTPDebugInformation)
+            }
+        }
+
+        AsyncFunction("uploadDebugInformation") Coroutine { installationId: String, serverUrl: String? ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                serverUrl.takeUnless { it.isNullOrBlank() }?.let {
+                    client.XMTPDebugInformation.uploadDebugInformation(it)
+                } ?: client.XMTPDebugInformation.uploadDebugInformation()
             }
         }
     }

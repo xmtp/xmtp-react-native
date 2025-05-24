@@ -25,6 +25,7 @@ import { InboxState } from './lib/InboxState'
 import { Member, MembershipResult } from './lib/Member'
 import { PublicIdentity } from './lib/PublicIdentity'
 import { SignerType } from './lib/Signer'
+import { NetworkDebugInfo } from './lib/XMTPDebugInformation'
 import {
   ConversationOptions,
   ConversationFilterType,
@@ -1557,7 +1558,10 @@ export async function getConversationHmacKeys(
   installationId: InstallationId,
   id: ConversationId
 ): Promise<keystore.GetConversationHmacKeysResponse> {
-  const hmacKeysArray = await XMTPModule.getConversationHmacKeys(installationId, id)
+  const hmacKeysArray = await XMTPModule.getConversationHmacKeys(
+    installationId,
+    id
+  )
   const array = new Uint8Array(hmacKeysArray)
   return keystore.GetConversationHmacKeysResponse.decode(array)
 }
@@ -1575,6 +1579,21 @@ export async function getDebugInformation(
 ): Promise<ConversationDebugInfo> {
   const info = await XMTPModule.getDebugInformation(installationId, id)
   return ConversationDebugInfo.from(info)
+}
+
+export async function getNetworkDebugInformation(
+  installationId: InstallationId
+): Promise<NetworkDebugInfo> {
+  const info = await XMTPModule.getNetworkDebugInformation(installationId)
+  return NetworkDebugInfo.from(info)
+}
+
+export async function uploadDebugInformation(
+  installationId: InstallationId,
+  serverUrl?: string
+): Promise<string> {
+  const key = await XMTPModule.uploadDebugInformation(installationId, serverUrl)
+  return key
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
