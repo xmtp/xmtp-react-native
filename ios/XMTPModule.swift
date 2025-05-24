@@ -30,12 +30,12 @@ actor IsolatedManager<T> {
 
 public class XMTPModule: Module {
 	// Constants
-    private struct Constants {
-        static let fileLoggerEnabledKey = "XMTPFileLoggerEnabled"
+	private struct Constants {
+		static let fileLoggerEnabledKey = "XMTPFileLoggerEnabled"
 		static let logLevelKey = "XMTPLogLevel"
 		static let logRotationKey = "XMTPLogRotation"
 		static let maxFilesKey = "XMTPMaxFiles"
-    }
+	}
 
 	var signer: ReactNativeSigner?
 	let clientsManager = ClientsManager()
@@ -120,7 +120,7 @@ public class XMTPModule: Module {
 
 	public func definition() -> ModuleDefinition {
 		Name("XMTP")
-		
+
 		OnCreate {
 			// This runs when the module is created and ready
 			print("XMTP Module created and context available")
@@ -640,57 +640,66 @@ public class XMTPModule: Module {
 				inboxIds: inboxIds, api: createApiClient(env: environment))
 			return try inboxStates.map { try InboxStateWrapper.encode($0) }
 		}
-        
-        Function("staticActivatePersistentLibXMTPLogWriter") {
-            (logLevelInt: Int, logRotationInt: Int, maxFiles: Int) in
-            let logLevel: Client.LogLevel = getLogLevelFromInt(logLevel: logLevelInt)
-            let ffiLogRotation: FfiLogRotation = getFfiLogRotationFromInt(logRotation: logRotationInt)
-            
-            Client.activatePersistentLibXMTPLogWriter(logLevel: logLevel, rotationSchedule: ffiLogRotation, maxFiles: maxFiles)
-            
-            // Save all settings
-            setLogWriterActive(active: true)
-            saveLogSettings(logLevel: logLevelInt, logRotation: logRotationInt, maxFiles: maxFiles)
-        }
-        
-        Function("staticDeactivatePersistentLibXMTPLogWriter") {
-            Client.deactivatePersistentLibXMTPLogWriter()
-            setLogWriterActive(active: false)
-        }
-        
-        Function("getLogSettings") { () -> [String: Any] in
-            return [
-                "active": isLogWriterActive(),
-                "logLevel": getLogLevel(),
-                "logRotation": getLogRotation(),
-                "maxFiles": getLogMaxFiles()
-            ]
-        }
-        
-        Function("isLogWriterActive") { () -> Bool in
-            return isLogWriterActive()
-        }
-        
-        Function("staticGetXMTPLogFilePaths") { () -> [String] in
-            return Client.getXMTPLogFilePaths()
-        }
-        
-        Function("staticClearXMTPLogs") { () -> Int in
-            return Client.clearXMTPLogs()
-        }
-        
-        AsyncFunction("readXMTPLogFile") { (filePath: String) -> String in
-            do {
-                let fileManager = FileManager.default
-                if fileManager.fileExists(atPath: filePath) && fileManager.isReadableFile(atPath: filePath) {
-                    return try String(contentsOfFile: filePath, encoding: .utf8)
-                } else {
-                    return "Cannot read file: \(filePath) (exists: \(fileManager.fileExists(atPath: filePath)), readable: \(fileManager.isReadableFile(atPath: filePath)))"
-                }
-            } catch {
-                return "Error reading log file: \(error.localizedDescription)"
-            }
-        }
+
+		Function("staticActivatePersistentLibXMTPLogWriter") {
+			(logLevelInt: Int, logRotationInt: Int, maxFiles: Int) in
+			let logLevel: Client.LogLevel = getLogLevelFromInt(
+				logLevel: logLevelInt)
+			let ffiLogRotation: FfiLogRotation = getFfiLogRotationFromInt(
+				logRotation: logRotationInt)
+
+			Client.activatePersistentLibXMTPLogWriter(
+				logLevel: logLevel, rotationSchedule: ffiLogRotation,
+				maxFiles: maxFiles)
+
+			// Save all settings
+			setLogWriterActive(active: true)
+			saveLogSettings(
+				logLevel: logLevelInt, logRotation: logRotationInt,
+				maxFiles: maxFiles)
+		}
+
+		Function("staticDeactivatePersistentLibXMTPLogWriter") {
+			Client.deactivatePersistentLibXMTPLogWriter()
+			setLogWriterActive(active: false)
+		}
+
+		Function("getLogSettings") { () -> [String: Any] in
+			return [
+				"active": isLogWriterActive(),
+				"logLevel": getLogLevel(),
+				"logRotation": getLogRotation(),
+				"maxFiles": getLogMaxFiles(),
+			]
+		}
+
+		Function("isLogWriterActive") { () -> Bool in
+			return isLogWriterActive()
+		}
+
+		Function("staticGetXMTPLogFilePaths") { () -> [String] in
+			return Client.getXMTPLogFilePaths()
+		}
+
+		Function("staticClearXMTPLogs") { () -> Int in
+			return Client.clearXMTPLogs()
+		}
+
+		AsyncFunction("readXMTPLogFile") { (filePath: String) -> String in
+			do {
+				let fileManager = FileManager.default
+				if fileManager.fileExists(atPath: filePath)
+					&& fileManager.isReadableFile(atPath: filePath)
+				{
+					return try String(contentsOfFile: filePath, encoding: .utf8)
+				} else {
+					return
+						"Cannot read file: \(filePath) (exists: \(fileManager.fileExists(atPath: filePath)), readable: \(fileManager.isReadableFile(atPath: filePath)))"
+				}
+			} catch {
+				return "Error reading log file: \(error.localizedDescription)"
+			}
+		}
 
 		AsyncFunction("getOrCreateInboxId") {
 			(publicIdentity: String, environment: String) -> String in
@@ -873,7 +882,8 @@ public class XMTPModule: Module {
 			return try [UInt8](hmacKeys.serializedData())
 		}
 
-		AsyncFunction("getAllPushTopics") { (installationId: String) -> [String] in
+		AsyncFunction("getAllPushTopics") {
+			(installationId: String) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
@@ -1389,13 +1399,17 @@ public class XMTPModule: Module {
 			}
 		}
 
-		AsyncFunction("createGroupOptimistic") { (installationId: String, permission: String, groupOptionsJson: String) -> String in
+		AsyncFunction("createGroupOptimistic") {
+			(
+				installationId: String, permission: String,
+				groupOptionsJson: String
+			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			
+
 			let permissionLevel: GroupPermissionPreconfiguration = {
 				switch permission {
 				case "admin_only":
@@ -1404,15 +1418,18 @@ public class XMTPModule: Module {
 					return .allMembers
 				}
 			}()
-			
+
 			do {
-				let createGroupParams = CreateGroupParamsWrapper.createGroupParamsFromJson(groupOptionsJson)
+				let createGroupParams =
+					CreateGroupParamsWrapper.createGroupParamsFromJson(
+						groupOptionsJson)
 				let group = try await client.conversations.newGroupOptimistic(
 					permissions: permissionLevel,
-                    groupName: createGroupParams.groupName,
-                    groupImageUrlSquare: createGroupParams.groupImageUrl,
-                    groupDescription: createGroupParams.groupDescription,
-					disappearingMessageSettings: createGroupParams.disappearingMessageSettings
+					groupName: createGroupParams.groupName,
+					groupImageUrlSquare: createGroupParams.groupImageUrl,
+					groupDescription: createGroupParams.groupDescription,
+					disappearingMessageSettings: createGroupParams
+						.disappearingMessageSettings
 				)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -2231,7 +2248,7 @@ public class XMTPModule: Module {
 
 			try await client.preferences.sync()
 		}
-		
+
 		AsyncFunction("syncConsent") { (installationId: String) in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -2353,48 +2370,61 @@ public class XMTPModule: Module {
 			return try await conversation.pausedForVersion()
 		}
 
-		AsyncFunction("getConversationHmacKeys") { (installationId: String, conversationId: String) -> [UInt8] in
+		AsyncFunction("getConversationHmacKeys") {
+			(installationId: String, conversationId: String) -> [UInt8] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			
+
 			guard
-				let conversation = try await client.conversations.findConversation(conversationId: conversationId)
+				let conversation = try await client.conversations
+					.findConversation(conversationId: conversationId)
 			else {
-				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
 			}
-			
+
 			let hmacKeys = try conversation.getHmacKeys()
 			return try [UInt8](hmacKeys.serializedData())
 		}
 
-		AsyncFunction("getConversationPushTopics") { (installationId: String, conversationId: String) -> [String] in
+		AsyncFunction("getConversationPushTopics") {
+			(installationId: String, conversationId: String) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			
+
 			guard
-				let conversation = try await client.conversations.findConversation(conversationId: conversationId)
+				let conversation = try await client.conversations
+					.findConversation(conversationId: conversationId)
 			else {
-				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
 			}
-			
+
 			return try await conversation.getPushTopics()
 		}
 
-		AsyncFunction("getDebugInformation") { (installationId: String, conversationId: String) -> String in
-			guard let client = await clientsManager.getClient(key: installationId) else {
+		AsyncFunction("getDebugInformation") {
+			(installationId: String, conversationId: String) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
 				throw Error.noClient
 			}
-			
-			guard let conversation = try await client.conversations.findConversation(conversationId: conversationId) else {
-				throw Error.conversationNotFound("no conversation found for \(conversationId)")
+
+			guard
+				let conversation = try await client.conversations
+					.findConversation(conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
 			}
-			
+
 			let debugInfo = try await conversation.getDebugInformation()
 			return try ConversationDebugInfoWrapper.encode(debugInfo)
 		}
@@ -2422,12 +2452,13 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("subscribeToAllMessages") {
-            (installationId: String, type: String, consentStates: [String]?) in
+			(installationId: String, type: String, consentStates: [String]?) in
 			try await subscribeToAllMessages(
 				installationId: installationId,
 				type: getConversationType(type: type),
-                consentStates: (consentStates == nil || consentStates!.isEmpty) ? nil : try getConsentStates(states: consentStates!)
-            )
+				consentStates: (consentStates == nil || consentStates!.isEmpty)
+					? nil : try getConsentStates(states: consentStates!)
+			)
 		}
 
 		AsyncFunction("subscribeToMessages") {
@@ -2530,8 +2561,9 @@ public class XMTPModule: Module {
 							// Filter logs for subsystems starting with org.xmtp.xmtpv3
 							if logEntry.subsystem.hasPrefix("org.xmtp.xmtpv3") {
 								// Convert log level to string representation
-								let levelString = logLevelToString(logEntry.level)
-								
+								let levelString = logLevelToString(
+									logEntry.level)
+
 								logOutput.append(
 									"\(logEntry.date) [thread:\(logEntry.threadIdentifier)] [\(levelString)] \(logEntry.composedMessage)\n"
 								)
@@ -2550,6 +2582,31 @@ public class XMTPModule: Module {
 
 			return logOutput
 		}
+
+		AsyncFunction("getNetworkDebugInformation") {
+			(installationId: String, conversationId: String) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			return try await NetworkDebugInfoWrapper.encode(
+				client.debugInformation)
+		}
+
+		AsyncFunction("uploadDebugInformation") {
+			(installationId: String, serverUrl: String?) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			return try
+				(serverUrl?.isEmpty == false
+				? client.debugInformation.uploadDebugInformation(
+					serverUrl: serverUrl!)
+				: client.debugInformation.uploadDebugInformation())
+		}
 	}
 
 	//
@@ -2557,14 +2614,17 @@ public class XMTPModule: Module {
 	//
 
 	private func isLogWriterActive() -> Bool {
-		return UserDefaults.standard.bool(forKey: Constants.fileLoggerEnabledKey)
+		return UserDefaults.standard.bool(
+			forKey: Constants.fileLoggerEnabledKey)
 	}
 
 	private func setLogWriterActive(active: Bool) {
-		UserDefaults.standard.set(active, forKey: Constants.fileLoggerEnabledKey)
+		UserDefaults.standard.set(
+			active, forKey: Constants.fileLoggerEnabledKey)
 	}
 
-	private func saveLogSettings(logLevel: Int, logRotation: Int, maxFiles: Int) {
+	private func saveLogSettings(logLevel: Int, logRotation: Int, maxFiles: Int)
+	{
 		UserDefaults.standard.set(logLevel, forKey: Constants.logLevelKey)
 		UserDefaults.standard.set(logRotation, forKey: Constants.logRotationKey)
 		UserDefaults.standard.set(maxFiles, forKey: Constants.maxFilesKey)
@@ -2581,47 +2641,50 @@ public class XMTPModule: Module {
 	private func getLogMaxFiles() -> Int {
 		return UserDefaults.standard.integer(forKey: Constants.maxFilesKey)
 	}
-    
-    private func getLogLevelFromInt(logLevel: Int) -> Client.LogLevel {
-        // libxmtp trace level does not seem to be working on ios, so if passed in will default to debug
-        switch logLevel {
-        case 0:
-            return .error
-        case 1:
-            return .warn
-        case 2:
-            return .info
-        case 3:
-            return .debug
-        default:
-            return .debug
-        }
-    }
-    
-    private func getFfiLogRotationFromInt(logRotation: Int) -> FfiLogRotation {
-        switch logRotation {
-        case 0:
-            return .never
-        case 1:
-            return .daily
-        case 2:
-            return .hourly
-        case 3:
-            return .minutely
-        default:
-            return .hourly
-        }
-    }
-    
-    private func activateLogWriterIfEnabled() {
-            if (isLogWriterActive()) {
-                let logLevel = getLogLevelFromInt(logLevel: getLogLevel())
-                let logRotation = getFfiLogRotationFromInt(logRotation: getLogRotation())
-                let maxFiles = getLogMaxFiles()
-                
-                Client.activatePersistentLibXMTPLogWriter(logLevel: logLevel, rotationSchedule: logRotation, maxFiles: maxFiles)
-            }
-    }
+
+	private func getLogLevelFromInt(logLevel: Int) -> Client.LogLevel {
+		// libxmtp trace level does not seem to be working on ios, so if passed in will default to debug
+		switch logLevel {
+		case 0:
+			return .error
+		case 1:
+			return .warn
+		case 2:
+			return .info
+		case 3:
+			return .debug
+		default:
+			return .debug
+		}
+	}
+
+	private func getFfiLogRotationFromInt(logRotation: Int) -> FfiLogRotation {
+		switch logRotation {
+		case 0:
+			return .never
+		case 1:
+			return .daily
+		case 2:
+			return .hourly
+		case 3:
+			return .minutely
+		default:
+			return .hourly
+		}
+	}
+
+	private func activateLogWriterIfEnabled() {
+		if isLogWriterActive() {
+			let logLevel = getLogLevelFromInt(logLevel: getLogLevel())
+			let logRotation = getFfiLogRotationFromInt(
+				logRotation: getLogRotation())
+			let maxFiles = getLogMaxFiles()
+
+			Client.activatePersistentLibXMTPLogWriter(
+				logLevel: logLevel, rotationSchedule: logRotation,
+				maxFiles: maxFiles)
+		}
+	}
 
 	private func getPermissionOption(permission: String) throws
 		-> PermissionOption
@@ -2847,8 +2910,8 @@ public class XMTPModule: Module {
 
 	func subscribeToAllMessages(
 		installationId: String,
-        type: ConversationFilterType,
-        consentStates: [ConsentState]?
+		type: ConversationFilterType,
+		consentStates: [ConsentState]?
 	)
 		async throws
 	{
@@ -2865,7 +2928,8 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await message in await client.conversations
-						.streamAllMessages(type: type, consentStates: consentStates)
+						.streamAllMessages(
+							type: type, consentStates: consentStates)
 					{
 						try sendEvent(
 							"message",
