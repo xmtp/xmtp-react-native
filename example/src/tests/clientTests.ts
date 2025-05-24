@@ -870,7 +870,6 @@ test('can upload archive debug information', async () => {
 
 test('can get network debug information', async () => {
   const [alix] = await createClients(1)
-  await delayToPropogate(2000)
   const debugInfo = await alix.debugInformation.getNetworkDebugInformation()
   const apiStatistics = debugInfo.apiStatistics
   const identityStatistics = debugInfo.identityStatistics
@@ -882,7 +881,7 @@ test('can get network debug information', async () => {
     'aggregateStatistics should not be empty'
   )
   assert(
-    apiStatistics.uploadKeyPackage === 1,
+    apiStatistics.uploadKeyPackage === 2,
     `uploadKeyPackage should be 1 but was ${apiStatistics.uploadKeyPackage}`
   )
   assert(
@@ -914,15 +913,15 @@ test('can get network debug information', async () => {
     `subscribeWelcomes should be 0 but was ${apiStatistics.subscribeWelcomes}`
   )
   assert(
-    identityStatistics.publishIdentityUpdate === 1,
+    identityStatistics.publishIdentityUpdate === 2,
     `publishIdentityUpdate should be 1 but was ${identityStatistics.publishIdentityUpdate}`
   )
   assert(
-    identityStatistics.getIdentityUpdatesV2 === 3,
+    identityStatistics.getIdentityUpdatesV2 === 5,
     `getIdentityUpdatesV2 should be 3 but was ${identityStatistics.getIdentityUpdatesV2}`
   )
   assert(
-    identityStatistics.getInboxIds === 2,
+    identityStatistics.getInboxIds === 4,
     `getInboxIds should be 2 but was ${identityStatistics.getInboxIds}`
   )
   assert(

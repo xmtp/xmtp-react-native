@@ -2584,13 +2584,13 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("getNetworkDebugInformation") {
-			(installationId: String, conversationId: String) -> String in
+			(installationId: String) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			return try await NetworkDebugInfoWrapper.encode(
+			return try NetworkDebugInfoWrapper.encode(
 				client.debugInformation)
 		}
 
@@ -2601,7 +2601,7 @@ public class XMTPModule: Module {
 			else {
 				throw Error.noClient
 			}
-			return try
+			return try await
 				(serverUrl?.isEmpty == false
 				? client.debugInformation.uploadDebugInformation(
 					serverUrl: serverUrl!)

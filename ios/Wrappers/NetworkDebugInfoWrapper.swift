@@ -56,16 +56,16 @@ struct IdentityStatsWrapper {
 
 
 struct NetworkDebugInfoWrapper {
-	static func encodeToObj(_ info: XMTPDebugInformation) -> [String: Any] {
+	static func encodeToObj(_ info: XMTPDebugInformation) throws -> [String: Any] {
 		return [
-			"apiStatistics": ApiStatsWrapper.encodeToObj(info.apiStatistics),
-			"identityStatistics": IdentityStatsWrapper.encodeToObj(info.identityStatistics),
+			"apiStatistics": try ApiStatsWrapper.encode(info.apiStatistics),
+			"identityStatistics": try IdentityStatsWrapper.encode(info.identityStatistics),
 			"aggregateStatistics": info.aggregateStatistics
 		]
 	}
 
 	static func encode(_ info: XMTPDebugInformation) throws -> String {
-		let obj = encodeToObj(info)
+		let obj = try encodeToObj(info)
 		let data = try JSONSerialization.data(withJSONObject: obj)
 		guard let result = String(data: data, encoding: .utf8) else {
 			throw WrapperError.encodeError("could not encode network debug info")
