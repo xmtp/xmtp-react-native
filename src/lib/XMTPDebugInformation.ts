@@ -41,12 +41,12 @@ export interface IdentityStatistics {
 export class NetworkDebugInfo {
   apiStatistics: ApiStatistics
   identityStatistics: IdentityStatistics
-  aggregateStatistics: number
+  aggregateStatistics: string
 
   constructor(
     apiStatistics: ApiStatistics,
     identityStatistics: IdentityStatistics,
-    aggregateStatistics: number
+    aggregateStatistics: string
   ) {
     this.apiStatistics = apiStatistics
     this.identityStatistics = identityStatistics
