@@ -1,5 +1,14 @@
 # @xmtp/react-native-sdk
 
+## 4.2.0-rc4
+
+### Pre Release
+
+- Adds statistics for network activity
+- Adds ability to upload a debug package
+- Fixes hmac keys for duplicate dms
+- Fixes support for 16KB Android devices
+
 ## 4.2.0-rc3
 
 ### Pre Release
