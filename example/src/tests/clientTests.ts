@@ -7,6 +7,7 @@ import {
   createClients,
   adaptEthersWalletToSigner,
   assertEqual,
+  delayToPropogate,
 } from './test-utils'
 import { Client, PublicIdentity } from '../../../src/index'
 import { LogLevel, LogRotation } from '../../../src/lib/types/LogTypes'
@@ -869,19 +870,17 @@ test('can upload archive debug information', async () => {
 
 test('can get network debug information', async () => {
   const [alix] = await createClients(1)
-  const apiStatistics =
-    alix.debugInformation.getNetworkDebugInformation().apiStatistics
-  const identityStatistics =
-    alix.debugInformation.getNetworkDebugInformation().identityStatistics
-  const aggregateStatistics =
-    alix.debugInformation.getNetworkDebugInformation().aggregateStatistics
+  await delayToPropogate(2000)
+  const debugInfo = await alix.debugInformation.getNetworkDebugInformation()
+  const apiStatistics = debugInfo.apiStatistics
+  const identityStatistics = debugInfo.identityStatistics
+  const aggregateStatistics = debugInfo.aggregateStatistics
 
+  console.log(aggregateStatistics)
   assert(
     typeof aggregateStatistics === 'string' && aggregateStatistics.length > 0,
     'aggregateStatistics should not be empty'
   )
-
-  // API Statistics assertions
   assert(
     apiStatistics.uploadKeyPackage === 1,
     `uploadKeyPackage should be 1 but was ${apiStatistics.uploadKeyPackage}`
@@ -914,8 +913,6 @@ test('can get network debug information', async () => {
     apiStatistics.subscribeWelcomes === 0,
     `subscribeWelcomes should be 0 but was ${apiStatistics.subscribeWelcomes}`
   )
-
-  // Identity Statistics assertions
   assert(
     identityStatistics.publishIdentityUpdate === 1,
     `publishIdentityUpdate should be 1 but was ${identityStatistics.publishIdentityUpdate}`

@@ -1584,7 +1584,10 @@ export async function getDebugInformation(
 export async function getNetworkDebugInformation(
   installationId: InstallationId
 ): Promise<NetworkDebugInfo> {
+  console.log("NAOMI")
   const info = await XMTPModule.getNetworkDebugInformation(installationId)
+  console.log(info)
+  console.log(JSON.stringify(info))
   return NetworkDebugInfo.from(info)
 }
 

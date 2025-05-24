@@ -1,4 +1,4 @@
-import XMTPModule from '../XMTPModule'
+import * as XMTPModule from '../index'
 import { Client } from './Client'
 
 export default class XMTPDebugInformation {
@@ -8,8 +8,10 @@ export default class XMTPDebugInformation {
     this.client = client
   }
 
-  getNetworkDebugInformation(): NetworkDebugInfo {
-    return XMTPModule.getNetworkDebugInformation(this.client.installationId)
+  async getNetworkDebugInformation(): Promise<NetworkDebugInfo> {
+    return await XMTPModule.getNetworkDebugInformation(
+      this.client.installationId
+    )
   }
 
   async uploadDebugInformation(serverUrl?: string): Promise<string> {
@@ -64,9 +66,12 @@ export class NetworkDebugInfo {
       throw new Error('Invalid JSON structure for NetworkDebugInfo')
     }
 
+    const parsedApiStats = JSON.parse(entry.apiStatistics)
+    const parsedIdentityStats = JSON.parse(entry.identityStatistics)
+
     return new NetworkDebugInfo(
-      entry.apiStatistics,
-      entry.identityStatistics,
+      parsedApiStats,
+      parsedIdentityStats,
       entry.aggregateStatistics
     )
   }
