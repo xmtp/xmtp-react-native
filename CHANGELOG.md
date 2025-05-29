@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.2.0-rc5
+
+### Pre Release
+
+- Fixes HPKE race condition on processing welcomes
+
 ## 4.2.0-rc4
 
 ### Pre Release
