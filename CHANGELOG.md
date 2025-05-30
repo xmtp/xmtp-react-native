@@ -1,10 +1,9 @@
 # @xmtp/react-native-sdk
 
-## 5.0.0
+## 4.2.0
 
-### Major Changes
-
-- 2bec8fe: Release 4.2.0
+- Release 4.2.0
+- Adds KeyPackage status to debug information
 
 ## 4.2.0-rc5
 
