@@ -1,11 +1,5 @@
 # @xmtp/react-native-sdk
 
-## 5.0.0
-
-### Major Changes
-
-- 2bec8fe: Release 4.2.0
-
 ## 4.2.0-rc5
 
 ### Pre Release
