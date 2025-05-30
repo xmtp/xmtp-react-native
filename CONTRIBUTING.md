@@ -4,15 +4,15 @@ If you're seeing this document, you are an early contributor to the development 
 
 ## ❔ Questions
 
-Have a question? We welcome you to ask it in [Q&A discussions](https://github.com/orgs/xmtp/discussions/categories/q-a).
+Have a question about how to build with XMTP? Ask your question and learn with the community in the [XMTP Community Forums](https://community.xmtp.org/).
 
 ## 🐞 Bugs
 
-Bugs should be reported as GitHub Issues. Please confirm there isn't already an open issue and include detailed steps to reproduce.
+Report a bug using [GitHub Issues](https://github.com/xmtp/xmtp-react-native/issues).
 
 ## ✨ Feature Requests
 
-These should also be submitted as GitHub Issues. Again, please confirm there isn't already an open issue. Let us know what use cases this feature would unlock so that we can investigate and prioritize.
+Request a feature using [GitHub Issues](https://github.com/xmtp/xmtp-react-native/issues).
 
 ## 🔀 Pull Requests
 
