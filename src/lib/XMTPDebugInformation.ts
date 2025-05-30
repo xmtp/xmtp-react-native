@@ -87,18 +87,18 @@ export class NetworkDebugInfo {
 }
 
 export class KeyPackageStatuses {
-  statuses: Map<string, KeyPackageStatus>
+  statuses: Map<InstallationId, KeyPackageStatus>
 
-  constructor(statuses: Map<string, KeyPackageStatus>) {
+  constructor(statuses: Map<InstallationId, KeyPackageStatus>) {
     this.statuses = statuses
   }
 
   static from(json: Record<string, string>): KeyPackageStatuses {
-    const statuses = new Map<string, KeyPackageStatus>()
+    const statuses = new Map<InstallationId, KeyPackageStatus>()
 
     for (const [installationId, statusJson] of Object.entries(json)) {
       const status = KeyPackageStatus.from(statusJson)
-      statuses.set(installationId, status)
+      statuses.set(installationId as InstallationId, status)
     }
 
     return new KeyPackageStatuses(statuses)
