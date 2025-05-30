@@ -21,6 +21,27 @@ function test(name: string, perform: () => Promise<boolean>) {
   })
 }
 
+test('can get installation keypackage statuses', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const statuses = await alix.debugInformation.getKeyPackageStatuses([
+    alix.installationId,
+    bo.installationId,
+  ])
+
+  assert(statuses.statuses.has(alix.installationId), 'Alix status missing')
+  assert(statuses.statuses.has(bo.installationId), 'Bo status missing')
+
+  const alixStatus = statuses.statuses.get(alix.installationId)
+  assert(alixStatus?.validationError === '', 'Alix has a validation error')
+  assert(
+    alixStatus!.lifetime.notBefore < alixStatus!.lifetime.notAfter,
+    'Alix key package lifetime is invalid'
+  )
+
+  return true
+})
+
 test('can make a client', async () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const keyBytes = new Uint8Array([

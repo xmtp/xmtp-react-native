@@ -25,7 +25,7 @@ import { InboxState } from './lib/InboxState'
 import { Member, MembershipResult } from './lib/Member'
 import { PublicIdentity } from './lib/PublicIdentity'
 import { SignerType } from './lib/Signer'
-import { NetworkDebugInfo } from './lib/XMTPDebugInformation'
+import { KeyPackageStatuses, NetworkDebugInfo } from './lib/XMTPDebugInformation'
 import {
   ConversationOptions,
   ConversationFilterType,
@@ -431,6 +431,17 @@ export async function staticInboxStatesForInboxIds(
   return inboxStates.map((json: string) => {
     return InboxState.from(json)
   })
+}
+
+export async function staticKeyPackageStatuses(
+  environment: XMTPEnvironment,
+  installationIds: InstallationId[]
+): Promise<KeyPackageStatuses> {
+  const info = await XMTPModule.staticKeyPackageStatuses(
+    environment,
+    installationIds
+  )
+  return KeyPackageStatuses.from(info)
 }
 
 export function staticActivatePersistentLibXMTPLogWriter(

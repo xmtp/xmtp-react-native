@@ -1,5 +1,5 @@
 import * as XMTPModule from '../index'
-import { Client } from './Client'
+import { Client, InstallationId } from './Client'
 
 export default class XMTPDebugInformation {
   client: Client<any>
@@ -18,6 +18,15 @@ export default class XMTPDebugInformation {
     return await XMTPModule.uploadDebugInformation(
       this.client.installationId,
       serverUrl
+    )
+  }
+
+  async getKeyPackageStatuses(
+    installationIds: InstallationId[]
+  ): Promise<KeyPackageStatuses> {
+    return await XMTPModule.staticKeyPackageStatuses(
+      this.client.environment,
+      installationIds
     )
   }
 }
@@ -75,4 +84,46 @@ export class NetworkDebugInfo {
       entry.aggregateStatistics
     )
   }
+}
+
+export class KeyPackageStatuses {
+  statuses: Map<InstallationId, KeyPackageStatus>
+
+  constructor(statuses: Map<InstallationId, KeyPackageStatus>) {
+    this.statuses = statuses
+  }
+
+  static from(json: Record<string, string>): KeyPackageStatuses {
+    const statuses = new Map<InstallationId, KeyPackageStatus>()
+
+    for (const [installationId, statusJson] of Object.entries(json)) {
+      const status = KeyPackageStatus.from(statusJson)
+      statuses.set(installationId as InstallationId, status)
+    }
+
+    return new KeyPackageStatuses(statuses)
+  }
+}
+
+export class KeyPackageStatus {
+  lifetime: KeyPackageLifetime
+  validationError: string
+
+  constructor(lifetime: KeyPackageLifetime, validationError: string) {
+    this.lifetime = lifetime
+    this.validationError = validationError
+  }
+
+  static from(json: string): KeyPackageStatus {
+    const entry = JSON.parse(json)
+
+    const parsedLifetime = JSON.parse(entry.lifetime)
+
+    return new KeyPackageStatus(parsedLifetime, entry.validationError)
+  }
+}
+
+export interface KeyPackageLifetime {
+  notBefore: number
+  notAfter: number
 }
