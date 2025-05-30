@@ -40,6 +40,7 @@ export class Client<
   conversations: Conversations<ContentTypes>
   preferences: PrivatePreferences
   debugInformation: XMTPDebugInformation
+  environment: XMTPEnvironment
   static codecRegistry: { [key: string]: XMTPModule.ContentCodec<unknown> }
   private static signSubscription: Subscription | null = null
   private static authSubscription: Subscription | null = null
@@ -111,6 +112,7 @@ export class Client<
       client['installationId'],
       client['dbPath'],
       PublicIdentity.from(client['publicIdentity']),
+      options.env,
       options?.codecs || []
     )
   }
@@ -170,6 +172,7 @@ export class Client<
                 message.installationId as InstallationId,
                 message.dbPath,
                 PublicIdentity.from(message.publicIdentity),
+                options.env,
                 options.codecs || []
               )
             )
@@ -230,6 +233,7 @@ export class Client<
       client['installationId'],
       client['dbPath'],
       PublicIdentity.from(client['publicIdentity']),
+      options.env,
       options.codecs || []
     )
   }
@@ -272,6 +276,7 @@ export class Client<
       client['installationId'],
       client['dbPath'],
       PublicIdentity.from(client['publicIdentity']),
+      options.env,
       options.codecs || []
     )
   }
@@ -445,12 +450,14 @@ export class Client<
     installationId: InstallationId,
     dbPath: string,
     publicIdentity: PublicIdentity,
+    environment: XMTPEnvironment,
     codecs: XMTPModule.ContentCodec<ContentTypes>[] = []
   ) {
     this.inboxId = inboxId
     this.installationId = installationId
     this.dbPath = dbPath
     this.publicIdentity = publicIdentity
+    this.environment = environment
     this.conversations = new Conversations(this)
     this.preferences = new PrivatePreferences(this)
     this.debugInformation = new XMTPDebugInformation(this)

@@ -657,9 +657,9 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("staticKeyPackageStatus") Coroutine { environment: String, installationIds: List<String> ->
+        AsyncFunction("staticKeyPackageStatuses") Coroutine { environment: String, installationIds: List<String> ->
             withContext(Dispatchers.IO) {
-                logV("staticKeyPackageStatus")
+                logV("staticKeyPackageStatuses")
                 val keyPackageStatus: Map<String, FfiKeyPackageStatus> =
                     Client.keyPackageStatusesForInstallationIds(
                         installationIds,
@@ -1840,7 +1840,7 @@ class XMTPModule : Module() {
         AsyncFunction("getNetworkDebugInformation") Coroutine { installationId: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                NetworkDebugInfoWrapper.encode(client.XMTPDebugInformation)
+                NetworkDebugInfoWrapper.encode(client.debugInformation)
             }
         }
 
@@ -1848,8 +1848,8 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 serverUrl.takeUnless { it.isNullOrBlank() }?.let {
-                    client.XMTPDebugInformation.uploadDebugInformation(it)
-                } ?: client.XMTPDebugInformation.uploadDebugInformation()
+                    client.debugInformation.uploadDebugInformation(it)
+                } ?: client.debugInformation.uploadDebugInformation()
             }
         }
     }
