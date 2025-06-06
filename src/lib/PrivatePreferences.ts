@@ -39,6 +39,14 @@ export default class PrivatePreferences {
     )
   }
 
+  async setConsentStates(consentRecords: ConsentRecord[]): Promise<void> {
+    const recordStrings = consentRecords.map((record) => JSON.stringify(record))
+    return await XMTPModule.setConsentStates(
+      this.client.installationId,
+      recordStrings
+    )
+  }
+
   /**
    * Syncs the local database between installations
    */
