@@ -26,5 +26,4 @@ struct ConsentWrapper {
             case .unknown: return "unknown"
         }
     }
-
 }

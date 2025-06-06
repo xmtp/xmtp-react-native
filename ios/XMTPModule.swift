@@ -640,16 +640,20 @@ public class XMTPModule: Module {
 				inboxIds: inboxIds, api: createApiClient(env: environment))
 			return try inboxStates.map { try InboxStateWrapper.encode($0) }
 		}
-		
+
 		AsyncFunction("staticKeyPackageStatuses") {
-			(environment: String, installationIds: [String]) -> [String: String] in
-			
-			let keyPackageStatus = try await XMTP.Client.keyPackageStatusesForInstallationIds(
-				installationIds: installationIds,
-				api: createApiClient(env: environment)
-			)
-			
-			return try keyPackageStatus.mapValues { try KeyPackageStatusWrapper.encode(keyPackageStatus: $0) }
+			(environment: String, installationIds: [String]) -> [String: String]
+			in
+
+			let keyPackageStatus = try await XMTP.Client
+				.keyPackageStatusesForInstallationIds(
+					installationIds: installationIds,
+					api: createApiClient(env: environment)
+				)
+
+			return try keyPackageStatus.mapValues {
+				try KeyPackageStatusWrapper.encode(keyPackageStatus: $0)
+			}
 		}
 
 		Function("staticActivatePersistentLibXMTPLogWriter") {
@@ -2295,6 +2299,24 @@ public class XMTPModule: Module {
 			)
 		}
 
+		AsyncFunction("setConsentStates") {
+			(
+				installationId: String, consentRecords: [String]
+			) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+
+			let states =
+				try consentRecords.map {
+					try consentRecordFromJson($0)
+				}
+
+			try await client.preferences.setConsentState(entries: states)
+		}
+
 		AsyncFunction("consentInboxIdState") {
 			(installationId: String, peerInboxId: String) -> String in
 			guard
@@ -2740,6 +2762,25 @@ public class XMTPModule: Module {
 		default:
 			throw Error.invalidPermissionOption
 		}
+	}
+
+	private func consentRecordFromJson(_ params: String) throws -> ConsentRecord
+	{
+		guard let data = params.data(using: .utf8),
+			let jsonObject = try? JSONSerialization.jsonObject(
+				with: data, options: []) as? [String: Any],
+			let value = jsonObject["value"] as? String,
+			let entry = jsonObject["entryType"] as? String,
+			let consent = jsonObject["consentType"] as? String
+		else {
+			throw Error.invalidPermissionOption
+		}
+
+		return ConsentRecord(
+			value: value,
+			entryType: try getEntryType(type: entry),
+			consentType: try getConsentState(state: consent)
+		)
 	}
 
 	private func getSortDirection(direction: String) throws -> SortDirection {

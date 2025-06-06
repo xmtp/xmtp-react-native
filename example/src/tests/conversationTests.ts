@@ -12,6 +12,7 @@ import {
 } from './test-utils'
 import {
   Client,
+  ConsentRecord,
   Conversation,
   ConversationId,
   ConversationVersion,
@@ -99,6 +100,42 @@ class NumberCodecEmptyFallback extends NumberCodec {
     return ''
   }
 }
+
+test('can set consent for multiple conversations at once', async () => {
+  const [alix, bo] = await createClients(2)
+  const group1 = await bo.conversations.newGroup([alix.inboxId])
+  const group2 = await bo.conversations.newGroup([alix.inboxId])
+  const group3 = await bo.conversations.newGroup([alix.inboxId])
+  const group4 = await bo.conversations.newGroup([alix.inboxId])
+  await alix.conversations.sync()
+  await alix.preferences.setConsentStates([
+    new ConsentRecord(group1.id, 'conversation_id', 'denied'),
+    new ConsentRecord(group3.id, 'conversation_id', 'denied'),
+    new ConsentRecord(group4.id, 'conversation_id', 'allowed'),
+  ])
+  const group1State = await alix.preferences.conversationConsentState(group1.id)
+  const group2State = await alix.preferences.conversationConsentState(group2.id)
+  const group3State = await alix.preferences.conversationConsentState(group3.id)
+  const group4State = await alix.preferences.conversationConsentState(group4.id)
+
+  assert(
+    group1State === 'denied',
+    `alix group1 should be denied but was ${group1State}`
+  )
+  assert(
+    group2State === 'unknown',
+    `alix group2 should be unknown but was ${group1State}`
+  )
+  assert(
+    group3State === 'denied',
+    `alix group3 should be denied but was ${group1State}`
+  )
+  assert(
+    group4State === 'allowed',
+    `alix group4 should be allowed but was ${group1State}`
+  )
+  return true
+})
 
 test('returns all push topics and validates HMAC keys', async () => {
   const keyBytes = crypto.getRandomValues(new Uint8Array(32))

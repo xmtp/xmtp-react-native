@@ -47,7 +47,6 @@ import org.xmtp.android.library.ConsentRecord
 import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.Conversations.ConversationFilterType
-import org.xmtp.android.library.EntryType
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreferenceType
 import org.xmtp.android.library.SendOptions
@@ -807,7 +806,7 @@ class XMTPModule : Module() {
                 logV("listGroups")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val consentStates = consentStringStates?.let { getConsentStates(it) }
+                val consentStates = consentStringStates?.let { ConsentWrapper.getConsentStates(it) }
                 val groups = client.conversations.listGroups(
                     limit = limit,
                     consentStates = consentStates
@@ -823,7 +822,7 @@ class XMTPModule : Module() {
                 logV("listDms")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params = ConversationParamsWrapper.conversationParamsFromJson(groupParams ?: "")
-                val consentStates = consentStringStates?.let { getConsentStates(it) }
+                val consentStates = consentStringStates?.let { ConsentWrapper.getConsentStates(it) }
                 val dms = client.conversations.listDms(
                     limit = limit,
                     consentStates = consentStates
@@ -840,7 +839,7 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val params =
                     ConversationParamsWrapper.conversationParamsFromJson(conversationParams ?: "")
-                val consentStates = consentStringStates?.let { getConsentStates(it) }
+                val consentStates = consentStringStates?.let { ConsentWrapper.getConsentStates(it) }
                 val conversations =
                     client.conversations.list(limit = limit, consentStates = consentStates)
                 conversations.map { conversation ->
@@ -1225,7 +1224,7 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 logV("syncAllConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val consentStates = consentStringStates?.let { getConsentStates(it) }
+                val consentStates = consentStringStates?.let { ConsentWrapper.getConsentStates(it) }
                 val numGroupsSyncedInt: Int =
                     client.conversations.syncAllConversations(consentStates).toInt()
                 numGroupsSyncedInt
@@ -1633,25 +1632,37 @@ class XMTPModule : Module() {
                     listOf(
                         ConsentRecord(
                             value,
-                            getEntryType(entryType),
-                            getConsentState(consentType)
+                            ConsentWrapper.getEntryType(entryType),
+                            ConsentWrapper.getConsentState(consentType)
                         )
                     )
                 )
             }
         }
 
+        AsyncFunction("setConsentStates") Coroutine { installationId: String, consentRecords: List<String> ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val states = consentRecords.map { ConsentWrapper.consentRecordFromJson(it) }
+                client.preferences.setConsentState(states)
+            }
+        }
+
         AsyncFunction("consentInboxIdState") Coroutine { installationId: String, peerInboxId: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                consentStateToString(client.preferences.inboxIdState(peerInboxId))
+                ConsentWrapper.consentStateToString(client.preferences.inboxIdState(peerInboxId))
             }
         }
 
         AsyncFunction("consentConversationIdState") Coroutine { installationId: String, conversationId: String ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                consentStateToString(client.preferences.conversationState(conversationId))
+                ConsentWrapper.consentStateToString(
+                    client.preferences.conversationState(
+                        conversationId
+                    )
+                )
             }
         }
 
@@ -1660,7 +1671,7 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no group found for $conversationId")
-                consentStateToString(conversation.consentState())
+                ConsentWrapper.consentStateToString(conversation.consentState())
             }
         }
 
@@ -1671,7 +1682,7 @@ class XMTPModule : Module() {
                 val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no group found for $conversationId")
 
-                conversation.updateConsentState(getConsentState(state))
+                conversation.updateConsentState(ConsentWrapper.getConsentState(state))
             }
         }
 
@@ -1738,7 +1749,9 @@ class XMTPModule : Module() {
             subscribeToAllMessages(
                 installationId = installationId,
                 getStreamType(type),
-                if (consentStates.isNullOrEmpty()) null else getConsentStates(consentStates)
+                if (consentStates.isNullOrEmpty()) null else ConsentWrapper.getConsentStates(
+                    consentStates
+                )
             )
         }
 
@@ -1929,36 +1942,6 @@ class XMTPModule : Module() {
             "groups" -> ConversationFilterType.GROUPS
             "dms" -> ConversationFilterType.DMS
             else -> ConversationFilterType.ALL
-        }
-    }
-
-    private fun getConsentState(stateString: String): ConsentState {
-        return when (stateString) {
-            "allowed" -> ConsentState.ALLOWED
-            "denied" -> ConsentState.DENIED
-            else -> ConsentState.UNKNOWN
-        }
-    }
-
-    private fun getConsentStates(stateStrings: List<String>): List<ConsentState> {
-        return stateStrings.map { stateString ->
-            getConsentState(stateString)
-        }
-    }
-
-    private fun getEntryType(entryString: String): EntryType {
-        return when (entryString) {
-            "conversation_id" -> EntryType.CONVERSATION_ID
-            "inbox_id" -> EntryType.INBOX_ID
-            else -> throw XMTPException("Invalid entry type: $entryString")
-        }
-    }
-
-    private fun consentStateToString(state: ConsentState): String {
-        return when (state) {
-            ConsentState.ALLOWED -> "allowed"
-            ConsentState.DENIED -> "denied"
-            ConsentState.UNKNOWN -> "unknown"
         }
     }
 
