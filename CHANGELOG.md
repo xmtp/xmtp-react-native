@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.2.1
+
+### Patch Changes
+
+- dfc1547: - Add the ability to set array of consent states
+
 ## 4.2.0
 
 - Release 4.2.0
