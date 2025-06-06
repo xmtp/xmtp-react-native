@@ -2314,7 +2314,7 @@ public class XMTPModule: Module {
 					try consentRecordFromJson($0)
 				}
 
-			try await client.preferences.setConsentState(entries: [states])
+			try await client.preferences.setConsentState(entries: states)
 		}
 
 		AsyncFunction("consentInboxIdState") {
