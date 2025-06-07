@@ -2771,7 +2771,7 @@ public class XMTPModule: Module {
 				with: data, options: []) as? [String: Any],
 			let value = jsonObject["value"] as? String,
 			let entry = jsonObject["entryType"] as? String,
-			let consent = jsonObject["consentType"] as? String
+			let consent = jsonObject["state"] as? String
 		else {
 			throw Error.invalidPermissionOption
 		}

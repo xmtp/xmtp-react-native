@@ -57,7 +57,7 @@ class ConsentWrapper {
             return ConsentRecord(
                 jsonOptions.get("value").asString,
                 getEntryType(jsonOptions.get("entryType").asString),
-                getConsentState(jsonOptions.get("consentType").asString)
+                getConsentState(jsonOptions.get("state").asString)
             )
         }
     }
