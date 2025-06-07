@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.2.2
+
+### Patch Changes
+
+- 61cb5ae: Fix consent wrapper json parsing
+
 ## 4.2.1
 
 ### Patch Changes
