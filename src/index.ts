@@ -1609,6 +1609,12 @@ export async function getNetworkDebugInformation(
   return NetworkDebugInfo.from(info)
 }
 
+export async function clearAllNetworkStatistics(
+  installationId: InstallationId
+): Promise<void> {
+  return await XMTPModule.clearAllNetworkStatistics(installationId)
+}
+
 export async function uploadDebugInformation(
   installationId: InstallationId,
   serverUrl?: string

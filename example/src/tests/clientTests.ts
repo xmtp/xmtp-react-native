@@ -7,7 +7,6 @@ import {
   createClients,
   adaptEthersWalletToSigner,
   assertEqual,
-  delayToPropogate,
 } from './test-utils'
 import { Client, PublicIdentity } from '../../../src/index'
 import { LogLevel, LogRotation } from '../../../src/lib/types/LogTypes'
@@ -20,6 +19,143 @@ function test(name: string, perform: () => Promise<boolean>) {
     run: perform,
   })
 }
+
+test('can be built offline', async () => {
+  const [alix, bo] = await createClients(2)
+  const keyBytes = new Uint8Array(32).fill(1)
+  const dbPath = `${RNFS.DocumentDirectoryPath}/xmtp_offline_main`
+  const alixDb = `${RNFS.DocumentDirectoryPath}/xmtp_alix`
+  const boDb = `${RNFS.DocumentDirectoryPath}/xmtp_bo`
+
+  for (const path of [dbPath, alixDb, boDb]) {
+    if (!(await RNFS.exists(path))) await RNFS.mkdir(path)
+  }
+
+  const wallet = Wallet.createRandom()
+  const client = await Client.create(adaptEthersWalletToSigner(wallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbPath,
+  })
+
+  await client.debugInformation.clearAllStatistics()
+  console.log(
+    'Initial Stats',
+    (await client.debugInformation.getNetworkDebugInformation())
+      .aggregateStatistics
+  )
+
+  const builtClient = await Client.build(
+    client.publicIdentity,
+    {
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+      dbDirectory: dbPath,
+    },
+    client.inboxId
+  )
+
+  console.log(
+    'Post Build Stats',
+    (await builtClient.debugInformation.getNetworkDebugInformation())
+      .aggregateStatistics
+  )
+  assert(builtClient.inboxId === client.inboxId, 'inboxIds should match')
+
+  const group1 = await builtClient.conversations.newGroup([alix.inboxId])
+  await group1.send('howdy')
+
+  const alixDm = await alix.conversations.newConversation(builtClient.inboxId)
+  await alixDm.send('howdy')
+
+  const boGroup = await bo.conversations.newGroupWithIdentities([
+    builtClient.publicIdentity,
+  ])
+  await boGroup.send('howdy')
+
+  await builtClient.conversations.syncAllConversations()
+  const convos = await builtClient.conversations.list()
+  assert(convos.length === 3, 'Should equal 3')
+
+  await builtClient.dropLocalDatabaseConnection()
+  await client.dropLocalDatabaseConnection()
+  await new Promise((r) => setTimeout(r, 1000))
+  await builtClient.deleteLocalDatabase()
+  await client.deleteLocalDatabase()
+
+  return true
+})
+
+test('cannot create more than 5 installations', async () => {
+  const [boClient] = await createClients(1)
+  const keyBytes = new Uint8Array(32).fill(2)
+  const wallet = Wallet.createRandom()
+  const basePath = `${RNFS.DocumentDirectoryPath}/xmtp_limit_test`
+  const paths: string[] = []
+
+  for (let i = 0; i < 6; i++) {
+    const p = `${basePath}_${i}`
+    paths.push(p)
+    if (!(await RNFS.exists(p))) await RNFS.mkdir(p)
+  }
+
+  const clients = []
+  for (let i = 0; i < 5; i++) {
+    clients.push(
+      await Client.create(adaptEthersWalletToSigner(wallet), {
+        env: 'local',
+        dbEncryptionKey: keyBytes,
+        dbDirectory: paths[i],
+      })
+    )
+  }
+
+  const state = await clients[0].inboxState(true)
+  assert(state.installations.length === 5, 'should equal 5')
+
+  // 6th installation should fail
+  let sixthClient
+  let failed = false
+  try {
+    sixthClient = await Client.create(adaptEthersWalletToSigner(wallet), {
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+      dbDirectory: paths[5],
+    })
+  } catch (err: any) {
+    failed = true
+    assert(
+      err.message.includes('5/5 installations'),
+      `Unexpected error message: ${err.message}`
+    )
+  }
+  assert(failed, 'Expected error when creating 6th installation')
+
+  // Revoke one installation
+  await clients[0].revokeInstallations(adaptEthersWalletToSigner(wallet), [
+    clients[4].installationId,
+  ])
+
+  const updatedState = await clients[0].inboxState(true)
+  assert(updatedState.installations.length === 4, 'should equal 4')
+
+  const sixthNow = await Client.create(adaptEthersWalletToSigner(wallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: `${basePath}_6`,
+  })
+
+  const finalState = await clients[0].inboxState(true)
+  assert(finalState.installations.length === 5, 'should equal 5')
+
+  for (const client of [...clients, boClient, sixthNow]) {
+    await client.dropLocalDatabaseConnection()
+    await client.deleteLocalDatabase()
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+  return true
+})
 
 test('can get installation keypackage statuses', async () => {
   const [alix, bo] = await createClients(2)
