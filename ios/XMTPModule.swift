@@ -2627,6 +2627,16 @@ public class XMTPModule: Module {
 				client.debugInformation)
 		}
 
+		AsyncFunction("clearAllNetworkStatistics") {
+			(installationId: String) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			client.debugInformation.clearAllStatistics()
+		}
+
 		AsyncFunction("uploadDebugInformation") {
 			(installationId: String, serverUrl: String?) -> String in
 			guard

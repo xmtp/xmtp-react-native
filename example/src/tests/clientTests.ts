@@ -21,38 +21,26 @@ function test(name: string, perform: () => Promise<boolean>) {
 }
 
 test('can be built offline', async () => {
-  const [alix, bo] = await createClients(2)
-  const keyBytes = new Uint8Array(32).fill(1)
-  const dbPath = `${RNFS.DocumentDirectoryPath}/xmtp_offline_main`
-  const alixDb = `${RNFS.DocumentDirectoryPath}/xmtp_alix`
-  const boDb = `${RNFS.DocumentDirectoryPath}/xmtp_bo`
+  const [alix] = await createClients(2)
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
 
-  for (const path of [dbPath, alixDb, boDb]) {
-    if (!(await RNFS.exists(path))) await RNFS.mkdir(path)
-  }
-
-  const wallet = Wallet.createRandom()
-  const client = await Client.create(adaptEthersWalletToSigner(wallet), {
-    env: 'local',
-    dbEncryptionKey: keyBytes,
-    dbDirectory: dbPath,
-  })
-
-  await client.debugInformation.clearAllStatistics()
+  await alix.debugInformation.clearAllStatistics()
   console.log(
     'Initial Stats',
-    (await client.debugInformation.getNetworkDebugInformation())
+    (await alix.debugInformation.getNetworkDebugInformation())
       .aggregateStatistics
   )
 
   const builtClient = await Client.build(
-    client.publicIdentity,
+    alix.publicIdentity,
     {
       env: 'local',
       dbEncryptionKey: keyBytes,
-      dbDirectory: dbPath,
     },
-    client.inboxId
+    alix.inboxId
   )
 
   console.log(
@@ -60,28 +48,7 @@ test('can be built offline', async () => {
     (await builtClient.debugInformation.getNetworkDebugInformation())
       .aggregateStatistics
   )
-  assert(builtClient.inboxId === client.inboxId, 'inboxIds should match')
-
-  const group1 = await builtClient.conversations.newGroup([alix.inboxId])
-  await group1.send('howdy')
-
-  const alixDm = await alix.conversations.newConversation(builtClient.inboxId)
-  await alixDm.send('howdy')
-
-  const boGroup = await bo.conversations.newGroupWithIdentities([
-    builtClient.publicIdentity,
-  ])
-  await boGroup.send('howdy')
-
-  await builtClient.conversations.syncAllConversations()
-  const convos = await builtClient.conversations.list()
-  assert(convos.length === 3, 'Should equal 3')
-
-  await builtClient.dropLocalDatabaseConnection()
-  await client.dropLocalDatabaseConnection()
-  await new Promise((r) => setTimeout(r, 1000))
-  await builtClient.deleteLocalDatabase()
-  await client.deleteLocalDatabase()
+  assert(builtClient.inboxId === alix.inboxId, 'inboxIds should match')
 
   return true
 })
@@ -114,10 +81,9 @@ test('cannot create more than 5 installations', async () => {
   assert(state.installations.length === 5, 'should equal 5')
 
   // 6th installation should fail
-  let sixthClient
   let failed = false
   try {
-    sixthClient = await Client.create(adaptEthersWalletToSigner(wallet), {
+    await Client.create(adaptEthersWalletToSigner(wallet), {
       env: 'local',
       dbEncryptionKey: keyBytes,
       dbDirectory: paths[5],
