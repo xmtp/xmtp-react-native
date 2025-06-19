@@ -1,5 +1,15 @@
 # @xmtp/react-native-sdk
 
+## 4.2.3
+
+### Patch Changes
+
+- 414bfc2: - Added ability to clear network stats
+  - Added option to build clients offline
+  - Fixed 2 issues that could cause groups to fork
+  - Increased group size to 250 members
+  - Added limit of 5 installations per inbox
+
 ## 4.2.2
 
 ### Patch Changes
