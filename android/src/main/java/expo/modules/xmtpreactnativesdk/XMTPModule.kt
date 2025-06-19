@@ -1857,6 +1857,13 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("clearAllNetworkStatistics") Coroutine { installationId: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                client.debugInformation.clearAllStatistics()
+            }
+        }
+
         AsyncFunction("uploadDebugInformation") Coroutine { installationId: String, serverUrl: String? ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")

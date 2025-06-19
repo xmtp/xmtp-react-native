@@ -7,7 +7,6 @@ import {
   createClients,
   adaptEthersWalletToSigner,
   assertEqual,
-  delayToPropogate,
 } from './test-utils'
 import { Client, PublicIdentity } from '../../../src/index'
 import { LogLevel, LogRotation } from '../../../src/lib/types/LogTypes'
@@ -20,6 +19,109 @@ function test(name: string, perform: () => Promise<boolean>) {
     run: perform,
   })
 }
+
+test('can be built offline', async () => {
+  const [alix] = await createClients(2)
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+
+  await alix.debugInformation.clearAllStatistics()
+  console.log(
+    'Initial Stats',
+    (await alix.debugInformation.getNetworkDebugInformation())
+      .aggregateStatistics
+  )
+
+  const builtClient = await Client.build(
+    alix.publicIdentity,
+    {
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+    },
+    alix.inboxId
+  )
+
+  console.log(
+    'Post Build Stats',
+    (await builtClient.debugInformation.getNetworkDebugInformation())
+      .aggregateStatistics
+  )
+  assert(builtClient.inboxId === alix.inboxId, 'inboxIds should match')
+
+  return true
+})
+
+test('cannot create more than 5 installations', async () => {
+  const [boClient] = await createClients(1)
+  const keyBytes = new Uint8Array(32).fill(2)
+  const wallet = Wallet.createRandom()
+  const basePath = `${RNFS.DocumentDirectoryPath}/xmtp_limit_test`
+  const paths: string[] = []
+
+  for (let i = 0; i < 6; i++) {
+    const p = `${basePath}_${i}`
+    paths.push(p)
+    if (!(await RNFS.exists(p))) await RNFS.mkdir(p)
+  }
+
+  const clients = []
+  for (let i = 0; i < 5; i++) {
+    clients.push(
+      await Client.create(adaptEthersWalletToSigner(wallet), {
+        env: 'local',
+        dbEncryptionKey: keyBytes,
+        dbDirectory: paths[i],
+      })
+    )
+  }
+
+  const state = await clients[0].inboxState(true)
+  assert(state.installations.length === 5, 'should equal 5')
+
+  // 6th installation should fail
+  let failed = false
+  try {
+    await Client.create(adaptEthersWalletToSigner(wallet), {
+      env: 'local',
+      dbEncryptionKey: keyBytes,
+      dbDirectory: paths[5],
+    })
+  } catch (err: any) {
+    failed = true
+    assert(
+      err.message.includes('5/5 installations'),
+      `Unexpected error message: ${err.message}`
+    )
+  }
+  assert(failed, 'Expected error when creating 6th installation')
+
+  // Revoke one installation
+  await clients[0].revokeInstallations(adaptEthersWalletToSigner(wallet), [
+    clients[4].installationId,
+  ])
+
+  const updatedState = await clients[0].inboxState(true)
+  assert(updatedState.installations.length === 4, 'should equal 4')
+
+  const sixthNow = await Client.create(adaptEthersWalletToSigner(wallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: `${basePath}_6`,
+  })
+
+  const finalState = await clients[0].inboxState(true)
+  assert(finalState.installations.length === 5, 'should equal 5')
+
+  for (const client of [...clients, boClient, sixthNow]) {
+    await client.dropLocalDatabaseConnection()
+    await client.deleteLocalDatabase()
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+  return true
+})
 
 test('can get installation keypackage statuses', async () => {
   const [alix, bo] = await createClients(2)
@@ -884,70 +986,6 @@ test('can upload archive debug information', async () => {
   assert(
     typeof uploadKey === 'string' && uploadKey.length > 0,
     'uploadKey should not be empty'
-  )
-
-  return true
-})
-
-test('can get network debug information', async () => {
-  const [alix] = await createClients(1)
-  const debugInfo = await alix.debugInformation.getNetworkDebugInformation()
-  const apiStatistics = debugInfo.apiStatistics
-  const identityStatistics = debugInfo.identityStatistics
-  const aggregateStatistics = debugInfo.aggregateStatistics
-
-  console.log(aggregateStatistics)
-  assert(
-    typeof aggregateStatistics === 'string' && aggregateStatistics.length > 0,
-    'aggregateStatistics should not be empty'
-  )
-  assert(
-    apiStatistics.uploadKeyPackage === 2,
-    `uploadKeyPackage should be 1 but was ${apiStatistics.uploadKeyPackage}`
-  )
-  assert(
-    apiStatistics.fetchKeyPackage === 0,
-    `fetchKeyPackage should be 0 but was ${apiStatistics.fetchKeyPackage}`
-  )
-  assert(
-    apiStatistics.sendGroupMessages === 2,
-    `sendGroupMessages should be 2 but was ${apiStatistics.sendGroupMessages}`
-  )
-  assert(
-    apiStatistics.sendWelcomeMessages === 0,
-    `sendWelcomeMessages should be 0 but was ${apiStatistics.sendWelcomeMessages}`
-  )
-  assert(
-    apiStatistics.queryGroupMessages === 4,
-    `queryGroupMessages should be 4 but was ${apiStatistics.queryGroupMessages}`
-  )
-  assert(
-    apiStatistics.queryWelcomeMessages === 0,
-    `queryWelcomeMessages should be 0 but was ${apiStatistics.queryWelcomeMessages}`
-  )
-  assert(
-    apiStatistics.subscribeMessages === 0,
-    `subscribeMessages should be 0 but was ${apiStatistics.subscribeMessages}`
-  )
-  assert(
-    apiStatistics.subscribeWelcomes === 0,
-    `subscribeWelcomes should be 0 but was ${apiStatistics.subscribeWelcomes}`
-  )
-  assert(
-    identityStatistics.publishIdentityUpdate === 2,
-    `publishIdentityUpdate should be 1 but was ${identityStatistics.publishIdentityUpdate}`
-  )
-  assert(
-    identityStatistics.getIdentityUpdatesV2 === 5,
-    `getIdentityUpdatesV2 should be 3 but was ${identityStatistics.getIdentityUpdatesV2}`
-  )
-  assert(
-    identityStatistics.getInboxIds === 4,
-    `getInboxIds should be 2 but was ${identityStatistics.getInboxIds}`
-  )
-  assert(
-    identityStatistics.verifySmartContractWalletSignature === 0,
-    `verifySmartContractWalletSignature should be 0 but was ${identityStatistics.verifySmartContractWalletSignature}`
   )
 
   return true

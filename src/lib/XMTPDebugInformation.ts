@@ -14,6 +14,12 @@ export default class XMTPDebugInformation {
     )
   }
 
+  async clearAllStatistics(): Promise<void> {
+    return await XMTPModule.clearAllNetworkStatistics(
+      this.client.installationId
+    )
+  }
+
   async uploadDebugInformation(serverUrl?: string): Promise<string> {
     return await XMTPModule.uploadDebugInformation(
       this.client.installationId,
