@@ -641,6 +641,32 @@ public class XMTPModule: Module {
 			return try inboxStates.map { try InboxStateWrapper.encode($0) }
 		}
 
+		AsyncFunction("staticRevokeInstallations") {
+			(
+				environment: String, publicIdentity: String, inboxId: String,
+				walletParams: String, installationIds: [String]
+			) in
+
+			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
+				walletParams)
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
+			let reactSigner = ReactNativeSigner(
+				module: self, publicIdentity: identity,
+				signerType: walletOptions.signerType,
+				chainId: walletOptions.chainId,
+				blockNumber: walletOptions.blockNumber)
+			self.signer = signer
+
+			Client.revokeInstallations(
+				api: createApiClient(env: environment),
+				signingKey: reactSigner,
+				inboxId: inboxId,
+				installationIds: installationIds
+			)
+			self.signer = nil
+		}
+
 		AsyncFunction("staticKeyPackageStatuses") {
 			(environment: String, installationIds: [String]) -> [String: String]
 			in
