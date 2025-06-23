@@ -651,16 +651,15 @@ public class XMTPModule: Module {
 				walletParams)
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
 				publicIdentity)
-			let reactSigner = ReactNativeSigner(
+			let signer = ReactNativeSigner(
 				module: self, publicIdentity: identity,
 				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
 				blockNumber: walletOptions.blockNumber)
 			self.signer = signer
-
-			Client.revokeInstallations(
+			try await Client.revokeInstallations(
 				api: createApiClient(env: environment),
-				signingKey: reactSigner,
+				signingKey: signer,
 				inboxId: inboxId,
 				installationIds: installationIds
 			)

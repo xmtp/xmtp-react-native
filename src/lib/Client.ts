@@ -394,15 +394,40 @@ export class Client<
     if (!signingKey) {
       throw new Error('Signer is not configured')
     }
-    return await XMTPModule.staticRevokeInstallations(
-      env,
-      await signingKey.getIdentifier(),
-      inboxId,
-      installationIds,
-      signingKey.signerType?.(),
-      signingKey.getChainId?.(),
-      signingKey.getBlockNumber?.()
-    )
+
+    return new Promise<void>((resolve, reject) => {
+      ;(async () => {
+        Client.signSubscription = XMTPModule.emitter.addListener(
+          'sign',
+          async (message: { id: string; message: string }) => {
+            try {
+              await Client.handleSignatureRequest(signer, message)
+            } catch (e) {
+              const errorMessage =
+                'ERROR in revokeInstallations. User rejected signature'
+              console.info(errorMessage, e)
+              Client.signSubscription?.remove()
+              reject(errorMessage)
+            }
+          }
+        )
+
+        await XMTPModule.staticRevokeInstallations(
+          env,
+          await signingKey.getIdentifier(),
+          inboxId,
+          installationIds,
+          signingKey.signerType?.(),
+          signingKey.getChainId?.(),
+          signingKey.getBlockNumber?.()
+        )
+        Client.signSubscription?.remove()
+        resolve()
+      })().catch((error) => {
+        Client.signSubscription?.remove()
+        reject(error)
+      })
+    })
   }
 
   /**
