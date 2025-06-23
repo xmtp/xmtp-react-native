@@ -436,6 +436,29 @@ export async function staticInboxStatesForInboxIds(
   })
 }
 
+export async function staticRevokeInstallations(
+  environment: XMTPEnvironment,
+  identity: PublicIdentity,
+  inboxId: InboxId,
+  installationIds: InstallationId[],
+  signerType?: SignerType | undefined,
+  chainId?: number | undefined,
+  blockNumber?: number | undefined
+): Promise<void> {
+  const walletParams: SignerParams = {
+    signerType,
+    chainId: typeof chainId === 'number' ? chainId : undefined,
+    blockNumber: typeof blockNumber === 'number' ? blockNumber : undefined,
+  }
+  await XMTPModule.staticRevokeInstallations(
+    environment,
+    JSON.stringify(identity),
+    inboxId,
+    JSON.stringify(walletParams),
+    installationIds
+  )
+}
+
 export async function staticKeyPackageStatuses(
   environment: XMTPEnvironment,
   installationIds: InstallationId[]

@@ -377,6 +377,60 @@ export class Client<
   }
 
   /**
+   * Revoke a list of installations.
+   * Revoking a installation will cause that installation to lose access to the inbox.
+   * @param {XMTPEnvironment} env - Environment to revoke installation from.
+   * @param {Signer} signer - The signer of the recovery account to sign the revocation.
+   * @param {inboxId} InboxId - The inboxId of the account to revoke installations from.
+   * @param {installationIds} InstallationId[] - The installationIds to revoke access to the inbox.
+   */
+  static async revokeInstallations(
+    env: XMTPEnvironment,
+    signer: Signer | WalletClient,
+    inboxId: InboxId,
+    installationIds: InstallationId[]
+  ): Promise<void> {
+    const signingKey = getSigner(signer)
+    if (!signingKey) {
+      throw new Error('Signer is not configured')
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      ;(async () => {
+        Client.signSubscription = XMTPModule.emitter.addListener(
+          'sign',
+          async (message: { id: string; message: string }) => {
+            try {
+              await Client.handleSignatureRequest(signer, message)
+            } catch (e) {
+              const errorMessage =
+                'ERROR in revokeInstallations. User rejected signature'
+              console.info(errorMessage, e)
+              Client.signSubscription?.remove()
+              reject(errorMessage)
+            }
+          }
+        )
+
+        await XMTPModule.staticRevokeInstallations(
+          env,
+          await signingKey.getIdentifier(),
+          inboxId,
+          installationIds,
+          signingKey.signerType?.(),
+          signingKey.getChainId?.(),
+          signingKey.getBlockNumber?.()
+        )
+        Client.signSubscription?.remove()
+        resolve()
+      })().catch((error) => {
+        Client.signSubscription?.remove()
+        reject(error)
+      })
+    })
+  }
+
+  /**
    * Activates persistent logging for libXMTP with specified configuration.
    *
    * @param {LogLevel} logLevel - The minimum log level to record (e.g., debug, info, warn, error)

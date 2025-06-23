@@ -656,6 +656,31 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("staticRevokeInstallations") Coroutine { environment: String, publicIdentity: String, inboxId: String, walletParams: String, installationIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("staticRevokeInstallations")
+
+                val walletOptions = WalletParamsWrapper.walletParamsFromJson(walletParams)
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
+
+                val reactSigner = ReactNativeSigner(
+                    module = this@XMTPModule,
+                    publicIdentity = identity,
+                    type = walletOptions.signerType,
+                    chainId = walletOptions.chainId,
+                    blockNumber = walletOptions.blockNumber
+                )
+                signer = reactSigner
+                Client.revokeInstallations(
+                    apiEnvironments(environment),
+                    reactSigner,
+                    inboxId,
+                    installationIds
+                )
+                signer = null
+            }
+        }
+
         AsyncFunction("staticKeyPackageStatuses") Coroutine { environment: String, installationIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("staticKeyPackageStatuses")
