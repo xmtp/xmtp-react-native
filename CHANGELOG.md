@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.2.4
+
+### Patch Changes
+
+- 1a3668f: - Adds ability to revoke installations statically
+
 ## 4.2.3
 
 ### Patch Changes
