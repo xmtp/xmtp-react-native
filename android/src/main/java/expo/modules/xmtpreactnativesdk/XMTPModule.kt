@@ -691,20 +691,49 @@ class XMTPModule : Module() {
                     inboxId,
                     installationIds
                 )
+                val type = SignatureType.REVOKE_INSTALLATIONS
                 sigRequest.let {
-                    clientSignatureRequests["static"] = it
+                    clientSignatureRequests[type.typeName] = it
                     it.signatureText()
                 }
+                type
             }
         }
 
-        AsyncFunction("ffiStaticApplySignature") Coroutine { environment: String ->
+        AsyncFunction("ffiStaticApplySignature") Coroutine { environment: String, signatureType: String ->
             withContext(Dispatchers.IO) {
                 logV("ffiStaticApplySignature")
-                clientSignatureRequests["static"]?.let {
-                    ffiApplySignatureRequest(apiEnvironments(environment), it)
+                clientSignatureRequests[signatureType]?.let {
+                    Client.ffiApplySignatureRequest(apiEnvironments(environment), it)
                 }
 
+            }
+        }
+
+        AsyncFunction("ffiStaticAddEcdsaSignature") Coroutine { signatureType: String, signatureBytes: List<Int> ->
+            withContext(Dispatchers.IO) {
+                logV("ffiAddEcdsaSignature")
+                val signature =
+                    signatureBytes.foldIndexed(ByteArray(signatureBytes.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                clientSignatureRequests[signatureType]?.addEcdsaSignature(signature)
+            }
+        }
+
+        AsyncFunction("ffiStaticAddScwSignature") Coroutine { signatureType: String, signatureBytes: List<Int>, address: String, chainId: Long, blockNumber: Long? ->
+            withContext(Dispatchers.IO) {
+                logV("ffiAddScwSignature")
+                val signature =
+                    signatureBytes.foldIndexed(ByteArray(signatureBytes.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                clientSignatureRequests[signatureType]?.addScwSignature(
+                    signature,
+                    address,
+                    chainId.toULong(),
+                    blockNumber?.toULong()
+                )
             }
         }
 
@@ -2008,6 +2037,10 @@ class XMTPModule : Module() {
         return when (type) {
             PreferenceType.HMAC_KEYS -> "hmac_keys"
         }
+    }
+
+    enum class SignatureType(val typeName: String) {
+        REVOKE_INSTALLATIONS("revokeInstallations");
     }
 
     private fun subscribeToPreferenceUpdates(installationId: String) {
