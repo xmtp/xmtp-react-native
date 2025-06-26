@@ -441,18 +441,18 @@ export class Client<
    * @param {inboxId} InboxId - The inboxId of the account to revoke installations from.
    * @param {installationIds} InstallationId[] - The installationIds to revoke access to the inbox.
    */
-  static async ffiRevokeInstallations(
+  static async ffiStaticRevokeInstallationsSignatureText(
     env: XMTPEnvironment,
     identity: PublicIdentity,
     inboxId: InboxId,
     installationIds: InstallationId[]
-  ): Promise<SignatureType> {
+  ): Promise<string> {
     console.warn(
       '⚠️ This function is delicate and should be used with caution. ' +
         'Should only be used if trying to manage the signature flow independently otherwise use `revokeInstallations()` instead'
     )
 
-    return await XMTPModule.ffiStaticRevokeInstallations(
+    return await XMTPModule.ffiStaticRevokeInstallationsSignatureText(
       env,
       identity,
       inboxId,

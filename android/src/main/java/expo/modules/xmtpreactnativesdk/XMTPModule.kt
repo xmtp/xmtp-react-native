@@ -681,9 +681,9 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("ffiStaticRevokeInstallations") Coroutine { environment: String, publicIdentity: String, inboxId: String, installationIds: List<String> ->
+        AsyncFunction("ffiStaticRevokeInstallationsSignatureText") Coroutine { environment: String, publicIdentity: String, inboxId: String, installationIds: List<String> ->
             withContext(Dispatchers.IO) {
-                logV("ffiStaticRevokeInstallations")
+                logV("ffiStaticRevokeInstallationsSignatureText")
                 val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
                 val sigRequest = Client.ffiRevokeInstallations(
                     apiEnvironments(environment),
@@ -696,7 +696,6 @@ class XMTPModule : Module() {
                     clientSignatureRequests[type.typeName] = it
                     it.signatureText()
                 }
-                type
             }
         }
 

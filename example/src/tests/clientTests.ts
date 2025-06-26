@@ -1,5 +1,6 @@
 import { ethers, Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
+import { InstallationId } from 'xmtp-react-native-sdk/lib/Client'
 
 import {
   Test,
@@ -10,7 +11,6 @@ import {
 } from './test-utils'
 import { Client, PublicIdentity } from '../../../src/index'
 import { LogLevel, LogRotation } from '../../../src/lib/types/LogTypes'
-import { InstallationId } from 'xmtp-react-native-sdk/lib/Client'
 
 export const clientTests: Test[] = []
 let counter = 1
@@ -50,6 +50,78 @@ test('can be built offline', async () => {
       .aggregateStatistics
   )
   assert(builtClient.inboxId === alix.inboxId, 'inboxIds should match')
+
+  return true
+})
+
+test('can manage revoke manually statically', async () => {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  const directoryExists2 = await RNFS.exists(dbDirPath2)
+  if (!directoryExists2) {
+    await RNFS.mkdir(dbDirPath2)
+  }
+  const alixWallet = Wallet.createRandom()
+  const alixSigner = adaptEthersWalletToSigner(alixWallet)
+
+  // create a v3 client
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+  })
+
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath2,
+  })
+
+  const inboxId = alix.inboxId
+  const states = await Client.inboxStatesForInboxIds('local', [inboxId])
+
+  assert(states[0].installations.length === 2, 'should equal 5 installations')
+
+  const toRevokeIds = states[0].installations.map((i) => i.id)
+
+  const sigText = await Client.ffiStaticRevokeInstallationsSignatureText(
+    'local',
+    alix.publicIdentity,
+    inboxId,
+    toRevokeIds as InstallationId[]
+  )
+  const signedMessage = await alixSigner.signMessage(sigText)
+
+  let { r, s, v } = ethers.utils.splitSignature(signedMessage.signature)
+  const signature = ethers.utils.arrayify(
+    ethers.utils.joinSignature({ r, s, v })
+  )
+
+  await alix.ffiAddEcdsaSignature(signature)
+  await alix.ffiApplySignature()
+  const postRevokeStates = await Client.inboxStatesForInboxIds('local', [
+    inboxId,
+  ])
+
+  assert(postRevokeStates.length === 1, 'should return 1 state after revoke')
+  assert(
+    postRevokeStates[0].installations.length === 0,
+    'installations should be empty after revoke'
+  )
+
+  await alix.dropLocalDatabaseConnection()
+  await alix.deleteLocalDatabase()
+  await alix2.dropLocalDatabaseConnection()
+  await alix2.deleteLocalDatabase()
 
   return true
 })

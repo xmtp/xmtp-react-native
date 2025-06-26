@@ -460,13 +460,13 @@ export async function staticRevokeInstallations(
   )
 }
 
-export async function ffiStaticRevokeInstallations(
+export async function ffiStaticRevokeInstallationsSignatureText(
   environment: XMTPEnvironment,
   identity: PublicIdentity,
   inboxId: InboxId,
   installationIds: InstallationId[]
-): Promise<SignatureType> {
-  return await XMTPModule.ffiStaticRevokeInstallations(
+): Promise<string> {
+  return await XMTPModule.ffiStaticRevokeInstallationsSignatureText(
     environment,
     JSON.stringify(identity),
     inboxId,
