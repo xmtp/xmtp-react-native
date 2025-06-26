@@ -681,6 +681,33 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("ffiStaticRevokeInstallations") Coroutine { environment: String, publicIdentity: String, inboxId: String, installationIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("ffiStaticRevokeInstallations")
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
+                val sigRequest = Client.ffiRevokeInstallations(
+                    apiEnvironments(environment),
+                    identity,
+                    inboxId,
+                    installationIds
+                )
+                sigRequest.let {
+                    clientSignatureRequests["static"] = it
+                    it.signatureText()
+                }
+            }
+        }
+
+        AsyncFunction("ffiStaticApplySignature") Coroutine { environment: String ->
+            withContext(Dispatchers.IO) {
+                logV("ffiStaticApplySignature")
+                clientSignatureRequests["static"]?.let {
+                    ffiApplySignatureRequest(apiEnvironments(environment), it)
+                }
+
+            }
+        }
+
         AsyncFunction("staticKeyPackageStatuses") Coroutine { environment: String, installationIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("staticKeyPackageStatuses")

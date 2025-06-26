@@ -7,6 +7,7 @@ import {
   Client,
   InboxId,
   InstallationId,
+  SignatureType,
   XMTPEnvironment,
 } from './lib/Client'
 import { ConsentRecord, ConsentState, ConsentType } from './lib/ConsentRecord'
@@ -456,6 +457,53 @@ export async function staticRevokeInstallations(
     inboxId,
     JSON.stringify(walletParams),
     installationIds
+  )
+}
+
+export async function ffiStaticRevokeInstallations(
+  environment: XMTPEnvironment,
+  identity: PublicIdentity,
+  inboxId: InboxId,
+  installationIds: InstallationId[]
+): Promise<SignatureType> {
+  return await XMTPModule.ffiStaticRevokeInstallations(
+    environment,
+    JSON.stringify(identity),
+    inboxId,
+    installationIds
+  )
+}
+
+export async function ffiStaticApplySignature(
+  environment: XMTPEnvironment,
+  signatureType: SignatureType
+): Promise<void> {
+  await XMTPModule.ffiStaticApplySignature(environment, signatureType)
+}
+
+export async function ffiStaticAddEcdsaSignature(
+  signatureType: SignatureType,
+  signatureBytes: Uint8Array
+): Promise<void> {
+  return await XMTPModule.ffiStaticAddEcdsaSignature(
+    signatureType,
+    Array.from(signatureBytes)
+  )
+}
+
+export async function ffiStaticAddScwSignature(
+  signatureType: SignatureType,
+  signatureBytes: Uint8Array,
+  address: Address,
+  chainId: number,
+  blockNumber?: number | undefined
+): Promise<void> {
+  return await XMTPModule.ffiStaticAddScwSignature(
+    signatureType,
+    Array.from(signatureBytes),
+    address,
+    chainId,
+    blockNumber
   )
 }
 
