@@ -665,10 +665,11 @@ public class XMTPModule: Module {
 			)
 			self.signer = nil
 		}
-		
+
 		AsyncFunction("ffiStaticRevokeInstallationsSignatureText") {
 			(
-				environment: String, publicIdentity: String, inboxId: String, installationIds: [String]
+				environment: String, publicIdentity: String, inboxId: String,
+				installationIds: [String]
 			) -> String in
 
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
@@ -685,17 +686,18 @@ public class XMTPModule: Module {
 				key: type.rawValue, signatureRequest: sigRequest)
 			return try await sigRequest.signatureText()
 		}
-		
+
 		AsyncFunction("ffiStaticApplySignature") {
 			(
 				environment: String, signatureType: String
 			) in
-			let sigRequest = try await clientsManager.getSignatureRequest(key: signatureType)
+			let sigRequest = try await clientsManager.getSignatureRequest(
+				key: signatureType)
 			try await Client.applySignatureRequest(
 				api: createApiClient(env: environment), sigRequest
 			)
 		}
-		
+
 		AsyncFunction("ffiStaticAddEcdsaSignature") {
 			(signatureType: String, signatureBytes: [UInt8]) in
 			try await clientsManager.getSignatureRequest(
@@ -2898,7 +2900,7 @@ public class XMTPModule: Module {
 			return "hmac_keys"
 		}
 	}
-	
+
 	private enum SignatureType: String {
 		case revokeInstallations = "revokeInstallations"
 	}
