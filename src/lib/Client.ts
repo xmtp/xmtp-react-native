@@ -431,6 +431,94 @@ export class Client<
   }
 
   /**
+   * ⚠️ This function is delicate and should be used with caution.
+   * Should only be used if trying to manage the signature flow independently otherwise use `revokeInstallations()` instead
+   *
+   * Revoke a list of installations.
+   * Revoking a installation will cause that installation to lose access to the inbox.
+   * @param {XMTPEnvironment} env - Environment to revoke installation from.
+   * @param {identity} Identity - The identity of the recovery account to sign the revocation.
+   * @param {inboxId} InboxId - The inboxId of the account to revoke installations from.
+   * @param {installationIds} InstallationId[] - The installationIds to revoke access to the inbox.
+   */
+  static async ffiRevokeInstallationsSignatureText(
+    env: XMTPEnvironment,
+    identity: PublicIdentity,
+    inboxId: InboxId,
+    installationIds: InstallationId[]
+  ): Promise<string> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `revokeInstallations()` instead'
+    )
+
+    return await XMTPModule.ffiStaticRevokeInstallationsSignatureText(
+      env,
+      identity,
+      inboxId,
+      installationIds
+    )
+  }
+
+  /**
+   * ⚠️ This function is delicate and should be used with caution.
+   * Should only be used if trying to manage the signature flow independently otherwise use `revokeInstallations()` instead
+   *
+   * Applies the signature.
+   * @param {XMTPEnvironment} env - Environment to apply the signature request
+   */
+  static async ffiApplySignatureRequest(
+    env: XMTPEnvironment,
+    signatureType: SignatureType
+  ): Promise<void> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `revokeInstallations()` instead'
+    )
+
+    await XMTPModule.ffiStaticApplySignature(env, signatureType)
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `create()` instead.
+   * Adds the Ecdsa signature to the identity to be registered
+   */
+  static async ffiAddEcdsaSignature(
+    signatureType: SignatureType,
+    signature: Uint8Array
+  ): Promise<void> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `revokeInstallations()` instead'
+    )
+    return await XMTPModule.ffiStaticAddEcdsaSignature(signatureType, signature)
+  }
+
+  /**
+   * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `create()` instead.
+   * Adds the SCW signature to the identity to be registered
+   */
+  static async ffiAddScwSignature(
+    signatureType: SignatureType,
+    signature: Uint8Array,
+    address: Address,
+    chainId: number,
+    blockNumber?: number | undefined
+  ): Promise<void> {
+    console.warn(
+      '⚠️ This function is delicate and should be used with caution. ' +
+        'Should only be used if trying to manage the signature flow independently otherwise use `revokeInstallations()` instead'
+    )
+    return await XMTPModule.ffiStaticAddScwSignature(
+      signatureType,
+      signature,
+      address,
+      chainId,
+      blockNumber
+    )
+  }
+
+  /**
    * Activates persistent logging for libXMTP with specified configuration.
    *
    * @param {LogLevel} logLevel - The minimum log level to record (e.g., debug, info, warn, error)
@@ -1015,6 +1103,7 @@ export class Client<
 }
 
 export type XMTPEnvironment = 'local' | 'dev' | 'production'
+export type SignatureType = 'revokeInstallations'
 
 export type ClientOptions = {
   /**

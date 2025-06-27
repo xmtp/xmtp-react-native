@@ -681,6 +681,61 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("ffiStaticRevokeInstallationsSignatureText") Coroutine { environment: String, publicIdentity: String, inboxId: String, installationIds: List<String> ->
+            withContext(Dispatchers.IO) {
+                logV("ffiStaticRevokeInstallationsSignatureText")
+                val identity = PublicIdentityWrapper.publicIdentityFromJson(publicIdentity)
+                val sigRequest = Client.ffiRevokeInstallations(
+                    apiEnvironments(environment),
+                    identity,
+                    inboxId,
+                    installationIds
+                )
+                val type = SignatureType.REVOKE_INSTALLATIONS
+                sigRequest.let {
+                    clientSignatureRequests[type.typeName] = it
+                    it.signatureText()
+                }
+            }
+        }
+
+        AsyncFunction("ffiStaticApplySignature") Coroutine { environment: String, signatureType: String ->
+            withContext(Dispatchers.IO) {
+                logV("ffiStaticApplySignature")
+                clientSignatureRequests[signatureType]?.let {
+                    Client.ffiApplySignatureRequest(apiEnvironments(environment), it)
+                }
+
+            }
+        }
+
+        AsyncFunction("ffiStaticAddEcdsaSignature") Coroutine { signatureType: String, signatureBytes: List<Int> ->
+            withContext(Dispatchers.IO) {
+                logV("ffiAddEcdsaSignature")
+                val signature =
+                    signatureBytes.foldIndexed(ByteArray(signatureBytes.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                clientSignatureRequests[signatureType]?.addEcdsaSignature(signature)
+            }
+        }
+
+        AsyncFunction("ffiStaticAddScwSignature") Coroutine { signatureType: String, signatureBytes: List<Int>, address: String, chainId: Long, blockNumber: Long? ->
+            withContext(Dispatchers.IO) {
+                logV("ffiAddScwSignature")
+                val signature =
+                    signatureBytes.foldIndexed(ByteArray(signatureBytes.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                clientSignatureRequests[signatureType]?.addScwSignature(
+                    signature,
+                    address,
+                    chainId.toULong(),
+                    blockNumber?.toULong()
+                )
+            }
+        }
+
         AsyncFunction("staticKeyPackageStatuses") Coroutine { environment: String, installationIds: List<String> ->
             withContext(Dispatchers.IO) {
                 logV("staticKeyPackageStatuses")
@@ -1981,6 +2036,10 @@ class XMTPModule : Module() {
         return when (type) {
             PreferenceType.HMAC_KEYS -> "hmac_keys"
         }
+    }
+
+    enum class SignatureType(val typeName: String) {
+        REVOKE_INSTALLATIONS("revokeInstallations");
     }
 
     private fun subscribeToPreferenceUpdates(installationId: String) {

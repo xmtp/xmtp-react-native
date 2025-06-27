@@ -666,6 +666,63 @@ public class XMTPModule: Module {
 			self.signer = nil
 		}
 
+		AsyncFunction("ffiStaticRevokeInstallationsSignatureText") {
+			(
+				environment: String, publicIdentity: String, inboxId: String,
+				installationIds: [String]
+			) -> String in
+
+			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
+				publicIdentity)
+			let sigRequest = try await Client.ffiRevokeInstallations(
+				api: createApiClient(env: environment),
+				publicIdentity: identity,
+				inboxId: inboxId,
+				installationIds: installationIds
+			)
+			let type = SignatureType.revokeInstallations
+
+			await clientsManager.updateSignatureRequest(
+				key: type.rawValue, signatureRequest: sigRequest)
+			return try await sigRequest.signatureText()
+		}
+
+		AsyncFunction("ffiStaticApplySignature") {
+			(environment: String, signatureType: String) in
+			guard
+				let sigRequest = await clientsManager.getSignatureRequest(
+					key: signatureType)
+			else {
+				throw Error.noSignatureRequest
+			}
+
+			try await Client.ffiApplySignatureRequest(
+				api: createApiClient(env: environment),
+				signatureRequest: sigRequest
+			)
+		}
+
+		AsyncFunction("ffiStaticAddEcdsaSignature") {
+			(signatureType: String, signatureBytes: [UInt8]) in
+			try await clientsManager.getSignatureRequest(
+				key: signatureType)?.addEcdsaSignature(
+					signatureBytes: Data(signatureBytes))
+		}
+
+		AsyncFunction("ffiStaticAddScwSignature") {
+			(
+				signatureType: String, signatureBytes: [UInt8],
+				address: String, chainId: Int64, blockNumber: Int64?
+			) in
+			try await clientsManager.getSignatureRequest(
+				key: signatureType)?.addScwSignature(
+					signatureBytes: Data(signatureBytes), address: address,
+					chainId: UInt64(chainId),
+					blockNumber: blockNumber.flatMap {
+						$0 >= 0 ? UInt64($0) : nil
+					})
+		}
+
 		AsyncFunction("staticKeyPackageStatuses") {
 			(environment: String, installationIds: [String]) -> [String: String]
 			in
@@ -2846,6 +2903,10 @@ public class XMTPModule: Module {
 		case .hmac_keys:
 			return "hmac_keys"
 		}
+	}
+
+	private enum SignatureType: String {
+		case revokeInstallations = "revokeInstallations"
 	}
 
 	func createApiClient(env: String, customLocalUrl: String? = nil)
