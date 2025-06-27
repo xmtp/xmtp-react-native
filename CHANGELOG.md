@@ -1,5 +1,12 @@
 # @xmtp/react-native-sdk
 
+## 4.2.5
+
+### Patch Changes
+
+- cfb923f: - Fixes for known bugs that could cause forking
+  - Statically manage revoking installations signatures
+
 ## 4.2.4
 
 ### Patch Changes
