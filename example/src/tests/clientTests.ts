@@ -93,7 +93,7 @@ test('can manage revoke manually statically', async () => {
 
   const toRevokeIds = states[0].installations.map((i) => i.id)
 
-  const sigText = await Client.ffiStaticRevokeInstallationsSignatureText(
+  const sigText = await Client.ffiRevokeInstallationsSignatureText(
     'local',
     alix.publicIdentity,
     inboxId,
@@ -101,13 +101,13 @@ test('can manage revoke manually statically', async () => {
   )
   const signedMessage = await alixSigner.signMessage(sigText)
 
-  let { r, s, v } = ethers.utils.splitSignature(signedMessage.signature)
+  const { r, s, v } = ethers.utils.splitSignature(signedMessage.signature)
   const signature = ethers.utils.arrayify(
     ethers.utils.joinSignature({ r, s, v })
   )
 
-  await alix.ffiAddEcdsaSignature(signature)
-  await alix.ffiApplySignature()
+  await Client.ffiAddEcdsaSignature('revokeInstallations', signature)
+  await Client.ffiApplySignatureRequest('local', 'revokeInstallations')
   const postRevokeStates = await Client.inboxStatesForInboxIds('local', [
     inboxId,
   ])

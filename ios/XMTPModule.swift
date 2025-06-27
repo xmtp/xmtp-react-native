@@ -688,13 +688,17 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("ffiStaticApplySignature") {
-			(
-				environment: String, signatureType: String
-			) in
-			let sigRequest = try await clientsManager.getSignatureRequest(
-				key: signatureType)
-			try await Client.applySignatureRequest(
-				api: createApiClient(env: environment), sigRequest
+			(environment: String, signatureType: String) in
+			guard
+				let sigRequest = await clientsManager.getSignatureRequest(
+					key: signatureType)
+			else {
+				throw Error.noSignatureRequest
+			}
+
+			try await Client.ffiApplySignatureRequest(
+				api: createApiClient(env: environment),
+				signatureRequest: sigRequest
 			)
 		}
 

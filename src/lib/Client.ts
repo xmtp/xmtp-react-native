@@ -441,7 +441,7 @@ export class Client<
    * @param {inboxId} InboxId - The inboxId of the account to revoke installations from.
    * @param {installationIds} InstallationId[] - The installationIds to revoke access to the inbox.
    */
-  static async ffiStaticRevokeInstallationsSignatureText(
+  static async ffiRevokeInstallationsSignatureText(
     env: XMTPEnvironment,
     identity: PublicIdentity,
     inboxId: InboxId,
