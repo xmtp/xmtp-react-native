@@ -16,6 +16,29 @@ To learn how to use the XMTP React Native SDK and get answers to frequently aske
 
 Access the [XMTP React Native SDK reference documentation](https://xmtp.github.io/xmtp-react-native/modules.html).
 
+## Automated Documentation Updates
+
+This repository includes an automated workflow that updates the XMTP documentation when new releases are published. The workflow:
+
+- Triggers on every tagged GitHub release
+- Analyzes changes in the release to detect API modifications
+- Updates version references in the [xmtp/docs-xmtp-org](https://github.com/xmtp/docs-xmtp-org) repository
+- Validates React Native code samples in the documentation
+- Creates a pull request with the updates
+
+### Setup Requirements
+
+To enable the documentation update workflow, ensure the following repository secrets are configured:
+
+- `DOCS_SYNC_TOKEN`: A GitHub personal access token with write access to the `xmtp/docs-xmtp-org` repository
+- `ANTHROPIC_API_KEY`: An Anthropic API key for Claude Code Actions integration
+
+### Manual Trigger
+
+The workflow can also be triggered manually via the Actions tab with an optional tag name parameter to analyze a specific release.
+
+The workflow will automatically run when releases are published and create PRs to keep the documentation current with the latest SDK changes.
+
 ## Example app
 
 Use the [XMTP React Native example app](example) as a tool to start building an app with XMTP. This basic messaging app has an intentionally unopinionated UI to help make it easier for you to build with. See [example/README.md](example/README.md) for more instructions.
