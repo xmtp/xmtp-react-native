@@ -132,7 +132,7 @@ android {
     }
     buildTypes {
         debug {
-            testCoverageEnabled = true
+            testCoverageEnabled = false
             debuggable = true
             signingConfig signingConfigs.debug
         }
