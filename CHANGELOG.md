@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.2.6
+
+### Patch Changes
+
+- 1af0c08: - Improvements to syncAll
+
 ## 4.2.5
 
 ### Patch Changes
