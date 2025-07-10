@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.2.7
+
+### Patch Changes
+
+- 78122d9: - Refresh GRPC client on connectivity issues
+
 ## 4.2.6
 
 ### Patch Changes
