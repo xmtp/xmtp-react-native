@@ -44,7 +44,8 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   sync()
   messages(opts?: MessagesOptions): Promise<DecodedMessageUnion<ContentTypes>[]>
   streamMessages(
-    callback: (message: DecodedMessage<ContentTypes[number]>) => Promise<void>
+    callback: (message: DecodedMessage<ContentTypes[number]>) => Promise<void>,
+    onClose?: () => void
   ): Promise<() => void>
   consentState(): Promise<ConsentState>
   updateConsent(state: ConsentState): Promise<void>

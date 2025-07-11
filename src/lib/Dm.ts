@@ -17,6 +17,7 @@ import { EventTypes } from './types/EventTypes'
 import { MessageId, MessagesOptions } from './types/MessagesOptions'
 import { SendOptions } from './types/SendOptions'
 import { keystore } from '@xmtp/proto'
+import { Subscription } from 'expo-modules-core'
 
 export interface DmParams {
   id: ConversationId
@@ -244,7 +245,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * Additionally, this method returns a function that can be called to unsubscribe and end the message stream.
    *
    * @param {Function} callback - A callback function that will be invoked with the new DecodedMessage when a message is received.
-   * @param {Function} [onClose] - Optional callback to invoke when the stream is closed (e.g., unsubscribed or disconnected).
+   * @param {Function} [onClose] - Optional callback to invoke when the stream is closed.
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
   async streamMessages(
@@ -273,30 +274,32 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         await callback(DecodedMessage.fromObject(message))
       }
     )
-    const closedSubscription = XMTP.emitter.addListener(
-      EventTypes.ConversationMessageClosed,
-      ({
-        installationId,
-        conversationId,
-      }: {
-        installationId: string
-        conversationId: string
-      }) => {
-        if (
-          installationId !== this.client.installationId ||
-          conversationId !== this.id
-        ) {
-          return
-        }
+    let closedSubscription: Subscription | undefined
 
-        if (onClose) {
+    if (onClose) {
+      closedSubscription = XMTP.emitter.addListener(
+        EventTypes.ConversationMessageClosed,
+        ({
+          installationId,
+          conversationId,
+        }: {
+          installationId: string
+          conversationId: string
+        }) => {
+          if (
+            installationId !== this.client.installationId ||
+            conversationId !== this.id
+          ) {
+            return
+          }
+
           onClose()
         }
-      }
-    )
+      )
+    }
     return async () => {
       messageSubscription.remove()
-      closedSubscription.remove()
+      closedSubscription?.remove()
       await XMTP.unsubscribeFromMessages(this.client.installationId, this.id)
     }
   }
