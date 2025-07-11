@@ -132,11 +132,18 @@ public class XMTPModule: Module {
 			"sign",
 			"authed",
 			"preAuthenticateToInboxCallback",
+			// Stream
 			"conversation",
 			"message",
 			"conversationMessage",
 			"consent",
-			"preferences"
+			"preferences",
+			// Stream Closed
+			"conversationClosed",
+			"messageClosed",
+			"conversationMessageClosed",
+			"consentClosed",
+			"preferencesClosed"
 		)
 
 		AsyncFunction("inboxId") { (installationId: String) -> String in
@@ -2967,7 +2974,14 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await pref in await client.preferences
-						.streamPreferenceUpdates()
+						.streamPreferenceUpdates(onClose: { [weak self] in
+							self?.sendEvent(
+								"preferencesClosed",
+								[
+									"installationId": installationId
+								]
+							)
+						})
 					{
 						try sendEvent(
 							"preferences",
@@ -3001,7 +3015,14 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await consent in await client.preferences
-						.streamConsent()
+						.streamConsent(onClose: { [weak self] in
+							self?.sendEvent(
+								"consentClosed",
+								[
+									"installationId": installationId
+								]
+							)
+						})
 					{
 						try sendEvent(
 							"consent",
@@ -3037,7 +3058,16 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await conversation in await client.conversations
-						.stream(type: type)
+						.stream(
+							type: type,
+							onClose: { [weak self] in
+								self?.sendEvent(
+									"conversationClosed",
+									[
+										"installationId": installationId
+									]
+								)
+							})
 					{
 						try await sendEvent(
 							"conversation",
@@ -3077,7 +3107,15 @@ public class XMTPModule: Module {
 				do {
 					for try await message in await client.conversations
 						.streamAllMessages(
-							type: type, consentStates: consentStates)
+							type: type, consentStates: consentStates,
+							onClose: { [weak self] in
+								self?.sendEvent(
+									"messageClosed",
+									[
+										"installationId": installationId
+									]
+								)
+							})
 					{
 						try sendEvent(
 							"message",
@@ -3115,7 +3153,17 @@ public class XMTPModule: Module {
 			converation.cacheKey(installationId),
 			Task {
 				do {
-					for try await message in converation.streamMessages() {
+					for try await message in converation.streamMessages(
+						onClose: { [weak self] in
+							self?.sendEvent(
+								"conversationMessageClosed",
+								[
+									"installationId": installationId,
+									"conversationId": id,
+								]
+							)
+						}
+					) {
 						do {
 							try sendEvent(
 								"conversationMessage",
