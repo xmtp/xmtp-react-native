@@ -244,10 +244,12 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
    * Additionally, this method returns a function that can be called to unsubscribe and end the message stream.
    *
    * @param {Function} callback - A callback function that will be invoked with the new DecodedMessage when a message is received.
+   * @param {Function} [onClose] - Optional callback to invoke when the stream is closed (e.g., unsubscribed or disconnected).
    * @returns {Function} A function that, when called, unsubscribes from the message stream and ends real-time updates.
    */
   async streamMessages(
-    callback: (message: DecodedMessage<ContentTypes[number]>) => Promise<void>
+    callback: (message: DecodedMessage<ContentTypes[number]>) => Promise<void>,
+    onClose?: () => void
   ): Promise<() => void> {
     await XMTP.subscribeToMessages(this.client.installationId, this.id)
     const messageSubscription = XMTP.emitter.addListener(
@@ -271,8 +273,30 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
         await callback(DecodedMessage.fromObject(message))
       }
     )
+    const closedSubscription = XMTP.emitter.addListener(
+      EventTypes.ConversationMessageClosed,
+      ({
+        installationId,
+        conversationId,
+      }: {
+        installationId: string
+        conversationId: string
+      }) => {
+        if (
+          installationId !== this.client.installationId ||
+          conversationId !== this.id
+        ) {
+          return
+        }
+
+        if (onClose) {
+          onClose()
+        }
+      }
+    )
     return async () => {
       messageSubscription.remove()
+      closedSubscription.remove()
       await XMTP.unsubscribeFromMessages(this.client.installationId, this.id)
     }
   }
