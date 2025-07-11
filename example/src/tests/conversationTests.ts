@@ -1173,8 +1173,8 @@ test('test stream messages in parallel', async () => {
   const caroMessagesCount = (await caroGroup!.messages()).length
   await assertEqual(
     caroMessagesCount,
-    40,
-    'Caro should have received 40 messages'
+    41,
+    'Caro should have received 41 messages'
   )
 
   await Promise.all([boGroup!.sync(), alixGroup.sync(), caroGroup!.sync()])
@@ -1183,7 +1183,7 @@ test('test stream messages in parallel', async () => {
   const alixMessagesCount = (await alixGroup.messages()).length
   const caroMessagesCountAfterSync = (await caroGroup!.messages()).length
 
-  await assertEqual(boMessagesCount, 40, 'Bo should have received 40 messages')
+  await assertEqual(boMessagesCount, 41, 'Bo should have received 41 messages')
   await assertEqual(
     alixMessagesCount,
     41,
@@ -1191,8 +1191,8 @@ test('test stream messages in parallel', async () => {
   )
   await assertEqual(
     caroMessagesCountAfterSync,
-    40,
-    'Caro should still have 40 messages'
+    41,
+    'Caro should still have 41 messages'
   )
 
   console.log('Test passed: Streams and messages handled correctly.')

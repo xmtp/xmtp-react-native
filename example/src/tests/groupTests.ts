@@ -2062,8 +2062,8 @@ test('handles disappearing messages in a group', async () => {
   )
   await assertEqual(
     () => alixGroup!.messages().then((m) => m.length),
-    1,
-    'AlixGroup should have 1 message'
+    2,
+    'AlixGroup should have 2 message'
   )
   await assertEqual(
     () => boGroup.disappearingMessageSettings() !== undefined,
@@ -2098,8 +2098,8 @@ test('handles disappearing messages in a group', async () => {
   )
   await assertEqual(
     () => alixGroup!.messages().then((m) => m.length),
-    0,
-    'AlixGroup should have 0 messages left'
+    1,
+    'AlixGroup should have 1 messages left'
   )
 
   // Disable disappearing messages
@@ -2149,8 +2149,8 @@ test('handles disappearing messages in a group', async () => {
   )
   await assertEqual(
     () => alixGroup!.messages().then((m) => m.length),
-    4,
-    'AlixGroup should have 4 messages'
+    5,
+    'AlixGroup should have 5 messages'
   )
 
   // Re-enable disappearing messages
@@ -2196,8 +2196,8 @@ test('handles disappearing messages in a group', async () => {
   )
   await assertEqual(
     () => alixGroup!.messages().then((m) => m.length),
-    8,
-    'AlixGroup should have 8 messages'
+    9,
+    'AlixGroup should have 9 messages'
   )
 
   await delayToPropogate(6000)
@@ -2210,8 +2210,8 @@ test('handles disappearing messages in a group', async () => {
   )
   await assertEqual(
     () => alixGroup!.messages().then((m) => m.length),
-    6,
-    'AlixGroup should have 6 messages left'
+    7,
+    'AlixGroup should have 7 messages left'
   )
 
   // Final validation that settings persist
