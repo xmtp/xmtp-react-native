@@ -1,3 +1,6 @@
+import { keystore } from '@xmtp/proto'
+import { Subscription } from 'expo-modules-core'
+
 import { Client, InboxId } from './Client'
 import { ConsentState } from './ConsentRecord'
 import { ConversationVersion, ConversationBase } from './Conversation'
@@ -16,8 +19,6 @@ import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
 import { MessageId, MessagesOptions } from './types/MessagesOptions'
 import { SendOptions } from './types/SendOptions'
-import { keystore } from '@xmtp/proto'
-import { Subscription } from 'expo-modules-core'
 
 export interface DmParams {
   id: ConversationId

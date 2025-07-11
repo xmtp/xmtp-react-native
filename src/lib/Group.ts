@@ -22,7 +22,6 @@ import { MessageId, MessagesOptions } from './types/MessagesOptions'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
 import { SendOptions } from './types/SendOptions'
 
-
 export type PermissionUpdateOption = 'allow' | 'deny' | 'admin' | 'super_admin'
 
 export interface GroupParams {

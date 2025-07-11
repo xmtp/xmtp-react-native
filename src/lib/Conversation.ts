@@ -1,3 +1,5 @@
+import { keystore } from '@xmtp/proto'
+
 import { ConsentState } from './ConsentRecord'
 import {
   ConversationSendPayload,
@@ -17,7 +19,6 @@ import {
 } from '../index'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
-import { keystore } from '@xmtp/proto'
 
 export enum ConversationVersion {
   GROUP = 'GROUP',
