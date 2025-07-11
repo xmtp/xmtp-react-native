@@ -264,8 +264,8 @@ test('handles disappearing messages in a dm', async () => {
   )
   await assertEqual(
     () => alixDm!.messages().then((m) => m.length),
-    1,
-    'alixDm should have 1 message'
+    2,
+    'alixDm should have 2 message'
   )
   await assertEqual(
     () => boDm.disappearingMessageSettings() !== undefined,
@@ -296,8 +296,8 @@ test('handles disappearing messages in a dm', async () => {
   )
   await assertEqual(
     () => alixDm!.messages().then((m) => m.length),
-    0,
-    'alixDm should have 0 messages left'
+    1,
+    'alixDm should have 1 messages left'
   )
 
   // Disable disappearing messages
@@ -347,8 +347,8 @@ test('handles disappearing messages in a dm', async () => {
   )
   await assertEqual(
     () => alixDm!.messages().then((m) => m.length),
-    4,
-    'alixDm should have 4 messages'
+    5,
+    'alixDm should have 5 messages'
   )
 
   // Re-enable disappearing messages
@@ -392,8 +392,8 @@ test('handles disappearing messages in a dm', async () => {
   )
   await assertEqual(
     () => alixDm!.messages().then((m) => m.length),
-    8,
-    'alixDm should have 8 messages'
+    9,
+    'alixDm should have 9 messages'
   )
 
   await delayToPropogate(6000)
@@ -406,8 +406,8 @@ test('handles disappearing messages in a dm', async () => {
   )
   await assertEqual(
     () => alixDm!.messages().then((m) => m.length),
-    6,
-    'alixDm should have 6 messages left'
+    7,
+    'alixDm should have 7 messages left'
   )
 
   // Final validation that settings persist

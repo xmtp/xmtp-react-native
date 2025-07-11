@@ -242,11 +242,18 @@ class XMTPModule : Module() {
             "sign",
             "authed",
             "preAuthenticateToInboxCallback",
+            // Streams
             "conversation",
             "message",
             "conversationMessage",
             "consent",
             "preferences",
+            // Streams Closed
+            "conversationClosed",
+            "messageClosed",
+            "conversationMessageClosed",
+            "consentClosed",
+            "preferencesClosed",
         )
 
         Function("inboxId") { installationId: String ->
@@ -2049,7 +2056,13 @@ class XMTPModule : Module() {
         subscriptions[getPreferenceUpdatesKey(installationId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    client.preferences.streamPreferenceUpdates().collect { type ->
+                    client.preferences.streamPreferenceUpdates(onClose = {
+                        sendEvent(
+                            "preferencesClosed", mapOf(
+                                "installationId" to installationId,
+                            )
+                        )
+                    }).collect { type ->
                         sendEvent(
                             "preferences",
                             mapOf(
@@ -2072,7 +2085,13 @@ class XMTPModule : Module() {
         subscriptions[getConsentKey(installationId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    client.preferences.streamConsent().collect { consent ->
+                    client.preferences.streamConsent(onClose = {
+                        sendEvent(
+                            "consentClosed", mapOf(
+                                "installationId" to installationId,
+                            )
+                        )
+                    }).collect { consent ->
                         sendEvent(
                             "consent",
                             mapOf(
@@ -2095,7 +2114,13 @@ class XMTPModule : Module() {
         subscriptions[getConversationsKey(installationId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    client.conversations.stream(type).collect { conversation ->
+                    client.conversations.stream(type, onClose = {
+                        sendEvent(
+                            "conversationClosed", mapOf(
+                                "installationId" to installationId,
+                            )
+                        )
+                    }).collect { conversation ->
                         sendEvent(
                             "conversation",
                             mapOf(
@@ -2124,7 +2149,13 @@ class XMTPModule : Module() {
         subscriptions[getMessagesKey(installationId)]?.cancel()
         subscriptions[getMessagesKey(installationId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.conversations.streamAllMessages(type, consentState).collect { message ->
+                client.conversations.streamAllMessages(type, consentState, onClose = {
+                    sendEvent(
+                        "messageClosed", mapOf(
+                            "installationId" to installationId,
+                        )
+                    )
+                }).collect { message ->
                     sendEvent(
                         "message",
                         mapOf(
@@ -2148,7 +2179,14 @@ class XMTPModule : Module() {
         subscriptions[conversation.cacheKey(installationId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    conversation.streamMessages().collect { message ->
+                    conversation.streamMessages(onClose = {
+                        sendEvent(
+                            "conversationMessageClosed", mapOf(
+                                "installationId" to installationId,
+                                "conversationId" to id
+                            )
+                        )
+                    }).collect { message ->
                         sendEvent(
                             "conversationMessage",
                             mapOf(

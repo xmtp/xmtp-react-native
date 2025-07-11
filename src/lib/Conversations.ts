@@ -403,11 +403,13 @@ export default class Conversations<
   /**
    * This method streams conversations that the client is a member of.
    * @param {type} ConversationFilterType - Whether to stream groups, dms, or both
+   * @param {Function} [onClose] - Optional callback to invoke when the stream is closed.
    * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
    */
   async stream(
     callback: (conversation: Conversation<ContentTypes>) => Promise<void>,
-    type: ConversationFilterType = 'all'
+    type: ConversationFilterType = 'all',
+    onClose?: () => void
   ): Promise<void> {
     XMTPModule.subscribeToConversations(this.client.installationId, type)
     const subscription = XMTPModule.emitter.addListener(
@@ -434,6 +436,19 @@ export default class Conversations<
       }
     )
     this.subscriptions[EventTypes.Conversation] = subscription
+    if (onClose) {
+      const closedSubscription = XMTPModule.emitter.addListener(
+        EventTypes.ConversationClosed,
+        ({ installationId }: { installationId: string }) => {
+          if (installationId !== this.client.installationId) {
+            return
+          }
+
+          onClose()
+        }
+      )
+      this.subscriptions[EventTypes.ConversationClosed] = closedSubscription
+    }
   }
 
   /**
@@ -443,12 +458,14 @@ export default class Conversations<
    * @param {type} ConversationFilterType - Whether to stream messages from groups, dms, or both
    * @param {consentStates} ConsentState[] - Whether to stream messages from allowed, unknown, add denied groups. Defaults to allowed and unknown
    * @param {Function} callback - A callback function that will be invoked when a message is sent or received.
+   * @param {Function} [onClose] - Optional callback to invoke when the stream is closed.
    * @returns {Promise<void>} A Promise that resolves when the stream is set up.
    */
   async streamAllMessages(
     callback: (message: DecodedMessageUnion<ContentTypes>) => Promise<void>,
     type: ConversationFilterType = 'all',
-    consentStates: ConsentState[] | undefined = undefined
+    consentStates: ConsentState[] | undefined = undefined,
+    onClose?: () => void
   ): Promise<void> {
     XMTPModule.subscribeToAllMessages(
       this.client.installationId,
@@ -475,6 +492,19 @@ export default class Conversations<
       }
     )
     this.subscriptions[EventTypes.Message] = subscription
+    if (onClose) {
+      const closedSubscription = XMTPModule.emitter.addListener(
+        EventTypes.MessageClosed,
+        ({ installationId }: { installationId: string }) => {
+          if (installationId !== this.client.installationId) {
+            return
+          }
+
+          onClose()
+        }
+      )
+      this.subscriptions[EventTypes.MessageClosed] = closedSubscription
+    }
   }
 
   /**
@@ -484,6 +514,10 @@ export default class Conversations<
     if (this.subscriptions[EventTypes.Conversation]) {
       this.subscriptions[EventTypes.Conversation].remove()
       delete this.subscriptions[EventTypes.Conversation]
+    }
+    if (this.subscriptions[EventTypes.ConversationClosed]) {
+      this.subscriptions[EventTypes.ConversationClosed].remove()
+      delete this.subscriptions[EventTypes.ConversationClosed]
     }
     XMTPModule.unsubscribeFromConversations(this.client.installationId)
   }
@@ -495,6 +529,10 @@ export default class Conversations<
     if (this.subscriptions[EventTypes.Message]) {
       this.subscriptions[EventTypes.Message].remove()
       delete this.subscriptions[EventTypes.Message]
+    }
+    if (this.subscriptions[EventTypes.MessageClosed]) {
+      this.subscriptions[EventTypes.MessageClosed].remove()
+      delete this.subscriptions[EventTypes.MessageClosed]
     }
     XMTPModule.unsubscribeFromAllMessages(this.client.installationId)
   }
