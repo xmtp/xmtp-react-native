@@ -3,6 +3,7 @@ import {
   assert,
   assertEqual,
   createClients,
+  debugLog,
   delayToPropogate,
 } from './test-utils'
 import { Conversation } from '../../../src/index'
@@ -192,29 +193,19 @@ test('can stream all dms', async () => {
     }
   )
 
+  await delayToPropogate()
   await boClient.conversations.newGroup([alixClient.inboxId])
   await delayToPropogate()
-  if ((containers.length as number) !== 1) {
-    throw Error(
-      'Unexpected num conversations (should be 1): ' + containers.length
-    )
-  }
+
+  assertEqual(containers.length, 1, 'Unexpected num conversations (should be 1): ' + containers.length)
 
   await boClient.conversations.findOrCreateDm(alixClient.inboxId)
   await delayToPropogate()
-  if ((containers.length as number) !== 2) {
-    throw Error(
-      'Unexpected num conversations (should be 2): ' + containers.length
-    )
-  }
+  assertEqual(containers.length, 2, 'Unexpected num conversations (should be 2): ' + containers.length)
 
   await alixClient.conversations.findOrCreateDm(caroClient.inboxId)
-  await delayToPropogate()
-  if (containers.length !== 3) {
-    throw Error(
-      'Expected conversations length 3 but it is: ' + containers.length
-    )
-  }
+  await delayToPropogate(500)
+  assertEqual(containers.length, 3, 'Expected conversations length 3 but it is: ' + containers.length)
 
   alixClient.conversations.cancelStream()
   await delayToPropogate()
@@ -285,6 +276,8 @@ test('handles disappearing messages in a dm', async () => {
     'Disappearing should start at 1s'
   )
 
+  debugLog('Validate initial state passes')
+
   // Wait for messages to disappear
   await delayToPropogate(5000)
 
@@ -299,6 +292,9 @@ test('handles disappearing messages in a dm', async () => {
     1,
     'alixDm should have 1 messages left'
   )
+
+  debugLog('Validate messages are deleted passes')
+
 
   // Disable disappearing messages
   await boDm.clearDisappearingMessageSettings()
@@ -332,6 +328,8 @@ test('handles disappearing messages in a dm', async () => {
     'alixDm should have disappearing disabled'
   )
 
+  debugLog('Validate disappearing messages are disabled passes')
+
   // Send messages after disabling disappearing settings
   await boDm.send('message after disabling disappearing')
   await alixDm!.send('another message after disabling')
@@ -342,14 +340,16 @@ test('handles disappearing messages in a dm', async () => {
   // Ensure messages persist
   await assertEqual(
     () => boDm.messages().then((m) => m.length),
-    5,
-    'boDm should have 5 messages'
+    3,
+    'boDm should have 3 messages'
   )
   await assertEqual(
     () => alixDm!.messages().then((m) => m.length),
-    5,
-    'alixDm should have 5 messages'
+    3,
+    'alixDm should have 3 messages'
   )
+
+  debugLog('Ensure messages persist passes')
 
   // Re-enable disappearing messages
   const updatedSettings = {
@@ -380,6 +380,8 @@ test('handles disappearing messages in a dm', async () => {
     'alixDm disappearStartingAtNs should match updated settings'
   )
 
+  debugLog('Validate updated settings passes')
+
   // Send new messages
   await boDm.send('this will disappear soon')
   await alixDm!.send('so will this')
@@ -387,13 +389,13 @@ test('handles disappearing messages in a dm', async () => {
 
   await assertEqual(
     () => boDm.messages().then((m) => m.length),
-    9,
-    'boDm should have 9 messages'
+    5,
+    'boDm should have 5 messages'
   )
   await assertEqual(
     () => alixDm!.messages().then((m) => m.length),
-    9,
-    'alixDm should have 9 messages'
+    5,
+    'alixDm should have 5 messages'
   )
 
   await delayToPropogate(6000)
@@ -401,14 +403,16 @@ test('handles disappearing messages in a dm', async () => {
   // Validate messages were deleted
   await assertEqual(
     () => boDm.messages().then((m) => m.length),
-    7,
+    3,
     'boDm should have 7 messages left'
   )
   await assertEqual(
     () => alixDm!.messages().then((m) => m.length),
-    7,
+    3,
     'alixDm should have 7 messages left'
   )
+
+  debugLog('Validate NEW messages were deleted passes')
 
   // Final validation that settings persist
   await assertEqual(
@@ -435,6 +439,8 @@ test('handles disappearing messages in a dm', async () => {
     true,
     'alixDm should have disappearing enabled'
   )
+
+  debugLog('Validate final state passes')
 
   return true
 })

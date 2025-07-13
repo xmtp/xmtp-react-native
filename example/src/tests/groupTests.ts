@@ -10,6 +10,7 @@ import {
   delayToPropogate,
   adaptEthersWalletToSigner,
   assertEqual,
+  debugLog,
 } from './test-utils'
 import {
   Client,
@@ -181,8 +182,7 @@ test('groups cannot fork', async () => {
       direction: 'DESCENDING',
     })
     const lastMessage = messages[0]
-    // console.log(lastMessage);
-    console.log(
+    debugLog(
       `${receiverGroupToCheck.client.installationId} sees ${messages.length} messages in group`
     )
     assert(
@@ -193,18 +193,17 @@ test('groups cannot fork', async () => {
     // }
   }
 
-  console.log('Testing that messages sent by alix are received by bo')
+  debugLog('Testing that messages sent by alix are received by bo')
   await testMessageSending(alix, bo)
-  console.log('Alix & Bo are not forked at the beginning')
+  debugLog('Alix & Bo are not forked at the beginning')
 
   // Test adding members one by one
-  // console.log('Testing adding members one by one...')
   const newClients = await createClients(2)
 
   // Add back several members
-  console.log('Adding new members to the group...')
+  debugLog('Adding new members to the group...')
   for (const client of newClients) {
-    console.log(`Adding member ${client.inboxId}...`)
+    debugLog(`Adding member ${client.inboxId}...`)
     await addMemberToGroup(alix, [client.inboxId])
   }
   await delayToPropogate()
@@ -215,19 +214,19 @@ test('groups cannot fork', async () => {
   // NB => if we don't use Promise.all but a loop, we don't get a fork
   const REMOVE_MEMBERS_IN_PARALLEL = true
   if (REMOVE_MEMBERS_IN_PARALLEL) {
-    console.log('Removing members in parallel')
+    debugLog('Removing members in parallel')
 
     await Promise.all(
       newClients.map((client) => {
-        console.log(`Removing member ${client.inboxId}...`)
+        debugLog(`Removing member ${client.inboxId}...`)
         return removeMemberFromGroup(alix, [client.inboxId])
       })
     )
   } else {
-    console.log('Removing members one by one')
+    debugLog('Removing members one by one')
 
     for (const client of newClients) {
-      console.log(`Removing member ${client.inboxId}...`)
+      debugLog(`Removing member ${client.inboxId}...`)
       await removeMemberFromGroup(alix, [client.inboxId])
     }
   }
@@ -239,16 +238,16 @@ test('groups cannot fork', async () => {
   let forkCount = 0
   const tryCount = 5
   for (let i = 0; i < tryCount; i++) {
-    console.log(`Checking fork status ${i + 1}/${tryCount}`)
+    debugLog(`Checking fork status ${i + 1}/${tryCount}`)
     try {
       await syncClientAndGroup(alix)
       await syncClientAndGroup(bo)
       await delayToPropogate(500)
       await testMessageSending(alix, bo)
-      console.log('Not forked!')
+      debugLog('Not forked!')
     } catch (e: any) {
-      console.log('Forked!')
-      console.log(e)
+      debugLog('Forked!')
+      debugLog(e)
       forkCount++
     }
   }
@@ -276,7 +275,7 @@ test('groups cannot fork short version', async () => {
 
   // Remove two members in parallel
   // NB => if we don't use Promise.all but a loop, we don't get a fork
-  console.log(
+  debugLog(
     '*************libxmtp*********************: Removing members in parallel'
   )
   await Promise.all([
@@ -301,7 +300,7 @@ test('groups cannot fork short version', async () => {
       direction: 'DESCENDING',
     })
     const lastMessage = messages[0]
-    console.log(
+    debugLog(
       `${receiverGroup.client.installationId} sees ${messages.length} messages in group`
     )
     assert(
@@ -315,16 +314,16 @@ test('groups cannot fork short version', async () => {
   let forkCount = 0
   const tryCount = 5
   for (let i = 0; i < tryCount; i++) {
-    console.log(`Checking fork status ${i + 1}/${tryCount}`)
+    debugLog(`Checking fork status ${i + 1}/${tryCount}`)
     try {
       await alixGroup.sync()
       await boGroup.sync()
       await delayToPropogate(500)
       await testMessageSending(alixGroup, boGroup)
-      console.log('Not forked!')
+      debugLog('Not forked!')
     } catch (e: any) {
-      console.log('Forked!')
-      console.log(e)
+      debugLog('Forked!')
+      debugLog(e)
       forkCount++
     }
   }
@@ -351,7 +350,7 @@ test('groups cannot fork short version - update metadata', async () => {
 
   // Remove two members in parallel
   // NB => if we don't use Promise.all but a loop, we don't get a fork
-  console.log(
+  debugLog(
     '*************libxmtp*********************: Updating metadata in parallel'
   )
   await Promise.all([
@@ -376,7 +375,7 @@ test('groups cannot fork short version - update metadata', async () => {
       direction: 'DESCENDING',
     })
     const lastMessage = messages[0]
-    console.log(
+    debugLog(
       `${receiverGroup.client.installationId} sees ${messages.length} messages in group`
     )
     assert(
@@ -390,16 +389,16 @@ test('groups cannot fork short version - update metadata', async () => {
   let forkCount = 0
   const tryCount = 5
   for (let i = 0; i < tryCount; i++) {
-    console.log(`Checking fork status ${i + 1}/${tryCount}`)
+    debugLog(`Checking fork status ${i + 1}/${tryCount}`)
     try {
       await alixGroup.sync()
       await boGroup.sync()
       await delayToPropogate(500)
       await testMessageSending(alixGroup, boGroup)
-      console.log('Not forked!')
+      debugLog('Not forked!')
     } catch (e: any) {
-      console.log('Forked!')
-      console.log(e)
+      debugLog('Forked!')
+      debugLog(e)
       forkCount++
     }
   }
@@ -425,7 +424,7 @@ test('can cancel streams', async () => {
     'message stream should have received 1 message'
   )
 
-  await bo.conversations.cancelStreamAllMessages()
+  bo.conversations.cancelStreamAllMessages()
   await delayToPropogate()
 
   await group.send('hello')
@@ -434,24 +433,33 @@ test('can cancel streams', async () => {
 
   await delayToPropogate()
 
+  try {
   assert(
     messageCallbacks === 1,
     'message stream should still only received 1 message'
   )
+} finally {
+  bo.conversations.cancelStreamAllMessages()
+}
 
   await bo.conversations.streamAllMessages(async () => {
     messageCallbacks++
   })
 
-  await delayToPropogate()
+  await delayToPropogate(1000)
 
   await group.send('hello')
   await delayToPropogate()
 
-  assert(
-    messageCallbacks === 2,
-    'message stream should have received 2 message'
-  )
+  try {
+    assert(
+      messageCallbacks === 2,
+      `message stream should have received 2 messages, but received ${messageCallbacks}`
+    )
+  } finally {
+    // Ensure we cancel the stream even if the assertion fails
+    bo.conversations.cancelStreamAllMessages()
+  }
 
   return true
 })
@@ -488,8 +496,15 @@ test('group message delivery status', async () => {
   const boMessages: DecodedMessage[] = await boGroup.messages()
 
   assert(
-    boMessages.length === 1,
-    `the messages length should be 1 but was ${boMessages.length}`
+    boMessages.length === 2,
+    `the messages length should be 2 but was ${boMessages.length}`
+  )
+
+  // Added user now sees the group updated message upon joining
+  assert(
+    boMessages[boMessages.length - 1].contentTypeId ===
+      'xmtp.org/group_updated:1.0',
+    `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${boMessages[boMessages.length - 1].contentTypeId}`
   )
 
   assert(
@@ -639,11 +654,18 @@ test('can message in a group', async () => {
   await boGroups[0].sync()
   const boMessages: DecodedMessage[] = await boGroups[0].messages()
 
-  if (boMessages.length !== 2) {
+  if (boMessages.length !== 3) {
     throw new Error(
       'num messages for bo should be 2, but it is' + boMessages.length
     )
   }
+  // Added user now sees the group updated message upon joining
+  assert(
+    boMessages[boMessages.length - 1].contentTypeId ===
+      'xmtp.org/group_updated:1.0',
+    `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${boMessages[boMessages.length - 1].contentTypeId}`
+  )
+
   if (boMessages[0].content() !== 'gm') {
     throw new Error("newest message should be 'gm'")
   }
@@ -666,8 +688,8 @@ test('can message in a group', async () => {
   await caroGroups[0].sync()
   const caroMessages = await caroGroups[0].messages()
 
-  if (caroMessages.length !== 3) {
-    throw new Error(`length should be 3 but was ${caroMessages.length}`)
+  if (caroMessages.length !== 4) {
+    throw new Error(`length should be 4 but was ${caroMessages.length}`)
   }
   if (caroMessages[0].content() !== 'hey guys!') {
     throw new Error(
@@ -679,6 +701,12 @@ test('can message in a group', async () => {
       `second Message should be 'gm' but was ${caroMessages[1].content()}`
     )
   }
+  // Added user now sees the group updated message upon joining
+  assert(
+    caroMessages[caroMessages.length - 1].contentTypeId ===
+      'xmtp.org/group_updated:1.0',
+    `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${caroMessages[caroMessages.length - 1].contentTypeId}`
+  )
 
   return true
 })
@@ -713,10 +741,25 @@ test('unpublished messages handling', async () => {
   const preparedMessageId = await alixGroup.prepareMessage('Test text')
 
   // Verify the message count in the group
-  let messageCount = (await alixGroup.messages()).length
-  if (messageCount !== 1) {
-    throw new Error(`Message count should be 1, but it is ${messageCount}`)
+  const alixMessages = await alixGroup.messages({direction: 'DESCENDING'})
+  let messageCount = alixMessages.length
+  if (messageCount !== 2) {
+    throw new Error(`Message count should be 2, but it is ${messageCount}`)
   }
+
+  // Log content type IDs for debugging
+  debugLog('=== alixMessages content type IDs ===')
+  alixMessages.forEach((message, index) => {
+    debugLog(`Message ${index}: contentTypeId = "${message.contentTypeId}"`)
+  })
+  debugLog('=====================================')
+
+  // Added user now sees the group updated message upon joining
+  assert(
+    alixMessages[0].contentTypeId ===
+      'xmtp.org/group_updated:1.0',
+    `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${alixMessages[0].contentTypeId}`
+  )
 
   // Publish the prepared message
   await alixGroup.publishPreparedMessages()
@@ -724,8 +767,8 @@ test('unpublished messages handling', async () => {
   // Sync the group after publishing the message
   await alixGroup.sync()
   messageCount = (await alixGroup.messages()).length
-  if (messageCount !== 1) {
-    throw new Error(`Message count should be 1, but it is ${messageCount}`)
+  if (messageCount !== 2) {
+    throw new Error(`Message count should be 2, but it is ${messageCount}`)
   }
 
   // Check if the group is allowed after preparing the message
@@ -737,7 +780,7 @@ test('unpublished messages handling', async () => {
   }
 
   // Retrieve all messages and verify the prepared message ID
-  const messages = await alixGroup.messages()
+  const messages = await alixGroup.messages({direction: 'DESCENDING'})
   if (preparedMessageId !== messages[0].id) {
     throw new Error(`Message ID should match the prepared message ID`)
   }
@@ -822,9 +865,15 @@ test('can add members to a group', async () => {
   }
   await caroGroups[0].sync()
   const caroMessages = await caroGroups[0].messages()
-  if (caroMessages.length !== 0) {
-    throw new Error('num messages for caro should be 0')
+  if (caroMessages.length !== 1) {
+    throw new Error('num messages for caro should be 1')
   }
+  // Added user now sees the group updated message upon joining
+  assert(
+    caroMessages[caroMessages.length - 1].contentTypeId ===
+      'xmtp.org/group_updated:1.0',
+    `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${caroMessages[caroMessages.length - 1].contentTypeId}`
+  )
 
   await boGroups[0].sync()
   const boGroupMembers = await boGroups[0].memberInboxIds()
@@ -1008,7 +1057,7 @@ test('can stream groups', async () => {
   const caroGroup = await caroClient.conversations.newGroup([
     alixClient.inboxId,
   ])
-  await delayToPropogate()
+  await delayToPropogate(1000)
   if ((groups.length as number) !== 1) {
     throw Error('Unexpected num groups (should be 1): ' + groups.length)
   }
@@ -1018,7 +1067,7 @@ test('can stream groups', async () => {
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const boGroup = await boClient.conversations.newGroup([alixClient.inboxId])
-  await delayToPropogate()
+  await delayToPropogate(1000)
   if ((groups.length as number) !== 2) {
     throw Error('Unexpected num groups (should be 2): ' + groups.length)
   }
@@ -1222,7 +1271,7 @@ test('can stream groups and messages', async () => {
   // bo creates a group with alix so a stream callback is fired
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   await boClient.conversations.newGroup([alixClient.inboxId])
-  await delayToPropogate()
+  await delayToPropogate(1000)
   if ((groups.length as number) !== 1) {
     throw Error(`Unexpected num groups (should be 1): ${groups.length}`)
   }
@@ -1653,19 +1702,26 @@ test('sync function behaves as expected', async () => {
 
   // Num messages for a group will be 0 until we sync the group
   let numMessages = (await boGroups[0].messages()).length
-  assert(numMessages === 0, 'num members should be 1')
+  assert(numMessages === 1, 'num messages should be 1')
+
+  // Added user now sees the group updated message upon joining
+  assert(
+    (await boGroups[0].messages())[0].contentTypeId ===
+      'xmtp.org/group_updated:1.0',
+    `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${(await boGroups[0].messages())[0].contentTypeId}`
+  )
 
   await bo.conversations.sync()
 
   // Num messages is still 0 because we didnt sync the group itself
   numMessages = (await boGroups[0].messages()).length
-  assert(numMessages === 0, 'num messages should be 0')
+  assert(numMessages === 1, 'num messages should be 1')
 
   await boGroups[0].sync()
 
   // after syncing the group we now see the correct number of messages
   numMessages = (await boGroups[0].messages()).length
-  assert(numMessages === 1, 'num members should be 1')
+  assert(numMessages === 2, 'num messages should be 2')
 
   await alixGroup.addMembers([caro.inboxId])
 
@@ -1748,23 +1804,23 @@ test('can read and update group name', async () => {
 
 test('can list groups does not fork', async () => {
   const [alix, bo] = await createClients(2)
-  console.log('created clients')
+  debugLog('created clients')
   let groupCallbacks = 0
   //#region Stream groups
   await bo.conversations.stream(async () => {
-    console.log('group received')
+    debugLog('group received')
     groupCallbacks++
   })
   //#region Stream All Messages
   await bo.conversations.streamAllMessages(async () => {
-    console.log('message received')
+    debugLog('message received')
   })
   //#endregion
   // #region create group
   const alixGroup = await alix.conversations.newGroup([bo.inboxId])
   await alixGroup.updateName('hello')
   await alixGroup.send('hello1')
-  console.log('sent group message')
+  debugLog('sent group message')
   // #endregion
   // #region sync groups
   await bo.conversations.sync()
@@ -1774,17 +1830,24 @@ test('can list groups does not fork', async () => {
   const boGroup = boGroups[0]
   await boGroup.sync()
 
-  const boMessages1 = await boGroup.messages()
+  const boMessages1 = await boGroup.messages({direction: 'DESCENDING'})
   assert(
-    boMessages1.length === 2,
-    `should have 2 messages on first load received ${boMessages1.length}`
+    boMessages1.length === 3,
+    `should have 3 messages on first load received ${boMessages1.length}`
   )
+  // Added user now sees the group updated message upon joining
+  assert(
+    boMessages1[boMessages1.length - 1].contentTypeId ===
+      'xmtp.org/group_updated:1.0',
+    `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${boMessages1[boMessages1.length - 1].contentTypeId}`
+  )
+
   await boGroup.send('hello2')
   await boGroup.send('hello3')
   await alixGroup.sync()
   const alixMessages = await alixGroup.messages()
   for (const message of alixMessages) {
-    console.log(
+    debugLog(
       'message',
       message.contentTypeId,
       message.contentTypeId === 'xmtp.org/text:1.0'
@@ -1801,7 +1864,7 @@ test('can list groups does not fork', async () => {
   await boGroup.sync()
   const boMessages2 = await boGroup.messages()
   for (const message of boMessages2) {
-    console.log(
+    debugLog(
       'message',
       message.contentTypeId,
       message.contentTypeId === 'xmtp.org/text:1.0'
@@ -1809,10 +1872,10 @@ test('can list groups does not fork', async () => {
         : 'Group Updated'
     )
   }
-  // bo sees 4 messages
+  // bo sees 6 messages
   assert(
-    boMessages2.length === 5,
-    `should have 5 messages on second load received ${boMessages2.length}`
+    boMessages2.length === 6,
+    `should have 6 messages on second load received ${boMessages2.length}`
   )
 
   await delayToPropogate(500)
@@ -1849,19 +1912,23 @@ test('can sync all groups', async () => {
   await bo.conversations.sync()
   const boGroup = await bo.conversations.findGroup(alixGroup.id)
   await alixGroup.send('hi')
+  const boMessagesBeforeSync = await boGroup?.messages()
   assert(
-    (await boGroup?.messages())?.length === 0,
-    `messages should be empty before sync but was ${boGroup?.messages?.length}`
+    (await boGroup?.messages())?.length === 1,
+    `messages should be 1 before sync but was ${boGroup?.messages?.length}`
+  )
+  // Added user now sees the group updated message upon joining
+  assert(
+    boMessagesBeforeSync?.[0].contentTypeId ===
+      'xmtp.org/group_updated:1.0',
+    `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${boMessagesBeforeSync?.[0].contentTypeId}`
   )
 
   const numGroupsSynced = await bo.conversations.syncAllConversations()
+  const boMessages = await boGroup?.messages({direction: 'ASCENDING'})
   assert(
-    (await boGroup?.messages())?.length === 1,
-    `messages should be 4 after sync but was ${boGroup?.messages?.length}`
-  )
-  assert(
-    numGroupsSynced === 51,
-    `should have synced 51 groups but synced ${numGroupsSynced}`
+    boMessages?.length === 2,
+    `messages should be 2 after sync but was ${boMessages?.length}`
   )
 
   for (const group of groups) {
@@ -1923,7 +1990,7 @@ test('only streams groups that can be decrypted', async () => {
 
 test('can stream groups and messages', async () => {
   for (let index = 0; index < 15; index++) {
-    console.log(`stream groups & messages: test ${index}`)
+    debugLog(`stream groups & messages: test ${index}`)
     const [alixClient, boClient] = await createClients(2)
 
     // Start streaming groups
@@ -2007,6 +2074,8 @@ test('can create new installation without breaking group', async () => {
 
 test('handles disappearing messages in a group', async () => {
   const [alixClient, boClient] = await createClients(2)
+
+  debugLog('test disappearing messages in a group please')
 
   const initialSettings = {
     disappearStartingAtNs: 1_000_000_000,
