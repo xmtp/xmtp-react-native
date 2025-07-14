@@ -434,13 +434,13 @@ test('can cancel streams', async () => {
   await delayToPropogate()
 
   try {
-  assert(
-    messageCallbacks === 1,
-    'message stream should still only received 1 message'
-  )
-} finally {
-  bo.conversations.cancelStreamAllMessages()
-}
+    assert(
+      messageCallbacks === 1,
+      'message stream should still only received 1 message'
+    )
+  } finally {
+    bo.conversations.cancelStreamAllMessages()
+  }
 
   await bo.conversations.streamAllMessages(async () => {
     messageCallbacks++
@@ -741,7 +741,7 @@ test('unpublished messages handling', async () => {
   const preparedMessageId = await alixGroup.prepareMessage('Test text')
 
   // Verify the message count in the group
-  const alixMessages = await alixGroup.messages({direction: 'DESCENDING'})
+  const alixMessages = await alixGroup.messages({ direction: 'DESCENDING' })
   let messageCount = alixMessages.length
   if (messageCount !== 2) {
     throw new Error(`Message count should be 2, but it is ${messageCount}`)
@@ -756,8 +756,7 @@ test('unpublished messages handling', async () => {
 
   // Added user now sees the group updated message upon joining
   assert(
-    alixMessages[0].contentTypeId ===
-      'xmtp.org/group_updated:1.0',
+    alixMessages[0].contentTypeId === 'xmtp.org/group_updated:1.0',
     `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${alixMessages[0].contentTypeId}`
   )
 
@@ -780,7 +779,7 @@ test('unpublished messages handling', async () => {
   }
 
   // Retrieve all messages and verify the prepared message ID
-  const messages = await alixGroup.messages({direction: 'DESCENDING'})
+  const messages = await alixGroup.messages({ direction: 'DESCENDING' })
   if (preparedMessageId !== messages[0].id) {
     throw new Error(`Message ID should match the prepared message ID`)
   }
@@ -1830,7 +1829,7 @@ test('can list groups does not fork', async () => {
   const boGroup = boGroups[0]
   await boGroup.sync()
 
-  const boMessages1 = await boGroup.messages({direction: 'DESCENDING'})
+  const boMessages1 = await boGroup.messages({ direction: 'DESCENDING' })
   assert(
     boMessages1.length === 3,
     `should have 3 messages on first load received ${boMessages1.length}`
@@ -1919,13 +1918,12 @@ test('can sync all groups', async () => {
   )
   // Added user now sees the group updated message upon joining
   assert(
-    boMessagesBeforeSync?.[0].contentTypeId ===
-      'xmtp.org/group_updated:1.0',
+    boMessagesBeforeSync?.[0].contentTypeId === 'xmtp.org/group_updated:1.0',
     `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${boMessagesBeforeSync?.[0].contentTypeId}`
   )
 
-  const numGroupsSynced = await bo.conversations.syncAllConversations()
-  const boMessages = await boGroup?.messages({direction: 'ASCENDING'})
+  await bo.conversations.syncAllConversations()
+  const boMessages = await boGroup?.messages({ direction: 'ASCENDING' })
   assert(
     boMessages?.length === 2,
     `messages should be 2 after sync but was ${boMessages?.length}`

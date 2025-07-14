@@ -197,15 +197,27 @@ test('can stream all dms', async () => {
   await boClient.conversations.newGroup([alixClient.inboxId])
   await delayToPropogate()
 
-  assertEqual(containers.length, 1, 'Unexpected num conversations (should be 1): ' + containers.length)
+  await assertEqual(
+    containers.length,
+    1,
+    'Unexpected num conversations (should be 1): ' + containers.length
+  )
 
   await boClient.conversations.findOrCreateDm(alixClient.inboxId)
   await delayToPropogate()
-  assertEqual(containers.length, 2, 'Unexpected num conversations (should be 2): ' + containers.length)
+  await assertEqual(
+    containers.length,
+    2,
+    'Unexpected num conversations (should be 2): ' + containers.length
+  )
 
   await alixClient.conversations.findOrCreateDm(caroClient.inboxId)
   await delayToPropogate(500)
-  assertEqual(containers.length, 3, 'Expected conversations length 3 but it is: ' + containers.length)
+  await assertEqual(
+    containers.length,
+    3,
+    'Expected conversations length 3 but it is: ' + containers.length
+  )
 
   alixClient.conversations.cancelStream()
   await delayToPropogate()
@@ -294,7 +306,6 @@ test('handles disappearing messages in a dm', async () => {
   )
 
   debugLog('Validate messages are deleted passes')
-
 
   // Disable disappearing messages
   await boDm.clearDisappearingMessageSettings()

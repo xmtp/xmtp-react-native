@@ -11,7 +11,11 @@ import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
 import { historySyncTests } from './tests/historySyncTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
-import { Test, setDebugLoggingEnabled, getDebugLoggingEnabled } from './tests/test-utils'
+import {
+  Test,
+  setDebugLoggingEnabled,
+  getDebugLoggingEnabled,
+} from './tests/test-utils'
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
 function TestView({
@@ -38,7 +42,9 @@ function TestView({
       const finalResult = result ? 'success' : 'failure'
       setResult(finalResult)
       setErrorMessage('')
-      console.log(`✅ Test completed: ${test.name} - ${result ? 'PASSED' : 'FAILED'}`)
+      console.log(
+        `✅ Test completed: ${test.name} - ${result ? 'PASSED' : 'FAILED'}`
+      )
       // delay a moment to avoid clobbering
       await new Promise((r) => setTimeout(r, 300))
       if (!markedComplete) {
@@ -127,7 +133,10 @@ function TestView({
             style={{ color: '#721c24' }}
             numberOfLines={showFullError ? undefined : 3}
           >
-            Error: {showFullError ? errorMessage : getTruncatedErrorMessage(errorMessage)}
+            Error:{' '}
+            {showFullError
+              ? errorMessage
+              : getTruncatedErrorMessage(errorMessage)}
           </Text>
           {errorMessage.split('\n').length > 3 && (
             <View style={{ marginTop: 4 }}>
@@ -159,10 +168,14 @@ export enum TestCategory {
 export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0)
   const [autoRun, setAutoRun] = useState<boolean>(false)
-  const [testResults, setTestResults] = useState<{ [key: string]: 'success' | 'failure' | 'error' }>({})
+  const [testResults, setTestResults] = useState<{
+    [key: string]: 'success' | 'failure' | 'error'
+  }>({})
   const [startTime, setStartTime] = useState<number | null>(null)
   const [endTime, setEndTime] = useState<number | null>(null)
-  const [debugLogging, setDebugLogging] = useState<boolean>(getDebugLoggingEnabled())
+  const [debugLogging, setDebugLogging] = useState<boolean>(
+    getDebugLoggingEnabled()
+  )
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
   const [testNumberInput, setTestNumberInput] = useState<string>('')
   const route = useRoute()
@@ -247,10 +260,10 @@ export default function TestScreen(): JSX.Element {
 
     const testNumbers = testNumberInput
       .split(',')
-      .map(num => num.trim())
-      .filter(num => num !== '')
-      .map(num => parseInt(num, 10))
-      .filter(num => !isNaN(num) && num > 0)
+      .map((num) => num.trim())
+      .filter((num) => num !== '')
+      .map((num) => parseInt(num, 10))
+      .filter((num) => !isNaN(num) && num > 0)
 
     if (testNumbers.length === 0) {
       return activeTests
@@ -276,8 +289,12 @@ export default function TestScreen(): JSX.Element {
     if (!startTime || !endTime) return null
 
     const totalTests = filteredTests.length
-    const passedTests = Object.values(testResults).filter(result => result === 'success').length
-    const failedTests = Object.values(testResults).filter(result => result === 'failure' || result === 'error').length
+    const passedTests = Object.values(testResults).filter(
+      (result) => result === 'success'
+    ).length
+    const failedTests = Object.values(testResults).filter(
+      (result) => result === 'failure' || result === 'error'
+    ).length
     const duration = ((endTime - startTime) / 1000).toFixed(2)
 
     const failedTestNames = Object.entries(testResults)
@@ -289,7 +306,7 @@ export default function TestScreen(): JSX.Element {
       passedTests,
       failedTests,
       duration,
-      failedTestNames
+      failedTestNames,
     }
   }
 
@@ -298,15 +315,23 @@ export default function TestScreen(): JSX.Element {
   return (
     <View style={{ flex: 1 }}>
       {/* Fixed Header */}
-      <View style={{ padding: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' }}>
+      <View
+        style={{
+          padding: 12,
+          backgroundColor: '#fff',
+          borderBottomWidth: 1,
+          borderBottomColor: '#e0e0e0',
+        }}
+      >
         <Text testID="Test View" accessible accessibilityLabel="Test View">
           {title}
         </Text>
-        
+
         {/* Test Number Input */}
         <View style={{ marginVertical: 8 }}>
           <Text style={{ fontSize: 12, marginBottom: 4, color: '#666' }}>
-            Test Numbers (comma-separated, e.g., "1,3,5" or leave empty for all):
+            Test Numbers (comma-separated, e.g., "1,3,5" or leave empty for
+            all):
           </Text>
           <TextInput
             style={{
@@ -315,7 +340,7 @@ export default function TestScreen(): JSX.Element {
               borderRadius: 4,
               padding: 8,
               fontSize: 14,
-              backgroundColor: '#fff'
+              backgroundColor: '#fff',
             }}
             value={testNumberInput}
             onChangeText={setTestNumberInput}
@@ -323,9 +348,16 @@ export default function TestScreen(): JSX.Element {
             keyboardType="numeric"
           />
         </View>
-        
+
         {/* Debug Logging Toggle */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 8 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginVertical: 8,
+          }}
+        >
           <Text style={{ fontSize: 14 }}>Debug Console Logging</Text>
           <Switch
             value={debugLogging}
@@ -335,21 +367,23 @@ export default function TestScreen(): JSX.Element {
             }}
           />
         </View>
-        
+
         <View
-          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 }}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginVertical: 8,
+          }}
         >
           <Text>
-            {autoRun ? `Running ${completedTests}/${filteredTests.length}` : `Ready to run ${filteredTests.length} tests`}
+            {autoRun
+              ? `Running ${completedTests}/${filteredTests.length}`
+              : `Ready to run ${filteredTests.length} tests`}
           </Text>
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {!autoRun && (
-              <Button
-                onPress={runAllTests}
-                title="Run All"
-              />
-            )}
+            {!autoRun && <Button onPress={runAllTests} title="Run All" />}
             {autoRun && completedTests === filteredTests.length && (
               <Text
                 testID="tests-complete"
@@ -359,23 +393,20 @@ export default function TestScreen(): JSX.Element {
                 Done
               </Text>
             )}
-            {autoRun && (
-              <Button
-                onPress={resetTests}
-                title="Reset"
-              />
-            )}
+            {autoRun && <Button onPress={resetTests} title="Reset" />}
           </View>
         </View>
 
         {/* Test Summary */}
         {summary && (
-          <View style={{ 
-            backgroundColor: summary.failedTests > 0 ? '#fff3cd' : '#d4edda',
-            padding: 8,
-            borderRadius: 4,
-            marginTop: 8
-          }}>
+          <View
+            style={{
+              backgroundColor: summary.failedTests > 0 ? '#fff3cd' : '#d4edda',
+              padding: 8,
+              borderRadius: 4,
+              marginTop: 8,
+            }}
+          >
             <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
               Test Summary ({summary.duration}s)
             </Text>
@@ -408,8 +439,11 @@ export default function TestScreen(): JSX.Element {
                   onComplete={(result) => {
                     if (autoRun) {
                       setCompletedTests((prev) => prev + 1)
-                      setTestResults(prev => ({ ...prev, [test.name]: result }))
-                      
+                      setTestResults((prev) => ({
+                        ...prev,
+                        [test.name]: result,
+                      }))
+
                       // Set end time when all tests are complete
                       if (completedTests + 1 === filteredTests.length) {
                         setEndTime(Date.now())

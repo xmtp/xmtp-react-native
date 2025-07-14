@@ -1,7 +1,16 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 // import { ConnectWallet, useSigner } from '@thirdweb-dev/react-native'
 import React, { useCallback, useState } from 'react'
-import { Button, ScrollView, StyleSheet, Text, View, Modal, TouchableOpacity, FlatList } from 'react-native'
+import {
+  Button,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Modal,
+  TouchableOpacity,
+  FlatList,
+} from 'react-native'
 import * as XMTP from 'xmtp-react-native-sdk'
 import { PublicIdentity, useXmtp } from 'xmtp-react-native-sdk'
 
@@ -11,24 +20,24 @@ import { supportedCodecs } from './contentTypes/contentTypes'
 import { getDbEncryptionKey } from './hooks'
 
 // Custom Modal Picker Component
-const CustomPicker = ({ 
-  value, 
-  onValueChange, 
-  options, 
-  placeholder = "Select an option" 
+const CustomPicker = ({
+  value,
+  onValueChange,
+  options,
+  placeholder = 'Select an option',
 }: {
   value: string
   onValueChange: (value: string) => void
-  options: Array<{ id: string, label: string }>
+  options: { id: string; label: string }[]
   placeholder?: string
 }) => {
   const [modalVisible, setModalVisible] = useState(false)
 
-  const selectedOption = options.find(option => option.label === value)
+  const selectedOption = options.find((option) => option.label === value)
 
   return (
     <>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.pickerButton}
         onPress={() => setModalVisible(true)}
       >
@@ -40,11 +49,11 @@ const CustomPicker = ({
 
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setModalVisible(false)}
@@ -63,17 +72,19 @@ const CustomPicker = ({
                 <TouchableOpacity
                   style={[
                     styles.modalOption,
-                    item.label === value && styles.modalOptionSelected
+                    item.label === value && styles.modalOptionSelected,
                   ]}
                   onPress={() => {
                     onValueChange(item.label)
                     setModalVisible(false)
                   }}
                 >
-                  <Text style={[
-                    styles.modalOptionText,
-                    item.label === value && styles.modalOptionTextSelected
-                  ]}>
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      item.label === value && styles.modalOptionTextSelected,
+                    ]}
+                  >
                     {item.label}
                   </Text>
                 </TouchableOpacity>
@@ -149,15 +160,15 @@ export default function LaunchScreen(
   }
 
   const networkOptions = [
-    { id: 'dev',        label: 'dev' },
-    { id: 'local',      label: 'local' },
+    { id: 'dev', label: 'dev' },
+    { id: 'local', label: 'local' },
     { id: 'production', label: 'production' },
-  ];
-  
+  ]
+
   const testOptions = Object.entries(TestCategory).map(([enumKey, label]) => ({
     id: enumKey,
     label,
-  }));
+  }))
 
   return (
     <ScrollView>

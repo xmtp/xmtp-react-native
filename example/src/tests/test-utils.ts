@@ -123,4 +123,3 @@ export async function assertEqual(actual: any, expected: any, message: string) {
     `${message} Expected: ${expected}, but was: ${resolvedActual}`
   )
 }
-
