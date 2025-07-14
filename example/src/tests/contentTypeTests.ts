@@ -37,7 +37,12 @@ test('can fetch messages with reactions', async () => {
 
   // Get messages to react to
   const messages = await boGroup?.messages()
-  assert(messages?.length === 3, 'Should have 3 messages')
+  assert(messages?.length === 4, 'Should have 4 messages')
+
+  assert(messages![0].contentTypeId === 'xmtp.org/text:1.0', 'First message should be a text message')
+  assert(messages![1].contentTypeId === 'xmtp.org/text:1.0', 'Second message should be a text message')
+  assert(messages![2].contentTypeId === 'xmtp.org/text:1.0', 'Third message should be a text message')
+  assert(messages![3].contentTypeId === 'xmtp.org/group_updated:1.0', 'Fourth message should be a group updated')
 
   // Bo sends reactions to first two messages
   await boGroup?.send({
@@ -135,7 +140,11 @@ test('can use reaction v2 from rust/proto', async () => {
 
   // Get messages to react to
   const messages = await boGroup?.messages()
-  assert(messages?.length === 3, 'Should have 3 messages')
+  assert(messages?.length === 4 , 'Should have 4 messages')
+  assert(messages![0].contentTypeId === 'xmtp.org/text:1.0', 'First message should be a text message')
+  assert(messages![1].contentTypeId === 'xmtp.org/text:1.0', 'Second message should be a text message')
+  assert(messages![2].contentTypeId === 'xmtp.org/text:1.0', 'Third message should be a text message')
+  assert(messages![3].contentTypeId === 'xmtp.org/group_updated:1.0', 'Fourth message should be a group updated')
 
   // Bo sends reaction V2 to first two messages
   await boGroup?.send({

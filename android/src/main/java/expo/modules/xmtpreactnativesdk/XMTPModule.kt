@@ -1922,7 +1922,10 @@ class XMTPModule : Module() {
         AsyncFunction("exportNativeLogs") Coroutine { ->
             withContext(Dispatchers.IO) {
                 try {
-                    val process = Runtime.getRuntime().exec("logcat -d")
+                    val maxLines = 10000 // Limit total lines to prevent memory issues
+                    val command = "logcat -d -t $maxLines"
+
+                    val process = Runtime.getRuntime().exec(command.toString())
                     val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
 
                     val log = StringBuilder()

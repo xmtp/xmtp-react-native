@@ -1,6 +1,6 @@
 import { useRoute } from '@react-navigation/native'
-import React, { useEffect, useState } from 'react'
-import { View, Text, Button, ScrollView } from 'react-native'
+import React, { useEffect, useState, useMemo } from 'react'
+import { View, Text, Button, ScrollView, Switch, TextInput } from 'react-native'
 
 import { clientTests } from './tests/clientTests'
 import { contentTypeTests } from './tests/contentTypeTests'
@@ -11,27 +11,40 @@ import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
 import { historySyncTests } from './tests/historySyncTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
-import { Test } from './tests/test-utils'
+import { Test, setDebugLoggingEnabled, getDebugLoggingEnabled } from './tests/test-utils'
 type Result = 'waiting' | 'running' | 'success' | 'failure' | 'error'
 
 function TestView({
   test,
   onComplete,
+  autoRun = false,
 }: {
   test: Test
-  onComplete: () => void
+  onComplete: (result: 'success' | 'failure' | 'error') => void
+  autoRun?: boolean
 }): JSX.Element {
   const [markedComplete, setMarkedComplete] = useState<boolean>(false)
   const [result, setResult] = useState<Result>('waiting')
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [showFullError, setShowFullError] = useState<boolean>(false)
+  const [hasRunOnce, setHasRunOnce] = useState<boolean>(false)
 
   async function run() {
     setResult('running')
     setErrorMessage('')
+    setShowFullError(false)
     try {
       const result = await test.run()
-      setResult(result ? 'success' : 'failure')
+      const finalResult = result ? 'success' : 'failure'
+      setResult(finalResult)
       setErrorMessage('')
+      console.log(`✅ Test completed: ${test.name} - ${result ? 'PASSED' : 'FAILED'}`)
+      // delay a moment to avoid clobbering
+      await new Promise((r) => setTimeout(r, 300))
+      if (!markedComplete) {
+        onComplete(finalResult)
+        setMarkedComplete(true)
+      }
     } catch (err) {
       setResult('error')
       if (err instanceof Error) {
@@ -39,22 +52,29 @@ function TestView({
       } else {
         setErrorMessage(JSON.stringify(err))
       }
-    }
-    // delay a moment to avoid clobbering
-    await new Promise((r) => setTimeout(r, 300))
-    if (!markedComplete) {
-      onComplete()
-      setMarkedComplete(true)
+      console.log(`❌ Test failed: ${test.name} - ERROR`)
+      console.error(`Error details for ${test.name}:`, err)
+      // delay a moment to avoid clobbering
+      await new Promise((r) => setTimeout(r, 300))
+      if (!markedComplete) {
+        onComplete('error')
+        setMarkedComplete(true)
+      }
     }
   }
 
   useEffect(() => {
-    ;(async () => {
-      await run()
-    })().catch((e) => {
-      console.error(e)
-    })
-  }, [test])
+    // Only run automatically if autoRun is explicitly true AND we haven't run once before
+    // This prevents tests from running on reload when autoRun might be temporarily true
+    if (autoRun && !hasRunOnce) {
+      setHasRunOnce(true)
+      ;(async () => {
+        await run()
+      })().catch((e) => {
+        console.error(e)
+      })
+    }
+  }, [test, autoRun, hasRunOnce])
 
   const backgroundColor = {
     waiting: '#fafafa',
@@ -63,6 +83,14 @@ function TestView({
     error: '#f8d7da',
     running: '#fafafa',
   }[result]
+
+  const getTruncatedErrorMessage = (message: string) => {
+    const lines = message.split('\n')
+    if (lines.length <= 3) {
+      return message
+    }
+    return lines.slice(0, 3).join('\n') + '\n...'
+  }
 
   return (
     <View style={{ backgroundColor }}>
@@ -97,9 +125,18 @@ function TestView({
             accessible
             accessibilityLabel="FAIL"
             style={{ color: '#721c24' }}
+            numberOfLines={showFullError ? undefined : 3}
           >
-            Error: {errorMessage}
+            Error: {showFullError ? errorMessage : getTruncatedErrorMessage(errorMessage)}
           </Text>
+          {errorMessage.split('\n').length > 3 && (
+            <View style={{ marginTop: 4 }}>
+              <Button
+                onPress={() => setShowFullError(!showFullError)}
+                title={showFullError ? 'Show Less' : 'Show More'}
+              />
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -121,6 +158,13 @@ export enum TestCategory {
 
 export default function TestScreen(): JSX.Element {
   const [completedTests, setCompletedTests] = useState<number>(0)
+  const [autoRun, setAutoRun] = useState<boolean>(false)
+  const [testResults, setTestResults] = useState<{ [key: string]: 'success' | 'failure' | 'error' }>({})
+  const [startTime, setStartTime] = useState<number | null>(null)
+  const [endTime, setEndTime] = useState<number | null>(null)
+  const [debugLogging, setDebugLogging] = useState<boolean>(getDebugLoggingEnabled())
+  const [isInitialized, setIsInitialized] = useState<boolean>(false)
+  const [testNumberInput, setTestNumberInput] = useState<string>('')
   const route = useRoute()
   const params = route.params as {
     testSelection: TestCategory
@@ -179,21 +223,134 @@ export default function TestScreen(): JSX.Element {
       break
   }
 
-  return (
-    <ScrollView>
-      <View>
-        <View style={{ padding: 12 }}>
-          <Text testID="Test View" accessible accessibilityLabel="Test View">
-            {title}
-          </Text>
-          <View
-            style={{ flexDirection: 'row', justifyContent: 'space-between' }}
-          >
-            <Text>
-              Running {completedTests}/{activeTests.length}
-            </Text>
+  const runAllTests = () => {
+    setAutoRun(true)
+    setCompletedTests(0)
+    setTestResults({})
+    setStartTime(Date.now())
+    setEndTime(null)
+  }
 
-            {completedTests === activeTests.length && (
+  const resetTests = () => {
+    setAutoRun(false)
+    setCompletedTests(0)
+    setTestResults({})
+    setStartTime(null)
+    setEndTime(null)
+  }
+
+  // Filter tests based on test number input - now computed with useMemo
+  const filteredTests = useMemo(() => {
+    if (!testNumberInput.trim()) {
+      return activeTests
+    }
+
+    const testNumbers = testNumberInput
+      .split(',')
+      .map(num => num.trim())
+      .filter(num => num !== '')
+      .map(num => parseInt(num, 10))
+      .filter(num => !isNaN(num) && num > 0)
+
+    if (testNumbers.length === 0) {
+      return activeTests
+    }
+
+    return activeTests.filter((_, index) => testNumbers.includes(index + 1))
+  }, [testNumberInput, activeTests])
+
+  // Ensure component is properly initialized and prevent auto-run on reload
+  useEffect(() => {
+    if (!isInitialized) {
+      setIsInitialized(true)
+      // Ensure we start in a clean state
+      setAutoRun(false)
+      setCompletedTests(0)
+      setTestResults({})
+      setStartTime(null)
+      setEndTime(null)
+    }
+  }, [isInitialized])
+
+  const getTestSummary = () => {
+    if (!startTime || !endTime) return null
+
+    const totalTests = filteredTests.length
+    const passedTests = Object.values(testResults).filter(result => result === 'success').length
+    const failedTests = Object.values(testResults).filter(result => result === 'failure' || result === 'error').length
+    const duration = ((endTime - startTime) / 1000).toFixed(2)
+
+    const failedTestNames = Object.entries(testResults)
+      .filter(([_, result]) => result === 'failure' || result === 'error')
+      .map(([testName, result]) => `${testName} (${result})`)
+
+    return {
+      totalTests,
+      passedTests,
+      failedTests,
+      duration,
+      failedTestNames
+    }
+  }
+
+  const summary = getTestSummary()
+
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Fixed Header */}
+      <View style={{ padding: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' }}>
+        <Text testID="Test View" accessible accessibilityLabel="Test View">
+          {title}
+        </Text>
+        
+        {/* Test Number Input */}
+        <View style={{ marginVertical: 8 }}>
+          <Text style={{ fontSize: 12, marginBottom: 4, color: '#666' }}>
+            Test Numbers (comma-separated, e.g., "1,3,5" or leave empty for all):
+          </Text>
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: '#ddd',
+              borderRadius: 4,
+              padding: 8,
+              fontSize: 14,
+              backgroundColor: '#fff'
+            }}
+            value={testNumberInput}
+            onChangeText={setTestNumberInput}
+            placeholder="1,2,3"
+            keyboardType="numeric"
+          />
+        </View>
+        
+        {/* Debug Logging Toggle */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 8 }}>
+          <Text style={{ fontSize: 14 }}>Debug Console Logging</Text>
+          <Switch
+            value={debugLogging}
+            onValueChange={(value) => {
+              setDebugLogging(value)
+              setDebugLoggingEnabled(value)
+            }}
+          />
+        </View>
+        
+        <View
+          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 }}
+        >
+          <Text>
+            {autoRun ? `Running ${completedTests}/${filteredTests.length}` : `Ready to run ${filteredTests.length} tests`}
+          </Text>
+
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {!autoRun && (
+              <Button
+                onPress={runAllTests}
+                title="Run All"
+              />
+            )}
+            {autoRun && completedTests === filteredTests.length && (
               <Text
                 testID="tests-complete"
                 accessible
@@ -202,29 +359,70 @@ export default function TestScreen(): JSX.Element {
                 Done
               </Text>
             )}
+            {autoRun && (
+              <Button
+                onPress={resetTests}
+                title="Reset"
+              />
+            )}
           </View>
         </View>
+
+        {/* Test Summary */}
+        {summary && (
+          <View style={{ 
+            backgroundColor: summary.failedTests > 0 ? '#fff3cd' : '#d4edda',
+            padding: 8,
+            borderRadius: 4,
+            marginTop: 8
+          }}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
+              Test Summary ({summary.duration}s)
+            </Text>
+            <Text>
+              ✅ {summary.passedTests} passed | ❌ {summary.failedTests} failed
+            </Text>
+            {summary.failedTestNames.length > 0 && (
+              <Text style={{ marginTop: 4, fontSize: 12, color: '#721c24' }}>
+                Failed: {summary.failedTestNames.join(', ')}
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* Scrollable Test List */}
+      <ScrollView style={{ flex: 1 }}>
         <View
           testID="tests"
           accessible
           accessibilityLabel="tests-complete"
           style={{ paddingHorizontal: 12 }}
         >
-          {(activeTests || [])
-            .slice(0, completedTests + 1)
+          {(filteredTests || [])
+            .slice(0, autoRun ? completedTests + 1 : filteredTests.length)
             .map((test: Test, i) => {
               return (
                 <TestView
                   test={test}
-                  onComplete={() => {
-                    setCompletedTests((prev) => prev + 1)
+                  onComplete={(result) => {
+                    if (autoRun) {
+                      setCompletedTests((prev) => prev + 1)
+                      setTestResults(prev => ({ ...prev, [test.name]: result }))
+                      
+                      // Set end time when all tests are complete
+                      if (completedTests + 1 === filteredTests.length) {
+                        setEndTime(Date.now())
+                      }
+                    }
                   }}
+                  autoRun={autoRun}
                   key={i}
                 />
               )
             })}
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
