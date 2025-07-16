@@ -1,5 +1,15 @@
 # @xmtp/react-native-sdk
 
+## 4.3.0
+
+### Minor Changes
+
+- eb700b9: - Quantum Encryption
+  - Always send group update codec on membership add
+  - Keep consent across installations & don’t transfer denied conversations
+  - Give order to identities
+  - Callback for stream disconnection
+
 ## 4.2.7
 
 ### Patch Changes
