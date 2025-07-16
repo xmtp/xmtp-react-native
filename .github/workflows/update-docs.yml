@@ -35,6 +35,7 @@ jobs:
           repository: ${{ env.DOCS_REPO }}
           token: ${{ secrets.DOCS_SYNC_TOKEN }}
           path: docs-repo
+          ref: 1bf5c3c5baeefa64b2e4f2fb73bd79c28e8ae95f
       
       - name: Determine tag to analyze
         id: tag
