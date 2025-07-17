@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
           path: react-native-sdk
       
       - name: Checkout Documentation Repository
@@ -54,15 +55,8 @@ jobs:
       - name: Get previous tag for diff
         id: prev_tag
         run: |
-          cd react-native-sdk
-          CURRENT_TAG="${{ steps.tag.outputs.tag }}"
-          PREV_TAG=$(git tag --sort=-version:refname | grep -A 1 "^$CURRENT_TAG$" | tail -n 1)
-          if [ "$PREV_TAG" = "$CURRENT_TAG" ] || [ -z "$PREV_TAG" ]; then
-            # If no previous tag or same tag, get the tag before current
-            PREV_TAG=$(git tag --sort=-version:refname | head -n 2 | tail -n 1)
-          fi
-          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
-          echo "Previous tag: $PREV_TAG"
+          echo "prev_tag=v4.2.0" >> $GITHUB_OUTPUT
+          echo "Previous tag: v4.2.0 (Manually overridden for test)"
       
       - name: Create documentation analysis prompt
         run: |
