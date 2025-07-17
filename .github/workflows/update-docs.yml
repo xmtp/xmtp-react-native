@@ -149,6 +149,13 @@ jobs:
           max_turns: 15
           timeout_minutes: 20
       
+      - name: Check for documentation changes
+        run: |
+          echo "--- Checking for changes in docs-repo ---"
+          cd docs-repo
+          git status
+          echo "-----------------------------------------"
+
       - name: Create branch and commit changes
         id: commit
         run: |
