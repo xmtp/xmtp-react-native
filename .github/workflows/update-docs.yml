@@ -64,6 +64,16 @@ jobs:
           echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
           echo "Previous tag: $PREV_TAG"
       
+      - name: Debug Tag Information
+        run: |
+          echo "--- DEBUGGING INFO ---"
+          echo "Current Tag: ${{ steps.tag.outputs.tag }}"
+          echo "Previous Tag: ${{ steps.prev_tag.outputs.prev_tag }}"
+          cd react-native-sdk
+          echo "--- Files Changed Between Tags ---"
+          git diff --name-only ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }}
+          echo "----------------------------------"
+
       - name: Create documentation analysis prompt
         run: |
           cat > docs-repo/analysis_prompt.md << 'EOF'
