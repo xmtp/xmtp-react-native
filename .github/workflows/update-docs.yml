@@ -69,7 +69,7 @@ jobs:
           cat > docs-repo/analysis_prompt.md << 'EOF'
           # Documentation Sync Analysis
 
-          You are tasked with analyzing changes in the XMTP React Native SDK and updating documentation accordingly.
+          You are an expert technical writer tasked with analyzing changes in the XMTP React Native SDK and updating our documentation with extreme precision.
 
           ## Context
           - Current release tag: ${{ steps.tag.outputs.tag }}
@@ -77,13 +77,25 @@ jobs:
           - React Native SDK repo: `react-native-sdk/`
           - Documentation repo: `docs-repo/`
 
-          ## Task
-          1. Analyze the diff between the previous tag and current tag in the React Native SDK
-          2. Identify API changes, new features, deprecated methods, and breaking changes
-          3. Review documentation in `docs-repo/` for React Native-related content
-          4. Focus on code samples, API references, and integration guides
-          5. Update documentation files in `docs-repo/` to match the current SDK state
-          6. Ensure all React Native code samples are accurate and use current APIs
+          ## Core Task
+          Your primary goal is to ensure the documentation in `docs-repo/` is perfectly aligned with the API changes presented in the "Release Changes Summary" below.
+
+          1. **Analyze the Diffs**: Carefully analyze the provided `git diff` outputs for each section.
+          2. **Identify Required Edits**: Determine which documentation files need to be updated to reflect these specific API changes, new features, or deprecations.
+          3. **Update Documentation**: Edit the files in `docs-repo/` to match the current SDK state. Focus on code samples, API references, and integration guides.
+
+          ## Requirements
+          - **Precision is paramount**: Only make changes that are directly supported by the provided diffs. Do not add information or make edits that are not reflected in the API changes.
+          - **Be conservative**: If a change is ambiguous or you are not 100% certain how to update the documentation for it, it is better to skip it than to introduce an error.
+          - All code samples must be valid TypeScript/JavaScript with the current SDK version (${{ steps.tag.outputs.tag }})
+          - Update version numbers in installation instructions
+          - Flag any breaking changes that need migration guides. Only edit migration guides (`upgrade-from-legacy-*.md`) if there is an explicit and clear breaking change in the diffs that necessitates it. Be extremely careful with these files.
+          - Maintain consistency with existing documentation style
+          - Create clear, actionable updates
+          - Use comprehensive analysis tools to ensure thorough coverage
+          - Verify documentation accuracy by cross-referencing with source code
+          - Search for related documentation files that may need updates
+          - Pay special attention to React Native specific patterns and examples
 
           ## Key areas to check
           - Client initialization and configuration
@@ -95,17 +107,6 @@ jobs:
           - Error handling patterns
           - Authentication flows
           - Expo integration
-
-          ## Requirements
-          - All code samples must be valid TypeScript/JavaScript with the current SDK version (${{ steps.tag.outputs.tag }})
-          - Update version numbers in installation instructions
-          - Flag any breaking changes that need migration guides
-          - Maintain consistency with existing documentation style
-          - Create clear, actionable updates
-          - Use comprehensive analysis tools to ensure thorough coverage
-          - Verify documentation accuracy by cross-referencing with source code
-          - Search for related documentation files that may need updates
-          - Pay special attention to React Native specific patterns and examples
 
           ## Available Tools
           You have access to comprehensive tools including:
@@ -123,13 +124,29 @@ jobs:
           # Append the release diff to the prompt
           cd react-native-sdk
           echo "### Changed Files:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} --name-only | head -30 >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} --name-only | head -50 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
-          echo "### Key API Changes:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Client.ts src/XMTPModule.ts src/index.ts src/lib/Conversation.ts src/lib/Group.ts src/lib/Dm.ts >> ../docs-repo/analysis_prompt.md
+
+          echo "### Core Client API Changes:" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Client.ts src/XMTPModule.ts src/index.ts | head -200 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
-          echo "Your task is to analyze the changes in the diffs above. If these changes require updates to the documentation, you MUST use the available tools to edit the files in the 'docs-repo/' directory accordingly. If no updates are needed, you can finish without making changes." >> ../docs-repo/analysis_prompt.md
+
+          echo "### Conversation/Group/DM API Changes:" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Conversation.ts src/lib/Group.ts src/lib/Dm.ts src/lib/Conversations.ts | head -200 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
+
+          echo "### Hooks and Context API Changes:" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/hooks/ src/context/ | head -100 >> ../docs-repo/analysis_prompt.md
+          echo "" >> ../docs-repo/analysis_prompt.md
+
+          echo "### Content Type Codec Changes:" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/NativeCodecs/ | head -100 >> ../docs-repo/analysis_prompt.md
+          echo "" >> ../docs-repo/analysis_prompt.md
+
+          echo "### Package.json Version Changes:" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- "**/package.json" | grep -E "^\+.*version|^\-.*version" | head -20 >> ../docs-repo/analysis_prompt.md
+          echo "" >> ../docs-repo/analysis_prompt.md
+          
           echo "## IMPORTANT: Summary Output" >> ../docs-repo/analysis_prompt.md
           echo "After completing all documentation updates, you MUST create a file called 'CLAUDE_SUMMARY.md' in the docs-repo directory with:" >> ../docs-repo/analysis_prompt.md
           echo "1. A concise summary of what changes were made" >> ../docs-repo/analysis_prompt.md
