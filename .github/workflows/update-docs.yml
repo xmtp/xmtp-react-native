@@ -139,12 +139,6 @@ jobs:
           echo "" >> ../docs-repo/analysis_prompt.md
           echo "This summary will be used in the pull request description to help reviewers understand the changes. If no changes were made, create an empty CLAUDE_SUMMARY.md file." >> ../docs-repo/analysis_prompt.md
       
-      - name: Display Full Analysis Prompt
-        run: |
-          echo "--- Full analysis_prompt.md content ---"
-          cat docs-repo/analysis_prompt.md
-          echo "---------------------------------------"
-
       - name: Run Claude Code Documentation Analysis
         uses: anthropics/claude-code-base-action@beta
         with:
@@ -261,8 +255,7 @@ jobs:
             --title "📱 Update React Native SDK docs for ${{ steps.tag.outputs.tag }}" \
             --body "$PR_BODY" \
             --head "${{ steps.commit.outputs.branch_name }}" \
-            --base main \
-            --label "react-native,automated,documentation"
+            --base main
 
       - name: Output results
         run: |
