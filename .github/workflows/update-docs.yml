@@ -129,15 +129,30 @@ jobs:
           git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Client.ts src/XMTPModule.ts src/index.ts src/lib/Conversation.ts src/lib/Group.ts src/lib/Dm.ts >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
           echo "Your task is to analyze the changes in the diffs above. If these changes require updates to the documentation, you MUST use the available tools to edit the files in the 'docs-repo/' directory accordingly. If no updates are needed, you can finish without making changes." >> ../docs-repo/analysis_prompt.md
+          echo "" >> ../docs-repo/analysis_prompt.md
+          echo "## IMPORTANT: Summary Output" >> ../docs-repo/analysis_prompt.md
+          echo "After completing all documentation updates, you MUST create a file called 'CLAUDE_SUMMARY.md' in the docs-repo directory with:" >> ../docs-repo/analysis_prompt.md
+          echo "1. A concise summary of what changes were made" >> ../docs-repo/analysis_prompt.md
+          echo "2. Key API changes or breaking changes identified" >> ../docs-repo/analysis_prompt.md
+          echo "3. Files that were updated and why" >> ../docs-repo/analysis_prompt.md
+          echo "4. Any areas that may need manual review" >> ../docs-repo/analysis_prompt.md
+          echo "" >> ../docs-repo/analysis_prompt.md
+          echo "This summary will be used in the pull request description to help reviewers understand the changes. If no changes were made, create an empty CLAUDE_SUMMARY.md file." >> ../docs-repo/analysis_prompt.md
       
+      - name: Display Full Analysis Prompt
+        run: |
+          echo "--- Full analysis_prompt.md content ---"
+          cat docs-repo/analysis_prompt.md
+          echo "---------------------------------------"
+
       - name: Run Claude Code Documentation Analysis
         uses: anthropics/claude-code-base-action@beta
         with:
           prompt_file: docs-repo/analysis_prompt.md
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_tools: "Bash,Read,Write,Edit,MultiEdit,Glob,Grep,LS,Task,WebFetch,WebSearch,TodoRead,TodoWrite,NotebookRead,NotebookEdit"
-          max_turns: 15
-          timeout_minutes: 20
+          max_turns: 20
+          timeout_minutes: 30
       
       - name: Create branch and commit changes
         id: commit
@@ -152,8 +167,19 @@ jobs:
           # Create and switch to new branch
           git checkout -b "$BRANCH_NAME"
 
-          # Remove the analysis prompt file (internal workflow file)
-          rm -f analysis_prompt.md
+          # Capture Claude's summary if it exists
+          if [ -f "CLAUDE_SUMMARY.md" ]; then
+            echo "Claude summary found, capturing for PR body"
+            # Store the summary content in a file that survives the git operations
+            cp CLAUDE_SUMMARY.md /tmp/claude_summary.md
+            echo "claude_summary_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "No Claude summary found"
+            echo "claude_summary_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Remove internal workflow files
+          rm -f analysis_prompt.md CLAUDE_SUMMARY.md
 
           # Check if there are any changes
           if git diff --quiet && git diff --cached --quiet; then
@@ -164,7 +190,7 @@ jobs:
             echo "has_changes=true" >> $GITHUB_OUTPUT
             echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
             
-            # Add all changes (excluding the removed prompt file)
+            # Add all changes (excluding the removed prompt and summary files)
             git add .
             
             # Commit changes
@@ -191,21 +217,33 @@ jobs:
         run: |
           cd docs-repo
 
-          # Create PR body
+          # Start building PR body
           PR_BODY="## 🤖 Automated React Native SDK Documentation Update
 
-          This PR updates the documentation to align with React Native SDK release [\`${{ steps.tag.outputs.tag }}\`](https://github.com/xmtp/xmtp-react-native/releases/tag/${{ steps.tag.outputs.tag }}).
+          This PR updates the documentation to align with React Native SDK release [\`${{ steps.tag.outputs.tag }}\`](https://github.com/xmtp/xmtp-react-native/releases/tag/${{ steps.tag.outputs.tag }})."
 
-          ### Changes Made
-          - Updated code samples to match current SDK APIs
-          - Verified React Native integration examples
-          - Updated version references and installation instructions
-          - Addressed any breaking changes or deprecations
-          - Updated TypeScript/JavaScript examples for accuracy
-          - Verified Expo integration patterns
+          # Add Claude's summary if it exists
+          if [ "${{ steps.commit.outputs.claude_summary_exists }}" = "true" ] && [ -f "/tmp/claude_summary.md" ]; then
+            PR_BODY="$PR_BODY
 
-          ### Analysis Summary
-          Documentation analysis and updates completed using Claude Code Actions.
+          ## 📋 Analysis Summary
+
+          $(cat /tmp/claude_summary.md)"
+          else
+            # Fallback to generic summary
+            PR_BODY="$PR_BODY
+
+            ### Changes Made
+            - Updated code samples to match current SDK APIs
+            - Verified React Native integration examples
+            - Updated version references and installation instructions
+            - Addressed any breaking changes or deprecations
+            - Updated TypeScript/JavaScript examples for accuracy
+            - Verified Expo integration patterns"
+          fi
+
+          # Add verification checklist
+          PR_BODY="$PR_BODY
 
           ### Verification Needed
           - [ ] Review all React Native code samples for accuracy
