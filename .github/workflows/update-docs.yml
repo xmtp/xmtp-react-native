@@ -124,28 +124,27 @@ jobs:
           # Append the release diff to the prompt
           cd react-native-sdk
           echo "### Changed Files:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} --name-only | head -50 >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} --name-only | head -100 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
 
           echo "### Core Client API Changes:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Client.ts src/XMTPModule.ts src/index.ts | head -200 >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Client.ts src/XMTPModule.ts src/index.ts | head -2000 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
 
           echo "### Conversation/Group/DM API Changes:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Conversation.ts src/lib/Group.ts src/lib/Dm.ts src/lib/Conversations.ts | head -200 >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Conversation.ts src/lib/Group.ts src/lib/Dm.ts src/lib/Conversations.ts | head -2000 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
 
           echo "### Hooks and Context API Changes:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/hooks/ src/context/ | head -100 >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/hooks/ src/context/ | head -1000 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
 
           echo "### Content Type Codec Changes:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/NativeCodecs/ | head -100 >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/NativeCodecs/ | head -1000 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
 
           echo "### Package.json Version Changes:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- "**/package.json" | grep -E "^\+.*version|^\-.*version" | head -20 >> ../docs-repo/analysis_prompt.md
-          echo "" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- "**/package.json" | grep -E "^\+.*version|^\-.*version" | head -100 >> ../docs-repo/analysis_prompt.md
           
           echo "## IMPORTANT: Summary Output" >> ../docs-repo/analysis_prompt.md
           echo "After completing all documentation updates, you MUST create a file called 'CLAUDE_SUMMARY.md' in the docs-repo directory with:" >> ../docs-repo/analysis_prompt.md
