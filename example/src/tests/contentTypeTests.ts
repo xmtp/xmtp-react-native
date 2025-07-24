@@ -2,6 +2,7 @@ import ReactNativeBlobUtil from 'react-native-blob-util'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
+  DecodedMessage,
   MultiRemoteAttachmentCodec,
   MultiRemoteAttachmentContent,
   ReactionContent,
@@ -18,6 +19,47 @@ function test(name: string, perform: () => Promise<boolean>) {
     run: perform,
   })
 }
+
+test('DecodedMessage.from() should throw informative error on null', async () => {
+  try {
+    DecodedMessage.from("undefined")
+  } catch (e: any) {
+    assert(e.toString().includes('JSON Parse error'), 'Error: ' + e.toString())
+  }
+
+  try {
+    DecodedMessage.from("")
+  } catch (e: any) {
+    assert(e.toString().includes('JSON Parse error'), 'Error: ' + e.toString())
+  }
+
+  try {
+    DecodedMessage.from(undefined)
+  } catch (e: any) {
+    assert(e.toString().includes('JSON Parse error'), 'Error: ' + e.toString())
+  }
+
+  try {
+    DecodedMessage.from(null)
+  } catch (e: any) {
+    assert(e.toString().includes('Tried to parse null as a DecodedMessage'), 'Error: ' + e.toString())
+  }
+
+  try {
+    DecodedMessage.from("null")
+  } catch (e: any) {
+    assert(e.toString().includes('Tried to parse null as a DecodedMessage'), 'Error: ' + e.toString())
+  }
+
+  let json = '{"id": "123", "topic": "123", "contentTypeId": "123", "senderInboxId": "123", "sentNs": 123, "content": "123", "fallback": "123", "deliveryStatus": "123", "childMessages": null}'
+  try {
+    DecodedMessage.from(json)
+  } catch (e: any) {
+    assert(false, 'Error: ' + e.toString())
+  }
+  return true
+
+})
 
 test('can fetch messages with reactions', async () => {
   const [alix, bo] = await createClients(2)
