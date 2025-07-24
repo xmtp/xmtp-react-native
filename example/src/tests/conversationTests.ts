@@ -854,9 +854,12 @@ test('can stream conversation messages', async () => {
   await alixDmConversation?.streamMessages(async () => {
     dmMessageCallbacks++
   })
+  await delayToPropogate(1000)
 
   await alixGroupConversation?.send({ text: `first message` })
   await alixDmConversation?.send({ text: `first message` })
+
+  await delayToPropogate(1000)
 
   assert(
     conversationMessageCallbacks === 1,
