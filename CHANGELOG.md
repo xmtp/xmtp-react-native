@@ -1,5 +1,15 @@
 # @xmtp/react-native-sdk
 
+## 4.3.1
+
+### Patch Changes
+
+- 2c77a74: - Concurrency improvements
+  - Deadlock fixes
+  - Increase max installations 10
+  - Fixes a known fork issue
+  - Rotates key packages every 30 days irregardless of welcome processing
+
 ## 4.3.0
 
 ### Minor Changes
