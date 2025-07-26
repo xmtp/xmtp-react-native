@@ -1,5 +1,13 @@
 # @xmtp/react-native-sdk
 
+## 4.3.2
+
+### Patch Changes
+
+- fb19acb: - Resolves issue with too many key package api requests
+  - Fixes issue causing users with old installations to sometimes not be added to groups
+  - Fixes a performance bottleneck that affects listing conversations while syncing
+
 ## 4.3.1
 
 ### Patch Changes
