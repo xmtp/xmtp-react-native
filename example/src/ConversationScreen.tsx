@@ -111,7 +111,7 @@ export default function ConversationScreen({
     }
 
     console.log('🔵 Setting up stream for conversation:', conversation.id)
-    
+
     let isActive = true
     let retryTimeout: NodeJS.Timeout | null = null
     let retryCount = 0
@@ -120,28 +120,39 @@ export default function ConversationScreen({
     const attemptStreamSetup = async () => {
       if (!isActive || retryCount >= maxRetries) {
         if (retryCount >= maxRetries) {
-          console.log(`❌ Max retries (${maxRetries}) reached, giving up on stream`)
+          console.log(
+            `❌ Max retries (${maxRetries}) reached, giving up on stream`
+          )
         }
         return
       }
 
       try {
         // First, try to sync
-        console.log(`🔄 Checking sync... (attempt ${retryCount + 1}/${maxRetries})`)
+        console.log(
+          `🔄 Checking sync... (attempt ${retryCount + 1}/${maxRetries})`
+        )
         await conversation.sync()
         console.log(`✅ Conversation sync successful`)
 
         // If sync works, try to start the stream
-        console.log(`🔄 Starting stream... (attempt ${retryCount + 1}/${maxRetries})`)
+        console.log(
+          `🔄 Starting stream... (attempt ${retryCount + 1}/${maxRetries})`
+        )
         const cleanup = await conversation.streamMessages(
           async (message) => {
-            console.log('📨 Streamed message:', message.id, message.contentTypeId, message.content())
-            
+            console.log(
+              '📨 Streamed message:',
+              message.id,
+              message.contentTypeId,
+              message.content()
+            )
+
             if (isActive) {
-              setStreamedMessages(prev => {
-                const messageExists = prev.some(msg => msg.id === message.id)
+              setStreamedMessages((prev) => {
+                const messageExists = prev.some((msg) => msg.id === message.id)
                 if (messageExists) return prev
-                
+
                 return [message, ...prev]
               })
             }
@@ -151,42 +162,50 @@ export default function ConversationScreen({
             console.log('❌ Stream closed for conversation:', conversation.id)
             if (isActive && retryCount < maxRetries) {
               retryCount++
-              console.log(`🔄 Stream closed, retrying in 10 seconds... (attempt ${retryCount}/${maxRetries})`)
+              console.log(
+                `🔄 Stream closed, retrying in 10 seconds... (attempt ${retryCount}/${maxRetries})`
+              )
               retryTimeout = setTimeout(attemptStreamSetup, 10000)
             }
           }
         )
-        
+
         // Reset retry count on successful setup
         retryCount = 0
         streamCleanupRef.current = cleanup
-        console.log('✅ Stream setup complete for conversation:', conversation.id)
-        
+        console.log(
+          '✅ Stream setup complete for conversation:',
+          conversation.id
+        )
       } catch (error) {
         console.error('💥 Error during setup (sync or stream):', error)
-        
+
         // Retry the whole thing (sync + stream) on any error
         if (isActive && retryCount < maxRetries) {
           retryCount++
-          console.log(`🔄 Setup failed, retrying in 10 seconds... (attempt ${retryCount}/${maxRetries})`)
+          console.log(
+            `🔄 Setup failed, retrying in 10 seconds... (attempt ${retryCount}/${maxRetries})`
+          )
           retryTimeout = setTimeout(attemptStreamSetup, 10000)
         }
       }
     }
 
     // Start the first attempt
-    attemptStreamSetup()
+    attemptStreamSetup().catch((error) => {
+      console.error('Failed to start initial stream setup:', error)
+    })
 
     return () => {
       console.log('🧹 Cleaning up stream for conversation:', conversation.id)
       isActive = false
-      
+
       // Clear retry timeout if it exists
       if (retryTimeout) {
         clearTimeout(retryTimeout)
         retryTimeout = null
       }
-      
+
       if (streamCleanupRef.current) {
         try {
           streamCleanupRef.current()
