@@ -167,17 +167,19 @@ test('can stream dm messages', async () => {
   await alixDm.streamMessages(async () => {
     dmMessageCallbacks++
   })
-
+  
+  await delayToPropogate(1000)
   await alixConversation?.send({ text: `first message` })
   await alixDm.send({ text: `first message` })
+  await delayToPropogate(1000)
 
   assert(
     conversationMessageCallbacks === 1,
-    'conversation stream should have received 1 conversation'
+    `conversation stream should have received 1 group but got ${conversationMessageCallbacks}`
   )
   assert(
     dmMessageCallbacks === 1,
-    'message stream should have received 1 message'
+    `message stream should have received 1 message but got ${dmMessageCallbacks}`
   )
 
   return true
