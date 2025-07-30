@@ -214,7 +214,9 @@ class XMTPModule : Module() {
             appContext = context,
             dbEncryptionKey = encryptionKeyBytes,
             dbDirectory = authOptions.dbDirectory,
-            historySyncUrl = historySyncUrl
+            historySyncUrl = historySyncUrl,
+            deviceSyncEnabled = authOptions.deviceSyncEnabled,
+            debugEventsEnabled = authOptions.debugEventsEnabled,
         )
     }
 

@@ -289,6 +289,7 @@ test('can make a client', async () => {
   const client = await Client.createRandom({
     env: 'local',
     dbEncryptionKey: keyBytes,
+    deviceSyncEnabled: false,
   })
 
   const inboxId = await Client.getOrCreateInboxId(

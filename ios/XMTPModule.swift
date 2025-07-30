@@ -2955,7 +2955,10 @@ public class XMTPModule: Module {
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 			dbEncryptionKey: dbEncryptionKey,
 			dbDirectory: authOptions.dbDirectory,
-			historySyncUrl: authOptions.historySyncUrl)
+			historySyncUrl: authOptions.historySyncUrl,
+			deviceSyncEnabled: authOptions.deviceSyncEnabled,
+			debugEventsEnabled: authOptions.debugEventsEnabled
+		)
 	}
 
 	func subscribeToPreferenceUpdates(installationId: String)
