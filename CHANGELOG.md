@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.3.3
+
+### Patch Changes
+
+- d353e45: Improve performance of syncAll for large lists
+
 ## 4.3.2
 
 ### Patch Changes
