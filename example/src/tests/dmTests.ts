@@ -167,7 +167,7 @@ test('can stream dm messages', async () => {
   await alixDm.streamMessages(async () => {
     dmMessageCallbacks++
   })
-  
+
   await delayToPropogate(1000)
   await alixConversation?.send({ text: `first message` })
   await alixDm.send({ text: `first message` })
