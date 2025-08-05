@@ -210,6 +210,7 @@ jobs:
             PR_TITLE=$(cat claude_pr_title.txt)
             rm claude_pr_title.txt
           fi
+          
           # Use Claude Code generated PR body if available, otherwise use default
           if [ -f "claude_pr_body.txt" ]; then
             PR_BODY=$(cat claude_pr_body.txt)
