@@ -292,7 +292,7 @@ test('register and use custom content types', async () => {
   const alixConvo = await alix.conversations.findConversation(boConvo.id)
 
   const messages = await alixConvo!.messages()
-  assert(messages.length === 1, 'did not get messages')
+  assert(messages.length === 2, 'did not get messages')
 
   const message = messages[0]
   const messageContent = message.content()
@@ -339,7 +339,7 @@ test('register and use custom content types with prepare', async () => {
   const alixConvo = await alix.conversations.findConversation(boConvo.id)
 
   const messages = await alixConvo!.messages()
-  assert(messages.length === 1, 'did not get messages')
+  assert(messages.length === 2, 'did not get messages')
 
   const message = messages[0]
   const messageContent = message.content()
@@ -387,7 +387,7 @@ test('handle fallback types appropriately', async () => {
   const aliceConvo = await alix.conversations.findConversation(bobConvo.id)
 
   const messages = await aliceConvo!.messages()
-  assert(messages.length === 2, 'did not get messages')
+  assert(messages.length === 3, 'did not get messages')
 
   const messageUndefinedFallback = messages[0]
   const messageWithDefinedFallback = messages[1]
@@ -854,9 +854,12 @@ test('can stream conversation messages', async () => {
   await alixDmConversation?.streamMessages(async () => {
     dmMessageCallbacks++
   })
+  await delayToPropogate(1000)
 
   await alixGroupConversation?.send({ text: `first message` })
   await alixDmConversation?.send({ text: `first message` })
+
+  await delayToPropogate(1000)
 
   assert(
     conversationMessageCallbacks === 1,
@@ -1173,8 +1176,8 @@ test('test stream messages in parallel', async () => {
   const caroMessagesCount = (await caroGroup!.messages()).length
   await assertEqual(
     caroMessagesCount,
-    40,
-    'Caro should have received 40 messages'
+    41,
+    'Caro should have received 41 messages'
   )
 
   await Promise.all([boGroup!.sync(), alixGroup.sync(), caroGroup!.sync()])
@@ -1183,7 +1186,7 @@ test('test stream messages in parallel', async () => {
   const alixMessagesCount = (await alixGroup.messages()).length
   const caroMessagesCountAfterSync = (await caroGroup!.messages()).length
 
-  await assertEqual(boMessagesCount, 40, 'Bo should have received 40 messages')
+  await assertEqual(boMessagesCount, 41, 'Bo should have received 41 messages')
   await assertEqual(
     alixMessagesCount,
     41,
@@ -1191,8 +1194,8 @@ test('test stream messages in parallel', async () => {
   )
   await assertEqual(
     caroMessagesCountAfterSync,
-    40,
-    'Caro should still have 40 messages'
+    41,
+    'Caro should still have 41 messages'
   )
 
   console.log('Test passed: Streams and messages handled correctly.')

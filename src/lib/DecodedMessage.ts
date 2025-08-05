@@ -40,6 +40,9 @@ export class DecodedMessage<
     ContentTypes extends DefaultContentTypes = ContentType[],
   >(json: string): DecodedMessageUnion<ContentTypes> {
     const decoded = JSON.parse(json)
+    if (!decoded) {
+      throw new Error('Tried to parse null as a DecodedMessage')
+    }
     // Parse any child messages recursively
     const childMessages = decoded.childMessages?.map((childJson: any) =>
       DecodedMessage.fromObject<ContentType>({

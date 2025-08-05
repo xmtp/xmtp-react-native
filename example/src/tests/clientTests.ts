@@ -160,7 +160,7 @@ test('static revoke all installations', async () => {
   const inboxId = alix.inboxId
   const states = await Client.inboxStatesForInboxIds('local', [inboxId])
 
-  assert(states[0].installations.length === 2, 'should equal 5 installations')
+  assert(states[0].installations.length === 2, 'should equal 2 installations')
 
   const toRevokeIds = states[0].installations.map((i) => i.id)
 
@@ -189,21 +189,21 @@ test('static revoke all installations', async () => {
   return true
 })
 
-test('cannot create more than 5 installations', async () => {
+test('cannot create more than 10 installations', async () => {
   const [boClient] = await createClients(1)
   const keyBytes = new Uint8Array(32).fill(2)
   const wallet = Wallet.createRandom()
   const basePath = `${RNFS.DocumentDirectoryPath}/xmtp_limit_test`
   const paths: string[] = []
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 11; i++) {
     const p = `${basePath}_${i}`
     paths.push(p)
     if (!(await RNFS.exists(p))) await RNFS.mkdir(p)
   }
 
   const clients = []
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     clients.push(
       await Client.create(adaptEthersWalletToSigner(wallet), {
         env: 'local',
@@ -214,7 +214,7 @@ test('cannot create more than 5 installations', async () => {
   }
 
   const state = await clients[0].inboxState(true)
-  assert(state.installations.length === 5, 'should equal 5')
+  assert(state.installations.length === 10, 'should equal 10')
 
   // 6th installation should fail
   let failed = false
@@ -222,12 +222,12 @@ test('cannot create more than 5 installations', async () => {
     await Client.create(adaptEthersWalletToSigner(wallet), {
       env: 'local',
       dbEncryptionKey: keyBytes,
-      dbDirectory: paths[5],
+      dbDirectory: paths[10],
     })
   } catch (err: any) {
     failed = true
     assert(
-      err.message.includes('5/5 installations'),
+      err.message.includes('10/10 installations'),
       `Unexpected error message: ${err.message}`
     )
   }
@@ -235,20 +235,20 @@ test('cannot create more than 5 installations', async () => {
 
   // Revoke one installation
   await clients[0].revokeInstallations(adaptEthersWalletToSigner(wallet), [
-    clients[4].installationId,
+    clients[9].installationId,
   ])
 
   const updatedState = await clients[0].inboxState(true)
-  assert(updatedState.installations.length === 4, 'should equal 4')
+  assert(updatedState.installations.length === 9, 'should equal 9')
 
   const sixthNow = await Client.create(adaptEthersWalletToSigner(wallet), {
     env: 'local',
     dbEncryptionKey: keyBytes,
-    dbDirectory: `${basePath}_6`,
+    dbDirectory: `${basePath}_11`,
   })
 
   const finalState = await clients[0].inboxState(true)
-  assert(finalState.installations.length === 5, 'should equal 5')
+  assert(finalState.installations.length === 10, 'should equal 10')
 
   for (const client of [...clients, boClient, sixthNow]) {
     await client.dropLocalDatabaseConnection()
@@ -289,6 +289,8 @@ test('can make a client', async () => {
   const client = await Client.createRandom({
     env: 'local',
     dbEncryptionKey: keyBytes,
+    deviceSyncEnabled: false,
+    appVersion: '0.0.0',
   })
 
   const inboxId = await Client.getOrCreateInboxId(

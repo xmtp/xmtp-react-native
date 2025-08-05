@@ -1,5 +1,51 @@
 # @xmtp/react-native-sdk
 
+## 4.3.3
+
+### Patch Changes
+
+- d353e45: Improve performance of syncAll for large lists
+
+## 4.3.2
+
+### Patch Changes
+
+- fb19acb: - Resolves issue with too many key package api requests
+  - Fixes issue causing users with old installations to sometimes not be added to groups
+  - Fixes a performance bottleneck that affects listing conversations while syncing
+
+## 4.3.1
+
+### Patch Changes
+
+- 2c77a74: - Concurrency improvements
+  - Deadlock fixes
+  - Increase max installations 10
+  - Fixes a known fork issue
+  - Rotates key packages every 30 days irregardless of welcome processing
+
+## 4.3.0
+
+### Minor Changes
+
+- eb700b9: - Quantum Encryption
+  - Always send group update codec on membership add
+  - Keep consent across installations & don’t transfer denied conversations
+  - Give order to identities
+  - Callback for stream disconnection
+
+## 4.2.7
+
+### Patch Changes
+
+- 78122d9: - Refresh GRPC client on connectivity issues
+
+## 4.2.6
+
+### Patch Changes
+
+- 1af0c08: - Improvements to syncAll
+
 ## 4.2.5
 
 ### Patch Changes

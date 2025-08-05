@@ -160,18 +160,20 @@ class XMTPModule : Module() {
             return reactContext
         }
 
-    private fun apiEnvironments(env: String, customLocalUrl: String? = null): ClientOptions.Api {
+    private fun apiEnvironments(env: String, customLocalUrl: String? = null, appVersion: String? = null): ClientOptions.Api {
         return when (env) {
             "local" -> {
                 if (customLocalUrl.isNullOrBlank()) {
                     ClientOptions.Api(
                         env = XMTPEnvironment.LOCAL,
                         isSecure = false,
+                        appVersion = appVersion,
                     )
                 } else {
                     ClientOptions.Api(
                         env = XMTPEnvironment.LOCAL.withValue(customLocalUrl),
                         isSecure = false,
+                        appVersion = appVersion,
                     )
                 }
             }
@@ -179,11 +181,13 @@ class XMTPModule : Module() {
             "production" -> ClientOptions.Api(
                 env = XMTPEnvironment.PRODUCTION,
                 isSecure = true,
+                appVersion = appVersion,
             )
 
             else -> ClientOptions.Api(
                 env = XMTPEnvironment.DEV,
                 isSecure = true,
+                appVersion = appVersion,
             )
         }
     }
@@ -209,12 +213,14 @@ class XMTPModule : Module() {
                 else -> "https://message-history.dev.ephemera.network/"
             }
         return ClientOptions(
-            api = apiEnvironments(authOptions.environment, authOptions.customLocalUrl),
+            api = apiEnvironments(authOptions.environment, authOptions.customLocalUrl, authOptions.appVersion),
             preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
             appContext = context,
             dbEncryptionKey = encryptionKeyBytes,
             dbDirectory = authOptions.dbDirectory,
-            historySyncUrl = historySyncUrl
+            historySyncUrl = historySyncUrl,
+            deviceSyncEnabled = authOptions.deviceSyncEnabled,
+            debugEventsEnabled = authOptions.debugEventsEnabled,
         )
     }
 
@@ -242,11 +248,18 @@ class XMTPModule : Module() {
             "sign",
             "authed",
             "preAuthenticateToInboxCallback",
+            // Streams
             "conversation",
             "message",
             "conversationMessage",
             "consent",
             "preferences",
+            // Streams Closed
+            "conversationClosed",
+            "messageClosed",
+            "conversationMessageClosed",
+            "consentClosed",
+            "preferencesClosed",
         )
 
         Function("inboxId") { installationId: String ->
@@ -1915,7 +1928,10 @@ class XMTPModule : Module() {
         AsyncFunction("exportNativeLogs") Coroutine { ->
             withContext(Dispatchers.IO) {
                 try {
-                    val process = Runtime.getRuntime().exec("logcat -d")
+                    val maxLines = 10000 // Limit total lines to prevent memory issues
+                    val command = "logcat -d -t $maxLines"
+
+                    val process = Runtime.getRuntime().exec(command.toString())
                     val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
 
                     val log = StringBuilder()
@@ -2049,7 +2065,13 @@ class XMTPModule : Module() {
         subscriptions[getPreferenceUpdatesKey(installationId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    client.preferences.streamPreferenceUpdates().collect { type ->
+                    client.preferences.streamPreferenceUpdates(onClose = {
+                        sendEvent(
+                            "preferencesClosed", mapOf(
+                                "installationId" to installationId,
+                            )
+                        )
+                    }).collect { type ->
                         sendEvent(
                             "preferences",
                             mapOf(
@@ -2072,7 +2094,13 @@ class XMTPModule : Module() {
         subscriptions[getConsentKey(installationId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    client.preferences.streamConsent().collect { consent ->
+                    client.preferences.streamConsent(onClose = {
+                        sendEvent(
+                            "consentClosed", mapOf(
+                                "installationId" to installationId,
+                            )
+                        )
+                    }).collect { consent ->
                         sendEvent(
                             "consent",
                             mapOf(
@@ -2095,7 +2123,13 @@ class XMTPModule : Module() {
         subscriptions[getConversationsKey(installationId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    client.conversations.stream(type).collect { conversation ->
+                    client.conversations.stream(type, onClose = {
+                        sendEvent(
+                            "conversationClosed", mapOf(
+                                "installationId" to installationId,
+                            )
+                        )
+                    }).collect { conversation ->
                         sendEvent(
                             "conversation",
                             mapOf(
@@ -2124,7 +2158,13 @@ class XMTPModule : Module() {
         subscriptions[getMessagesKey(installationId)]?.cancel()
         subscriptions[getMessagesKey(installationId)] = CoroutineScope(Dispatchers.IO).launch {
             try {
-                client.conversations.streamAllMessages(type, consentState).collect { message ->
+                client.conversations.streamAllMessages(type, consentState, onClose = {
+                    sendEvent(
+                        "messageClosed", mapOf(
+                            "installationId" to installationId,
+                        )
+                    )
+                }).collect { message ->
                     sendEvent(
                         "message",
                         mapOf(
@@ -2148,7 +2188,14 @@ class XMTPModule : Module() {
         subscriptions[conversation.cacheKey(installationId)] =
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    conversation.streamMessages().collect { message ->
+                    conversation.streamMessages(onClose = {
+                        sendEvent(
+                            "conversationMessageClosed", mapOf(
+                                "installationId" to installationId,
+                                "conversationId" to id
+                            )
+                        )
+                    }).collect { message ->
                         sendEvent(
                             "conversationMessage",
                             mapOf(
