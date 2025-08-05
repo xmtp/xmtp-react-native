@@ -1,5 +1,3 @@
-import { keystore } from '@xmtp/proto'
-
 import { ConsentState } from './ConsentRecord'
 import {
   ConversationSendPayload,
@@ -19,6 +17,7 @@ import {
 } from '../index'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
+import { keystore } from '@xmtp/proto'
 
 export enum ConversationVersion {
   GROUP = 'GROUP',
@@ -45,8 +44,7 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   sync()
   messages(opts?: MessagesOptions): Promise<DecodedMessageUnion<ContentTypes>[]>
   streamMessages(
-    callback: (message: DecodedMessage<ContentTypes[number]>) => Promise<void>,
-    onClose?: () => void
+    callback: (message: DecodedMessage<ContentTypes[number]>) => Promise<void>
   ): Promise<() => void>
   consentState(): Promise<ConsentState>
   updateConsent(state: ConsentState): Promise<void>

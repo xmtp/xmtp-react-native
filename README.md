@@ -10,7 +10,7 @@ Or better yet, open a PR and we'll get it reviewed and merged as soon as possibl
 
 ## Documentation
 
-To learn how to use the XMTP React Native SDK, see [Get started with the XMTP React Native SDK](https://docs.xmtp.org/sdks/react-native).
+To learn how to use the XMTP React Native SDK and get answers to frequently asked questions, see the [XMTP documentation](https://docs.xmtp.org/).
 
 ## SDK reference
 

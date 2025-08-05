@@ -13,23 +13,6 @@ import {
   PublicIdentity,
 } from 'xmtp-react-native-sdk'
 
-// Debug logging state
-let debugLoggingEnabled = false
-
-export function setDebugLoggingEnabled(enabled: boolean) {
-  debugLoggingEnabled = enabled
-}
-
-export function getDebugLoggingEnabled(): boolean {
-  return debugLoggingEnabled
-}
-
-export function debugLog(...args: any[]) {
-  if (debugLoggingEnabled) {
-    console.log(...args)
-  }
-}
-
 export type Test = {
   name: string
   run: () => Promise<boolean>
@@ -100,15 +83,15 @@ export function adaptEthersWalletToSigner(wallet: Wallet): Signer {
     getBlockNumber: () => undefined, // Block number is typically not available in Wallet, return undefined
     signerType: () => 'EOA', // "EOA" indicates an externally owned account
     signMessage: async (message: string) => {
-      debugLog('attempting tosignMessage', message)
+      console.log('attempting tosignMessage', message)
       try {
         const signature = await wallet.signMessage(message)
-        debugLog('signature', signature)
+        console.log('signature', signature)
         return {
           signature,
         }
       } catch (error) {
-        debugLog('error', error)
+        console.log('error', error)
         throw error
       }
     },

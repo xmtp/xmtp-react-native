@@ -103,10 +103,7 @@ export class Client<
       Boolean(authInboxSubscription),
       options.dbDirectory,
       options.historySyncUrl,
-      options.customLocalHost,
-      options.deviceSyncEnabled,
-      options.debugEventsEnabled,
-      options.appVersion
+      options.customLocalHost
     )
     this.removeSubscription(authInboxSubscription)
 
@@ -192,10 +189,7 @@ export class Client<
           signingKey.signerType?.(),
           signingKey.getChainId?.(),
           signingKey.getBlockNumber?.(),
-          options.customLocalHost,
-          options.deviceSyncEnabled,
-          options.debugEventsEnabled,
-          options.appVersion
+          options.customLocalHost
         )
       })().catch((error) => {
         this.removeAllSubscriptions(authInboxSubscription)
@@ -231,10 +225,7 @@ export class Client<
       options.dbDirectory,
       options.historySyncUrl,
       inboxId,
-      options.customLocalHost,
-      options.deviceSyncEnabled,
-      options.debugEventsEnabled,
-      options.appVersion
+      options.customLocalHost
     )
 
     return new Client(
@@ -277,10 +268,7 @@ export class Client<
       options.dbEncryptionKey,
       options.dbDirectory,
       options.historySyncUrl,
-      options.customLocalHost,
-      options.deviceSyncEnabled,
-      options.debugEventsEnabled,
-      options.appVersion
+      options.customLocalHost
     )
 
     return new Client(
@@ -1135,10 +1123,6 @@ export type ClientOptions = {
    */
   dbDirectory?: string
   /**
-   * OPTIONAL specify an appVersion
-   */
-  appVersion?: string
-  /**
    * OPTIONAL specify a url to sync message history from
    */
   historySyncUrl?: string
@@ -1146,12 +1130,4 @@ export type ClientOptions = {
    * OPTIONAL specify a custom local host for testing on physical devices for example `localhost`
    */
   customLocalHost?: string
-  /**
-   * OPTIONAL specify if device sync should be enabled or disabled defaults to true
-   */
-  deviceSyncEnabled?: boolean
-  /**
-   * OPTIONAL specify if debug events should be tracked defaults to false
-   */
-  debugEventsEnabled?: boolean
 }

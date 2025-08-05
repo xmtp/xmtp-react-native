@@ -132,18 +132,11 @@ public class XMTPModule: Module {
 			"sign",
 			"authed",
 			"preAuthenticateToInboxCallback",
-			// Stream
 			"conversation",
 			"message",
 			"conversationMessage",
 			"consent",
-			"preferences",
-			// Stream Closed
-			"conversationClosed",
-			"messageClosed",
-			"conversationMessageClosed",
-			"consentClosed",
-			"preferencesClosed"
+			"preferences"
 		)
 
 		AsyncFunction("inboxId") { (installationId: String) -> String in
@@ -2916,7 +2909,7 @@ public class XMTPModule: Module {
 		case revokeInstallations = "revokeInstallations"
 	}
 
-	func createApiClient(env: String, customLocalUrl: String? = nil, appVersion: String? = nil)
+	func createApiClient(env: String, customLocalUrl: String? = nil)
 		-> XMTP.ClientOptions.Api
 	{
 		switch env {
@@ -2926,20 +2919,17 @@ public class XMTPModule: Module {
 			}
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.local,
-				isSecure: false,
-				appVersion: appVersion
+				isSecure: false
 			)
 		case "production":
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
-				isSecure: true,
-				appVersion: appVersion
+				isSecure: true
 			)
 		default:
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
-				isSecure: true,
-				appVersion: appVersion
+				isSecure: true
 			)
 		}
 	}
@@ -2953,16 +2943,12 @@ public class XMTPModule: Module {
 		return XMTP.ClientOptions(
 			api: createApiClient(
 				env: authOptions.environment,
-				customLocalUrl: authOptions.customLocalUrl,
-				appVersion: authOptions.appVersion
+				customLocalUrl: authOptions.customLocalUrl
 			),
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 			dbEncryptionKey: dbEncryptionKey,
 			dbDirectory: authOptions.dbDirectory,
-			historySyncUrl: authOptions.historySyncUrl,
-			deviceSyncEnabled: authOptions.deviceSyncEnabled,
-			debugEventsEnabled: authOptions.debugEventsEnabled
-		)
+			historySyncUrl: authOptions.historySyncUrl)
 	}
 
 	func subscribeToPreferenceUpdates(installationId: String)
@@ -2981,14 +2967,7 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await pref in await client.preferences
-						.streamPreferenceUpdates(onClose: { [weak self] in
-							self?.sendEvent(
-								"preferencesClosed",
-								[
-									"installationId": installationId
-								]
-							)
-						})
+						.streamPreferenceUpdates()
 					{
 						try sendEvent(
 							"preferences",
@@ -3022,14 +3001,7 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await consent in await client.preferences
-						.streamConsent(onClose: { [weak self] in
-							self?.sendEvent(
-								"consentClosed",
-								[
-									"installationId": installationId
-								]
-							)
-						})
+						.streamConsent()
 					{
 						try sendEvent(
 							"consent",
@@ -3065,16 +3037,7 @@ public class XMTPModule: Module {
 			Task {
 				do {
 					for try await conversation in await client.conversations
-						.stream(
-							type: type,
-							onClose: { [weak self] in
-								self?.sendEvent(
-									"conversationClosed",
-									[
-										"installationId": installationId
-									]
-								)
-							})
+						.stream(type: type)
 					{
 						try await sendEvent(
 							"conversation",
@@ -3114,15 +3077,7 @@ public class XMTPModule: Module {
 				do {
 					for try await message in await client.conversations
 						.streamAllMessages(
-							type: type, consentStates: consentStates,
-							onClose: { [weak self] in
-								self?.sendEvent(
-									"messageClosed",
-									[
-										"installationId": installationId
-									]
-								)
-							})
+							type: type, consentStates: consentStates)
 					{
 						try sendEvent(
 							"message",
@@ -3160,17 +3115,7 @@ public class XMTPModule: Module {
 			converation.cacheKey(installationId),
 			Task {
 				do {
-					for try await message in converation.streamMessages(
-						onClose: { [weak self] in
-							self?.sendEvent(
-								"conversationMessageClosed",
-								[
-									"installationId": installationId,
-									"conversationId": id,
-								]
-							)
-						}
-					) {
+					for try await message in converation.streamMessages() {
 						do {
 							try sendEvent(
 								"conversationMessage",

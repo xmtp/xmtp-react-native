@@ -25,26 +25,4 @@ export enum EventTypes {
    * A new installation has been added making new hmac keys
    */
   PreferenceUpdates = 'preferences',
-
-  // Stream Closed Events
-  /**
-   * A conversation stream was closed
-   */
-  ConversationClosed = 'conversationClosed',
-  /**
-   * A all messages stream was closed
-   */
-  MessageClosed = 'messageClosed',
-  /**
-   * A conversation stream was closed
-   */
-  ConversationMessageClosed = 'conversationMessageClosed',
-  /**
-   * A consent stream was closed
-   */
-  ConsentClosed = 'consentClosed',
-  /**
-   * A preference stream was closed
-   */
-  PreferenceUpdatesClosed = 'preferencesClosed',
 }

@@ -13,23 +13,15 @@ struct AuthParamsWrapper {
 	let dbDirectory: String?
 	let historySyncUrl: String?
 	let customLocalUrl: String?
-	let deviceSyncEnabled: Bool
-	let debugEventsEnabled: Bool
-	let appVersion: String?
 
 	init(
 		environment: String, dbDirectory: String?,
-		historySyncUrl: String?, customLocalUrl: String?,
-		deviceSyncEnabled: Bool, debugEventsEnabled: Bool,
-		appVersion: String?
+		historySyncUrl: String?, customLocalUrl: String?
 	) {
 		self.environment = environment
 		self.dbDirectory = dbDirectory
 		self.historySyncUrl = historySyncUrl
 		self.customLocalUrl = customLocalUrl
-		self.deviceSyncEnabled = deviceSyncEnabled
-		self.debugEventsEnabled = debugEventsEnabled
-		self.appVersion = appVersion
 	}
 
 	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper {
@@ -39,29 +31,19 @@ struct AuthParamsWrapper {
 		else {
 			return AuthParamsWrapper(
 				environment: "dev", dbDirectory: nil,
-				historySyncUrl: nil, customLocalUrl: nil,
-				deviceSyncEnabled: true, debugEventsEnabled: false,
-				appVersion: nil)
+				historySyncUrl: nil, customLocalUrl: nil)
 		}
 
 		let environment = jsonOptions["environment"] as? String ?? "dev"
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
 		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
 		let customLocalUrl = jsonOptions["customLocalUrl"] as? String
-		let deviceSyncEnabled =
-			jsonOptions["deviceSyncEnabled"] as? Bool ?? true
-		let debugEventsEnabled =
-			jsonOptions["debugEventsEnabled"] as? Bool ?? false
-		let appVersion = jsonOptions["appVersion"] as? String
 
 		return AuthParamsWrapper(
 			environment: environment,
 			dbDirectory: dbDirectory,
 			historySyncUrl: historySyncUrl,
-			customLocalUrl: customLocalUrl,
-			deviceSyncEnabled: deviceSyncEnabled,
-			debugEventsEnabled: debugEventsEnabled,
-			appVersion: appVersion
+			customLocalUrl: customLocalUrl
 		)
 	}
 }

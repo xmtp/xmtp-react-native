@@ -1,16 +1,8 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 // import { ConnectWallet, useSigner } from '@thirdweb-dev/react-native'
 import React, { useCallback, useState } from 'react'
-import {
-  Button,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  Modal,
-  TouchableOpacity,
-  FlatList,
-} from 'react-native'
+import { Button, ScrollView, StyleSheet, Text, View } from 'react-native'
+import ModalSelector from 'react-native-modal-selector'
 import * as XMTP from 'xmtp-react-native-sdk'
 import { PublicIdentity, useXmtp } from 'xmtp-react-native-sdk'
 
@@ -19,83 +11,9 @@ import { TestCategory } from './TestScreen'
 import { supportedCodecs } from './contentTypes/contentTypes'
 import { getDbEncryptionKey } from './hooks'
 
-// Custom Modal Picker Component
-const CustomPicker = ({
-  value,
-  onValueChange,
-  options,
-  placeholder = 'Select an option',
-}: {
-  value: string
-  onValueChange: (value: string) => void
-  options: { id: string; label: string }[]
-  placeholder?: string
-}) => {
-  const [modalVisible, setModalVisible] = useState(false)
-
-  const selectedOption = options.find((option) => option.label === value)
-
-  return (
-    <>
-      <TouchableOpacity
-        style={styles.pickerButton}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.pickerButtonText}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </Text>
-        <Text style={styles.pickerButtonArrow}>▼</Text>
-      </TouchableOpacity>
-
-      <Modal
-        animationType="slide"
-        transparent
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Option</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalClose}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.modalOption,
-                    item.label === value && styles.modalOptionSelected,
-                  ]}
-                  onPress={() => {
-                    onValueChange(item.label)
-                    setModalVisible(false)
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.modalOptionText,
-                      item.label === value && styles.modalOptionTextSelected,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </>
-  )
-}
+const SafeModalSelector = ({ key: _k, ...rest }: any) => (
+  <ModalSelector {...rest} />
+);
 
 /// Prompt the user to run the tests, generate a wallet, or connect a wallet.
 export default function LaunchScreen(
@@ -160,26 +78,44 @@ export default function LaunchScreen(
   }
 
   const networkOptions = [
-    { id: 'dev', label: 'dev' },
-    { id: 'local', label: 'local' },
+    { id: 'dev',        label: 'dev' },
+    { id: 'local',      label: 'local' },
     { id: 'production', label: 'production' },
-  ]
-
+  ];
+  
   const testOptions = Object.entries(TestCategory).map(([enumKey, label]) => ({
-    id: enumKey,
+    id: enumKey,   // <- unique, but NOT named "key"
     label,
-  }))
+  }));
+
+  // useEffect(() => {
+  //   ;(async () => {
+  //     if (signer) {
+  //       const address = await signer.getAddress()
+  //       const addressDisplay = address.slice(0, 6) + '...' + address.slice(-4)
+  //       setSignerAddressDisplay(addressDisplay)
+  //     } else {
+  //       setSignerAddressDisplay('loading...')
+  //     }
+  //   })().catch((e) => {
+  //     console.error("Error displaying signers's address", e)
+  //   })
+  // }, [signer])
 
   return (
     <ScrollView>
       <Text style={styles.title}>Automated Tests</Text>
       <View style={styles.row}>
         <Text style={styles.label}>Select Test:</Text>
-        <CustomPicker
-          value={selectedTest}
-          onValueChange={(value) => setSelectedTest(value as TestCategory)}
-          options={testOptions}
-          placeholder="Select Test"
+        <SafeModalSelector
+          data={testOptions}
+          keyExtractor={(item: any) => item.id}
+          selectStyle={styles.modalSelector}
+          initValueTextStyle={styles.modalSelectText}
+          selectTextStyle={styles.modalSelectText}
+          backdropPressToClose
+          initValue={selectedTest}
+          onChange={(option: any) => setSelectedTest(option.label as TestCategory)}
         />
       </View>
       <View key="run-tests" style={{ margin: 16 }}>
@@ -203,13 +139,17 @@ export default function LaunchScreen(
       <Text style={styles.title}>Test Conversations</Text>
       <View style={styles.row}>
         <Text style={styles.label}>Select Network:</Text>
-        <CustomPicker
-          value={selectedNetwork}
-          onValueChange={(value) =>
-            setSelectedNetwork(value as 'dev' | 'local' | 'production')
+        <SafeModalSelector
+          data={networkOptions}
+          keyExtractor={(item: any) => item.id}
+          selectStyle={styles.modalSelector}
+          initValueTextStyle={styles.modalSelectText}
+          selectTextStyle={styles.modalSelectText}
+          backdropPressToClose
+          initValue={selectedNetwork}
+          onChange={(option: any) =>
+            setSelectedNetwork(option.label as 'dev' | 'local' | 'production')
           }
-          options={networkOptions}
-          placeholder="Select Network"
         />
       </View>
       {/* <View style={styles.row}>
@@ -331,80 +271,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     marginHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#fff', // Or any color that fits your app's theme
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#ccc',
+  },
+  modalSelector: {
+    borderColor: 'black',
+  },
+  modalSelectText: {
+    color: 'black',
+    fontWeight: 'bold',
   },
   label: {
     fontSize: 16,
     flex: 1,
-  },
-  // Custom Picker Styles
-  pickerButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#dee2e6',
-    marginLeft: 8,
-  },
-  pickerButtonText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  pickerButtonArrow: {
-    fontSize: 12,
-    color: '#666',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  modalClose: {
-    fontSize: 24,
-    color: '#666',
-    padding: 4,
-  },
-  modalOption: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  modalOptionSelected: {
-    backgroundColor: '#e3f2fd',
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  modalOptionTextSelected: {
-    color: '#1976d2',
-    fontWeight: 'bold',
   },
 })

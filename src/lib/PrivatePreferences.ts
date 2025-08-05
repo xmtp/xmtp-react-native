@@ -63,12 +63,10 @@ export default class PrivatePreferences {
 
   /**
    * This method streams private preference updates.
-   * @param {Function} [onClose] - Optional callback to invoke when the stream is closed.
    * @returns {Promise<PreferenceUpdates[]>} A Promise that resolves to an array of PreferenceUpdates objects.
    */
   async streamPreferenceUpdates(
-    callback: (preferenceUpdates: PreferenceUpdates) => Promise<void>,
-    onClose?: () => void
+    callback: (preferenceUpdates: PreferenceUpdates) => Promise<void>
   ): Promise<void> {
     XMTPModule.subscribeToPreferenceUpdates(this.client.installationId)
     const subscription = XMTPModule.emitter.addListener(
@@ -87,31 +85,14 @@ export default class PrivatePreferences {
       }
     )
     this.subscriptions[EventTypes.PreferenceUpdates] = subscription
-
-    if (onClose) {
-      const closedSubscription = XMTPModule.emitter.addListener(
-        EventTypes.PreferenceUpdatesClosed,
-        ({ installationId }: { installationId: string }) => {
-          if (installationId !== this.client.installationId) {
-            return
-          }
-
-          onClose()
-        }
-      )
-      this.subscriptions[EventTypes.PreferenceUpdatesClosed] =
-        closedSubscription
-    }
   }
 
   /**
    * This method streams consent.
-   * @param {Function} [onClose] - Optional callback to invoke when the stream is closed.
    * @returns {Promise<ConsentRecord[]>} A Promise that resolves to an array of ConsentRecord objects.
    */
   async streamConsent(
-    callback: (consent: ConsentRecord) => Promise<void>,
-    onClose?: () => void
+    callback: (consent: ConsentRecord) => Promise<void>
   ): Promise<void> {
     XMTPModule.subscribeToConsent(this.client.installationId)
     const subscription = XMTPModule.emitter.addListener(
@@ -132,20 +113,6 @@ export default class PrivatePreferences {
       }
     )
     this.subscriptions[EventTypes.Consent] = subscription
-
-    if (onClose) {
-      const closedSubscription = XMTPModule.emitter.addListener(
-        EventTypes.ConsentClosed,
-        ({ installationId }: { installationId: string }) => {
-          if (installationId !== this.client.installationId) {
-            return
-          }
-
-          onClose()
-        }
-      )
-      this.subscriptions[EventTypes.ConsentClosed] = closedSubscription
-    }
   }
 
   /**
@@ -155,10 +122,6 @@ export default class PrivatePreferences {
     if (this.subscriptions[EventTypes.Consent]) {
       this.subscriptions[EventTypes.Consent].remove()
       delete this.subscriptions[EventTypes.Consent]
-    }
-    if (this.subscriptions[EventTypes.ConsentClosed]) {
-      this.subscriptions[EventTypes.ConsentClosed].remove()
-      delete this.subscriptions[EventTypes.ConsentClosed]
     }
     XMTPModule.unsubscribeFromConsent(this.client.installationId)
   }
@@ -170,10 +133,6 @@ export default class PrivatePreferences {
     if (this.subscriptions[EventTypes.PreferenceUpdates]) {
       this.subscriptions[EventTypes.PreferenceUpdates].remove()
       delete this.subscriptions[EventTypes.PreferenceUpdates]
-    }
-    if (this.subscriptions[EventTypes.PreferenceUpdatesClosed]) {
-      this.subscriptions[EventTypes.PreferenceUpdatesClosed].remove()
-      delete this.subscriptions[EventTypes.PreferenceUpdatesClosed]
     }
     XMTPModule.unsubscribeFromPreferenceUpdates(this.client.installationId)
   }

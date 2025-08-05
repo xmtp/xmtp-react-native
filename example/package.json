@@ -39,6 +39,7 @@
     "react-native-fs": "^2.20.0",
     "react-native-get-random-values": "^1.11.0",
     "react-native-mmkv": "^2.8.0",
+    "react-native-modal-selector": "^2.1.2",
     "react-native-quick-base64": "^2.0.8",
     "react-native-quick-crypto": "^0.7.12",
     "react-native-randombytes": "^3.6.1",
