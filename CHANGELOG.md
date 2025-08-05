@@ -1,5 +1,15 @@
 # @xmtp/react-native-sdk
 
+## 4.3.4
+
+### Patch Changes
+
+- 7ae4ae0: Improved performance for large inboxes
+  Improved key package errors
+  Added appVersion client option
+  Fixed DM stitching bug
+  Added expiration to messages for disappearing messages
+
 ## 4.3.3
 
 ### Patch Changes
