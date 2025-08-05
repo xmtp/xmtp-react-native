@@ -10,6 +10,7 @@ class AuthParamsWrapper(
     val customLocalUrl: String?,
     val deviceSyncEnabled: Boolean,
     val debugEventsEnabled: Boolean,
+    val appVersion: String?,
 ) {
     companion object {
         fun authParamsFromJson(authParams: String): AuthParamsWrapper {
@@ -21,7 +22,8 @@ class AuthParamsWrapper(
                 if (jsonOptions.has("customLocalUrl")) jsonOptions.get("customLocalUrl").asString else null,
                 if (jsonOptions.has("deviceSyncEnabled")) jsonOptions.get("deviceSyncEnabled").asBoolean else true,
                 if (jsonOptions.has("debugEventsEnabled")) jsonOptions.get("debugEventsEnabled").asBoolean else false,
-            )
+                if (jsonOptions.has("appVersion")) jsonOptions.get("appVersion").asString else null,
+                )
         }
     }
 }

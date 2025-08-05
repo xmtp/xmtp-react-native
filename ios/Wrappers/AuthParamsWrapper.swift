@@ -15,11 +15,13 @@ struct AuthParamsWrapper {
 	let customLocalUrl: String?
 	let deviceSyncEnabled: Bool
 	let debugEventsEnabled: Bool
+	let appVersion: String?
 
 	init(
 		environment: String, dbDirectory: String?,
 		historySyncUrl: String?, customLocalUrl: String?,
-		deviceSyncEnabled: Bool, debugEventsEnabled: Bool
+		deviceSyncEnabled: Bool, debugEventsEnabled: Bool,
+		appVersion: String?
 	) {
 		self.environment = environment
 		self.dbDirectory = dbDirectory
@@ -27,6 +29,7 @@ struct AuthParamsWrapper {
 		self.customLocalUrl = customLocalUrl
 		self.deviceSyncEnabled = deviceSyncEnabled
 		self.debugEventsEnabled = debugEventsEnabled
+		self.appVersion = appVersion
 	}
 
 	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper {
@@ -37,15 +40,19 @@ struct AuthParamsWrapper {
 			return AuthParamsWrapper(
 				environment: "dev", dbDirectory: nil,
 				historySyncUrl: nil, customLocalUrl: nil,
-				deviceSyncEnabled: true, debugEventsEnabled: false)
+				deviceSyncEnabled: true, debugEventsEnabled: false,
+				appVersion: nil)
 		}
 
 		let environment = jsonOptions["environment"] as? String ?? "dev"
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
 		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
 		let customLocalUrl = jsonOptions["customLocalUrl"] as? String
-		let deviceSyncEnabled = jsonOptions["deviceSyncEnabled"] as? Bool ?? true
-		let debugEventsEnabled = jsonOptions["debugEventsEnabled"] as? Bool ?? false
+		let deviceSyncEnabled =
+			jsonOptions["deviceSyncEnabled"] as? Bool ?? true
+		let debugEventsEnabled =
+			jsonOptions["debugEventsEnabled"] as? Bool ?? false
+		let appVersion = jsonOptions["appVersion"] as? String
 
 		return AuthParamsWrapper(
 			environment: environment,
@@ -53,7 +60,8 @@ struct AuthParamsWrapper {
 			historySyncUrl: historySyncUrl,
 			customLocalUrl: customLocalUrl,
 			deviceSyncEnabled: deviceSyncEnabled,
-			debugEventsEnabled: debugEventsEnabled
+			debugEventsEnabled: debugEventsEnabled,
+			appVersion: appVersion
 		)
 	}
 }
