@@ -126,7 +126,8 @@ export async function createRandom(
   historySyncUrl?: string | undefined,
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
-  debugEventsEnabled?: boolean | undefined
+  debugEventsEnabled?: boolean | undefined,
+  appVersion?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -135,6 +136,7 @@ export async function createRandom(
     customLocalHost,
     deviceSyncEnabled,
     debugEventsEnabled,
+    appVersion,
   }
   return await XMTPModule.createRandom(
     hasPreAuthenticateToInboxCallback,
@@ -155,7 +157,8 @@ export async function create(
   blockNumber?: number | undefined,
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
-  debugEventsEnabled?: boolean | undefined
+  debugEventsEnabled?: boolean | undefined,
+  appVersion?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -164,6 +167,7 @@ export async function create(
     customLocalHost,
     deviceSyncEnabled,
     debugEventsEnabled,
+    appVersion,
   }
   const signerParams: SignerParams = {
     signerType,
@@ -188,7 +192,8 @@ export async function build(
   inboxId?: InboxId | undefined,
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
-  debugEventsEnabled?: boolean | undefined
+  debugEventsEnabled?: boolean | undefined,
+  appVersion?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -197,6 +202,7 @@ export async function build(
     customLocalHost,
     deviceSyncEnabled,
     debugEventsEnabled,
+    appVersion,
   }
   return await XMTPModule.build(
     JSON.stringify(identity),
@@ -214,7 +220,8 @@ export async function ffiCreateClient(
   historySyncUrl?: string | undefined,
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
-  debugEventsEnabled?: boolean | undefined
+  debugEventsEnabled?: boolean | undefined,
+  appVersion?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -223,6 +230,7 @@ export async function ffiCreateClient(
     customLocalHost,
     deviceSyncEnabled,
     debugEventsEnabled,
+    appVersion,
   }
   return await XMTPModule.ffiCreateClient(
     JSON.stringify(identity),
@@ -1719,6 +1727,7 @@ interface AuthParams {
   customLocalHost?: string
   deviceSyncEnabled?: boolean
   debugEventsEnabled?: boolean
+  appVersion?: string
 }
 
 interface SignerParams {

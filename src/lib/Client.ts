@@ -105,7 +105,8 @@ export class Client<
       options.historySyncUrl,
       options.customLocalHost,
       options.deviceSyncEnabled,
-      options.debugEventsEnabled
+      options.debugEventsEnabled,
+      options.appVersion
     )
     this.removeSubscription(authInboxSubscription)
 
@@ -193,7 +194,8 @@ export class Client<
           signingKey.getBlockNumber?.(),
           options.customLocalHost,
           options.deviceSyncEnabled,
-          options.debugEventsEnabled
+          options.debugEventsEnabled,
+          options.appVersion
         )
       })().catch((error) => {
         this.removeAllSubscriptions(authInboxSubscription)
@@ -231,7 +233,8 @@ export class Client<
       inboxId,
       options.customLocalHost,
       options.deviceSyncEnabled,
-      options.debugEventsEnabled
+      options.debugEventsEnabled,
+      options.appVersion
     )
 
     return new Client(
@@ -276,7 +279,8 @@ export class Client<
       options.historySyncUrl,
       options.customLocalHost,
       options.deviceSyncEnabled,
-      options.debugEventsEnabled
+      options.debugEventsEnabled,
+      options.appVersion
     )
 
     return new Client(
@@ -1130,6 +1134,10 @@ export type ClientOptions = {
    * OPTIONAL specify the XMTP managed database directory
    */
   dbDirectory?: string
+  /**
+   * OPTIONAL specify an appVersion
+   */
+  appVersion?: string
   /**
    * OPTIONAL specify a url to sync message history from
    */
