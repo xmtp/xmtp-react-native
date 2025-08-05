@@ -290,6 +290,7 @@ test('can make a client', async () => {
     env: 'local',
     dbEncryptionKey: keyBytes,
     deviceSyncEnabled: false,
+    appVersion: '0.0.0',
   })
 
   const inboxId = await Client.getOrCreateInboxId(
