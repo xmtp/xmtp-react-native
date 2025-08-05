@@ -9,10 +9,6 @@ on:
         description: "Tag name to analyze (leave empty for latest)"
         required: false
         type: string
-      previous_tag_name:
-        description: "Previous tag to compare with (leave empty for auto-detection)"
-        required: false
-        type: string
 
 env:
   DOCS_REPO: xmtp/docs-xmtp-org
@@ -58,15 +54,11 @@ jobs:
         id: prev_tag
         run: |
           cd react-native-sdk
-          if [ -n "${{ github.event.inputs.previous_tag_name }}" ]; then
-            PREV_TAG="${{ github.event.inputs.previous_tag_name }}"
-          else
-            CURRENT_TAG="${{ steps.tag.outputs.tag }}"
-            PREV_TAG=$(git tag --sort=-version:refname | grep -A 1 "^$CURRENT_TAG$" | tail -n 1)
-            if [ "$PREV_TAG" = "$CURRENT_TAG" ] || [ -z "$PREV_TAG" ]; then
-              # If no previous tag or same tag, get the tag before current
-              PREV_TAG=$(git tag --sort=-version:refname | head -n 2 | tail -n 1)
-            fi
+          CURRENT_TAG="${{ steps.tag.outputs.tag }}"
+          PREV_TAG=$(git tag --sort=-version:refname | grep -A 1 "^$CURRENT_TAG$" | tail -n 1)
+          if [ "$PREV_TAG" = "$CURRENT_TAG" ] || [ -z "$PREV_TAG" ]; then
+            # If no previous tag or same tag, get the tag before current
+            PREV_TAG=$(git tag --sort=-version:refname | head -n 2 | tail -n 1)
           fi
           echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
           echo "Previous tag: $PREV_TAG"
@@ -140,7 +132,7 @@ jobs:
           git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} --name-only | head -30 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
           echo "### Key API Changes:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- ':(glob)src/**/*.ts' ':(exclude)src/**/*.test.ts' | head -500 >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Client.ts src/XMTPModule.ts src/index.ts src/lib/Conversation.ts src/lib/Group.ts src/lib/Dm.ts | head -100 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
           echo "Please analyze these changes and update the documentation files in the docs-repo/ directory accordingly." >> ../docs-repo/analysis_prompt.md
       
