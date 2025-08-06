@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.3.5
+
+### Patch Changes
+
+- 80ef9dd: Reverted performance improvement for large inboxes that caused message streaming issues
+
 ## 4.3.4
 
 ### Patch Changes
