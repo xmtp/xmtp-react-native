@@ -1745,7 +1745,11 @@ export async function archiveMetadata(
   path: string,
   encryptionKey: Uint8Array
 ): Promise<ArchiveMetadata> {
-  return await XMTPModule.archiveMetadata(path, Array.from(encryptionKey))
+  const metadata = await XMTPModule.archiveMetadata(
+    path,
+    Array.from(encryptionKey)
+  )
+  return new ArchiveMetadata(metadata)
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
