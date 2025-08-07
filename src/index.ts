@@ -41,6 +41,7 @@ import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { LogLevel, LogRotation } from './lib/types/LogTypes'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
+import { ArchiveMetadata } from './lib/ArchiveOptions'
 
 export * from './context'
 export * from './hooks'
@@ -1716,6 +1717,35 @@ export async function uploadDebugInformation(
 ): Promise<string> {
   const key = await XMTPModule.uploadDebugInformation(installationId, serverUrl)
   return key
+}
+
+export async function createArchive(
+  path: string,
+  encryptionKey: Uint8Array,
+  startNs?: number | undefined,
+  endNs?: number | undefined,
+  archiveElements?: string[] | undefined
+): Promise<void> {
+  return await XMTPModule.createArchive(
+    path,
+    Array.from(encryptionKey),
+    startNs,
+    endNs,
+    archiveElements
+  )
+}
+export async function importArchive(
+  path: string,
+  encryptionKey: Uint8Array
+): Promise<void> {
+  return await XMTPModule.importArchive(path, Array.from(encryptionKey))
+}
+
+export async function archiveMetadata(
+  path: string,
+  encryptionKey: Uint8Array
+): Promise<ArchiveMetadata> {
+  return await XMTPModule.archiveMetadata(path, Array.from(encryptionKey))
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
