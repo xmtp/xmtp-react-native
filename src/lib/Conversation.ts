@@ -54,6 +54,7 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
     DisappearingMessageSettings | undefined
   >
   isDisappearingMessagesEnabled(): Promise<boolean>
+  isActive(): Promise<boolean>
   clearDisappearingMessageSettings(): Promise<void>
   updateDisappearingMessageSettings(
     disappearingMessageSettings: DisappearingMessageSettings

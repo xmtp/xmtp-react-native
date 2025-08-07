@@ -1484,13 +1484,13 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isGroupActive") Coroutine { installationId: String, groupId: String ->
+        AsyncFunction("isActive") Coroutine { installationId: String, conversationId: String ->
             withContext(Dispatchers.IO) {
-                logV("isGroupActive")
+                logV("isActive")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.conversations.findGroup(groupId)
-                    ?: throw XMTPException("no group found for $groupId")
-                group.isActive()
+                val conversation = client.conversations.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.isActive()
             }
         }
 
@@ -1968,7 +1968,41 @@ class XMTPModule : Module() {
                 } ?: client.debugInformation.uploadDebugInformation()
             }
         }
-    }
+
+        AsyncFunction("createArchive") Coroutine { installationId: String, path: String, encryptionKey: List<Int>, startNs: Int, endNs: Int, archiveElements: List<String>->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val encryptionKeyBytes =
+                    encryptionKey.foldIndexed(ByteArray(encryptionKey.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                val elements = archiveElements.map { getArchiveElement(it)}
+                client.createArchive(path, encryptionKeyBytes, startNs, endNs, elements)
+            }
+        }
+
+        AsyncFunction("importArchive") Coroutine { installationId: String, path: String, encryptionKey: List<Int> ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val encryptionKeyBytes =
+                    encryptionKey.foldIndexed(ByteArray(encryptionKey.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                client.importArchive(path, encryptionKeyBytes)
+            }
+        }
+
+        AsyncFunction("archiveMetadata") Coroutine { installationId: String, path: String, encryptionKey: List<Int> ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val encryptionKeyBytes =
+                    encryptionKey.foldIndexed(ByteArray(encryptionKey.size)) { i, a, v ->
+                        a.apply { set(i, v.toByte()) }
+                    }
+                val metadata = client.archiveMetadata(path, encryptionKeyBytes)
+                ArchiveMetadataWrapper.encode(client, metadata)
+            }
+        }
 
     //
     // Helpers
@@ -2051,6 +2085,14 @@ class XMTPModule : Module() {
     private fun preferenceTypeToString(type: PreferenceType): String {
         return when (type) {
             PreferenceType.HMAC_KEYS -> "hmac_keys"
+        }
+    }
+
+    private fun getArchiveElement(element: String): ArchiveElement {
+        return when (element) {
+            "consent" -> ArchiveElement.CONSENT
+            "message" -> ArchiveElement.MESSAGE
+            else -> throw XMTPException("Invalid archive element: $element")
         }
     }
 
