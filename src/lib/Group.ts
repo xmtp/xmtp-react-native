@@ -47,7 +47,7 @@ export class Group<
   version = ConversationVersion.GROUP as const
   topic: ConversationTopic
   groupName: string
-  isGroupActive: boolean
+  isActive: boolean
   addedByInboxId: InboxId
   groupImageUrl: string
   groupDescription: string
@@ -64,7 +64,7 @@ export class Group<
     this.createdAt = params.createdAt
     this.topic = params.topic
     this.groupName = params.name
-    this.isGroupActive = params.isActive
+    this.isActive = params.isActive
     this.addedByInboxId = params.addedByInboxId
     this.groupImageUrl = params.imageUrl
     this.groupDescription = params.description
@@ -512,7 +512,7 @@ export class Group<
    */
 
   async isActive(): Promise<boolean> {
-    return XMTP.isGroupActive(this.client.installationId, this.id)
+    return XMTP.isActive(this.client.installationId, this.id)
   }
 
   /**

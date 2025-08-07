@@ -1315,11 +1315,11 @@ export async function updateDisappearingMessageSettings(
   )
 }
 
-export function isGroupActive(
+export function isActive(
   installationId: InstallationId,
   id: ConversationId
 ): Promise<boolean> {
-  return XMTPModule.isGroupActive(installationId, id)
+  return XMTPModule.isActive(installationId, id)
 }
 
 export async function addedByInboxId(

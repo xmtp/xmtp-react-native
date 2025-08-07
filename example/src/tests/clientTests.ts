@@ -8,6 +8,7 @@ import {
   createClients,
   adaptEthersWalletToSigner,
   assertEqual,
+  delayToPropogate,
 } from './test-utils'
 import { Client, PublicIdentity } from '../../../src/index'
 import { LogLevel, LogRotation } from '../../../src/lib/types/LogTypes'
@@ -1125,6 +1126,199 @@ test('can upload archive debug information', async () => {
     typeof uploadKey === 'string' && uploadKey.length > 0,
     'uploadKey should not be empty'
   )
+
+  return true
+})
+
+
+test('can create, inspect, import and resync archive', async () => {
+  const [bo] = await createClients(1)
+  const key = crypto.getRandomValues(new Uint8Array(32))
+  const encryptionKey = crypto.getRandomValues(new Uint8Array(32))
+
+  const dbPath1 = `${RNFS.DocumentDirectoryPath}/xmtp_test1`
+  const dbPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_test2`
+  const allPath = `${dbPath1}/testAll.zstd`
+  const consentPath = `${dbPath1}/testConsent.zstd`
+
+  await RNFS.mkdir(dbPath1)
+  await RNFS.mkdir(dbPath2)
+
+  const alixWallet = Wallet.createRandom()
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    dbEncryptionKey: key,
+    dbDirectory: dbPath1,
+  })
+
+  const group = await alix.conversations.newGroup([bo.inboxId])
+  await group.send('hi')
+
+  await alix.conversations.syncAllConversations()
+  await bo.conversations.syncAllConversations()
+
+  // Create full archive and consent-only archive
+  await alix.createArchive(allPath, encryptionKey)
+  await alix.createArchive(consentPath, encryptionKey, new ArchiveOptions([ArchiveElement.CONSENT]))
+
+  const metadataAll = new ArchiveMetadata(await alix.archiveMetadata(allPath, encryptionKey))
+  const metadataConsent = new ArchiveMetadata(await alix.archiveMetadata(consentPath, encryptionKey))
+
+  assert(metadataAll.elements.length === 2, 'Expected 2 elements in full archive')
+  assert(
+    metadataConsent.elements.length === 1 && metadataConsent.elements[0] === 'CONSENT',
+    `Expected only 'CONSENT' in consent archive`
+  )
+
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    dbEncryptionKey: key,
+    dbDirectory: dbPath2,
+  })
+
+  await alix2.importArchive(allPath, encryptionKey)
+
+  await delayToPropogate(2000)
+  await alix2.conversations.syncAllConversations()
+  await delayToPropogate(2000)
+  await alix.preferences.sync()
+  await delayToPropogate(2000)
+  await alix2.preferences.sync()
+  await delayToPropogate(2000)
+
+  const boGroup = await bo.conversations.findConversation(group.id)
+  await boGroup?.send('hey')
+
+  await bo.conversations.syncAllConversations()
+  await delayToPropogate(2000)
+  await alix2.conversations.syncAllConversations()
+
+  const convos = await alix2.conversations.list()
+  assert(convos.length === 1, `Expected 1 conversation, got ${convos.length}`)
+
+  const convo = convos[0]
+  await convo.sync()
+  const messages = await convo.messages()
+  const state = await convo.consentState()
+
+  assert(messages.length === 3, `Expected 3 messages, got ${messages.length}`)
+  assert(state === 'allowed', `Expected 'allowed' state, got ${state}`)
+
+  return true
+})
+
+// 🧪 2. Inactive DMs can be stitched if duplicated
+
+test('can stitch inactive DMs if duplicated after archive import', async () => {
+  const [bo] = await createClients(1)
+  const key = crypto.getRandomValues(new Uint8Array(32))
+  const encryptionKey = crypto.getRandomValues(new Uint8Array(32))
+
+  const dbPath1 = `${RNFS.DocumentDirectoryPath}/xmtp_test1`
+  const dbPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_test2`
+  const archivePath = `${dbPath1}/testAll.zstd`
+
+  await RNFS.mkdir(dbPath1)
+  await RNFS.mkdir(dbPath2)
+
+  const alixWallet = Wallet.createRandom()
+  const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    dbEncryptionKey: key,
+    dbDirectory: dbPath1,
+  })
+
+  const dm = await alix.conversations.findOrCreateDm(bo.inboxId)
+  await dm.send('hi')
+
+  await alix.conversations.syncAllConversations()
+  await bo.conversations.syncAllConversations()
+
+  const boDm = await bo.conversations.findConversation(dm.id)
+
+  await alix.createArchive(archivePath, encryptionKey)
+
+  const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
+    env: 'local',
+    dbEncryptionKey: key,
+    dbDirectory: dbPath2,
+  })
+  await alix2.importArchive(archivePath, encryptionKey)
+  await alix2.conversations.syncAllConversations()
+
+  const convos = await alix2.conversations.list()
+  assert(convos.length === 1, `Expected 1 conversation, got ${convos.length}`)
+  assert(!await convos[0].isActive(), 'Expected conversation to be inactive')
+
+  const dm2 = await alix.conversations.findOrCreateDm(bo.inboxId)
+  assert(await dm2.isActive(), 'Expected new DM to be active')
+
+  await boDm?.send('hey')
+  await dm2.send('hey')
+  await bo.conversations.syncAllConversations()
+  await delayToPropogate(2000)
+  await alix2.conversations.syncAllConversations()
+
+  const convos2 = await alix2.conversations.list()
+  assert(convos2.length === 1, 'Expected deduplicated convo count to be 1')
+
+  const dm2Messages = await dm2.messages()
+  const boDmMessages = await boDm?.messages()
+  assert(dm2Messages.length === 4, `Expected 4 messages in DM2, got ${dm2Messages.length}`)
+  assert(boDmMessages?.length === 4, `Expected 4 messages in boDm, got ${boDmMessages?.length}`)
+
+  return true
+})
+
+// 🧪 3. Import works even on full database
+
+test('can import archive on top of full database', async () => {
+  const [alix, bo] = await createClients(2)
+  const encryptionKey = crypto.getRandomValues(new Uint8Array(32))
+  const dbPath = `${RNFS.DocumentDirectoryPath}/xmtp_test1`
+  const archivePath = `${dbPath}/testAll.zstd`
+
+  await RNFS.mkdir(dbPath)
+
+  const group = await alix.conversations.newGroup([bo.inboxId])
+  const dm = await alix.conversations.findOrCreateDm(bo.inboxId)
+
+  await group.send('First')
+  await dm.send('hi')
+
+  await alix.conversations.syncAllConversations()
+  await bo.conversations.syncAllConversations()
+
+  const boGroup = await bo.conversations.findConversation(group.id)
+
+  const groupMessages1 = await group.messages()
+  const boGroupMessages1 = await boGroup?.messages()
+  const alixConvoCount1 = (await alix.conversations.list()).length
+  const boConvoCount1 = (await bo.conversations.list()).length
+
+  assert(groupMessages1.length === 2, 'Expected 2 messages in group')
+  assert(boGroupMessages1?.length === 2, 'Expected 2 messages in boGroup')
+  assert(alixConvoCount1 === 2, 'Expected 2 convos for alix')
+  assert(boConvoCount1 === 2, 'Expected 2 convos for bo')
+
+  await alix.createArchive(archivePath, encryptionKey)
+  await group.send('Second')
+  await alix.importArchive(archivePath, encryptionKey)
+  await group.send('Third')
+  await dm.send('hi')
+
+  await alix.conversations.syncAllConversations()
+  await bo.conversations.syncAllConversations()
+
+  const groupMessages2 = await group.messages()
+  const boGroupMessages2 = await boGroup?.messages()
+  const alixConvoCount2 = (await alix.conversations.list()).length
+  const boConvoCount2 = (await bo.conversations.list()).length
+
+  assert(groupMessages2.length === 4, 'Expected 4 messages in group after import')
+  assert(boGroupMessages2?.length === 4, 'Expected 4 messages in boGroup after import')
+  assert(alixConvoCount2 === 2, 'Expected 2 convos for alix after import')
+  assert(boConvoCount2 === 2, 'Expected 2 convos for bo after import')
 
   return true
 })

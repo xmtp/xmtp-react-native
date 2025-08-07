@@ -1927,7 +1927,7 @@ public class XMTPModule: Module {
 			)
 		}
 
-		AsyncFunction("isGroupActive") {
+		AsyncFunction("isActive") {
 			(installationId: String, id: String) -> Bool in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1935,14 +1935,15 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let group = try await client.conversations.findGroup(
-					groupId: id)
+				let conversation = try await client.conversations
+					.findConversation(
+						conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
 
-			return try group.isActive()
+			return try conversation.isActive()
 		}
 
 		AsyncFunction("addedByInboxId") {

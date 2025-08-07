@@ -1484,13 +1484,13 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("isGroupActive") Coroutine { installationId: String, groupId: String ->
+        AsyncFunction("isActive") Coroutine { installationId: String, conversationId: String ->
             withContext(Dispatchers.IO) {
-                logV("isGroupActive")
+                logV("isActive")
                 val client = clients[installationId] ?: throw XMTPException("No client")
-                val group = client.conversations.findGroup(groupId)
-                    ?: throw XMTPException("no group found for $groupId")
-                group.isActive()
+                val conversation = client.conversations.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.isActive()
             }
         }
 
