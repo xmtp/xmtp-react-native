@@ -17,7 +17,7 @@ struct CreateGroupParamsWrapper {
 
 		var settings: DisappearingMessageSettings? = nil
 		
-		// Only create DisappearingMessageSettings if both values are provided and non-zero
+		// Only create DisappearingMessageSettings if both values are provided
 		if let disappearStartingAtNs = jsonOptions["disappearStartingAtNs"] as? Int64,
 		   let retentionDurationInNs = jsonOptions["retentionDurationInNs"] as? Int64 {
 			settings = DisappearingMessageSettings(
