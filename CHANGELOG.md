@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 4.3.6
+
+### Patch Changes
+
+- 41839c8: default disappear settings to null to match upstream change
+
 ## 4.3.5
 
 ### Patch Changes
