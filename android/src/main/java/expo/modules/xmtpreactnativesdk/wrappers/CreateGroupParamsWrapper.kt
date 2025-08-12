@@ -7,15 +7,20 @@ class CreateGroupParamsWrapper(
     val groupName: String,
     val groupImageUrl: String,
     val groupDescription: String,
-    val disappearingMessageSettings: DisappearingMessageSettings,
+    val disappearingMessageSettings: DisappearingMessageSettings?,
 ) {
     companion object {
         fun createGroupParamsFromJson(authParams: String): CreateGroupParamsWrapper {
             val jsonOptions = JsonParser.parseString(authParams).asJsonObject
-            val settings = DisappearingMessageSettings(
-                if (jsonOptions.has("disappearStartingAtNs")) jsonOptions.get("disappearStartingAtNs").asLong else 0,
-                if (jsonOptions.has("retentionDurationInNs")) jsonOptions.get("retentionDurationInNs").asLong else 0
-            )
+
+            val settings = if (jsonOptions.has("disappearStartingAtNs") && jsonOptions.has("retentionDurationInNs")) {
+                DisappearingMessageSettings(
+                    jsonOptions.get("disappearStartingAtNs").asLong,
+                    jsonOptions.get("retentionDurationInNs").asLong
+                )
+            } else {
+                null
+            }
 
             return CreateGroupParamsWrapper(
                 if (jsonOptions.has("name")) jsonOptions.get("name").asString else "",
