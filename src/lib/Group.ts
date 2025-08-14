@@ -47,7 +47,7 @@ export class Group<
   version = ConversationVersion.GROUP as const
   topic: ConversationTopic
   groupName: string
-  isActive: boolean
+  isGroupActive: boolean
   addedByInboxId: InboxId
   groupImageUrl: string
   groupDescription: string
@@ -64,7 +64,7 @@ export class Group<
     this.createdAt = params.createdAt
     this.topic = params.topic
     this.groupName = params.name
-    this.isActive = params.isActive
+    this.isGroupActive = params.isActive
     this.addedByInboxId = params.addedByInboxId
     this.groupImageUrl = params.imageUrl
     this.groupDescription = params.description
