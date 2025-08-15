@@ -2,6 +2,7 @@ import { splitSignature } from '@ethersproject/bytes'
 import { Subscription } from 'expo-modules-core'
 import type { WalletClient } from 'viem'
 
+import { ArchiveMetadata, ArchiveOptions } from './ArchiveOptions'
 import type {
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
@@ -17,7 +18,6 @@ import { DefaultContentTypes } from './types/DefaultContentType'
 import { hexToBytes } from './util'
 import * as XMTPModule from '../index'
 import { LogLevel, LogRotation } from './types'
-import { ArchiveMetadata, ArchiveOptions } from './ArchiveOptions'
 
 declare const Buffer
 
@@ -991,6 +991,7 @@ export class Client<
     opts?: ArchiveOptions
   ): Promise<void> {
     return XMTPModule.createArchive(
+      this.installationId,
       path,
       encryptionKey,
       opts?.startNs,
@@ -1008,7 +1009,7 @@ export class Client<
    * @throws Will reject if the archive cannot be found, is invalid, or the decryption fails.
    */
   async importArchive(path: string, encryptionKey: Uint8Array): Promise<void> {
-    return XMTPModule.importArchive(path, encryptionKey)
+    return XMTPModule.importArchive(this.installationId, path, encryptionKey)
   }
 
   /**
@@ -1023,7 +1024,11 @@ export class Client<
     path: string,
     encryptionKey: Uint8Array
   ): Promise<ArchiveMetadata> {
-    const metadata = await XMTPModule.archiveMetadata(path, encryptionKey)
+    const metadata = await XMTPModule.archiveMetadata(
+      this.installationId,
+      path,
+      encryptionKey
+    )
     return metadata // optionally wrap it in an ArchiveMetadata class if needed
   }
 

@@ -409,15 +409,15 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     return await XMTP.pausedForVersion(this.client.installationId, this.id)
   }
 
-    /**
-     * Returns whether the dm is active.
-     * To get the latest active status from the network, call sync() first
-     * @returns {Promise<boolean>} A Promise that resolves if the group is active or not
-     */
-  
-    async isActive(): Promise<boolean> {
-      return XMTP.isActive(this.client.installationId, this.id)
-    }
+  /**
+   * Returns whether the dm is active.
+   * To get the latest active status from the network, call sync() first
+   * @returns {Promise<boolean>} A Promise that resolves if the group is active or not
+   */
+
+  async isActive(): Promise<boolean> {
+    return XMTP.isActive(this.client.installationId, this.id)
+  }
 
   /**
    * @returns {Promise<keystore.GetConversationHmacKeysResponse>} A Promise that resolves to a list

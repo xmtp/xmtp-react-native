@@ -12,6 +12,7 @@ import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.xmtpreactnativesdk.wrappers.ArchiveMetadataWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
@@ -62,6 +63,8 @@ import org.xmtp.android.library.codecs.EncryptedEncodedContent
 import org.xmtp.android.library.codecs.RemoteAttachment
 import org.xmtp.android.library.codecs.decoded
 import org.xmtp.android.library.hexToByteArray
+import org.xmtp.android.library.libxmtp.ArchiveElement
+import org.xmtp.android.library.libxmtp.ArchiveOptions
 import org.xmtp.android.library.libxmtp.DecodedMessage
 import org.xmtp.android.library.libxmtp.DisappearingMessageSettings
 import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
@@ -1969,15 +1972,16 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createArchive") Coroutine { installationId: String, path: String, encryptionKey: List<Int>, startNs: Int, endNs: Int, archiveElements: List<String>->
+        AsyncFunction("createArchive") Coroutine { installationId: String, path: String, encryptionKey: List<Int>, startNs: Int?, endNs: Int?, archiveElements: List<String>? ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val encryptionKeyBytes =
                     encryptionKey.foldIndexed(ByteArray(encryptionKey.size)) { i, a, v ->
                         a.apply { set(i, v.toByte()) }
                     }
-                val elements = archiveElements.map { getArchiveElement(it)}
-                client.createArchive(path, encryptionKeyBytes, startNs, endNs, elements)
+                val elements = archiveElements?.map { getArchiveElement(it) } ?: listOf(ArchiveElement.MESSAGES, ArchiveElement.CONSENT)
+                val archiveOptions = ArchiveOptions(startNs?.toLong(), endNs?.toLong(), elements)
+                client.createArchive(path, encryptionKeyBytes, archiveOptions)
             }
         }
 
@@ -2000,9 +2004,11 @@ class XMTPModule : Module() {
                         a.apply { set(i, v.toByte()) }
                     }
                 val metadata = client.archiveMetadata(path, encryptionKeyBytes)
-                ArchiveMetadataWrapper.encode(client, metadata)
+                ArchiveMetadataWrapper.encode(metadata)
             }
         }
+    }
+
 
     //
     // Helpers
@@ -2091,7 +2097,7 @@ class XMTPModule : Module() {
     private fun getArchiveElement(element: String): ArchiveElement {
         return when (element) {
             "consent" -> ArchiveElement.CONSENT
-            "message" -> ArchiveElement.MESSAGE
+            "message" -> ArchiveElement.MESSAGES
             else -> throw XMTPException("Invalid archive element: $element")
         }
     }

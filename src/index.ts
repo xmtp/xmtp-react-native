@@ -2,6 +2,7 @@ import { content, keystore } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import XMTPModule from './XMTPModule'
+import { ArchiveMetadata } from './lib/ArchiveOptions'
 import {
   Address,
   Client,
@@ -41,7 +42,6 @@ import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { LogLevel, LogRotation } from './lib/types/LogTypes'
 import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
-import { ArchiveMetadata } from './lib/ArchiveOptions'
 
 export * from './context'
 export * from './hooks'
@@ -1720,6 +1720,7 @@ export async function uploadDebugInformation(
 }
 
 export async function createArchive(
+  installationId: InstallationId,
   path: string,
   encryptionKey: Uint8Array,
   startNs?: number | undefined,
@@ -1727,6 +1728,7 @@ export async function createArchive(
   archiveElements?: string[] | undefined
 ): Promise<void> {
   return await XMTPModule.createArchive(
+    installationId,
     path,
     Array.from(encryptionKey),
     startNs,
@@ -1735,20 +1737,28 @@ export async function createArchive(
   )
 }
 export async function importArchive(
+  installationId: InstallationId,
   path: string,
   encryptionKey: Uint8Array
 ): Promise<void> {
-  return await XMTPModule.importArchive(path, Array.from(encryptionKey))
+  return await XMTPModule.importArchive(
+    installationId,
+    path,
+    Array.from(encryptionKey)
+  )
 }
 
 export async function archiveMetadata(
+  installationId: InstallationId,
   path: string,
   encryptionKey: Uint8Array
 ): Promise<ArchiveMetadata> {
   const metadata = await XMTPModule.archiveMetadata(
+    installationId,
     path,
     Array.from(encryptionKey)
   )
+  console.log('CAMERONVOELL: ' + metadata)
   return new ArchiveMetadata(metadata)
 }
 

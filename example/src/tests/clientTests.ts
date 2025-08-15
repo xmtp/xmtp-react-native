@@ -1,5 +1,9 @@
 import { ethers, Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
+import {
+  ArchiveMetadata,
+  ArchiveOptions,
+} from 'xmtp-react-native-sdk/lib/ArchiveOptions'
 import { InstallationId } from 'xmtp-react-native-sdk/lib/Client'
 
 import {
@@ -1130,7 +1134,6 @@ test('can upload archive debug information', async () => {
   return true
 })
 
-
 test('can create, inspect, import and resync archive', async () => {
   const [bo] = await createClients(1)
   const key = crypto.getRandomValues(new Uint8Array(32))
@@ -1159,14 +1162,22 @@ test('can create, inspect, import and resync archive', async () => {
 
   // Create full archive and consent-only archive
   await alix.createArchive(allPath, encryptionKey)
-  await alix.createArchive(consentPath, encryptionKey, new ArchiveOptions([ArchiveElement.CONSENT]))
+  await alix.createArchive(
+    consentPath,
+    encryptionKey,
+    new ArchiveOptions(['consent'])
+  )
 
-  const metadataAll = new ArchiveMetadata(await alix.archiveMetadata(allPath, encryptionKey))
-  const metadataConsent = new ArchiveMetadata(await alix.archiveMetadata(consentPath, encryptionKey))
+  const metadataAll = await alix.archiveMetadata(allPath, encryptionKey)
+  const metadataConsent = await alix.archiveMetadata(consentPath, encryptionKey)
 
-  assert(metadataAll.elements.length === 2, 'Expected 2 elements in full archive')
   assert(
-    metadataConsent.elements.length === 1 && metadataConsent.elements[0] === 'CONSENT',
+    metadataAll.elements.length === 2,
+    'Expected 2 elements in full archive'
+  )
+  assert(
+    metadataConsent.elements.length === 1 &&
+      metadataConsent.elements[0] === 'consent',
     `Expected only 'CONSENT' in consent archive`
   )
 
@@ -1248,7 +1259,7 @@ test('can stitch inactive DMs if duplicated after archive import', async () => {
 
   const convos = await alix2.conversations.list()
   assert(convos.length === 1, `Expected 1 conversation, got ${convos.length}`)
-  assert(!await convos[0].isActive(), 'Expected conversation to be inactive')
+  assert(!(await convos[0].isActive()), 'Expected conversation to be inactive')
 
   const dm2 = await alix.conversations.findOrCreateDm(bo.inboxId)
   assert(await dm2.isActive(), 'Expected new DM to be active')
@@ -1264,8 +1275,14 @@ test('can stitch inactive DMs if duplicated after archive import', async () => {
 
   const dm2Messages = await dm2.messages()
   const boDmMessages = await boDm?.messages()
-  assert(dm2Messages.length === 4, `Expected 4 messages in DM2, got ${dm2Messages.length}`)
-  assert(boDmMessages?.length === 4, `Expected 4 messages in boDm, got ${boDmMessages?.length}`)
+  assert(
+    dm2Messages.length === 4,
+    `Expected 4 messages in DM2, got ${dm2Messages.length}`
+  )
+  assert(
+    boDmMessages?.length === 4,
+    `Expected 4 messages in boDm, got ${boDmMessages?.length}`
+  )
 
   return true
 })
@@ -1315,8 +1332,14 @@ test('can import archive on top of full database', async () => {
   const alixConvoCount2 = (await alix.conversations.list()).length
   const boConvoCount2 = (await bo.conversations.list()).length
 
-  assert(groupMessages2.length === 4, 'Expected 4 messages in group after import')
-  assert(boGroupMessages2?.length === 4, 'Expected 4 messages in boGroup after import')
+  assert(
+    groupMessages2.length === 4,
+    'Expected 4 messages in group after import'
+  )
+  assert(
+    boGroupMessages2?.length === 4,
+    'Expected 4 messages in boGroup after import'
+  )
   assert(alixConvoCount2 === 2, 'Expected 2 convos for alix after import')
   assert(boConvoCount2 === 2, 'Expected 2 convos for bo after import')
 
