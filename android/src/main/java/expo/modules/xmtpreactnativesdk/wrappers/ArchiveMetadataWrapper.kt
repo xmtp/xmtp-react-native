@@ -16,7 +16,7 @@ class ArchiveMetadataWrapper {
                     metadata.elements.map { getArchiveElementString(it) }
                 } catch (e: Exception) {
                     // By default we archive everything
-                    arrayOf(ArchiveElement.MESSAGES, ArchiveElement.CONSENT)
+                    listOf("message", "consent")
                 },
                 "exportedAtNs" to metadata.exportedAtNs,
                 "startNs" to metadata.startNs,

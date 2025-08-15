@@ -2097,7 +2097,7 @@ class XMTPModule : Module() {
     private fun getArchiveElement(element: String): ArchiveElement {
         return when (element) {
             "consent" -> ArchiveElement.CONSENT
-            "message" -> ArchiveElement.MESSAGES
+            "message","messages" -> ArchiveElement.MESSAGES
             else -> throw XMTPException("Invalid archive element: $element")
         }
     }
