@@ -1927,7 +1927,7 @@ public class XMTPModule: Module {
 			)
 		}
 
-		AsyncFunction("isGroupActive") {
+		AsyncFunction("isActive") {
 			(installationId: String, id: String) -> Bool in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1935,14 +1935,15 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			guard
-				let group = try await client.conversations.findGroup(
-					groupId: id)
+				let conversation = try await client.conversations
+					.findConversation(
+						conversationId: id)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
 			}
 
-			return try group.isActive()
+			return try conversation.isActive()
 		}
 
 		AsyncFunction("addedByInboxId") {
@@ -2739,11 +2740,82 @@ public class XMTPModule: Module {
 					serverUrl: serverUrl!)
 				: client.debugInformation.uploadDebugInformation())
 		}
+
+		AsyncFunction("createArchive") {
+            (
+                installationId: String, path: String, encryptionKey: [UInt8],
+                startNs: Int64?, endNs: Int64?, archiveElements: [String]?
+            ) in
+            guard
+                let client = await clientsManager.getClient(key: installationId)
+            else {
+                throw Error.noClient
+            }
+            
+            let encryptionKeyData = Data(encryptionKey)
+            let elements = try archiveElements?.map { try getArchiveElement($0) } ?? [.messages, .consent]
+            let archiveOptions = XMTP.ArchiveOptions(
+                startNs: startNs,
+                endNs: endNs,
+                archiveElements: elements
+            )
+            
+            try await client.createArchive(
+                path: path,
+                encryptionKey: encryptionKeyData,
+                opts: archiveOptions
+            )
+        }
+
+        AsyncFunction("importArchive") {
+            (installationId: String, path: String, encryptionKey: [UInt8]) in
+            guard
+                let client = await clientsManager.getClient(key: installationId)
+            else {
+                throw Error.noClient
+            }
+            
+            let encryptionKeyData = Data(encryptionKey)
+            
+            try await client.importArchive(
+                path: path,
+                encryptionKey: encryptionKeyData
+            )
+        }
+
+        AsyncFunction("archiveMetadata") {
+            (installationId: String, path: String, encryptionKey: [UInt8]) -> String in
+            guard
+                let client = await clientsManager.getClient(key: installationId)
+            else {
+                throw Error.noClient
+            }
+            
+            let encryptionKeyData = Data(encryptionKey)
+            
+            let metadata = try await client.archiveMetadata(
+                path: path,
+                encryptionKey: encryptionKeyData
+            )
+            
+            return try ArchiveMetadataWrapper.encode(metadata)
+        }
 	}
 
 	//
 	// Helpers
 	//
+
+	private func getArchiveElement(_ element: String) throws -> XMTP.ArchiveElement {
+        switch element {
+        case "consent":
+            return .consent
+        case "message", "messages":
+            return .messages
+        default:
+            throw WrapperError.encodeError("Invalid archive element: \(element)")
+        }
+    }
 
 	private func isLogWriterActive() -> Bool {
 		return UserDefaults.standard.bool(

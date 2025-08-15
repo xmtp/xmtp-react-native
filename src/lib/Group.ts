@@ -512,7 +512,7 @@ export class Group<
    */
 
   async isActive(): Promise<boolean> {
-    return XMTP.isGroupActive(this.client.installationId, this.id)
+    return XMTP.isActive(this.client.installationId, this.id)
   }
 
   /**

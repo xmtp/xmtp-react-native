@@ -2,6 +2,7 @@ import { content, keystore } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import XMTPModule from './XMTPModule'
+import { ArchiveMetadata } from './lib/ArchiveOptions'
 import {
   Address,
   Client,
@@ -1314,11 +1315,11 @@ export async function updateDisappearingMessageSettings(
   )
 }
 
-export function isGroupActive(
+export function isActive(
   installationId: InstallationId,
   id: ConversationId
 ): Promise<boolean> {
-  return XMTPModule.isGroupActive(installationId, id)
+  return XMTPModule.isActive(installationId, id)
 }
 
 export async function addedByInboxId(
@@ -1716,6 +1717,49 @@ export async function uploadDebugInformation(
 ): Promise<string> {
   const key = await XMTPModule.uploadDebugInformation(installationId, serverUrl)
   return key
+}
+
+export async function createArchive(
+  installationId: InstallationId,
+  path: string,
+  encryptionKey: Uint8Array,
+  startNs?: number | undefined,
+  endNs?: number | undefined,
+  archiveElements?: string[] | undefined
+): Promise<void> {
+  return await XMTPModule.createArchive(
+    installationId,
+    path,
+    Array.from(encryptionKey),
+    startNs,
+    endNs,
+    archiveElements
+  )
+}
+export async function importArchive(
+  installationId: InstallationId,
+  path: string,
+  encryptionKey: Uint8Array
+): Promise<void> {
+  return await XMTPModule.importArchive(
+    installationId,
+    path,
+    Array.from(encryptionKey)
+  )
+}
+
+export async function archiveMetadata(
+  installationId: InstallationId,
+  path: string,
+  encryptionKey: Uint8Array
+): Promise<ArchiveMetadata> {
+  const metadata = await XMTPModule.archiveMetadata(
+    installationId,
+    path,
+    Array.from(encryptionKey)
+  )
+  console.log('CAMERONVOELL: ' + metadata)
+  return new ArchiveMetadata(metadata)
 }
 
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)

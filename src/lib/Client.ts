@@ -2,6 +2,7 @@ import { splitSignature } from '@ethersproject/bytes'
 import { Subscription } from 'expo-modules-core'
 import type { WalletClient } from 'viem'
 
+import { ArchiveMetadata, ArchiveOptions } from './ArchiveOptions'
 import type {
   DecryptedLocalAttachment,
   EncryptedLocalAttachment,
@@ -973,6 +974,62 @@ export class Client<
       this.installationId,
       encryptedFile
     )
+  }
+
+  /**
+   * Creates a new archive at the specified path with encryption.
+   *
+   * @param path - The file system path where the archive should be created.
+   * @param encryptionKey - A binary encryption key (must match key used for decryption).
+   * @param opts - Optional archive configuration settings.
+   * @returns A Promise that resolves when the archive is successfully created.
+   * @throws Will reject if the operation fails or parameters are invalid.
+   */
+  async createArchive(
+    path: string,
+    encryptionKey: Uint8Array,
+    opts?: ArchiveOptions
+  ): Promise<void> {
+    return XMTPModule.createArchive(
+      this.installationId,
+      path,
+      encryptionKey,
+      opts?.startNs,
+      opts?.endNs,
+      opts?.archiveElements
+    )
+  }
+
+  /**
+   * Imports an existing archive from disk using the provided encryption key.
+   *
+   * @param path - The file system path of the archive to import.
+   * @param encryptionKey - The encryption key that was used to secure the archive.
+   * @returns A Promise that resolves when the archive has been successfully imported.
+   * @throws Will reject if the archive cannot be found, is invalid, or the decryption fails.
+   */
+  async importArchive(path: string, encryptionKey: Uint8Array): Promise<void> {
+    return XMTPModule.importArchive(this.installationId, path, encryptionKey)
+  }
+
+  /**
+   * Retrieves metadata from an existing encrypted archive.
+   *
+   * @param path - The file system path of the archive.
+   * @param encryptionKey - The encryption key used to decrypt the archive metadata.
+   * @returns A Promise that resolves to an ArchiveMetadata object.
+   * @throws Will reject if the archive is invalid or decryption fails.
+   */
+  async archiveMetadata(
+    path: string,
+    encryptionKey: Uint8Array
+  ): Promise<ArchiveMetadata> {
+    const metadata = await XMTPModule.archiveMetadata(
+      this.installationId,
+      path,
+      encryptionKey
+    )
+    return metadata // optionally wrap it in an ArchiveMetadata class if needed
   }
 
   /**
