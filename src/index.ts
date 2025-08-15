@@ -989,8 +989,8 @@ export async function createGroup<
   name: string = '',
   imageUrl: string = '',
   description: string = '',
-  disappearStartingAtNs: number = 0,
-  retentionDurationInNs: number = 0
+  disappearStartingAtNs: number | undefined = undefined,
+  retentionDurationInNs: number | undefined = undefined
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1774,8 +1774,8 @@ interface CreateGroupParams {
   name: string
   imageUrl: string
   description: string
-  disappearStartingAtNs: number
-  retentionDurationInNs: number
+  disappearStartingAtNs: number | undefined
+  retentionDurationInNs: number | undefined
 }
 
 export { Client } from './lib/Client'

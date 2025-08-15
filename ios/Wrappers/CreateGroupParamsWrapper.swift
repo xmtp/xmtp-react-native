@@ -5,7 +5,7 @@ struct CreateGroupParamsWrapper {
 	let groupName: String
 	let groupImageUrl: String
 	let groupDescription: String
-	let disappearingMessageSettings: DisappearingMessageSettings
+	let disappearingMessageSettings: DisappearingMessageSettings?
 
 	static func createGroupParamsFromJson(_ authParams: String)
 		-> CreateGroupParamsWrapper
@@ -15,12 +15,16 @@ struct CreateGroupParamsWrapper {
 			(try? JSONSerialization.jsonObject(with: data, options: []))
 			as? [String: Any] ?? [:]
 
-		let settings = DisappearingMessageSettings(
-			disappearStartingAtNs: jsonOptions["disappearStartingAtNs"]
-				as? Int64 ?? 0,
-			retentionDurationInNs: jsonOptions["retentionDurationInNs"]
-				as? Int64 ?? 0
-		)
+		var settings: DisappearingMessageSettings? = nil
+		
+		// Only create DisappearingMessageSettings if both values are provided
+		if let disappearStartingAtNs = jsonOptions["disappearStartingAtNs"] as? Int64,
+		   let retentionDurationInNs = jsonOptions["retentionDurationInNs"] as? Int64 {
+			settings = DisappearingMessageSettings(
+				disappearStartingAtNs: disappearStartingAtNs,
+				retentionDurationInNs: retentionDurationInNs
+			)
+		}
 
 		let groupName = jsonOptions["name"] as? String ?? ""
 		let groupImageUrl = jsonOptions["imageUrl"] as? String ?? ""
