@@ -33,7 +33,18 @@ class ArchiveMetadataWrapper {
         }
 
         fun encode(metadata: ArchiveMetadata?): String {
-            val obj = metadata?.let { encodeToObj(it) }
+            val obj = if (metadata != null) {
+                encodeToObj(metadata)
+            } else {
+                // Create a default metadata object when null
+                mapOf(
+                    "archiveVersion" to 0u,
+                    "elements" to listOf("messages", "consent"),
+                    "exportedAtNs" to 0L,
+                    "startNs" to null,
+                    "endNs" to null
+                )
+            }
             return gson.toJson(obj)
         }
     }
