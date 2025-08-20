@@ -2010,8 +2010,7 @@ function AddMemberModal({
         </View>
 
         <Text style={{ fontSize: 14, color: '#666', marginBottom: 10 }}>
-          Enter the wallet address of the person you want to add to this
-          group:
+          Enter the wallet address of the person you want to add to this group:
         </Text>
 
         <TextInput
@@ -2061,9 +2060,7 @@ function AddMemberModal({
             onPress={onAddMember}
             disabled={!memberAddress.trim() || isLoading}
           >
-            <Text
-              style={{ fontSize: 16, color: 'white', fontWeight: 'bold' }}
-            >
+            <Text style={{ fontSize: 16, color: 'white', fontWeight: 'bold' }}>
               {isLoading ? 'Adding...' : 'Add Member'}
             </Text>
           </TouchableOpacity>
