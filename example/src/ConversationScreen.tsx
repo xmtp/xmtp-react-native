@@ -1954,112 +1954,122 @@ function AddMemberModal({
   onAddMember: () => void
   isLoading?: boolean
 }) {
+  if (!visible) return null
+
   return (
-    <Modal transparent visible={visible} onRequestClose={onRequestClose}>
+    <View
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1000,
+      }}
+    >
       <TouchableWithoutFeedback onPress={onRequestClose}>
         <View
           style={{
-            flex: 1,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             backgroundColor: 'rgba(0,0,0,0.5)',
           }}
         />
       </TouchableWithoutFeedback>
       <View
         style={{
-          flex: 1,
-          justifyContent: 'center',
-          margin: '5%',
+          position: 'absolute',
+          top: '30%',
+          left: 20,
+          right: 20,
+          backgroundColor: 'white',
+          borderRadius: 8,
+          padding: 24,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4,
+          elevation: 5,
         }}
       >
         <View
           style={{
-            margin: 20,
-            backgroundColor: 'white',
-            borderRadius: 8,
-            padding: 24,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 4,
-            elevation: 5,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 20,
           }}
         >
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 20,
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Add Member</Text>
-            <TouchableOpacity onPress={onRequestClose}>
-              <FontAwesome name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
+          <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Add Member</Text>
+          <TouchableOpacity onPress={onRequestClose}>
+            <FontAwesome name="close" size={24} color="#666" />
+          </TouchableOpacity>
+        </View>
 
-          <Text style={{ fontSize: 14, color: '#666', marginBottom: 10 }}>
-            Enter the wallet address of the person you want to add to this
-            group:
-          </Text>
+        <Text style={{ fontSize: 14, color: '#666', marginBottom: 10 }}>
+          Enter the wallet address of the person you want to add to this
+          group:
+        </Text>
 
-          <TextInput
+        <TextInput
+          style={{
+            borderWidth: 1,
+            borderColor: '#ddd',
+            borderRadius: 6,
+            padding: 12,
+            fontSize: 16,
+            marginBottom: 20,
+            backgroundColor: '#f9f9f9',
+          }}
+          placeholder="0x1234567890abcdef..."
+          value={memberAddress}
+          onChangeText={onChangeAddress}
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!isLoading}
+        />
+
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity
             style={{
-              borderWidth: 1,
-              borderColor: '#ddd',
+              flex: 1,
+              backgroundColor: '#f0f0f0',
+              paddingVertical: 12,
+              paddingHorizontal: 16,
               borderRadius: 6,
-              padding: 12,
-              fontSize: 16,
-              marginBottom: 20,
-              backgroundColor: '#f9f9f9',
+              alignItems: 'center',
             }}
-            placeholder="0x1234567890abcdef..."
-            value={memberAddress}
-            onChangeText={onChangeAddress}
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!isLoading}
-          />
+            onPress={onRequestClose}
+            disabled={isLoading}
+          >
+            <Text style={{ fontSize: 16, color: '#666' }}>Cancel</Text>
+          </TouchableOpacity>
 
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                backgroundColor: '#f0f0f0',
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderRadius: 6,
-                alignItems: 'center',
-              }}
-              onPress={onRequestClose}
-              disabled={isLoading}
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor:
+                memberAddress.trim() && !isLoading ? '#007AFF' : '#ccc',
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderRadius: 6,
+              alignItems: 'center',
+            }}
+            onPress={onAddMember}
+            disabled={!memberAddress.trim() || isLoading}
+          >
+            <Text
+              style={{ fontSize: 16, color: 'white', fontWeight: 'bold' }}
             >
-              <Text style={{ fontSize: 16, color: '#666' }}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                backgroundColor:
-                  memberAddress.trim() && !isLoading ? '#007AFF' : '#ccc',
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderRadius: 6,
-                alignItems: 'center',
-              }}
-              onPress={onAddMember}
-              disabled={!memberAddress.trim() || isLoading}
-            >
-              <Text
-                style={{ fontSize: 16, color: 'white', fontWeight: 'bold' }}
-              >
-                {isLoading ? 'Adding...' : 'Add Member'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+              {isLoading ? 'Adding...' : 'Add Member'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </View>
   )
 }
 
