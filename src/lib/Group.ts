@@ -4,6 +4,7 @@ import { Subscription } from 'expo-modules-core'
 import { Client, InboxId } from './Client'
 import { ConsentState } from './ConsentRecord'
 import { ConversationBase, ConversationVersion } from './Conversation'
+import { CommitLogForkStatus } from './ConversationDebugInfo'
 import { DecodedMessage } from './DecodedMessage'
 import { Member, MembershipResult } from './Member'
 import * as XMTP from '../index'
@@ -35,6 +36,7 @@ export interface GroupParams {
   description: string
   consentState: ConsentState
   lastMessage?: DecodedMessage
+  commitLogForkStatus?: CommitLogForkStatus
 }
 
 export class Group<
@@ -53,6 +55,7 @@ export class Group<
   groupDescription: string
   state: ConsentState
   lastMessage?: DecodedMessageUnion<ContentTypes>
+  commitLogForkStatus?: CommitLogForkStatus
 
   constructor(
     client: Client<ContentTypes>,
@@ -70,6 +73,7 @@ export class Group<
     this.groupDescription = params.description
     this.state = params.consentState
     this.lastMessage = lastMessage
+    this.commitLogForkStatus = params.commitLogForkStatus
   }
 
   /**

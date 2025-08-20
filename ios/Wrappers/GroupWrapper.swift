@@ -17,7 +17,8 @@ struct GroupWrapper {
 			"id": group.id,
 			"createdAt": UInt64(group.createdAt.timeIntervalSince1970 * 1000),
 			"version": "GROUP",
-			"topic": group.topic
+			"topic": group.topic,
+			"commitLogForkStatus": ConversationDebugInfoWrapper.commitLogForkStatusToString(group.commitLogForkStatus())
 		]
 
 		if conversationParams.isActive {

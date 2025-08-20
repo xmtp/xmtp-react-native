@@ -8,7 +8,21 @@ struct ConversationDebugInfoWrapper {
             "epoch": info.epoch,
             "maybeForked": info.maybeForked,
             "forkDetails": info.forkDetails,
+            "localCommitLog": info.localCommitLog,
+            "remoteCommitLog": info.remoteCommitLog,
+            "commitLogForkStatus": commitLogForkStatusToString(info.commitLogForkStatus)
         ]
+    }
+    
+    static func commitLogForkStatusToString(_ status: CommitLogForkStatus) -> String {
+        switch status {
+        case .forked:
+            return "forked"
+        case .notForked:
+            return "notForked"
+        default:
+            return "unknown"
+        }
     }
     
     static func encode(_ info: XMTP.ConversationDebugInfo) throws -> String {

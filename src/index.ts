@@ -1020,8 +1020,8 @@ export async function createGroupCustomPermissionsWithIdentities<
   name: string = '',
   imageUrl: string = '',
   description: string = '',
-  disappearStartingAtNs: number = 0,
-  retentionDurationInNs: number = 0
+  disappearStartingAtNs: number | undefined = undefined,
+  retentionDurationInNs: number | undefined = undefined
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1052,8 +1052,8 @@ export async function createGroupWithIdentities<
   name: string = '',
   imageUrl: string = '',
   description: string = '',
-  disappearStartingAtNs: number = 0,
-  retentionDurationInNs: number = 0
+  disappearStartingAtNs: number | undefined = undefined,
+  retentionDurationInNs: number | undefined = undefined
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1084,8 +1084,8 @@ export async function createGroupCustomPermissions<
   name: string = '',
   imageUrl: string = '',
   description: string = '',
-  disappearStartingAtNs: number = 0,
-  retentionDurationInNs: number = 0
+  disappearStartingAtNs: number | undefined = undefined,
+  retentionDurationInNs: number | undefined = undefined
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1114,8 +1114,8 @@ export async function createGroupOptimistic<
   name: string = '',
   imageUrl: string = '',
   description: string = '',
-  disappearStartingAtNs: number = 0,
-  retentionDurationInNs: number = 0
+  disappearStartingAtNs: number | undefined = undefined,
+  retentionDurationInNs: number | undefined = undefined
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1695,6 +1695,7 @@ export async function getDebugInformation(
   id: ConversationId
 ): Promise<ConversationDebugInfo> {
   const info = await XMTPModule.getDebugInformation(installationId, id)
+  console.log(info)
   return ConversationDebugInfo.from(info)
 }
 

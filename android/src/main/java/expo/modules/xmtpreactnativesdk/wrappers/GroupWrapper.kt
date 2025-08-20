@@ -21,6 +21,7 @@ class GroupWrapper {
                 put("createdAt", group.createdAt.time)
                 put("version", "GROUP")
                 put("topic", group.topic)
+                put("commitLogForkStatus", ConversationDebugInfoWrapper.commitLogForkStatusToString(group.commitLogForkStatus()))
                 if (groupParams.isActive) put("isActive", group.isActive())
                 if (groupParams.addedByInboxId) put("addedByInboxId", group.addedByInboxId())
                 if (groupParams.name) put("name", group.name)
@@ -79,7 +80,8 @@ class ConversationParamsWrapper(
                 if (jsonOptions.has("description")) jsonOptions.get("description").asBoolean else true,
                 if (jsonOptions.has("consentState")) jsonOptions.get("consentState").asBoolean else true,
                 if (jsonOptions.has("lastMessage")) jsonOptions.get("lastMessage").asBoolean else false,
-            )
+
+                )
         }
     }
 }

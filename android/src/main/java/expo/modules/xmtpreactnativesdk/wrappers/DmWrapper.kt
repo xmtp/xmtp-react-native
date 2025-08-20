@@ -18,6 +18,7 @@ class DmWrapper {
                 put("version", "DM")
                 put("topic", dm.topic)
                 put("peerInboxId", dm.peerInboxId)
+                put("commitLogForkStatus", ConversationDebugInfoWrapper.commitLogForkStatusToString(dm.commitLogForkStatus()))
                 if (dmParams.consentState) {
                     put("consentState", consentStateToString(dm.consentState()))
                 }

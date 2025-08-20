@@ -13,6 +13,7 @@ import {
   ConversationTopic,
   DisappearingMessageSettings,
 } from '../index'
+import { CommitLogForkStatus } from './ConversationDebugInfo'
 import { ConversationSendPayload } from './types/ConversationCodecs'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
@@ -26,6 +27,7 @@ export interface DmParams {
   topic: ConversationTopic
   consentState: ConsentState
   lastMessage?: DecodedMessage
+  commitLogForkStatus?: CommitLogForkStatus
 }
 
 export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
@@ -38,6 +40,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
   topic: ConversationTopic
   state: ConsentState
   lastMessage?: DecodedMessageUnion<ContentTypes>
+  commitLogForkStatus?: CommitLogForkStatus
 
   constructor(
     client: Client<ContentTypes>,
@@ -50,6 +53,7 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     this.topic = params.topic
     this.state = params.consentState
     this.lastMessage = lastMessage
+    this.commitLogForkStatus = params.commitLogForkStatus
   }
 
   /**
