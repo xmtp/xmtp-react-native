@@ -12,7 +12,18 @@ class ConversationDebugInfoWrapper {
                 "epoch" to info.epoch,
                 "maybeForked" to info.maybeForked,
                 "forkDetails" to info.forkDetails,
+                "localCommitLog" to info.localCommitLog,
+               "remoteCommitLog" to info.remoteCommitLog,
+                "commitLogForkStatus" to commitLogForkStatusToString(info.commitLogForkStatus)
             )
+        }
+        
+        fun commitLogForkStatusToString(status: ConversationDebugInfo.CommitLogForkStatus): String {
+            return when (status) {
+                ConversationDebugInfo.CommitLogForkStatus.FORKED -> "forked"
+                ConversationDebugInfo.CommitLogForkStatus.NOT_FORKED -> "notForked"
+                else -> "unknown"
+            }
         }
 
         fun encode(info: ConversationDebugInfo): String {

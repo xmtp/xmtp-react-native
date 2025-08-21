@@ -17,7 +17,8 @@ struct DmWrapper {
 			"createdAt": UInt64(dm.createdAt.timeIntervalSince1970 * 1000),
 			"version": "DM",
 			"topic": dm.topic,
-			"peerInboxId": try dm.peerInboxId
+			"peerInboxId": try dm.peerInboxId,
+			"commitLogForkStatus": ConversationDebugInfoWrapper.commitLogForkStatusToString(dm.commitLogForkStatus())
 		]
 
 		if conversationParams.consentState {

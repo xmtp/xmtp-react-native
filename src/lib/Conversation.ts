@@ -17,6 +17,7 @@ import {
   DisappearingMessageSettings,
   ConversationDebugInfo,
 } from '../index'
+import { CommitLogForkStatus } from './ConversationDebugInfo'
 import { DecodedMessageUnion } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 
@@ -33,6 +34,7 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   id: string
   state: ConsentState
   lastMessage?: DecodedMessage<ContentTypes[number]>
+  commitLogForkStatus?: CommitLogForkStatus
 
   send<SendContentTypes extends DefaultContentTypes = ContentTypes>(
     content: ConversationSendPayload<SendContentTypes>,

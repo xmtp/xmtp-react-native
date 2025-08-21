@@ -1,9 +1,6 @@
 import { ethers, Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
-import {
-  ArchiveMetadata,
-  ArchiveOptions,
-} from 'xmtp-react-native-sdk/lib/ArchiveOptions'
+import { ArchiveOptions } from 'xmtp-react-native-sdk/lib/ArchiveOptions'
 import { InstallationId } from 'xmtp-react-native-sdk/lib/Client'
 
 import {
