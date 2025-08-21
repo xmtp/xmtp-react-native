@@ -1211,7 +1211,7 @@ test('test pausedForVersion', async () => {
   return true
 })
 
-test('messages dont disappear', async () => {
+test('messages dont disappear createGroup', async () => {
   const [alix, bo] = await createClients(2)
 
   const groupCreationOptions = {
@@ -1221,6 +1221,87 @@ test('messages dont disappear', async () => {
     [bo.inboxId],
     groupCreationOptions
   )
+  await alixGroup.sync()
+
+  const settings = await alixGroup.isDisappearingMessagesEnabled()
+  assert(settings === false, `Expected null, got ${settings}`)
+
+  await alix.conversations.syncAllConversations()
+
+  await alixGroup.send({ text: 'hello world' })
+
+  const alixMessages = await alixGroup.messages()
+  assert(
+    alixMessages.length === 2,
+    `Expected 2 messages for alix, got ${alixMessages.length}`
+  )
+
+  // Wait 1 second
+  await delayToPropogate(1000)
+
+  const messages2 = await alixGroup.messages()
+  assert(
+    messages2.length === 2,
+    `Expected 2 messages for alix after sync, got ${messages2.length}`
+  )
+
+  return true
+})
+
+test('messages dont disappear newGroupCustomPermissionsWithIdentities', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const groupCreationOptions = {
+    disappearingMessageSettings: undefined,
+  }
+  const alixGroup =
+    await alix.conversations.newGroupCustomPermissionsWithIdentities(
+      [bo.publicIdentity],
+      {
+        addMemberPolicy: 'allow',
+        removeMemberPolicy: 'admin',
+        addAdminPolicy: 'admin',
+        removeAdminPolicy: 'admin',
+        updateGroupNamePolicy: 'allow',
+        updateGroupDescriptionPolicy: 'allow',
+        updateGroupImagePolicy: 'allow',
+        updateMessageDisappearingPolicy: 'admin',
+      },
+      groupCreationOptions
+    )
+  await alixGroup.sync()
+
+  const settings = await alixGroup.isDisappearingMessagesEnabled()
+  assert(settings === false, `Expected null, got ${settings}`)
+
+  await alix.conversations.syncAllConversations()
+
+  await alixGroup.send({ text: 'hello world' })
+
+  const alixMessages = await alixGroup.messages()
+  assert(
+    alixMessages.length === 2,
+    `Expected 2 messages for alix, got ${alixMessages.length}`
+  )
+
+  // Wait 1 second
+  await delayToPropogate(1000)
+
+  const messages2 = await alixGroup.messages()
+  assert(
+    messages2.length === 2,
+    `Expected 2 messages for alix after sync, got ${messages2.length}`
+  )
+
+  return true
+})
+
+test('messages dont disappear newGroupWithIdentities', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroupWithIdentities([
+    bo.publicIdentity,
+  ])
   await alixGroup.sync()
 
   const settings = await alixGroup.isDisappearingMessagesEnabled()

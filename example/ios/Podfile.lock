@@ -60,11 +60,11 @@ PODS:
   - hermes-engine (0.76.9):
     - hermes-engine/Pre-built (= 0.76.9)
   - hermes-engine/Pre-built (0.76.9)
-  - LibXMTP (4.3.6)
+  - LibXMTP (4.3.7)
   - MessagePacker (0.4.7)
-  - MMKV (2.2.2):
-    - MMKVCore (~> 2.2.2)
-  - MMKVCore (2.2.2)
+  - MMKV (2.2.3):
+    - MMKVCore (~> 2.2.3)
+  - MMKVCore (2.2.3)
   - OpenSSL-Universal (1.1.2200)
   - RCT-Folly (2024.10.14.00):
     - boost
@@ -1737,18 +1737,18 @@ PODS:
   - SQLCipher/standard (4.5.7):
     - SQLCipher/common
   - SwiftProtobuf (1.28.2)
-  - XMTP (4.3.6):
+  - XMTP (4.3.7):
     - Connect-Swift (= 1.0.0)
     - CryptoSwift (= 1.8.3)
     - CSecp256k1 (~> 0.2)
-    - LibXMTP (= 4.3.6)
+    - LibXMTP (= 4.3.7)
     - SQLCipher (= 4.5.7)
-  - XMTPReactNative (4.3.5):
+  - XMTPReactNative (4.3.7):
     - CSecp256k1 (~> 0.2)
     - ExpoModulesCore
     - MessagePacker
     - SQLCipher (= 4.5.7)
-    - XMTP (= 4.3.6)
+    - XMTP (= 4.3.7)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2080,10 +2080,10 @@ SPEC CHECKSUMS:
   fmt: 01b82d4ca6470831d1cc0852a1af644be019e8f6
   glog: 08b301085f15bcbb6ff8632a8ebaf239aae04e6a
   hermes-engine: 9e868dc7be781364296d6ee2f56d0c1a9ef0bb11
-  LibXMTP: 9f1fbdfb5f72ca9f188104103e64fa758b0185c2
+  LibXMTP: 98ddeba06bd48c957166b8657600121205000670
   MessagePacker: ab2fe250e86ea7aedd1a9ee47a37083edd41fd02
-  MMKV: b4802ebd5a7c68fc0c4a5ccb4926fbdfb62d68e0
-  MMKVCore: a255341a3746955f50da2ad9121b18cb2b346e61
+  MMKV: 941e8774da0e6fdf12c6b3fcc833ca687ae5a42d
+  MMKVCore: 6d5cc1bacce539f4c974985dfe646fb65a5d27d2
   OpenSSL-Universal: 6e1ae0555546e604dbc632a2b9a24a9c46c41ef6
   RCT-Folly: ea9d9256ba7f9322ef911169a9f696e5857b9e17
   RCTDeprecation: ebe712bb05077934b16c6bf25228bdec34b64f83
@@ -2160,10 +2160,10 @@ SPEC CHECKSUMS:
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SQLCipher: 5e6bfb47323635c8b657b1b27d25c5f1baf63bf5
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
-  XMTP: 245e8309335ec29ccea4b7c5edfefd27360a7b82
-  XMTPReactNative: 6a21de8c0a54dc644a263d7f3677209ad73bd986
+  XMTP: 9ea13dcee1502cd775669fff7b02813486d109f2
+  XMTPReactNative: 2ca6976e19657c933bc23c9bc60b133e98d2bd2b
   Yoga: feb4910aba9742cfedc059e2b2902e22ffe9954a
 
-PODFILE CHECKSUM: 445234b5e9cf4fcba62da9f7d5f6b62e89502f20
+PODFILE CHECKSUM: 283c313cbc1ba9857a692b5901eb740dad922eca
 
 COCOAPODS: 1.16.2
