@@ -1,5 +1,13 @@
 # @xmtp/react-native-sdk
 
+## 4.4.0
+
+### Patch Changes
+
+- 984de9a: Release 4.4.0
+  - Archive-based backups for conversation and message backup/restore
+  - Improved fork detection for reliably flagging group state mismatches
+
 ## 4.3.6
 
 ### Patch Changes
