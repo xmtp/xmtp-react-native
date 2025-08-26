@@ -1250,7 +1250,10 @@ test('can list groups', async () => {
     `Group 2 url for alix should be www.group2image.com but was ${alixGroup2?.imageUrl}`
   )
 
-  assert(boGroup1?.isActive === true, `Group 1 should be active for bo`)
+  assert(
+    (await boGroup1?.isActive()) ?? false,
+    `Group 1 should be active for bo`
+  )
 
   return true
 })

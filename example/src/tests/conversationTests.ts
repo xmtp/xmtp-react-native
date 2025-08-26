@@ -971,7 +971,7 @@ test('can streamAll from multiple clients - swapped orderring', async () => {
 
   // Start Caro starts a new conversation.
   await caro.conversations.newConversation(alix.inboxId)
-  await delayToPropogate()
+  await delayToPropogate(500)
   if (allBoConversations.length !== 0) {
     throw Error(
       'Unexpected all conversations count for Bo ' +
