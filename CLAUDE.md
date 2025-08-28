@@ -71,6 +71,11 @@ The example app includes comprehensive tests in `example/src/tests/` covering:
 - Automated documentation updates trigger on GitHub releases
 - Requires `DOCS_SYNC_TOKEN` and `ANTHROPIC_API_KEY` secrets for doc automation
 
+### Code Review
+- Pull requests are automatically reviewed by Claude AI via GitHub Actions
+- Reviews focus on code quality, security, performance, and adherence to project standards
+- Requires `CLAUDE_CODE_OAUTH_TOKEN` secret to be configured in repository settings
+
 ### Important Files
 - `expo-module.config.json`: Expo module configuration
 - `package.json`: Main package configuration with peer dependencies on Expo, React, React Native
