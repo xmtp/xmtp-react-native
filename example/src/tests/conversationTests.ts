@@ -16,6 +16,8 @@ import {
   Conversation,
   ConversationId,
   ConversationVersion,
+  GroupUpdatedCodec,
+  GroupUpdatedContent,
   JSContentCodec,
 } from '../../../src/index'
 
@@ -1324,6 +1326,60 @@ test('messages dont disappear newGroupWithIdentities', async () => {
   assert(
     messages2.length === 2,
     `Expected 2 messages for alix after sync, got ${messages2.length}`
+  )
+
+  return true
+})
+
+test('new groups and dms contain a message including who added the user', async () => {
+  const [alix, bo] = await createClients(2)
+
+  // Register the GroupUpdatedCodec to handle group updated messages
+  Client.register(new GroupUpdatedCodec())
+
+  // Test that group we are added to contains the GroupUpdated message with who added us
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+  await bo.conversations.sync()
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  const boGroupMessages = await boGroup?.messages()
+  assert(boGroupMessages!.length === 1, 'Bo group should have 1 message')
+
+  const message = boGroupMessages![0]
+  await assertEqual(
+    message.contentTypeId,
+    'xmtp.org/group_updated:1.0',
+    'Message should be a group updated message'
+  )
+  console.log(message.contentTypeId)
+
+  const groupUpdatedMessage: GroupUpdatedContent = message.content()
+  const addedByInboxId = groupUpdatedMessage.initiatedByInboxId
+  await assertEqual(
+    addedByInboxId,
+    alix.inboxId,
+    'Added by inbox id should be alix'
+  )
+
+  // Test that dm we are added to contains the GroupUpdated message with who added us
+  const boDm = await bo.conversations.findOrCreateDm(alix.inboxId)
+  await bo.conversations.sync()
+  const alixDm = await bo.conversations.findConversation(boDm.id)
+  const alixDmMessages = await alixDm?.messages()
+  assert(alixDmMessages!.length === 1, 'Bo dm should have 1 message')
+  const dmMessage = alixDmMessages![0]
+  await assertEqual(
+    dmMessage.contentTypeId,
+    'xmtp.org/group_updated:1.0',
+    'Message should be a group updated message'
+  )
+  console.log(dmMessage.contentTypeId)
+
+  const dmGroupUpdatedMessage: GroupUpdatedContent = dmMessage.content()
+  const dmAddedByInboxId = dmGroupUpdatedMessage.initiatedByInboxId
+  await assertEqual(
+    dmAddedByInboxId,
+    bo.inboxId,
+    'Added by inbox id should be bo'
   )
 
   return true

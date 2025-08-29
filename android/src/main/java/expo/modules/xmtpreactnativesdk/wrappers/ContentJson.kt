@@ -260,8 +260,8 @@ class ContentJson(
             )
 
             ContentTypeGroupUpdated.id -> mapOf(
-                "initiatedByInboxId" to (content as GroupUpdated).initiatedByInboxId,
                 "groupUpdated" to mapOf(
+                    "initiatedByInboxId" to (content as GroupUpdated).initiatedByInboxId,
                     "membersAdded" to content.addedInboxesList.map {
                         mapOf(
                             "inboxId" to it.inboxId
