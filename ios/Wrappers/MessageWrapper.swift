@@ -77,7 +77,7 @@ struct ContentJson {
 				schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "")
 			))
 		} else if let reaction = obj["reactionV2"] as? [String: Any] {
-            return ContentJson(type: ContentTypeReactionV2, content: FfiReaction(
+            return ContentJson(type: ContentTypeReactionV2, content: FfiReactionPayload(
 				reference: reaction["reference"] as? String ?? "",
 				// Update if we add referenceInboxId to ../src/lib/types/ContentCodec.ts#L19-L24
                 referenceInboxId: "",
