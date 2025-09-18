@@ -54,7 +54,7 @@ If your app doesn't appear to be picking up changes in the .env file, you can tr
 ## Run example app unit tests on local emulators
 Running tests locally is useful when updating GitHub actions, or locally testing between changes.
 
-1. [Install Docker](https://docs.docker.com/get-docker/)
+1. [Install Docker](https://docs.docker.com/get-started/get-docker/)
 
 2. Start a local XMTP server
     ```bash
