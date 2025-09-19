@@ -7,7 +7,6 @@
 
 import Foundation
 import XMTP
-import LibXMTP
 
 struct KeyPackageStatusWrapper {
 	static func encodeToObj(keyPackageStatus: FfiKeyPackageStatus) throws -> [String: Any] {

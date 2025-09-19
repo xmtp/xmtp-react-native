@@ -1,5 +1,4 @@
 import ExpoModulesCore
-import LibXMTP
 import OSLog
 import XMTP
 
