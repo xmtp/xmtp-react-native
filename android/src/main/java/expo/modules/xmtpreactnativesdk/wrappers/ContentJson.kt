@@ -42,8 +42,8 @@ import org.xmtp.android.library.codecs.getReactionAction
 import org.xmtp.android.library.codecs.getReactionSchema
 import org.xmtp.android.library.codecs.id
 import uniffi.xmtpv3.FfiMultiRemoteAttachment
-import uniffi.xmtpv3.FfiReaction
 import uniffi.xmtpv3.FfiReactionAction
+import uniffi.xmtpv3.FfiReactionPayload
 import uniffi.xmtpv3.FfiReactionSchema
 import uniffi.xmtpv3.decodeMultiRemoteAttachment
 import uniffi.xmtpv3.decodeReaction
@@ -137,7 +137,7 @@ class ContentJson(
             } else if (obj.has("reactionV2")) {
                 val reaction = obj.get("reactionV2").asJsonObject
                 return ContentJson(
-                    ContentTypeReactionV2, FfiReaction(
+                    ContentTypeReactionV2, FfiReactionPayload(
                         reference = reaction.get("reference").asString,
                         action = getReactionV2Action(reaction.get("action").asString.lowercase()),
                         schema = getReactionV2Schema(reaction.get("schema").asString.lowercase()),
@@ -232,7 +232,7 @@ class ContentJson(
             )
 
             ContentTypeReactionV2.id ->  {
-                val reaction: FfiReaction = decodeReaction(encodedContent!!.toByteArray())
+                val reaction: FfiReactionPayload = decodeReaction(encodedContent!!.toByteArray())
                 mapOf(
                     "reaction" to mapOf(
                         "reference" to reaction.reference,
