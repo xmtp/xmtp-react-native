@@ -12,7 +12,7 @@ export class XMTPPush {
     XMTPModule.registerPushToken(server, token)
   }
 
-  subscribe(topics: ConversationTopic[]) {
-    XMTPModule.subscribePushTopics(this.client.installationId, topics)
+  async subscribe(topics: ConversationTopic[]) {
+    return await XMTPModule.subscribePushTopics(this.client.installationId, topics)
   }
 }

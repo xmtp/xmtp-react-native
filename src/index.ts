@@ -72,17 +72,17 @@ export async function findInboxIdFromIdentity(
 }
 
 export async function deleteLocalDatabase(installationId: InstallationId) {
-  return XMTPModule.deleteLocalDatabase(installationId)
+  return await XMTPModule.deleteLocalDatabase(installationId)
 }
 
 export async function dropLocalDatabaseConnection(
   installationId: InstallationId
 ) {
-  return XMTPModule.dropLocalDatabaseConnection(installationId)
+  return await XMTPModule.dropLocalDatabaseConnection(installationId)
 }
 
 export async function reconnectLocalDatabase(installationId: InstallationId) {
-  return XMTPModule.reconnectLocalDatabase(installationId)
+  return await XMTPModule.reconnectLocalDatabase(installationId)
 }
 
 export async function getInboxState(
@@ -1653,11 +1653,11 @@ export function registerPushToken(pushServer: string, token: string) {
   return XMTPModule.registerPushToken(pushServer, token)
 }
 
-export function subscribePushTopics(
+export async function subscribePushTopics(
   installationId: InstallationId,
   topics: ConversationTopic[]
 ) {
-  return XMTPModule.subscribePushTopics(installationId, topics)
+  return await XMTPModule.subscribePushTopics(installationId, topics)
 }
 
 export async function exportNativeLogs() {
