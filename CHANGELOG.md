@@ -1,12 +1,6 @@
 # @xmtp/react-native-sdk
 
-## 5.0.2
-
-### Patch Changes
-
-- cac8239: Updating package.json since xmtp rn-sdk has an unpublished 5.0.0 entry already
-
-## 5.0.0
+## 5.0.1
 
 ### Breaking Change
 
@@ -18,6 +12,7 @@
 - Lens chain Smart Contract Wallet verifier support (https://github.com/xmtp/libxmtp/pull/2419) @mennatnaga
 - OpenMLS fix for persistence during message processing (https://github.com/xmtp/libxmtp/pull/2498) @richardhuaaa
 - Fix for lifetime validation gaps (https://github.com/xmtp/libxmtp/pull/2502) @richardhuaaa
+- Version bumped to 5.0.1 because an accidental 5.0.0 version was unpublished last May 2025, and npm does not allow re-using unpublished versions
 
 ## 4.4.0
 
