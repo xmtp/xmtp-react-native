@@ -1,6 +1,6 @@
 # @xmtp/react-native-sdk
 
-## 4.5.0
+## 5.0.0
 
 ### Breaking Change
 - `XMTPPush` `subscribe()` was updated to be `async` to account for core library database calls
