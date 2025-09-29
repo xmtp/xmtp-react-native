@@ -1736,16 +1736,16 @@ PODS:
   - SQLCipher/standard (4.5.7):
     - SQLCipher/common
   - SwiftProtobuf (1.28.2)
-  - XMTP (4.5.0):
+  - XMTP (4.6.1-dev.b5da4c4):
     - Connect-Swift (= 1.0.0)
     - CryptoSwift (= 1.8.3)
     - SQLCipher (= 4.5.7)
-  - XMTPReactNative (4.4.0):
+  - XMTPReactNative (5.2.0-dev):
     - CSecp256k1 (~> 0.2)
     - ExpoModulesCore
     - MessagePacker
     - SQLCipher (= 4.5.7)
-    - XMTP (= 4.5.0)
+    - XMTP (= 4.6.1-dev.b5da4c4)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2155,8 +2155,8 @@ SPEC CHECKSUMS:
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SQLCipher: 5e6bfb47323635c8b657b1b27d25c5f1baf63bf5
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
-  XMTP: cdb24ebd474cb65cce7b337f6960f028abfa7d60
-  XMTPReactNative: c4210319adaf30ee0ba9acbd29014efde27f33b4
+  XMTP: a8f1689baa33adc6cb7e449421bfeb6279de14a2
+  XMTPReactNative: 768d4108d1df8b0672c8ade0e1f1d6735107ab73
   Yoga: feb4910aba9742cfedc059e2b2902e22ffe9954a
 
 PODFILE CHECKSUM: 283c313cbc1ba9857a692b5901eb740dad922eca
