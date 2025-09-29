@@ -1,11 +1,19 @@
 # @xmtp/react-native-sdk
 
+## 5.0.2
+
+### Patch Changes
+
+- cac8239: Updating package.json since xmtp rn-sdk has an unpublished 5.0.0 entry already
+
 ## 5.0.0
 
 ### Breaking Change
+
 - `XMTPPush` `subscribe()` was updated to be `async` to account for core library database calls
 
 ### Minor Changes
+
 - Faster syncing of new groups: new welcome message cursor enables skipping attempts at decrypting old messages (https://github.com/xmtp/libxmtp/pull/2088) @mchenani @codabrink
 - Lens chain Smart Contract Wallet verifier support (https://github.com/xmtp/libxmtp/pull/2419) @mennatnaga
 - OpenMLS fix for persistence during message processing (https://github.com/xmtp/libxmtp/pull/2498) @richardhuaaa
