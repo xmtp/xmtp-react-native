@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 5.0.2
+
+### Patch Changes
+
+- d3b5715: Fix initial group membership validation
+
 ## 5.0.1
 
 ### Breaking Change
