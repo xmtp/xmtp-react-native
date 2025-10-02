@@ -44,6 +44,9 @@ jobs:
 
       - name: Install docker
         run: brew install docker docker-compose
+
+      - name: Install colima
+        run: brew install colima
       
       - name: Start colima
         run: colima start
