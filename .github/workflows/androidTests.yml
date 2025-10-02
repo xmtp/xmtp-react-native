@@ -47,6 +47,7 @@ jobs:
 
       - name: Prepare colima
         run: |
+          brew install qemu
           brew install colima
           mkdir -p /tmp/colima
       
