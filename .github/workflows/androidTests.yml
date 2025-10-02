@@ -51,7 +51,7 @@ jobs:
           mkdir -p /tmp/colima
       
       - name: Start colima
-        run: colima start
+        run: colima start --vm-type qemu
 
       - name: Start local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
