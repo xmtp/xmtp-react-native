@@ -16,7 +16,7 @@ defaults:
 jobs:
   android-tests:
     name: Android Tests
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v3
@@ -24,8 +24,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'adopt'
-          java-version: '11'
+          distribution: adopt
+          java-version: 11
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
@@ -47,12 +47,11 @@ jobs:
 
       - name: Prepare colima
         run: |
-          brew install qemu
           brew install colima
           mkdir -p /tmp/colima
-      
+
       - name: Start colima
-        run: colima start --vm-type qemu
+        run: colima start
 
       - name: Start local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
