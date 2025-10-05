@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import EncryptedStorage from 'react-native-encrypted-storage'
 import RNFS from 'react-native-fs'
 import crypto from 'react-native-quick-crypto'
-import { useMutation, useQuery, UseQueryResult } from 'react-query'
+import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
 import {
   Conversation,
   DecodedMessage,
@@ -26,16 +26,14 @@ export function useConversationList(): UseQueryResult<
   Conversation<SupportedContentTypes>[]
 > {
   const { client } = useXmtp()
-  return useQuery<Conversation<SupportedContentTypes>[]>(
-    ['xmtp', 'conversations', client?.publicIdentity.identifier],
-    async () => {
+  return useQuery<Conversation<SupportedContentTypes>[]>({
+    queryKey: ['xmtp', 'conversations', client?.publicIdentity.identifier],
+    queryFn: async () => {
       await client?.conversations.sync()
       return (await client?.conversations.list()) || []
     },
-    {
-      enabled: !!client,
-    }
-  )
+    enabled: !!client,
+  })
 }
 
 export function useGroup({
@@ -46,19 +44,18 @@ export function useGroup({
   const { client } = useXmtp()
   return useQuery<
     Group<SupportedContentTypes>[],
-    unknown,
+    Error,
     Group<SupportedContentTypes> | undefined
-  >(
-    ['xmtp', 'group', client?.publicIdentity.identifier, groupId],
-    async () => {
+  >({
+    queryKey: ['xmtp', 'group', client?.publicIdentity.identifier, groupId],
+    queryFn: async () => {
       const groups = await client?.conversations.listGroups()
       return groups || []
     },
-    {
-      select: (groups) => groups.find((g) => g.id === groupId),
-      enabled: !!client,
-    }
-  )
+    select: (groups: Group<SupportedContentTypes>[]) =>
+      groups.find((g: Group<SupportedContentTypes>) => g.id === groupId),
+    enabled: !!client,
+  })
 }
 
 /**
@@ -75,16 +72,22 @@ export function useConversation({
   // TODO: use a DB instead of scanning the cached conversation list
   return useQuery<
     Conversation<SupportedContentTypes>[],
-    unknown,
+    Error,
     Conversation<SupportedContentTypes> | undefined
-  >(
-    ['xmtp', 'conversations', client?.publicIdentity.identifier, topic],
-    () => client!.conversations.list(),
-    {
-      select: (conversations) => conversations.find((c) => c.topic === topic),
-      enabled: !!client && !!topic,
-    }
-  )
+  >({
+    queryKey: [
+      'xmtp',
+      'conversations',
+      client?.publicIdentity.identifier,
+      topic,
+    ],
+    queryFn: () => client!.conversations.list(),
+    select: (conversations: Conversation<SupportedContentTypes>[]) =>
+      conversations.find(
+        (c: Conversation<SupportedContentTypes>) => c.topic === topic
+      ),
+    enabled: !!client && !!topic,
+  })
 }
 
 /**
@@ -99,21 +102,19 @@ export function useMessages({
 }): UseQueryResult<DecodedMessage[]> {
   const { client } = useXmtp()
   const { data: conversation } = useConversation({ topic })
-  return useQuery<DecodedMessage[]>(
-    [
+  return useQuery<DecodedMessage[]>({
+    queryKey: [
       'xmtp',
       'messages',
       client?.publicIdentity.identifier,
       conversation?.topic,
     ],
-    async () => {
+    queryFn: async () => {
       await conversation!.sync()
       return conversation!.messages()
     },
-    {
-      enabled: !!client && !!topic && !!conversation,
-    }
-  )
+    enabled: !!client && !!topic && !!conversation,
+  })
 }
 
 export function useGroupMessages({
@@ -123,18 +124,21 @@ export function useGroupMessages({
 }): UseQueryResult<DecodedMessage[]> {
   const { client } = useXmtp()
   const { data: group } = useGroup({ groupId: id })
-  return useQuery<DecodedMessage[]>(
-    ['xmtp', 'groupMessages', client?.publicIdentity.identifier, group?.id],
-    async () => {
+  return useQuery<DecodedMessage[]>({
+    queryKey: [
+      'xmtp',
+      'groupMessages',
+      client?.publicIdentity.identifier,
+      group?.id,
+    ],
+    queryFn: async () => {
       await group!.sync()
       const messages = await group!.messages()
       console.log('messages', messages)
       return group!.messages()
     },
-    {
-      enabled: !!client && !!group,
-    }
-  )
+    enabled: !!client && !!group,
+  })
 }
 
 /**
@@ -158,7 +162,7 @@ export function useMessage({
   const { client } = useXmtp()
   const { data: conversation } = useConversation({ topic })
   const { data: messages, refetch: refreshMessages } = useMessages({ topic })
-  const message = messages?.find(({ id }) => id === messageId)
+  const message = messages?.find(({ id }: DecodedMessage) => id === messageId)
 
   const performReaction =
     conversation &&
@@ -174,7 +178,7 @@ export function useMessage({
           },
         })
         .then(() => {
-          refreshMessages().catch((err) =>
+          refreshMessages().catch((err: unknown) =>
             console.log('Error refreshing messages', err)
           )
         }))
@@ -204,7 +208,7 @@ export function useGroupMessage({
   const { data: messages, refetch: refreshMessages } = useGroupMessages({
     id: groupId,
   })
-  const message = messages?.find(({ id }) => id === messageId)
+  const message = messages?.find(({ id }: DecodedMessage) => id === messageId)
 
   const performReaction =
     group &&
@@ -220,7 +224,7 @@ export function useGroupMessage({
           },
         })
         .then(() => {
-          refreshMessages().catch((err) =>
+          refreshMessages().catch((err: unknown) =>
             console.log('Error refreshing messages', err)
           )
         }))
@@ -241,7 +245,8 @@ export function useConversationReactions({ topic }: { topic: string }) {
   const { client } = useXmtp()
   const { data: messages } = useMessages({ topic })
   const reactions = (messages || []).filter(
-    (message) => message.contentTypeId === 'xmtp.org/reaction:1.0'
+    (message: DecodedMessage) =>
+      message.contentTypeId === 'xmtp.org/reaction:1.0'
   )
   return useQuery<{
     [messageId: string]: {
@@ -249,15 +254,15 @@ export function useConversationReactions({ topic }: { topic: string }) {
       count: number
       includesMe: boolean
     }[]
-  }>(
-    [
+  }>({
+    queryKey: [
       'xmtp',
       'reactions',
       client?.publicIdentity.identifier,
       topic,
       reactions.length,
     ],
-    () => {
+    queryFn: () => {
       // SELECT messageId, reaction, senderInboxId FROM reactions GROUP BY messageId, reaction
       const byId = {} as {
         [messageId: string]: { [reaction: string]: string[] }
@@ -266,7 +271,7 @@ export function useConversationReactions({ topic }: { topic: string }) {
       reactions
         .slice()
         .reverse()
-        .forEach((message) => {
+        .forEach((message: DecodedMessage) => {
           const { senderInboxId } = message
           const reaction = message.content() as ReactionContent
           const messageId = reaction!.reference
@@ -310,17 +315,16 @@ export function useConversationReactions({ topic }: { topic: string }) {
       })
       return result
     },
-    {
-      enabled: !!reactions.length,
-    }
-  )
+    enabled: !!reactions.length,
+  })
 }
 
 export function useGroupReactions({ groupId }: { groupId: string }) {
   const { client } = useXmtp()
   const { data: messages } = useGroupMessages({ id: groupId })
   const reactions = (messages || []).filter(
-    (message) => message.contentTypeId === 'xmtp.org/reaction:1.0'
+    (message: DecodedMessage) =>
+      message.contentTypeId === 'xmtp.org/reaction:1.0'
   )
   return useQuery<{
     [messageId: string]: {
@@ -328,15 +332,15 @@ export function useGroupReactions({ groupId }: { groupId: string }) {
       count: number
       includesMe: boolean
     }[]
-  }>(
-    [
+  }>({
+    queryKey: [
       'xmtp',
       'reactions',
       client?.publicIdentity.identifier,
       groupId,
       reactions.length,
     ],
-    () => {
+    queryFn: () => {
       // SELECT messageId, reaction, senderInboxId FROM reactions GROUP BY messageId, reaction
       const byId = {} as {
         [messageId: string]: { [reaction: string]: string[] }
@@ -345,7 +349,7 @@ export function useGroupReactions({ groupId }: { groupId: string }) {
       reactions
         .slice()
         .reverse()
-        .forEach((message) => {
+        .forEach((message: DecodedMessage) => {
           const { senderInboxId } = message
           const reaction = message.content() as ReactionContent
           const messageId = reaction!.reference
@@ -389,10 +393,8 @@ export function useGroupReactions({ groupId }: { groupId: string }) {
       })
       return result
     },
-    {
-      enabled: !!reactions.length,
-    }
-  )
+    enabled: !!reactions.length,
+  })
 }
 
 export function useMessageReactions({
@@ -439,36 +441,32 @@ export function useLoadRemoteAttachment({
   enabled: boolean
 }): { decrypted: DecryptedLocalAttachment | undefined } {
   const { client } = useXmtp()
-  const { data: encryptedLocalFileUri } = useQuery<string>(
-    [
+  const { data: encryptedLocalFileUri } = useQuery<string>({
+    queryKey: [
       'xmtp',
       'localAttachment',
       'download',
       remoteAttachment?.url,
       remoteAttachment?.contentDigest,
     ],
-    () => downloadFile(remoteAttachment!.url),
-    {
-      enabled: enabled && !!remoteAttachment?.url,
-    }
-  )
-  const { data: decrypted } = useQuery<DecryptedLocalAttachment>(
-    [
+    queryFn: () => downloadFile(remoteAttachment!.url),
+    enabled: enabled && !!remoteAttachment?.url,
+  })
+  const { data: decrypted } = useQuery<DecryptedLocalAttachment>({
+    queryKey: [
       'xmtp',
       'localAttachment',
       'decrypt',
       encryptedLocalFileUri,
       remoteAttachment?.contentDigest,
     ],
-    () =>
+    queryFn: () =>
       client!.decryptAttachment({
         encryptedLocalFileUri: encryptedLocalFileUri!,
         metadata: remoteAttachment!,
       }),
-    {
-      enabled: enabled && !!encryptedLocalFileUri && !!remoteAttachment,
-    }
-  )
+    enabled: enabled && !!encryptedLocalFileUri && !!remoteAttachment,
+  })
   return { decrypted }
 }
 
@@ -590,29 +588,34 @@ export function usePrepareRemoteAttachment({
   const { client } = useXmtp()
   const { mutateAsync: encryptAttachment } = useMutation<
     EncryptedLocalAttachment,
-    unknown,
+    Error,
     { fileUri?: string; mimeType?: string }
-  >(
-    ['xmtp', 'remoteAttachment', 'local'],
-    ({ fileUri, mimeType }) =>
+  >({
+    mutationKey: ['xmtp', 'remoteAttachment', 'local'],
+    mutationFn: ({
+      fileUri,
+      mimeType,
+    }: {
+      fileUri?: string
+      mimeType?: string
+    }) =>
       client!.encryptAttachment({
         fileUri: fileUri!,
         mimeType,
       }),
-    {}
-  )
+  })
   const { mutateAsync: uploadAttachment } = useMutation<
     string,
-    unknown,
+    Error,
     EncryptedLocalAttachment
-  >(
-    ['xmtp', 'remoteAttachment', 'upload'],
-    (attachement: EncryptedLocalAttachment) =>
+  >({
+    mutationKey: ['xmtp', 'remoteAttachment', 'upload'],
+    mutationFn: (attachement: EncryptedLocalAttachment) =>
       uploadFile(
         attachement!.encryptedLocalFileUri,
         attachement?.metadata?.contentDigest
-      )
-  )
+      ),
+  })
 
   const callback = useCallback(
     async ({ fileUri, mimeType }: { fileUri: string; mimeType?: string }) => {
@@ -674,30 +677,35 @@ export function usePrepareMultiRemoteAttachment({
 
   const { mutateAsync: encryptAttachment } = useMutation<
     EncryptedLocalAttachment,
-    unknown,
+    Error,
     { fileUri: string; mimeType?: string }
-  >(
-    ['xmtp', 'remoteAttachment', 'local'],
-    ({ fileUri, mimeType }) =>
+  >({
+    mutationKey: ['xmtp', 'remoteAttachment', 'local'],
+    mutationFn: ({
+      fileUri,
+      mimeType,
+    }: {
+      fileUri: string
+      mimeType?: string
+    }) =>
       client!.encryptAttachment({
         fileUri,
         mimeType,
       }),
-    {}
-  )
+  })
 
   const { mutateAsync: uploadAttachment } = useMutation<
     string,
-    unknown,
+    Error,
     EncryptedLocalAttachment
-  >(
-    ['xmtp', 'remoteAttachment', 'upload'],
-    (attachment: EncryptedLocalAttachment) =>
+  >({
+    mutationKey: ['xmtp', 'remoteAttachment', 'upload'],
+    mutationFn: (attachment: EncryptedLocalAttachment) =>
       uploadFile(
         attachment.encryptedLocalFileUri,
         attachment.metadata?.contentDigest
-      )
-  )
+      ),
+  })
 
   useEffect(() => {
     console.log('Preparing multiple remote attachments', {
@@ -711,23 +719,31 @@ export function usePrepareMultiRemoteAttachment({
     const prepareAttachments = async () => {
       try {
         const results = await Promise.all(
-          filesRef.current.map(async ({ fileUri, mimeType }) => {
-            console.log('Encrypting attachment:', { fileUri, mimeType })
-            const encrypted = await encryptAttachment({
+          filesRef.current.map(
+            async ({
               fileUri,
-              mimeType: mimeType || 'application/octet-stream', // Ensure we always have a mimeType
-            })
+              mimeType,
+            }: {
+              fileUri: string
+              mimeType?: string
+            }) => {
+              console.log('Encrypting attachment:', { fileUri, mimeType })
+              const encrypted = await encryptAttachment({
+                fileUri,
+                mimeType: mimeType || 'application/octet-stream', // Ensure we always have a mimeType
+              })
 
-            console.log('Encrypted attachment:', {
-              contentDigest: encrypted.metadata?.contentDigest,
-            })
+              console.log('Encrypted attachment:', {
+                contentDigest: encrypted.metadata?.contentDigest,
+              })
 
-            const url = await uploadAttachment(encrypted)
-            return {
-              url,
-              metadata: encrypted.metadata,
+              const url = await uploadAttachment(encrypted)
+              return {
+                url,
+                metadata: encrypted.metadata,
+              }
             }
-          })
+          )
         )
 
         const attachments = results.map((res) => ({
@@ -760,10 +776,10 @@ export function useSavedAddress(): {
   save: (address: string) => void
   clear: () => void
 } {
-  const { data: address, refetch } = useQuery<string | null>(
-    ['xmtp', 'address'],
-    () => EncryptedStorage.getItem('xmtp.address')
-  )
+  const { data: address, refetch } = useQuery<string | null>({
+    queryKey: ['xmtp', 'address'],
+    queryFn: () => EncryptedStorage.getItem('xmtp.address'),
+  })
   return {
     address,
     save: async (address: string) => {
