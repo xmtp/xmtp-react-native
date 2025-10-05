@@ -19,28 +19,22 @@ jobs:
     runs-on: macos-15-intel
     steps:
       - name: Checkout project sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v1
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v5
 
       - name: Install dependencies
-        run: npm i --force
-
-      - name: Install React Native CLI
-        run: npm i -g react-native-cli --force
+        run: npm i
 
       - name: Install docker
         run: brew install docker docker-compose
