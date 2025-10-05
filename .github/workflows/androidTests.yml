@@ -16,7 +16,7 @@ defaults:
 jobs:
   android-tests:
     name: Android Tests
-    runs-on: "ubuntu-22.04-8core"
+    runs-on: ubuntu-latest-8core
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v5
