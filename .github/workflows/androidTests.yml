@@ -16,7 +16,7 @@ defaults:
 jobs:
   android-tests:
     name: Android Tests
-    runs-on: ubuntu-latest-8core
+    runs-on: warp-ubuntu-latest-x64-16x
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v5
