@@ -59,7 +59,8 @@ jobs:
           script: |
             sudo chmod -R 777 /home/runner/work/xmtp-react-native || true
             npx react-native run-android
-            sleep 15
+            adb wait-for-device
+            adb shell 'while [[ $(getprop sys.boot_completed) != "1" ]]; do sleep 1; done;'
             cd android && ./gradlew connectedCheck
 
       - name: Stop local test server
