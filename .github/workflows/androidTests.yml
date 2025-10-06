@@ -57,6 +57,7 @@ jobs:
           working-directory: ./example
           api-level: 29
           script: |
+            sudo chmod -R 777 example/dev/local/upload-service/data/config/caddy || true
             npx react-native run-android
             sleep 15
             cd android && ./gradlew connectedCheck
