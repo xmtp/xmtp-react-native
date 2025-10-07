@@ -58,7 +58,7 @@ jobs:
           api-level: 29
           script: |
             sudo chmod -R 777 /home/runner/work/xmtp-react-native || true
-            npx react-native run-android
+            npm run android
             adb wait-for-device
             adb shell 'while [[ $(getprop sys.boot_completed) != "1" ]]; do sleep 1; done;'
             cd android && ./gradlew connectedCheck
