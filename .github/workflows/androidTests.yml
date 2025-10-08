@@ -61,7 +61,7 @@ jobs:
             npm run android
             adb wait-for-device
             adb shell 'while [[ $(getprop sys.boot_completed) != "1" ]]; do sleep 1; done;'
-            cd android && ./gradlew connectedCheck
+            cd android && ./gradlew connectedCheck --quiet
 
       - name: Stop local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
