@@ -383,7 +383,13 @@ export default function TestScreen(): JSX.Element {
           </Text>
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {!autoRun && <Button onPress={runAllTests} title="Run All" />}
+            {!autoRun && (
+              <Button
+                onPress={runAllTests}
+                accessibilityLabel="Run All"
+                title="Run All"
+              />
+            )}
             {autoRun && completedTests === filteredTests.length && (
               <Text
                 testID="tests-complete"
