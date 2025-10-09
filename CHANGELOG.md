@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 5.0.4
+
+### Patch Changes
+
+- e2ebad2: Add creationSignatureKind field to InboxState
+
 ## 5.0.2
 
 ### Patch Changes
