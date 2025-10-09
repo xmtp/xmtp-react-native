@@ -1,22 +1,32 @@
 import { InboxId } from './Client'
 import { PublicIdentity } from './PublicIdentity'
 
+type SignatureKind =
+  | 'ERC191'
+  | 'ERC1271'
+  | 'INSTALLATION_KEY'
+  | 'LEGACY_DELEGATED'
+  | 'P256'
+
 export class InboxState {
   inboxId: InboxId
   identities: PublicIdentity[]
   installations: Installation[]
   recoveryIdentity: PublicIdentity
+  creationSignatureKind?: SignatureKind
 
   constructor(
     inboxId: InboxId,
     identities: PublicIdentity[],
     installations: Installation[],
-    recoveryIdentity: PublicIdentity
+    recoveryIdentity: PublicIdentity,
+    creationSignatureKind?: SignatureKind
   ) {
     this.inboxId = inboxId
     this.identities = identities
     this.installations = installations
     this.recoveryIdentity = recoveryIdentity
+    this.creationSignatureKind = creationSignatureKind
   }
 
   static from(json: string): InboxState {
@@ -29,7 +39,10 @@ export class InboxState {
       entry.installations.map((inst: string) => {
         return Installation.from(inst)
       }),
-      PublicIdentity.from(entry.recoveryIdentity)
+      PublicIdentity.from(entry.recoveryIdentity),
+      entry.creationSignatureKind?.length
+        ? entry.creationSignatureKind
+        : undefined
     )
   }
 }
