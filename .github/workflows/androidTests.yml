@@ -13,6 +13,7 @@ jobs:
   android-tests:
     name: Android Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v5
@@ -26,12 +27,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
 
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            example/node_modules
+            ~/.yarn/cache
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
       - name: Install dependencies in main directory
-        run: yarn
+        run: yarn --frozen-lockfile
 
       - name: Install dependencies in "example" directory
         working-directory: ./example
-        run: yarn
+        run: yarn --frozen-lockfile
 
       - name: Install docker-compose
         run: |
@@ -47,12 +59,14 @@ jobs:
 
       - name: Clone and setup libxmtp
         run: |
-          git clone https://github.com/xmtp/libxmtp.git
+          git clone --depth 1 https://github.com/xmtp/libxmtp.git
           cd libxmtp
           dev/up
 
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: false
 
       - name: AVD cache
         uses: actions/cache@v4
@@ -72,8 +86,11 @@ jobs:
           arch: x86_64
           target: default
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 2048
           disable-animations: false
+          emulator-boot-timeout: 300
           script: echo "Generated AVD snapshot for caching."
 
       - name: Gradle Run Integration Tests
@@ -84,11 +101,14 @@ jobs:
           arch: x86_64
           target: default
           force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 2048
           disable-animations: true
+          emulator-boot-timeout: 300
           script: |
             npm run android
-            cd android && ./gradlew connectedCheck --quiet
+            cd android && ./gradlew connectedCheck --quiet --max-workers=2
 
       - name: Stop libxmtp server
         run: |
