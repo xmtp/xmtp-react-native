@@ -48,6 +48,13 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Clone and setup libxmtp
+        run: |
+          cd ..
+          git clone https://github.com/xmtp/libxmtp.git
+          cd libxmtp
+          dev/up
+
       - name: Start local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
 
@@ -65,3 +72,8 @@ jobs:
 
       - name: Stop local test server
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
+
+      - name: Stop libxmtp server
+        run: |
+          cd ../libxmtp
+          dev/down
