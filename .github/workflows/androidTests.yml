@@ -9,10 +9,6 @@ env:
   GPR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GPR_USER: ${{ secrets.GITHUB_ACTOR }}
 
-defaults:
-  run:
-    working-directory: ./example
-
 jobs:
   android-tests:
     name: Android Tests
@@ -33,7 +29,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
 
-      - name: Install dependencies
+      - name: Install dependencies in main directory
+        run: yarn
+
+      - name: Install dependencies in "example" directory
+        working-directory: ./example
         run: yarn
 
       - name: Install docker-compose
@@ -50,13 +50,9 @@ jobs:
 
       - name: Clone and setup libxmtp
         run: |
-          cd ..
           git clone https://github.com/xmtp/libxmtp.git
           cd libxmtp
           dev/up
-
-      - name: Start local test server
-        run: docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
 
       - name: Gradle Run Integration Tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -70,10 +66,7 @@ jobs:
             adb shell 'while [[ $(getprop sys.boot_completed) != "1" ]]; do sleep 1; done;'
             cd android && ./gradlew connectedCheck --quiet
 
-      - name: Stop local test server
-        run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
-
       - name: Stop libxmtp server
         run: |
-          cd ../libxmtp
+          cd libxmtp
           dev/down
