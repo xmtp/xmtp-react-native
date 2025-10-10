@@ -1,16 +1,4 @@
 {
-  "name": "xmtp-react-native-sdk-example",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "expo start --dev-client",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "ios:clean": "expo run:ios --no-build-cache",
-    "web": "expo start --web",
-    "upload:up": "docker-compose -p xmtp -f dev/local/docker-compose.yml up -d",
-    "upload:down": "docker-compose -p xmtp -f dev/local/docker-compose.yml down",
-    "postinstall": "patch-package"
-  },
   "dependencies": {
     "@ethersproject/shims": "^5.8.0",
     "@react-native-async-storage/async-storage": "1.17.11",
@@ -56,6 +44,7 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/node": "^20.17.6",
+    "@types/react": "~18.3.12",
     "@types/text-encoding": "^0.0.39",
     "@typescript-eslint/eslint-plugin": "^6.13.1",
     "@typescript-eslint/parser": "^6.13.1",
@@ -67,13 +56,25 @@
     "prettier": "^3.1.0",
     "typescript": "^4.9.4"
   },
-  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "expo": {
     "autolinking": {
       "nativeModulesDir": ".."
     }
   },
-  "engines": {
-    "node": ">=20"
-  }
+  "name": "xmtp-react-native-sdk-example",
+  "private": true,
+  "scripts": {
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "ios:clean": "expo run:ios --no-build-cache",
+    "postinstall": "patch-package",
+    "start": "expo start --dev-client",
+    "upload:down": "docker-compose -p xmtp -f dev/local/docker-compose.yml down",
+    "upload:up": "docker-compose -p xmtp -f dev/local/docker-compose.yml up -d",
+    "web": "expo start --web"
+  },
+  "version": "1.0.0"
 }
