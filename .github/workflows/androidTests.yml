@@ -40,6 +40,11 @@ jobs:
       - name: Install docker
         run: brew install docker docker-compose
 
+      - name: Prepare colima
+        run: |
+          brew install colima
+          mkdir -p /tmp/colima
+
       - name: Start colima
         run: colima start
 
