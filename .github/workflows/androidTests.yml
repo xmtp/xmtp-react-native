@@ -15,6 +15,7 @@ defaults:
 
 jobs:
   android-tests:
+    timeout-minutes: 30
     name: Android Tests
     runs-on: macos-latest
     steps:
@@ -24,8 +25,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'adopt'
-          java-version: '11'
+          distribution: "adopt"
+          java-version: "11"
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
@@ -44,7 +45,7 @@ jobs:
 
       - name: Install docker
         run: brew install docker docker-compose
-      
+
       - name: Start colima
         run: colima start
 
