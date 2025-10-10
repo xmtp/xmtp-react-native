@@ -17,7 +17,7 @@ jobs:
   android-tests:
     timeout-minutes: 30
     name: Android Tests
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v3
