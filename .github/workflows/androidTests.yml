@@ -15,7 +15,7 @@ defaults:
 
 jobs:
   android-tests:
-    timeout-minutes: 30
+    timeout-minutes: 45
     name: Android Tests
     runs-on: ubuntu-22.04
     steps:
