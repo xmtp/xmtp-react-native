@@ -10,63 +10,23 @@ env:
   GPR_USER: ${{ secrets.GITHUB_ACTOR }}
 
 jobs:
-  android-tests:
-    name: Android Tests
+  test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    strategy:
+      matrix:
+        api-level: [29]
     steps:
-      - name: Checkout project sources
-        uses: actions/checkout@v5
+      - name: checkout
+        uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            example/node_modules
-            ~/.yarn/cache
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - name: Install dependencies in main directory
-        run: yarn --frozen-lockfile
-
-      - name: Install dependencies in "example" directory
-        working-directory: ./example
-        run: yarn --frozen-lockfile
-
-      - name: Install docker-compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
-
-      # https://github.com/ReactiveCircus/android-emulator-runner?tab=readme-ov-file#running-hardware-accelerated-emulators-on-linux-runners
-      - name: Enable KVM group perms
+      - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Clone and setup libxmtp
-        run: |
-          git clone --depth 1 https://github.com/xmtp/libxmtp.git
-          cd libxmtp
-          dev/up
-
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
-        with:
-          cache-read-only: false
 
       - name: AVD cache
         uses: actions/cache@v4
@@ -75,42 +35,23 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-29
+          key: avd-${{ matrix.api-level }}
 
-      - name: Create AVD and generate snapshot for caching
+      - name: create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          working-directory: ./example
-          api-level: 29
-          arch: x86_64
-          target: default
+          api-level: ${{ matrix.api-level }}
           force-avd-creation: false
-          ram-size: 2048M
-          heap-size: 512M
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 2048
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
-          emulator-boot-timeout: 300
           script: echo "Generated AVD snapshot for caching."
 
-      - name: Gradle Run Integration Tests
+      - name: run tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          working-directory: ./example
-          api-level: 29
-          arch: x86_64
-          target: default
+          api-level: ${{ matrix.api-level }}
           force-avd-creation: false
-          ram-size: 2048M
-          heap-size: 512M
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 2048
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          emulator-boot-timeout: 300
-          script: |
-            npm run android
-            cd android && ./gradlew connectedCheck --quiet --max-workers=2
-
-      - name: Stop libxmtp server
-        run: |
-          cd libxmtp
-          dev/down
+          script: ./gradlew connectedCheck
