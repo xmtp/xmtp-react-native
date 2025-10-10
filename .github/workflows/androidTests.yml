@@ -48,5 +48,5 @@ jobs:
           api-level: 29
           script: |
             npm run android
-            sleep 15
+            adb wait-for-device
             cd android && ./gradlew connectedCheck
