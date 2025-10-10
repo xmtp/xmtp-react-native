@@ -5,6 +5,9 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   GPR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GPR_USER: ${{ secrets.GITHUB_ACTOR }}
