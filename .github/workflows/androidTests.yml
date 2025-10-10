@@ -47,6 +47,6 @@ jobs:
           working-directory: ./example
           api-level: 29
           script: |
-            npm run android
+            npm run android &
             adb wait-for-device
             cd android && ./gradlew connectedCheck
