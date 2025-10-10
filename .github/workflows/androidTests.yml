@@ -38,10 +38,7 @@ jobs:
         uses: actions/setup-node@v3
 
       - name: Install npm dependencies
-        run: |
-          yarn
-          cd example
-          yarn
+        run: yarn
 
       - name: Install docker
         run: brew install docker docker-compose
@@ -58,6 +55,7 @@ jobs:
           working-directory: ./example
           api-level: 29
           script: |
+            yarn
             npm run android
             sleep 15
             cd android && ./gradlew connectedCheck
