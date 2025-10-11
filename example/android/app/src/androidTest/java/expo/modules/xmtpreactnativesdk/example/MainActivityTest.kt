@@ -31,15 +31,19 @@ class MainActivityTest {
             // Go to unit tests page
             onView(button).perform(click())
             waitForDisplayed(withContentDescription("Test View")) { view ->
-                waitForDisplayed(withContentDescription("tests-complete")) { complete ->
-                    try {
-                        waitForDisplayed(withContentDescription("FAIL")) { failure ->
-                            takeScreenshot().writeToTestStorage("${javaClass.simpleName}_${nameRule.methodName}")
-                            Log.d("MainActivityTest", "Test Fail")
-                            TestCase.fail("Test failed")
+                // Click "Run All" button to start the tests
+                waitForDisplayed(withContentDescription("Run All")) { runAllButton ->
+                    onView(runAllButton).perform(click())
+                    waitForDisplayed(withContentDescription("tests-complete")) { complete ->
+                        try {
+                            waitForDisplayed(withContentDescription("FAIL")) { failure ->
+                                takeScreenshot().writeToTestStorage("${javaClass.simpleName}_${nameRule.methodName}")
+                                Log.d("MainActivityTest", "Test Fail")
+                                TestCase.fail("Test failed")
+                            }
+                        } catch (e: Exception) {
+                            Log.d("MainActivityTest", "Test Succeeded $e")
                         }
-                    } catch (e: Exception) {
-                        Log.d("MainActivityTest", "Test Succeeded $e")
                     }
                 }
             }
