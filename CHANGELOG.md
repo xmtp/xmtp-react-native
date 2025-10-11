@@ -1,5 +1,11 @@
 # @xmtp/react-native-sdk
 
+## 5.0.5
+
+### Patch Changes
+
+- cc8aa3f: Fix an issue where the creationSignatureKind was not being set in some cases
+
 ## 5.0.4
 
 ### Patch Changes
