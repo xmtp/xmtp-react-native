@@ -62,7 +62,7 @@ export async function createClients(
       145,
     ])
     const client = await Client.createRandom({
-      env: env ?? 'local',
+      env: env ?? 'dev',
       dbEncryptionKey: keyBytes,
     })
     Client.register(new GroupUpdatedCodec())
