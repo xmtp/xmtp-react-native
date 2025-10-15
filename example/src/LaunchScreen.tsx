@@ -196,7 +196,7 @@ export default function LaunchScreen(
           color="green"
           title="Create Stream Tests"
           onPress={() => navigation.navigate('streamTest')}
-          accessibilityLabel="Unit-tests"
+          accessibilityLabel="Stream-Unit-tests"
         />
       </View>
       <View style={styles.divider} />
