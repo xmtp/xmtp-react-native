@@ -40,7 +40,7 @@ test('can be built offline', async () => {
   const builtClient = await Client.build(
     alix.publicIdentity,
     {
-      env: 'local',
+      env: 'dev',
       dbEncryptionKey: keyBytes,
     },
     alix.inboxId
@@ -77,26 +77,26 @@ test('can manage revoke manually statically', async () => {
 
   // create a v3 client
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
   })
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
   })
 
   const inboxId = alix.inboxId
-  const states = await Client.inboxStatesForInboxIds('local', [inboxId])
+  const states = await Client.inboxStatesForInboxIds('dev', [inboxId])
 
   assert(states[0].installations.length === 2, 'should equal 5 installations')
 
   const toRevokeIds = states[0].installations.map((i) => i.id)
 
   const sigText = await Client.ffiRevokeInstallationsSignatureText(
-    'local',
+    'dev',
     alix.publicIdentity,
     inboxId,
     toRevokeIds as InstallationId[]
@@ -109,8 +109,8 @@ test('can manage revoke manually statically', async () => {
   )
 
   await Client.ffiAddEcdsaSignature('revokeInstallations', signature)
-  await Client.ffiApplySignatureRequest('local', 'revokeInstallations')
-  const postRevokeStates = await Client.inboxStatesForInboxIds('local', [
+  await Client.ffiApplySignatureRequest('dev', 'revokeInstallations')
+  const postRevokeStates = await Client.inboxStatesForInboxIds('dev', [
     inboxId,
   ])
 
@@ -148,32 +148,32 @@ test('static revoke all installations', async () => {
 
   // create a v3 client
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
   })
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
   })
 
   const inboxId = alix.inboxId
-  const states = await Client.inboxStatesForInboxIds('local', [inboxId])
+  const states = await Client.inboxStatesForInboxIds('dev', [inboxId])
 
   assert(states[0].installations.length === 2, 'should equal 2 installations')
 
   const toRevokeIds = states[0].installations.map((i) => i.id)
 
   await Client.revokeInstallations(
-    'local',
+    'dev',
     adaptEthersWalletToSigner(alixWallet),
     inboxId,
     toRevokeIds as InstallationId[]
   )
 
-  const postRevokeStates = await Client.inboxStatesForInboxIds('local', [
+  const postRevokeStates = await Client.inboxStatesForInboxIds('dev', [
     inboxId,
   ])
 
@@ -208,7 +208,7 @@ test('cannot create more than 10 installations', async () => {
   for (let i = 0; i < 10; i++) {
     clients.push(
       await Client.create(adaptEthersWalletToSigner(wallet), {
-        env: 'local',
+        env: 'dev',
         dbEncryptionKey: keyBytes,
         dbDirectory: paths[i],
       })
@@ -222,7 +222,7 @@ test('cannot create more than 10 installations', async () => {
   let failed = false
   try {
     await Client.create(adaptEthersWalletToSigner(wallet), {
-      env: 'local',
+      env: 'dev',
       dbEncryptionKey: keyBytes,
       dbDirectory: paths[10],
     })
@@ -244,7 +244,7 @@ test('cannot create more than 10 installations', async () => {
   assert(updatedState.installations.length === 9, 'should equal 9')
 
   const sixthNow = await Client.create(adaptEthersWalletToSigner(wallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: `${basePath}_11`,
   })
@@ -289,7 +289,7 @@ test('can make a client', async () => {
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   const client = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     deviceSyncEnabled: false,
     appVersion: '0.0.0',
@@ -297,7 +297,7 @@ test('can make a client', async () => {
 
   const inboxId = await Client.getOrCreateInboxId(
     client.publicIdentity,
-    'local'
+    'dev'
   )
 
   assert(
@@ -310,7 +310,7 @@ test('can make a client', async () => {
 test('static can message', async () => {
   const [alix, bo] = await createClients(2)
 
-  const addressMap = await Client.canMessage('local', [
+  const addressMap = await Client.canMessage('dev', [
     alix.publicIdentity,
     new PublicIdentity(
       '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67',
@@ -341,7 +341,7 @@ test('static can message', async () => {
 test('static inboxStates for inboxIds', async () => {
   const [alix, bo] = await createClients(2)
 
-  const inboxStates = await Client.inboxStatesForInboxIds('local', [
+  const inboxStates = await Client.inboxStatesForInboxIds('dev', [
     alix.inboxId,
     bo.inboxId,
   ])
@@ -372,7 +372,7 @@ test('static can get log files', async () => {
   )
   const [alix, bo] = await createClients(2)
 
-  const addressMap = await Client.canMessage('local', [
+  const addressMap = await Client.canMessage('dev', [
     alix.publicIdentity,
     new PublicIdentity(
       '0x4E9ce36E442e55EcD9025B9a6E0D88485d628A67',
@@ -430,7 +430,7 @@ test('can revoke all other installations', async () => {
 
   // create a v3 client
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
 
@@ -441,7 +441,7 @@ test('can revoke all other installations', async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
 
@@ -452,7 +452,7 @@ test('can revoke all other installations', async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
 
@@ -491,7 +491,7 @@ test('calls preAuthenticateToInboxCallback when supplied', async () => {
   ])
 
   await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     preAuthenticateToInboxCallback,
     dbEncryptionKey: keyBytes,
   })
@@ -529,7 +529,7 @@ test('can delete a local database', async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   client = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: new Uint8Array([
       233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
       166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135,
@@ -560,13 +560,13 @@ test('can make a client with encryption key and database directory', async () =>
   ])
 
   const client = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: key,
     dbDirectory: dbDirPath,
   })
 
   const anotherClient = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: key,
   })
 
@@ -579,7 +579,7 @@ test('can make a client with encryption key and database directory', async () =>
   )
 
   const clientFromBundle = await Client.build(client.publicIdentity, {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: key,
     dbDirectory: dbDirPath,
   })
@@ -675,7 +675,7 @@ test('test add account with existing InboxIds', async () => {
   const boWallet = Wallet.createRandom()
 
   const boClient = await Client.create(adaptEthersWalletToSigner(boWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
 
@@ -724,7 +724,7 @@ test('can add and remove accounts', async () => {
   const alixWallet3 = Wallet.createRandom()
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
 
@@ -771,7 +771,7 @@ test('errors if dbEncryptionKey is lost', async () => {
   const alixWallet = Wallet.createRandom()
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
 
@@ -779,7 +779,7 @@ test('errors if dbEncryptionKey is lost', async () => {
 
   try {
     await Client.build(alix.publicIdentity, {
-      env: 'local',
+      env: 'dev',
       dbEncryptionKey: badKeyBytes,
     })
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -796,7 +796,7 @@ test('errors if dbEncryptionKey is lost', async () => {
   errorThrown = false
   try {
     await Client.create(adaptEthersWalletToSigner(alixWallet), {
-      env: 'local',
+      env: 'dev',
       dbEncryptionKey: badKeyBytes,
     })
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -825,10 +825,10 @@ test('can manage clients manually', async () => {
 
   const inboxId = await Client.getOrCreateInboxId(
     await signer.getIdentifier(),
-    'local'
+    'dev'
   )
   const client = await Client.ffiCreateClient(await signer.getIdentifier(), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
   const sigText = await client.ffiCreateSignatureText()
@@ -865,7 +865,7 @@ test('can manage add remove manually', async () => {
   const alixSigner = adaptEthersWalletToSigner(alixWallet)
   const boSigner = adaptEthersWalletToSigner(boWallet)
   const alix = await Client.create(alixSigner, {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
 
@@ -941,19 +941,19 @@ test('can manage revoke manually', async () => {
   const alixSigner = adaptEthersWalletToSigner(alixWallet)
 
   const alix = await Client.create(alixSigner, {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
   })
 
   const alix2 = await Client.create(alixSigner, {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
   })
 
   await Client.create(alixSigner, {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath3,
   })
@@ -1071,19 +1071,19 @@ test('can revoke installations', async () => {
 
   // create a v3 client
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
   })
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
   })
 
   const alix3 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath3,
   })
@@ -1146,7 +1146,7 @@ test('can create, inspect, import and resync archive', async () => {
 
   const alixWallet = Wallet.createRandom()
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: key,
     dbDirectory: dbPath1,
   })
@@ -1179,7 +1179,7 @@ test('can create, inspect, import and resync archive', async () => {
   )
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: key,
     dbDirectory: dbPath2,
   })
@@ -1231,7 +1231,7 @@ test('can stitch inactive DMs if duplicated after archive import', async () => {
 
   const alixWallet = Wallet.createRandom()
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: key,
     dbDirectory: dbPath1,
   })
@@ -1247,7 +1247,7 @@ test('can stitch inactive DMs if duplicated after archive import', async () => {
   await alix.createArchive(archivePath, encryptionKey)
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: key,
     dbDirectory: dbPath2,
   })

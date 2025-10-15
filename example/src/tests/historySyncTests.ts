@@ -40,7 +40,7 @@ test('can sync consent (expected to fail unless historySyncUrl is set)', async (
   const alixWallet = Wallet.createRandom()
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
   })
@@ -55,7 +55,7 @@ test('can sync consent (expected to fail unless historySyncUrl is set)', async (
   const boDm = await bo.conversations.findConversation(dm.id)
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
   })
@@ -115,7 +115,7 @@ test('can stream consent (expected to fail unless historySyncUrl is set)', async
   const alixWallet = Wallet.createRandom()
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
   })
@@ -123,7 +123,7 @@ test('can stream consent (expected to fail unless historySyncUrl is set)', async
   const alixGroup = await alix.conversations.newGroup([bo.inboxId])
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
   })
@@ -184,7 +184,7 @@ test('can preference updates (expected to fail unless historySyncUrl is set)', a
   const alixWallet = Wallet.createRandom()
 
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
   })
@@ -197,7 +197,7 @@ test('can preference updates (expected to fail unless historySyncUrl is set)', a
   )
 
   const alix2 = await Client.create(adaptEthersWalletToSigner(alixWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
   })

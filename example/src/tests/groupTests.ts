@@ -2024,11 +2024,11 @@ test('can create new installation without breaking group', async () => {
   const wallet2 = Wallet.createRandom()
 
   const client1 = await Client.create(adaptEthersWalletToSigner(wallet1), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
   const client2 = await Client.create(adaptEthersWalletToSigner(wallet2), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
 
@@ -2059,7 +2059,7 @@ test('can create new installation without breaking group', async () => {
 
   // Recreating a client with wallet 2 (new installation!)
   await Client.create(adaptEthersWalletToSigner(wallet2), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
 
@@ -2317,11 +2317,11 @@ test('handles disappearing messages in a group', async () => {
 
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
-//   const bo = await Client.createRandom({ env: 'local', enableV3: true })
+//   const bo = await Client.createRandom({ env: 'dev', enableV3: true })
 //   await delayToPropogate()
-//   const alix = await Client.createRandom({ env: 'local', enableV3: true })
+//   const alix = await Client.createRandom({ env: 'dev', enableV3: true })
 //   await delayToPropogate()
-//   const caro = await Client.createRandom({ env: 'local', enableV3: true })
+//   const caro = await Client.createRandom({ env: 'dev', enableV3: true })
 //   await delayToPropogate()
 
 //   // Setup stream alls

@@ -155,7 +155,7 @@ test('returns all push topics and validates HMAC keys', async () => {
   }
 
   const eriClient = await Client.create(adaptEthersWalletToSigner(eriWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath,
   })
@@ -165,7 +165,7 @@ test('returns all push topics and validates HMAC keys', async () => {
   await bo.conversations.sync()
 
   const eriClient2 = await Client.create(adaptEthersWalletToSigner(eriWallet), {
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
     dbDirectory: dbDirPath2,
   })
@@ -269,12 +269,12 @@ test('register and use custom content types', async () => {
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   const bo = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     codecs: [new NumberCodec()],
     dbEncryptionKey: keyBytes,
   })
   const alix = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     codecs: [new NumberCodec()],
     dbEncryptionKey: keyBytes,
   })
@@ -315,12 +315,12 @@ test('register and use custom content types with prepare', async () => {
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   const bo = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     codecs: [new NumberCodec()],
     dbEncryptionKey: keyBytes,
   })
   const alix = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     codecs: [new NumberCodec()],
     dbEncryptionKey: keyBytes,
   })
@@ -362,7 +362,7 @@ test('handle fallback types appropriately', async () => {
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   const bob = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     codecs: [
       new NumberCodecEmptyFallback(),
       new NumberCodecUndefinedFallback(),
@@ -370,7 +370,7 @@ test('handle fallback types appropriately', async () => {
     dbEncryptionKey: keyBytes,
   })
   const alix = await Client.createRandom({
-    env: 'local',
+    env: 'dev',
     dbEncryptionKey: keyBytes,
   })
   Client.register(new NumberCodecEmptyFallback())

@@ -162,7 +162,7 @@ test('creating a new conversation', async () => {
 })
 
 test('sending messages in conversations', async () => {
-  const [alixClient, boClient, caroClient] = await createClients(10, 'local')
+  const [alixClient, boClient, caroClient] = await createClients(10, 'dev')
   const alixDm = await alixClient.conversations.newConversation(
     boClient.inboxId
   )
