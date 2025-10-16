@@ -1,4 +1,6 @@
 name: Android Tests
+permissions:
+  contents: read
 on:
   push:
     branches:
