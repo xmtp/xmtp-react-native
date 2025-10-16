@@ -49,6 +49,11 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Install Docker Compose v2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose-plugin
+
       - name: Start XMTP backend services
         run: docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
 
