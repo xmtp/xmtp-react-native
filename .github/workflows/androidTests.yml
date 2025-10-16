@@ -49,6 +49,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Start XMTP backend services
+        run: docker-compose -p xmtp -f dev/local/docker-compose.yml up -d
+
       - name: Run E2E Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -58,3 +61,6 @@ jobs:
             yarn e2e:android:build
             yarn e2e:android:install
             yarn e2e:android:run
+
+      - name: Stop XMTP backend services
+        run: docker-compose -p xmtp -f dev/local/docker-compose.yml down
