@@ -3,4 +3,8 @@ appId: expo.modules.xmtpreactnativesdk.example
 - launchApp:
     clearState: true
 - tapOn: Unit-tests
-- assertVisible: 1. can be built offline
+- assertVisible: All Unit Tests
+- tapOn: RUN ALL
+- extendedWaitUntil:
+    visible: 'Test Summary'
+    timeout: 1200000
