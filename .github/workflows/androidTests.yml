@@ -65,4 +65,5 @@ jobs:
             yarn e2e:android:run
 
       - name: Stop XMTP backend services
+        if: always()
         run: docker compose -p xmtp -f dev/local/docker-compose.yml down
