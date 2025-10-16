@@ -17,7 +17,7 @@ jobs:
   android-tests:
     timeout-minutes: 45
     name: Android Tests
-    runs-on: ubuntu-latest
+    runs-on: warp-ubuntu-latest-x64-8x
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version-file: ".nvmrc"
           cache: yarn
 
       - name: Install dependencies
