@@ -51,6 +51,29 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: AVD cache
+        id: avd-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api29
+
+      - name: Create AVD snapshot (cache miss)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          working-directory: ./example
+          api-level: 29
+          force-avd-creation: false
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: echo "Generated AVD snapshot for caching."
+
       - name: Start XMTP backend services
         run: docker compose -p xmtp -f dev/local/docker-compose.yml up -d
 
@@ -59,6 +82,8 @@ jobs:
         with:
           working-directory: ./example
           api-level: 29
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             yarn e2e:android:build
             yarn e2e:android:install
