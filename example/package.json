@@ -75,8 +75,5 @@
     "autolinking": {
       "nativeModulesDir": ".."
     }
-  },
-  "engines": {
-    "node": ">=22"
   }
 }
