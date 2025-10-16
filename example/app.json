@@ -32,10 +32,18 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "expo.modules.xmtpreactnativesdk.example"
+      "package": "expo.modules.xmtpreactnativesdk.example",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1c13d347-05b2-46e2-b26e-9ddf9b5a0b6b"
+      }
     }
   }
 }

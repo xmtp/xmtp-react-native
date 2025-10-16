@@ -1,4 +1,6 @@
 appId: expo.modules.xmtpreactnativesdk.example
 ---
-- launchApp
-- tapOn: Add
+- launchApp:
+    clearState: true
+- tapOn: Unit-tests
+- assertVisible: 1. can be built offline

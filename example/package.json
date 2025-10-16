@@ -2,8 +2,8 @@
   "name": "xmtp-react-native-sdk-example",
   "version": "1.0.0",
   "scripts": {
-    "e2e:android:build": "cd android && ./gradlew assembleDebug",
-    "e2e:android:install": "adb install android/app/build/outputs/apk/debug/app-debug.apk",
+    "e2e:android:build": "cd android && ./gradlew assembleRelease",
+    "e2e:android:install": "adb install android/app/build/outputs/apk/release/app-release.apk",
     "e2e:android:run": "maestro test ./e2e/android/android-flow.yaml",
     "start": "expo start --dev-client",
     "android": "expo run:android",
