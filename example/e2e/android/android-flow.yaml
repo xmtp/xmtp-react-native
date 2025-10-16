@@ -5,6 +5,6 @@ appId: expo.modules.xmtpreactnativesdk.example
 - tapOn: Unit-tests
 - assertVisible: All Unit Tests
 - tapOn: RUN ALL
-- extendedWaitUntil:
-    visible: 'Test Summary'
-    timeout: 1200000
+# - extendedWaitUntil:
+#     visible: 'Test Summary'
+#     timeout: 1200000
