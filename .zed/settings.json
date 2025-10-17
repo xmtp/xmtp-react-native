@@ -1,0 +1,116 @@
+{
+  // Formatter configuration
+  "formatter": {
+    "language_server": {
+      "name": "typescript-language-server"
+    }
+  },
+
+  // Language-specific settings
+  "languages": {
+    "TypeScript": {
+      "format_on_save": "on",
+      "formatter": [
+        {
+          "code_action": "source.fixAll.eslint"
+        },
+        // {
+        //   "code_action": "source.organizeImports"
+        // },
+        {
+          "external": {
+            "command": "npx",
+            "arguments": ["prettier", "--write", "--stdin-filepath", "{buffer_path}"]
+          }
+        }
+      ]
+    },
+    "JavaScript": {
+      "format_on_save": "on",
+      "formatter": [
+        {
+          "code_action": "source.fixAll.eslint"
+        },
+        // {
+        //   "code_action": "source.organizeImports"
+        // },
+        {
+          "external": {
+            "command": "npx",
+            "arguments": ["prettier", "--write", "--stdin-filepath", "{buffer_path}"]
+          }
+        }
+      ]
+    },
+    "TSX": {
+      "format_on_save": "on",
+      "formatter": [
+        {
+          "code_action": "source.fixAll.eslint"
+        },
+        // {
+        //   "code_action": "source.organizeImports"
+        // },
+        {
+          "external": {
+            "command": "npx",
+            "arguments": ["prettier", "--write", "--stdin-filepath", "{buffer_path}"]
+          }
+        }
+      ]
+    },
+    "Swift": {
+      "format_on_save": "on",
+      "tab_size": 2,
+      "hard_tabs": false,
+      "formatter": {
+        "external": {
+          "command": "swiftformat",
+          "arguments": ["--quiet", "--stdinpath", "{buffer_path}"]
+        }
+      }
+    },
+    "Kotlin": {
+      "format_on_save": "on",
+      "tab_size": 2,
+      "hard_tabs": false,
+      "formatter": {
+        "external": {
+          "command": "ktlint",
+          "arguments": ["--format", "--stdin"]
+        }
+      }
+    }
+  },
+
+  // ESLint integration
+  "lsp": {
+    "eslint": {
+      "settings": {
+        "codeActionOnSave": {
+          "enable": true,
+          "mode": "all"
+        },
+        "format": false,
+        "validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"]
+      }
+    }
+  },
+
+  // File associations
+  "file_types": {
+    "TypeScript": ["ts"],
+    "TSX": ["tsx"],
+    "JavaScript": ["js", "cjs", "mjs"],
+    "Swift": ["swift"],
+    "Kotlin": ["kt", "kts"]
+  },
+
+  // Project-specific settings
+  "tab_size": 2,
+  "hard_tabs": false,
+  "remove_trailing_whitespace_on_save": true,
+  "ensure_final_newline_on_save": true,
+
+
+}
