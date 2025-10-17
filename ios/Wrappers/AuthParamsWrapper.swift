@@ -34,20 +34,28 @@ struct AuthParamsWrapper {
 
 	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper {
 		guard let data = authParams.data(using: .utf8),
-			let jsonOptions = try? JSONSerialization.jsonObject(
-				with: data, options: []) as? [String: Any]
+		      let jsonOptions = try? JSONSerialization.jsonObject(
+		      	with: data, options: []
+		      ) as? [String: Any]
 		else {
 			return AuthParamsWrapper(
 				environment: "dev", dbDirectory: nil,
 				historySyncUrl: nil, customLocalUrl: nil,
 				deviceSyncEnabled: true, debugEventsEnabled: false,
-				appVersion: nil)
+				appVersion: nil
+			)
 		}
 
 		let environment = jsonOptions["environment"] as? String ?? "dev"
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
 		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
+		if let historySyncUrl = historySyncUrl {
+			setenv("XMTP_HISTORY_SERVER_ADDRESS", historySyncUrl, 1)
+		}
 		let customLocalUrl = jsonOptions["customLocalUrl"] as? String
+		if let customLocalUrl = customLocalUrl {
+			setenv("XMTP_NODE_ADDRESS", customLocalUrl, 1)
+		}
 		let deviceSyncEnabled =
 			jsonOptions["deviceSyncEnabled"] as? Bool ?? true
 		let debugEventsEnabled =
@@ -81,11 +89,13 @@ struct WalletParamsWrapper {
 		-> WalletParamsWrapper
 	{
 		guard let data = walletParams.data(using: .utf8),
-			let jsonOptions = try? JSONSerialization.jsonObject(
-				with: data, options: []) as? [String: Any]
+		      let jsonOptions = try? JSONSerialization.jsonObject(
+		      	with: data, options: []
+		      ) as? [String: Any]
 		else {
 			return WalletParamsWrapper(
-				signerType: SignerType.EOA, chainId: nil, blockNumber: nil)
+				signerType: SignerType.EOA, chainId: nil, blockNumber: nil
+			)
 		}
 
 		let walletTypeString = jsonOptions["signerType"] as? String ?? "EOA"

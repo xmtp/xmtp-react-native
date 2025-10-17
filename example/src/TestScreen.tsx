@@ -1,5 +1,5 @@
 import { useRoute } from '@react-navigation/native'
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, JSX } from 'react'
 import { View, Text, Button, ScrollView, Switch, TextInput } from 'react-native'
 
 import { clientTests } from './tests/clientTests'

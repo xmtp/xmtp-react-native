@@ -314,15 +314,35 @@ export default class Conversations<
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the groups in the list.
    * @param {number} limit - Limit the number of groups returned in the list.
    * @param {consentStates} ConsentState[] - Filter the groups by a list of consent states.
+   * @param {number} createdAfterNs - Filter groups created after this timestamp (in nanoseconds).
+   * @param {number} createdBeforeNs - Filter groups created before this timestamp (in nanoseconds).
+   * @param {number} lastActivityAfterNs - Filter groups with last activity after this timestamp (in nanoseconds).
+   * @param {number} lastActivityBeforeNs - Filter groups with last activity before this timestamp (in nanoseconds).
+   * @param {string} orderBy - Order results by 'created_at' or 'last_activity' (default: 'last_activity').
    *
    * @returns {Promise<Group[]>} A Promise that resolves to an array of Group objects.
    */
   async listGroups(
     opts?: ConversationOptions | undefined,
     limit?: number | undefined,
-    consentStates?: ConsentState[] | undefined
+    consentStates?: ConsentState[] | undefined,
+    createdAfterNs?: number | undefined,
+    createdBeforeNs?: number | undefined,
+    lastActivityAfterNs?: number | undefined,
+    lastActivityBeforeNs?: number | undefined,
+    orderBy?: 'created_at' | 'last_activity' | undefined
   ): Promise<Group<ContentTypes>[]> {
-    return await XMTPModule.listGroups(this.client, opts, limit, consentStates)
+    return await XMTPModule.listGroups(
+      this.client,
+      opts,
+      limit,
+      consentStates,
+      createdAfterNs,
+      createdBeforeNs,
+      lastActivityAfterNs,
+      lastActivityBeforeNs,
+      orderBy
+    )
   }
 
   /**
@@ -331,15 +351,35 @@ export default class Conversations<
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the dms in the list.
    * @param {number} limit - Limit the number of dms returned in the list.
    * @param {consentStates} ConsentState[] - Filter the dms by a list of consent states.
+   * @param {number} createdAfterNs - Filter dms created after this timestamp (in nanoseconds).
+   * @param {number} createdBeforeNs - Filter dms created before this timestamp (in nanoseconds).
+   * @param {number} lastActivityAfterNs - Filter dms with last activity after this timestamp (in nanoseconds).
+   * @param {number} lastActivityBeforeNs - Filter dms with last activity before this timestamp (in nanoseconds).
+   * @param {string} orderBy - Order results by 'created_at' or 'last_activity' (default: 'last_activity').
    *
    * @returns {Promise<Dm[]>} A Promise that resolves to an array of Dms objects.
    */
   async listDms(
     opts?: ConversationOptions | undefined,
     limit?: number | undefined,
-    consentStates?: ConsentState[] | undefined
+    consentStates?: ConsentState[] | undefined,
+    createdAfterNs?: number | undefined,
+    createdBeforeNs?: number | undefined,
+    lastActivityAfterNs?: number | undefined,
+    lastActivityBeforeNs?: number | undefined,
+    orderBy?: 'created_at' | 'last_activity' | undefined
   ): Promise<Dm<ContentTypes>[]> {
-    return await XMTPModule.listDms(this.client, opts, limit, consentStates)
+    return await XMTPModule.listDms(
+      this.client,
+      opts,
+      limit,
+      consentStates,
+      createdAfterNs,
+      createdBeforeNs,
+      lastActivityAfterNs,
+      lastActivityBeforeNs,
+      orderBy
+    )
   }
 
   /**
@@ -347,19 +387,34 @@ export default class Conversations<
    * @param {ConversationOptions} opts - The options to specify what fields you want returned for the conversations in the list.
    * @param {number} limit - Limit the number of conversations returned in the list.
    * @param {consentStates} ConsentState[] - Filter the conversations by a list of consent states.
+   * @param {number} createdAfterNs - Filter conversations created after this timestamp (in nanoseconds).
+   * @param {number} createdBeforeNs - Filter conversations created before this timestamp (in nanoseconds).
+   * @param {number} lastActivityAfterNs - Filter conversations with last activity after this timestamp (in nanoseconds).
+   * @param {number} lastActivityBeforeNs - Filter conversations with last activity before this timestamp (in nanoseconds).
+   * @param {string} orderBy - Order results by 'created_at' or 'last_activity' (default: 'last_activity').
    *
    * @returns {Promise<Conversation[]>} A Promise that resolves to an array of Conversation objects.
    */
   async list(
     opts?: ConversationOptions | undefined,
     limit?: number | undefined,
-    consentStates?: ConsentState[] | undefined
+    consentStates?: ConsentState[] | undefined,
+    createdAfterNs?: number | undefined,
+    createdBeforeNs?: number | undefined,
+    lastActivityAfterNs?: number | undefined,
+    lastActivityBeforeNs?: number | undefined,
+    orderBy?: 'created_at' | 'last_activity' | undefined
   ): Promise<Conversation<ContentTypes>[]> {
     return await XMTPModule.listConversations(
       this.client,
       opts,
       limit,
-      consentStates
+      consentStates,
+      createdAfterNs,
+      createdBeforeNs,
+      lastActivityAfterNs,
+      lastActivityBeforeNs,
+      orderBy
     )
   }
 

@@ -236,7 +236,9 @@ export class Group<
       opts?.limit,
       opts?.beforeNs,
       opts?.afterNs,
-      opts?.direction
+      opts?.direction,
+      opts?.excludeContentTypes,
+      opts?.excludeSenderInboxIds
     )
   }
 
@@ -261,7 +263,9 @@ export class Group<
       opts?.limit,
       opts?.beforeNs,
       opts?.afterNs,
-      opts?.direction
+      opts?.direction,
+      opts?.excludeContentTypes,
+      opts?.excludeSenderInboxIds
     )
   }
 

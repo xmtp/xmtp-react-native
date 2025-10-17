@@ -52,4 +52,8 @@ export class MultiRemoteAttachmentCodec
   fallback(content: MultiRemoteAttachmentContent): string | undefined {
     return 'Multi attachments not supported.'
   }
+
+  shouldPush(content: MultiRemoteAttachmentContent): boolean {
+    return true
+  }
 }

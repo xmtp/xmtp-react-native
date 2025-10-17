@@ -10,13 +10,16 @@ let events: StreamEvent[] = []
 const useClient = () => {
   const [client, setClient] = useState<Client<any> | null>(null)
   useEffect(() => {
-    const dbEncryptionKey = getDbEncryptionKey('dev')
-    Client.createRandom({
-      env: 'dev',
-      dbEncryptionKey,
-    }).then((client) => {
-      setClient(client)
-    })
+    getDbEncryptionKey('dev')
+      .then((dbEncryptionKey) =>
+        Client.createRandom({
+          env: 'dev',
+          dbEncryptionKey,
+        })
+      )
+      .then((client) => {
+        setClient(client)
+      })
   }, [])
 
   return client

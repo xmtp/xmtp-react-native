@@ -5,14 +5,13 @@ import org.xmtp.android.library.Client
 import org.xmtp.android.library.Conversation
 
 class ConversationWrapper {
-
     companion object {
         suspend fun encodeToObj(
             client: Client,
             conversation: Conversation,
             conversationParams: ConversationParamsWrapper = ConversationParamsWrapper(),
-        ): Map<String, Any?> {
-            return when (conversation.type) {
+        ): Map<String, Any?> =
+            when (conversation.type) {
                 Conversation.Type.GROUP -> {
                     val group = (conversation as Conversation.Group).group
                     GroupWrapper.encodeToObj(client, group, conversationParams)
@@ -23,7 +22,6 @@ class ConversationWrapper {
                     DmWrapper.encodeToObj(client, dm, conversationParams)
                 }
             }
-        }
 
         suspend fun encode(
             client: Client,

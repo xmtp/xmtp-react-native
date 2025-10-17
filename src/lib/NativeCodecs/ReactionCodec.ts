@@ -28,11 +28,15 @@ export class ReactionCodec implements NativeContentCodec<ReactionContent> {
   fallback(content: ReactionContent): string | undefined {
     switch (content.action) {
       case 'added':
-        return `Reacted “${content.content}” to an earlier message`
+        return `Reacted "${content.content}" to an earlier message`
       case 'removed':
-        return `Removed “${content.content}” from an earlier message`
+        return `Removed "${content.content}" from an earlier message`
       default:
         return undefined
     }
+  }
+
+  shouldPush(content: ReactionContent): boolean {
+    return false
   }
 }
