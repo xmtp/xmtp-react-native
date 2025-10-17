@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.author         = package['author']
   s.homepage       = package['homepage']
   s.platform       = :ios, '14.0'
-  s.swift_version  = '5.4'
+  s.swift_version  = '5.6'
   s.source         = { git: 'https://github.com/xmtp/xmtp-react-native-sdk' }
   s.static_framework = true
 
@@ -26,7 +26,7 @@ Pod::Spec.new do |s|
   s.source_files = "**/*.{h,m,swift}"
 
   s.dependency "MessagePacker"
-  s.dependency "XMTP", "= 4.5.6"
+  s.dependency "XMTP", "= 4.6.0-dev.fcce662"
   s.dependency 'CSecp256k1', '~> 0.2'
   s.dependency "SQLCipher", "= 4.5.7"
 end

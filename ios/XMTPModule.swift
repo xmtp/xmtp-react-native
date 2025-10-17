@@ -2993,7 +2993,7 @@ public class XMTPModule: Module {
 		switch env {
 		case "local":
 			if let customLocalUrl = customLocalUrl, !customLocalUrl.isEmpty {
-				XMTP.XMTPEnvironment.customLocalAddress = customLocalUrl
+				setenv("XMTP_NODE_ADDRESS", customLocalUrl, 1)
 			}
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.local,
