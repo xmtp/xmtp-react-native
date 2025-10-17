@@ -17,7 +17,7 @@ jobs:
   android-tests:
     timeout-minutes: 45
     name: Android Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-x64-16x
     permissions:
       contents: read
     steps:
