@@ -66,15 +66,12 @@ jobs:
           working-directory: ./example
           api-level: 29
           script: |
-            yarn e2e:android:build
-            yarn e2e:android:install
-            yarn e2e:android:run
+            yarn e2e:android:all
 
-      - name: Print result tree to logs
+      - name: Print E2E Test Artifacts
         if: always()
         run: |
-          echo "Files in maestro-results:"
-          ls -R maestro-results || true
+          ls -R ./e2e/.maestro
 
       - name: Upload Maestro artifacts
         if: always()
@@ -82,7 +79,7 @@ jobs:
         with:
           name: maestro-results
           path: |
-            maestro-results/**
+            ./e2e/.maestro/**
           retention-days: 14
 
       - name: Stop XMTP backend services

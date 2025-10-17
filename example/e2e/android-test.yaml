@@ -4,6 +4,9 @@ appId: expo.modules.xmtpreactnativesdk.example
     clearState: true
 - tapOn: Unit-tests
 - assertVisible: All Unit Tests
+- tapOn: 1,2,3
+- tapOn:
+    id: key_pos_number_line1_1
 - tapOn: RUN ALL
 - extendedWaitUntil:
     visible: 'tests-complete'
