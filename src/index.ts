@@ -936,7 +936,7 @@ export async function sendWithContentType<T>(
       installationId,
       conversationId,
       Array.from(encodedContentData),
-      true // TODO:(nm) Get real shouldPush values in here
+      codec.shouldPush(content)
     )
   }
 }
@@ -993,7 +993,7 @@ export async function prepareMessageWithContentType<T>(
     installationId,
     conversationId,
     Array.from(encodedContentData),
-    true // TODO:(nm) Get real shouldPush values in here
+    codec.shouldPush(content)
   )
 }
 

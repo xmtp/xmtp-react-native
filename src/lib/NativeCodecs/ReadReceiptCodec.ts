@@ -30,4 +30,8 @@ export class ReadReceiptCodec
   fallback(content: object): string | undefined {
     return undefined
   }
+
+  shouldPush(content: ReadReceiptContent): boolean {
+    return false
+  }
 }
