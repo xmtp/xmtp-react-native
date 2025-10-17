@@ -2,7 +2,7 @@ import { ethers, Wallet } from 'ethers'
 import RNFS from 'react-native-fs'
 import { ArchiveOptions } from 'xmtp-react-native-sdk/lib/ArchiveOptions'
 import { InstallationId } from 'xmtp-react-native-sdk/lib/Client'
-
+import { XMTPEnvironment } from 'xmtp-react-native-sdk/lib/Client'
 import {
   Test,
   assert,
@@ -305,6 +305,49 @@ test('can make a client', async () => {
     client.inboxId === inboxId,
     `inboxIds should match but were ${client.inboxId} and ${inboxId}`
   )
+  return true
+})
+
+// https://payer.testnet-staging.xmtp.network:443
+test('can make a new client and build existing from existing db using d14n staging testnet', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
+  const directoryExists = await RNFS.exists(dbDirPath)
+  if (!directoryExists) {
+    await RNFS.mkdir(dbDirPath)
+  }
+  const options = {
+    env: 'dev' as XMTPEnvironment,
+    dbEncryptionKey: keyBytes,
+    dbDirectory: dbDirPath,
+    deviceSyncEnabled: false,
+    appVersion: '0.0.0',
+    gatewayUrl: 'https://payer.testnet-staging.xmtp.network:443'
+  }
+  
+  const client = await Client.createRandom(options)
+
+  const inboxId = await Client.getOrCreateInboxId(
+    client.publicIdentity,
+    'dev'
+  )
+
+  assert(
+    client.inboxId === inboxId,
+    `inboxIds should match but were ${client.inboxId} and ${inboxId}`
+  )
+
+  const clientFromBundle = await Client.build(client.publicIdentity, options)
+
+  assert(
+    clientFromBundle.inboxId === client.inboxId,
+    `inboxIds should match but were ${clientFromBundle.inboxId} and ${client.inboxId}`
+  )
+
   return true
 })
 
