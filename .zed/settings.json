@@ -77,7 +77,12 @@
       "formatter": {
         "external": {
           "command": "ktlint",
-          "arguments": ["--format", "--stdin"]
+          "arguments": [
+            "-F",
+            "--stdin",
+            "--editorconfig=.editorconfig",
+            "--log-level=none"
+          ]
         }
       }
     }
@@ -110,7 +115,5 @@
   "tab_size": 2,
   "hard_tabs": false,
   "remove_trailing_whitespace_on_save": true,
-  "ensure_final_newline_on_save": true,
-
-
+  "ensure_final_newline_on_save": true
 }

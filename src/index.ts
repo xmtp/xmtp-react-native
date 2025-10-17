@@ -615,14 +615,27 @@ export async function listGroups<
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
   limit?: number | undefined,
-  consentStates?: ConsentState[] | undefined
+  consentStates?: ConsentState[] | undefined,
+  createdAfterNs?: number | undefined,
+  createdBeforeNs?: number | undefined,
+  lastActivityAfterNs?: number | undefined,
+  lastActivityBeforeNs?: number | undefined,
+  orderBy?: 'created_at' | 'last_activity' | undefined
 ): Promise<Group<ContentTypes>[]> {
+  const queryParamsJson = JSON.stringify({
+    limit,
+    consentStates,
+    createdAfterNs,
+    createdBeforeNs,
+    lastActivityAfterNs,
+    lastActivityBeforeNs,
+    orderBy,
+  })
   return (
     await XMTPModule.listGroups(
       client.installationId,
       JSON.stringify(opts),
-      limit,
-      consentStates
+      queryParamsJson
     )
   ).map((json: string) => {
     const group = JSON.parse(json)
@@ -642,14 +655,27 @@ export async function listDms<
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
   limit?: number | undefined,
-  consentStates?: ConsentState[] | undefined
+  consentStates?: ConsentState[] | undefined,
+  createdAfterNs?: number | undefined,
+  createdBeforeNs?: number | undefined,
+  lastActivityAfterNs?: number | undefined,
+  lastActivityBeforeNs?: number | undefined,
+  orderBy?: 'created_at' | 'last_activity' | undefined
 ): Promise<Dm<ContentTypes>[]> {
+  const queryParamsJson = JSON.stringify({
+    limit,
+    consentStates,
+    createdAfterNs,
+    createdBeforeNs,
+    lastActivityAfterNs,
+    lastActivityBeforeNs,
+    orderBy,
+  })
   return (
     await XMTPModule.listDms(
       client.installationId,
       JSON.stringify(opts),
-      limit,
-      consentStates
+      queryParamsJson
     )
   ).map((json: string) => {
     const group = JSON.parse(json)
@@ -669,14 +695,27 @@ export async function listConversations<
   client: Client<ContentTypes>,
   opts?: ConversationOptions | undefined,
   limit?: number | undefined,
-  consentStates?: ConsentState[] | undefined
+  consentStates?: ConsentState[] | undefined,
+  createdAfterNs?: number | undefined,
+  createdBeforeNs?: number | undefined,
+  lastActivityAfterNs?: number | undefined,
+  lastActivityBeforeNs?: number | undefined,
+  orderBy?: 'created_at' | 'last_activity' | undefined
 ): Promise<Conversation<ContentTypes>[]> {
+  const queryParamsJson = JSON.stringify({
+    limit,
+    consentStates,
+    createdAfterNs,
+    createdBeforeNs,
+    lastActivityAfterNs,
+    lastActivityBeforeNs,
+    orderBy,
+  })
   return (
     await XMTPModule.listConversations(
       client.installationId,
       JSON.stringify(opts),
-      limit,
-      consentStates
+      queryParamsJson
     )
   ).map((json: string) => {
     const jsonObj = JSON.parse(json)
@@ -717,15 +756,22 @@ export async function conversationMessages<
   limit?: number | undefined,
   beforeNs?: number | undefined,
   afterNs?: number | undefined,
-  direction?: MessageOrder | undefined
+  direction?: MessageOrder | undefined,
+  excludeContentTypes?: string[] | undefined,
+  excludeSenderInboxIds?: string[] | undefined
 ): Promise<DecodedMessageUnion<ContentTypes>[]> {
-  const messages = await XMTPModule.conversationMessages(
-    clientInstallationId,
-    conversationId,
+  const queryParamsJson = JSON.stringify({
     limit,
     beforeNs,
     afterNs,
-    direction
+    direction,
+    excludeContentTypes,
+    excludeSenderInboxIds,
+  })
+  const messages = await XMTPModule.conversationMessages(
+    clientInstallationId,
+    conversationId,
+    queryParamsJson
   )
   return messages.map((json: string) => {
     return DecodedMessage.from(json)
@@ -740,15 +786,22 @@ export async function conversationMessagesWithReactions<
   limit?: number | undefined,
   beforeNs?: number | undefined,
   afterNs?: number | undefined,
-  direction?: MessageOrder | undefined
+  direction?: MessageOrder | undefined,
+  excludeContentTypes?: string[] | undefined,
+  excludeSenderInboxIds?: string[] | undefined
 ): Promise<DecodedMessageUnion<ContentTypes>[]> {
-  const messages = await XMTPModule.conversationMessagesWithReactions(
-    clientInstallationId,
-    conversationId,
+  const queryParamsJson = JSON.stringify({
     limit,
     beforeNs,
     afterNs,
-    direction
+    direction,
+    excludeContentTypes,
+    excludeSenderInboxIds,
+  })
+  const messages = await XMTPModule.conversationMessagesWithReactions(
+    clientInstallationId,
+    conversationId,
+    queryParamsJson
   )
   return messages.map((json: string) => {
     return DecodedMessage.from(json)
