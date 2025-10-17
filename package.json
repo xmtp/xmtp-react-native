@@ -10,7 +10,6 @@
     "lint": "expo-module lint",
     "test": "expo-module test",
     "prepare": "expo-module prepare",
-    "release": "expo-module build && changeset publish",
     "prepublishOnly": "expo-module prepublishOnly",
     "pretty": "npx prettier '**/*.{js,ts,tsx}' --write",
     "expo-module": "expo-module",
@@ -29,16 +28,6 @@
   "bugs": {
     "url": "https://github.com/xmtp/xmtp-react-native/issues"
   },
-  "release": {
-    "branches": [
-      "main",
-      {
-        "name": "beta",
-        "prerelease": true
-      },
-      "+([0-9])?(.{+([0-9]),x}).x"
-    ]
-  },
   "publishConfig": {
     "access": "public",
     "provenance": true
@@ -47,8 +36,6 @@
   "license": "MIT",
   "homepage": "https://github.com/xmtp/xmtp-react-native#readme",
   "dependencies": {
-    "@changesets/changelog-git": "^0.2.0",
-    "@changesets/cli": "^2.27.10",
     "@ethersproject/bytes": "^5.7.0",
     "@msgpack/msgpack": "^3.0.0-beta2",
     "@noble/hashes": "^1.3.3",
@@ -64,7 +51,6 @@
     "expo-module-scripts": "^3.0.4",
     "expo-modules-core": "^1.5.9",
     "prettier": "^3.1.0",
-    "semantic-release": "^21.0.1",
     "typedoc": "^0.25.2",
     "viem": "^2.4.0"
   },
