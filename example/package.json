@@ -4,7 +4,7 @@
   "scripts": {
     "e2e:android:build": "cd android && ./gradlew assembleRelease",
     "e2e:android:install": "adb install android/app/build/outputs/apk/release/app-release.apk",
-    "e2e:android:run": "maestro test ./e2e/android-test.yaml --format junit --output maestro-results",
+    "e2e:android:run": "maestro test --format junit --test-output-dir maestro-results ./e2e/android-test.yaml",
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",

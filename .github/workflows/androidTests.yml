@@ -60,7 +60,7 @@ jobs:
 
       - name: Run E2E Tests
         env:
-          MAESTRO_CLI_NO_ANALYTICS: 1
+          MAESTRO_CLI_NO_ANALYTICS: "true"
         uses: reactivecircus/android-emulator-runner@v2
         with:
           working-directory: ./example
