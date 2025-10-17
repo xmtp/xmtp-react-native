@@ -107,7 +107,8 @@ export class Client<
       options.customLocalHost,
       options.deviceSyncEnabled,
       options.debugEventsEnabled,
-      options.appVersion
+      options.appVersion,
+      options.gatewayUrl
     )
     this.removeSubscription(authInboxSubscription)
 
@@ -196,7 +197,8 @@ export class Client<
           options.customLocalHost,
           options.deviceSyncEnabled,
           options.debugEventsEnabled,
-          options.appVersion
+          options.appVersion,
+          options.gatewayUrl
         )
       })().catch((error) => {
         this.removeAllSubscriptions(authInboxSubscription)
@@ -235,7 +237,8 @@ export class Client<
       options.customLocalHost,
       options.deviceSyncEnabled,
       options.debugEventsEnabled,
-      options.appVersion
+      options.appVersion,
+      options.gatewayUrl
     )
 
     return new Client(
@@ -281,7 +284,8 @@ export class Client<
       options.customLocalHost,
       options.deviceSyncEnabled,
       options.debugEventsEnabled,
-      options.appVersion
+      options.appVersion,
+      options.gatewayUrl
     )
 
     return new Client(
@@ -1211,4 +1215,8 @@ export type ClientOptions = {
    * OPTIONAL specify if debug events should be tracked defaults to false
    */
   debugEventsEnabled?: boolean
+  /**
+   * OPTIONAL specify to connect to decentralized backend gateway
+   */
+  gatewayUrl?: string
 }

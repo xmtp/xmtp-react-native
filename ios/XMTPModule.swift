@@ -2987,7 +2987,7 @@ public class XMTPModule: Module {
 		case revokeInstallations = "revokeInstallations"
 	}
 
-	func createApiClient(env: String, customLocalUrl: String? = nil, appVersion: String? = nil)
+	func createApiClient(env: String, customLocalUrl: String? = nil, appVersion: String? = nil, gatewayUrl: String? = nil)
 		-> XMTP.ClientOptions.Api
 	{
 		switch env {
@@ -2998,19 +2998,22 @@ public class XMTPModule: Module {
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.local,
 				isSecure: false,
-				appVersion: appVersion
+				appVersion: appVersion,
+				gatewayUrl: gatewayUrl
 			)
 		case "production":
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
 				isSecure: true,
-				appVersion: appVersion
+				appVersion: appVersion,
+				gatewayUrl: gatewayUrl
 			)
 		default:
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
 				isSecure: true,
-				appVersion: appVersion
+				appVersion: appVersion,
+				gatewayUrl: gatewayUrl
 			)
 		}
 	}
@@ -3025,7 +3028,8 @@ public class XMTPModule: Module {
 			api: createApiClient(
 				env: authOptions.environment,
 				customLocalUrl: authOptions.customLocalUrl,
-				appVersion: authOptions.appVersion
+				appVersion: authOptions.appVersion,
+				gatewayUrl: authOptions.gatewayUrl
 			),
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 			dbEncryptionKey: dbEncryptionKey,

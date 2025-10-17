@@ -128,7 +128,8 @@ export async function createRandom(
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  gatewayUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -138,6 +139,7 @@ export async function createRandom(
     deviceSyncEnabled,
     debugEventsEnabled,
     appVersion,
+    gatewayUrl
   }
   return await XMTPModule.createRandom(
     hasPreAuthenticateToInboxCallback,
@@ -159,7 +161,8 @@ export async function create(
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  gatewayUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -169,6 +172,7 @@ export async function create(
     deviceSyncEnabled,
     debugEventsEnabled,
     appVersion,
+    gatewayUrl
   }
   const signerParams: SignerParams = {
     signerType,
@@ -194,7 +198,8 @@ export async function build(
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  gatewayUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -204,6 +209,7 @@ export async function build(
     deviceSyncEnabled,
     debugEventsEnabled,
     appVersion,
+    gatewayUrl,
   }
   return await XMTPModule.build(
     JSON.stringify(identity),
@@ -222,7 +228,8 @@ export async function ffiCreateClient(
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  gatewayUrl?: string | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -232,6 +239,7 @@ export async function ffiCreateClient(
     deviceSyncEnabled,
     debugEventsEnabled,
     appVersion,
+    gatewayUrl,
   }
   return await XMTPModule.ffiCreateClient(
     JSON.stringify(identity),
@@ -1773,6 +1781,7 @@ interface AuthParams {
   deviceSyncEnabled?: boolean
   debugEventsEnabled?: boolean
   appVersion?: string
+  gatewayUrl?: string
 }
 
 interface SignerParams {

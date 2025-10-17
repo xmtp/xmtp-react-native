@@ -293,6 +293,7 @@ test('can make a client', async () => {
     dbEncryptionKey: keyBytes,
     deviceSyncEnabled: false,
     appVersion: '0.0.0',
+    gatewayUrl: 'https://xmtp3.org'
   })
 
   const inboxId = await Client.getOrCreateInboxId(

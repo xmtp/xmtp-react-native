@@ -16,12 +16,13 @@ struct AuthParamsWrapper {
 	let deviceSyncEnabled: Bool
 	let debugEventsEnabled: Bool
 	let appVersion: String?
+	let gatewayUrl: String?
 
 	init(
 		environment: String, dbDirectory: String?,
 		historySyncUrl: String?, customLocalUrl: String?,
 		deviceSyncEnabled: Bool, debugEventsEnabled: Bool,
-		appVersion: String?
+		appVersion: String?, gatewayUrl: String?
 	) {
 		self.environment = environment
 		self.dbDirectory = dbDirectory
@@ -30,6 +31,7 @@ struct AuthParamsWrapper {
 		self.deviceSyncEnabled = deviceSyncEnabled
 		self.debugEventsEnabled = debugEventsEnabled
 		self.appVersion = appVersion
+		self.gatewayUrl = gatewayUrl
 	}
 
 	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper {
@@ -41,18 +43,19 @@ struct AuthParamsWrapper {
 				environment: "dev", dbDirectory: nil,
 				historySyncUrl: nil, customLocalUrl: nil,
 				deviceSyncEnabled: true, debugEventsEnabled: false,
-				appVersion: nil)
+				appVersion: nil, gatewayUrl: nil)
 		}
 
 		let environment = jsonOptions["environment"] as? String ?? "dev"
-		let dbDirectory = jsonOptions["dbDirectory"] as? String
-		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
-		let customLocalUrl = jsonOptions["customLocalUrl"] as? String
+		let dbDirectory = Self.stringOrNil(jsonOptions["dbDirectory"] as? String)
+		let historySyncUrl = Self.stringOrNil(jsonOptions["historySyncUrl"] as? String)
+		let customLocalUrl = Self.stringOrNil(jsonOptions["customLocalUrl"] as? String)
 		let deviceSyncEnabled =
 			jsonOptions["deviceSyncEnabled"] as? Bool ?? true
 		let debugEventsEnabled =
 			jsonOptions["debugEventsEnabled"] as? Bool ?? false
-		let appVersion = jsonOptions["appVersion"] as? String
+		let appVersion = Self.stringOrNil(jsonOptions["appVersion"] as? String)
+		let gatewayUrl = Self.stringOrNil(jsonOptions["gatewayUrl"] as? String)
 
 		return AuthParamsWrapper(
 			environment: environment,
@@ -61,8 +64,15 @@ struct AuthParamsWrapper {
 			customLocalUrl: customLocalUrl,
 			deviceSyncEnabled: deviceSyncEnabled,
 			debugEventsEnabled: debugEventsEnabled,
-			appVersion: appVersion
+			appVersion: appVersion,
+			gatewayUrl: gatewayUrl
 		)
+	}
+	
+	// Helper function to convert empty strings to nil
+	private static func stringOrNil(_ value: String?) -> String? {
+		guard let value = value, !value.isEmpty else { return nil }
+		return value
 	}
 }
 
