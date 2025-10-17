@@ -71,6 +71,7 @@ import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import org.xmtp.android.library.libxmtp.PermissionOption
 import org.xmtp.android.library.libxmtp.PublicIdentity
 import org.xmtp.android.library.libxmtp.SignatureRequest
+import org.xmtp.android.library.MessageVisibilityOptions
 import org.xmtp.android.library.messages.PrivateKeyBuilder
 import org.xmtp.android.library.push.Service
 import org.xmtp.android.library.push.XMTPPush
@@ -1065,7 +1066,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("sendEncodedContent") Coroutine { installationId: String, conversationId: String, encodedContentData: List<Int> ->
+        AsyncFunction("sendEncodedContent") Coroutine { installationId: String, conversationId: String, encodedContentData: List<Int>, shouldPush: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("sendEncodedContent")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -1081,7 +1082,7 @@ class XMTPModule : Module() {
                         }
                     }
                 val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
-                conversation.send(encodedContent)
+                conversation.send(encodedContent, opts = MessageVisibilityOptions(shouldPush))
             }
         }
 
@@ -1123,7 +1124,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("prepareEncodedMessage") Coroutine { installationId: String, conversationId: String, encodedContentData: List<Int> ->
+        AsyncFunction("prepareEncodedMessage") Coroutine { installationId: String, conversationId: String, encodedContentData: List<Int>, shouldPush: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("prepareEncodedMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -1139,7 +1140,7 @@ class XMTPModule : Module() {
                         }
                     }
                 val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
-                conversation.prepareMessage(encodedContent = encodedContent)
+                conversation.prepareMessage(encodedContent = encodedContent, opts = MessageVisibilityOptions(shouldPush))
             }
         }
 
@@ -2318,5 +2319,3 @@ class XMTPModule : Module() {
         }
     }
 }
-
-

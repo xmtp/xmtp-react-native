@@ -882,7 +882,8 @@ export async function sendWithContentType<T>(
     return await XMTPModule.sendEncodedContent(
       installationId,
       conversationId,
-      Array.from(encodedContentData)
+      Array.from(encodedContentData),
+      true // TODO:(nm) Get real shouldPush values in here
     )
   }
 }
@@ -938,7 +939,8 @@ export async function prepareMessageWithContentType<T>(
   return await XMTPModule.prepareEncodedMessage(
     installationId,
     conversationId,
-    Array.from(encodedContentData)
+    Array.from(encodedContentData),
+    true // TODO:(nm) Get real shouldPush values in here
   )
 }
 

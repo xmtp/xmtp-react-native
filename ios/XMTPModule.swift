@@ -1178,7 +1178,7 @@ public class XMTPModule: Module {
 		AsyncFunction("sendEncodedContent") {
 			(
 				installationId: String, conversationId: String,
-				encodedContentData: [UInt8]
+				encodedContentData: [UInt8], shouldPush: Bool
 			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1196,7 +1196,8 @@ public class XMTPModule: Module {
 			let encodedContent = try EncodedContent(
 				serializedBytes: Data(encodedContentData))
 
-			return try await conversation.send(encodedContent: encodedContent)
+			return try await conversation.send(encodedContent: encodedContent,
+											   visibilityOptions: MessageVisibilityOptions(shouldPush: shouldPush))
 		}
 
 		AsyncFunction("sendMessage") {
@@ -1270,7 +1271,8 @@ public class XMTPModule: Module {
 			(
 				installationId: String,
 				conversationId: String,
-				encodedContentData: [UInt8]
+				encodedContentData: [UInt8],
+				shouldPush: Bool
 			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1288,7 +1290,7 @@ public class XMTPModule: Module {
 			let encodedContent = try EncodedContent(
 				serializedBytes: Data(encodedContentData))
 			return try await conversation.prepareMessage(
-				encodedContent: encodedContent)
+				encodedContent: encodedContent, visibilityOptions: MessageVisibilityOptions(shouldPush: shouldPush))
 		}
 
 		AsyncFunction("findOrCreateDm") {
