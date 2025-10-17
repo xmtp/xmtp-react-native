@@ -79,7 +79,10 @@ jobs:
         with:
           name: maestro-results
           path: |
-            ./e2e/.maestro/**
+            ./e2e/.maestro/
+          compression-level: 6
+          if-no-files-found: warn
+          include-hidden-files: true
           retention-days: 14
 
       - name: Stop XMTP backend services
