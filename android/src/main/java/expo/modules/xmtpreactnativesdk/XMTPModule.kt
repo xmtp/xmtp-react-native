@@ -163,7 +163,7 @@ class XMTPModule : Module() {
             return reactContext
         }
 
-    private fun apiEnvironments(env: String, customLocalUrl: String? = null, appVersion: String? = null): ClientOptions.Api {
+    private fun apiEnvironments(env: String, customLocalUrl: String? = null, appVersion: String? = null, gatewayUrl: String? = null): ClientOptions.Api {
         return when (env) {
             "local" -> {
                 if (customLocalUrl.isNullOrBlank()) {
@@ -171,12 +171,14 @@ class XMTPModule : Module() {
                         env = XMTPEnvironment.LOCAL,
                         isSecure = false,
                         appVersion = appVersion,
+                        gatewayUrl = gatewayUrl,
                     )
                 } else {
                     ClientOptions.Api(
                         env = XMTPEnvironment.LOCAL.withValue(customLocalUrl),
                         isSecure = false,
                         appVersion = appVersion,
+                        gatewayUrl = gatewayUrl,
                     )
                 }
             }
@@ -185,12 +187,14 @@ class XMTPModule : Module() {
                 env = XMTPEnvironment.PRODUCTION,
                 isSecure = true,
                 appVersion = appVersion,
+                gatewayUrl = gatewayUrl,
             )
 
             else -> ClientOptions.Api(
                 env = XMTPEnvironment.DEV,
                 isSecure = true,
                 appVersion = appVersion,
+                gatewayUrl = gatewayUrl,
             )
         }
     }
@@ -216,7 +220,7 @@ class XMTPModule : Module() {
                 else -> "https://message-history.dev.ephemera.network/"
             }
         return ClientOptions(
-            api = apiEnvironments(authOptions.environment, authOptions.customLocalUrl, authOptions.appVersion),
+            api = apiEnvironments(authOptions.environment, authOptions.customLocalUrl, authOptions.appVersion, authOptions.gatewayUrl),
             preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
             appContext = context,
             dbEncryptionKey = encryptionKeyBytes,
