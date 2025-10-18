@@ -58,7 +58,7 @@ jobs:
       - name: Start XMTP backend services
         run: docker compose -p xmtp -f ../dev/local/docker-compose.yml up -d
 
-      - name: Run E2E Tests
+      - name: Run E2E tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           working-directory: ./example
@@ -66,16 +66,11 @@ jobs:
           script: |
             yarn e2e:android:all
 
-      - name: Print E2E Test Artifacts
-        if: always()
-        run: |
-          ls -R ./e2e/.maestro
-
-      - name: Upload Maestro artifacts
-        if: always()
+      - name: Upload E2E test artifacts
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: maestro-results
+          name: e2e-test-results
           path: |
             example/e2e/.maestro/
           compression-level: 6
