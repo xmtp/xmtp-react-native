@@ -13,10 +13,6 @@ env:
   GPR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GPR_USER: ${{ secrets.GITHUB_ACTOR }}
 
-defaults:
-  run:
-    working-directory: ./example
-
 jobs:
   android-tests:
     timeout-minutes: 45
