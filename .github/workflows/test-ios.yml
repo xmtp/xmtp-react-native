@@ -43,3 +43,5 @@ jobs:
         run: |
           cd ./example
           yarn e2e:ios:build
+          cd ./ios
+          pod install
