@@ -13,6 +13,9 @@ export class XMTPPush {
   }
 
   async subscribe(topics: ConversationTopic[]) {
-    return await XMTPModule.subscribePushTopics(this.client.installationId, topics)
+    return await XMTPModule.subscribePushTopics(
+      this.client.installationId,
+      topics
+    )
   }
 }
