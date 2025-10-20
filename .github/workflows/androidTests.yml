@@ -21,12 +21,12 @@ jobs:
   android-tests:
     timeout-minutes: 45
     name: Android Tests
-    runs-on: warp-ubuntu-latest-x64-8x
+    runs-on: warp-ubuntu-latest-x64-16x
     permissions:
       contents: read
     steps:
       - name: Checkout project sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -61,6 +61,7 @@ jobs:
       - name: Run E2E tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
+          avd-name: "XMTP_Android_Test"
           working-directory: ./example
           api-level: 29
           script: |
