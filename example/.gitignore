@@ -5,6 +5,7 @@ node_modules/
 
 # Expo
 .expo/
+android/
 dist/
 e2e/.maestro/
 web-build/
