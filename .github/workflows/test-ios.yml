@@ -1,0 +1,35 @@
+name: iOS Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GPR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GPR_USER: ${{ secrets.GITHUB_ACTOR }}
+
+defaults:
+  run:
+    working-directory: ./example
+
+jobs:
+  android-tests:
+    timeout-minutes: 45
+    name: iOS Tests
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout project sources
+        uses: actions/checkout@v5
+
+      - name: List Xcode installations
+        run: ls /Applications | grep Xcode
+
+      - name: Select Xcode 16.2 by path
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer

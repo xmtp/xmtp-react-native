@@ -8,8 +8,9 @@ node_modules/
 android/
 dist/
 e2e/.maestro/
-web-build/
 expo-env.d.ts
+ios/
+web-build/
 
 # Native
 *.orig.*
