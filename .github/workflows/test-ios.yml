@@ -42,6 +42,5 @@ jobs:
       - name: Create build
         run: |
           cd ./example
-          yarn e2e:ios:build
-          cd ./ios
-          pod install
+          yarn ios
+          yarn e2e:android:run
