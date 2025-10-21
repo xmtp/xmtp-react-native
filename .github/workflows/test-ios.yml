@@ -42,5 +42,5 @@ jobs:
       - name: Create build
         run: |
           cd ./example
-          yarn ios
+          yarn ios --device "iPhone 17"
           yarn e2e:android:run
