@@ -294,10 +294,7 @@ export const typeTests = async () => {
   text.toLowerCase()
 
   // Message Can infer additional codecs
-  const message = DecodedMessage.fromObject<TextCodec>(
-    decodedMessageClient[0],
-    textClient
-  )
+  const message = DecodedMessage.fromObject<TextCodec>(decodedMessageClient[0])
   if (isTextMessage(message)) {
     const text = message.content()
   } else {

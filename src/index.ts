@@ -1759,7 +1759,6 @@ export async function archiveMetadata(
     path,
     Array.from(encryptionKey)
   )
-  console.log('CAMERONVOELL: ' + metadata)
   return new ArchiveMetadata(metadata)
 }
 
