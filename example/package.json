@@ -2,7 +2,7 @@
   "name": "xmtp-react-native-sdk-example",
   "version": "1.0.0",
   "scripts": {
-    "e2e:android:build": "expo prebuild && cd android && ./gradlew assembleRelease",
+    "e2e:android:build": "expo prebuild --platform android && cd android && ./gradlew -Dorg.gradle.jvmargs=-Xmx8g assembleRelease",
     "e2e:android:install": "adb install android/app/build/outputs/apk/release/app-release.apk",
     "e2e:android:run": "maestro test --format junit --test-output-dir ./e2e/.maestro ./e2e/android-test.yaml",
     "e2e:android:all": "npm run e2e:android:build && npm run e2e:android:install && npm run e2e:android:run",
