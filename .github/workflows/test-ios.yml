@@ -17,7 +17,7 @@ jobs:
   android-tests:
     timeout-minutes: 45
     name: iOS Tests
-    runs-on: macos-26-xlarge
+    runs-on: macos-15-large
     permissions:
       contents: read
     steps:
@@ -63,7 +63,7 @@ jobs:
         run: |
           cd ./example
 
-          xcrun simctl boot "iPhone 17"
+          xcrun simctl shutdown all
           xcrun simctl bootstatus "iPhone 17" -b
           xcrun simctl install "iPhone 17" ios/build/Build/Products/Release-iphonesimulator/xmtpreactnativesdkexample.app
 
