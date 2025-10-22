@@ -50,7 +50,6 @@ jobs:
           cd ./example
 
           yarn e2e:ios:build
-
           xcodebuild \
             -workspace ios/xmtpreactnativesdkexample.xcworkspace  \
             -scheme xmtpreactnativesdkexample  \
@@ -60,8 +59,16 @@ jobs:
             -quiet \
             build
 
+      - name: Install app on simulator
+        run: |
+          cd ./example
+
           xcrun simctl boot "iPhone 17"
           xcrun simctl bootstatus "iPhone 17" -b
           xcrun simctl install "iPhone 17" ios/build/Build/Products/Release-iphonesimulator/xmtpreactnativesdkexample.app
 
-          yarn e2e:android:run
+      - name: Run E2E tests
+        run: |
+          cd ./example
+
+          yarn test:e2e
