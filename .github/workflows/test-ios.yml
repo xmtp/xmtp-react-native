@@ -24,6 +24,9 @@ jobs:
       - name: Checkout project sources
         uses: actions/checkout@v5
 
+      - name: Setup Docker on macOS
+        uses: douglascamata/setup-docker-macos-action@v1.0.1
+
       - name: Start XMTP backend services
         run: docker compose -p xmtp -f ./dev/local/docker-compose.yml up -d
 
