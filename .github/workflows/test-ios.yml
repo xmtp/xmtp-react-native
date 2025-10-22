@@ -48,9 +48,44 @@ jobs:
       - name: Create build
         run: |
           cd ./example
-          yarn ios --device "iPhone 17" 2>&1 | tee output.log | while read line; do
-            echo "$line"
-            if echo "$line" | grep -q "JavaScript logs will be removed from Metro in React Native"; then
-              yarn e2e:android:run
-            fi
-          done
+          set -euo pipefail
+
+          expo prebuild --platform ios --non-interactive
+          npx pod-install
+
+          WORKSPACE="ios/xmtpreactnativesdkexample.xcworkspace"
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list -json | python3 -c "import json,sys; print(json.load(sys.stdin)['workspace']['schemes'][0])")
+          DERIVED_DATA="ios/build"
+
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath "$DERIVED_DATA" \
+            build
+
+          SIMULATOR_ID=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone 1[56789]/ {print $2; exit}')
+          if [ -z "$SIMULATOR_ID" ]; then
+            SIMULATOR_ID=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $2; exit}')
+          fi
+
+          if [ -z "$SIMULATOR_ID" ]; then
+            echo "Unable to find an available iPhone simulator." >&2
+            exit 1
+          fi
+
+          xcrun simctl boot "$SIMULATOR_ID" || true
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+
+          APP_PATH=$(find "$DERIVED_DATA/Build/Products" -type d -name "*.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Unable to locate the built app bundle." >&2
+            exit 1
+          fi
+
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print:CFBundleIdentifier" "$APP_PATH/Info.plist")
+          xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
+          xcrun simctl launch --terminate-running "$SIMULATOR_ID" "$BUNDLE_ID"
+
+          maestro test --format junit --test-output-dir ./e2e/.maestro ./e2e/android-test.yaml
