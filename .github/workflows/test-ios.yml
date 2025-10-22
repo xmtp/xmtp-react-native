@@ -17,7 +17,7 @@ jobs:
   android-tests:
     timeout-minutes: 45
     name: iOS Tests
-    runs-on: macos-15-large
+    runs-on: macos-15-xlarge
     permissions:
       contents: read
     steps:
@@ -67,8 +67,15 @@ jobs:
           xcrun simctl bootstatus "iPhone 17" -b
           xcrun simctl install "iPhone 17" ios/build/Build/Products/Release-iphonesimulator/xmtpreactnativesdkexample.app
 
+      - name: Start XMTP backend services
+        run: docker compose -p xmtp -f ../dev/local/docker-compose.yml up -d
+
       - name: Run E2E tests
         run: |
           cd ./example
 
           yarn test:e2e
+
+      - name: Stop XMTP backend services
+        if: always()
+        run: docker compose -p xmtp -f ../dev/local/docker-compose.yml down
