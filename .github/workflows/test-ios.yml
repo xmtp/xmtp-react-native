@@ -43,6 +43,9 @@ jobs:
       - name: Create build
         run: |
           cd ./example
-          xcodebuild -showsdks
-          yarn ios --device "iPhone 17"
-          yarn e2e:android:run
+          yarn ios --device "iPhone 17" 2>&1 | tee output.log | while read line; do
+            echo "$line"
+            if echo "$line" | grep -q "JavaScript logs will be removed from Metro in React Native"; then
+              yarn e2e:android:run
+            fi
+          done
