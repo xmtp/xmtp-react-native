@@ -57,6 +57,7 @@ jobs:
             -configuration Release \
             -sdk iphonesimulator \
             -derivedDataPath ios/build \
+            -quiet \
             build
 
           xcrun simctl boot "iPhone 17"
