@@ -17,7 +17,7 @@ jobs:
   android-tests:
     timeout-minutes: 45
     name: iOS Tests
-    runs-on: macos-15-large
+    runs-on: macos-26-xlarge
     permissions:
       contents: read
     steps:
