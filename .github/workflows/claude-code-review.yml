@@ -25,8 +25,12 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          use_sticky_comment: true
           claude_args: "--model claude-opus-4-1-20250805"
           prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
             Please review this pull request and provide feedback on:
             - Code quality and best practices
             - Potential bugs or issues
