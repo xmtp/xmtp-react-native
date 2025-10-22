@@ -24,6 +24,9 @@ jobs:
       - name: Checkout project sources
         uses: actions/checkout@v5
 
+      - name: Start XMTP backend services
+        run: docker compose -p xmtp -f ./dev/local/docker-compose.yml up -d
+
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "26.0.1"
@@ -67,9 +70,6 @@ jobs:
           xcrun simctl bootstatus "iPhone 17" -b
           xcrun simctl install "iPhone 17" ios/build/Build/Products/Release-iphonesimulator/xmtpreactnativesdkexample.app
 
-      - name: Start XMTP backend services
-        run: docker compose -p xmtp -f ../dev/local/docker-compose.yml up -d
-
       - name: Run E2E tests
         run: |
           cd ./example
@@ -78,4 +78,4 @@ jobs:
 
       - name: Stop XMTP backend services
         if: always()
-        run: docker compose -p xmtp -f ../dev/local/docker-compose.yml down
+        run: docker compose -p xmtp -f ./dev/local/docker-compose.yml down
