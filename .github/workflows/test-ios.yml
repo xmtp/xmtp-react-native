@@ -40,6 +40,11 @@ jobs:
           cd ./example
           yarn install --frozen-lockfile
 
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
       - name: Create build
         run: |
           cd ./example
