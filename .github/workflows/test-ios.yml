@@ -60,8 +60,7 @@ jobs:
             build
 
           xcrun simctl boot "iPhone 17"
+          xcrun simctl bootstatus "iPhone 17" -b
+          xcrun simctl install "iPhone 17" ios/build/Build/Products/Debug-iphonesimulator/xmtpreactnativesdkexample.app
 
-          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print:CFBundleIdentifier" "$APP_PATH/Info.plist")
-          xcrun simctl install "iPhone 17" ios/build/Products/xmtpreactnativesdkexample.app
-
-          yarn e2e:android:all
+          yarn e2e:android:run

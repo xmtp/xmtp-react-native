@@ -1,7 +1,7 @@
 appId: expo.modules.xmtpreactnativesdk.example
 ---
 - launchApp:
-- openLink: exp://127.0.0.1:19000
+    clearState: true
 - tapOn: Unit-tests
 - assertVisible: All Unit Tests
 - tapOn: 1,2,3
