@@ -54,13 +54,13 @@ jobs:
           xcodebuild \
             -workspace ios/xmtpreactnativesdkexample.xcworkspace  \
             -scheme xmtpreactnativesdkexample  \
-            -configuration Debug \
+            -configuration Release \
             -sdk iphonesimulator \
             -derivedDataPath ios/build \
             build
 
           xcrun simctl boot "iPhone 17"
           xcrun simctl bootstatus "iPhone 17" -b
-          xcrun simctl install "iPhone 17" ios/build/Build/Products/Debug-iphonesimulator/xmtpreactnativesdkexample.app
+          xcrun simctl install "iPhone 17" ios/build/Build/Products/Release-iphonesimulator/xmtpreactnativesdkexample.app
 
           yarn e2e:android:run
