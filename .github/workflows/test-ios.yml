@@ -1,7 +1,7 @@
 name: iOS Tests
 on:
   schedule:
-    # Run nightly since the tests are costly and take about an hour to complete
+    # Run nightly since the tests take about an hour to complete
     # https://crontab.guru/
     - cron: "0 0 * * *"
   workflow_dispatch:
