@@ -1,9 +1,10 @@
 name: iOS Tests
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  schedule:
+    # Run nightly since the tests are costly and take about an hour to complete
+    # https://crontab.guru/
+    - cron: "0 0 * * *"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,7 +28,8 @@ jobs:
       - name: Setup Docker on macOS
         uses: douglascamata/setup-docker-macos-action@v1.0.1
 
-      - uses: maxim-lobanov/setup-xcode@v1
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "26.0.1"
 
@@ -48,7 +50,7 @@ jobs:
           curl -Ls "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> $GITHUB_PATH
 
-      - name: Create build
+      - name: Create native iOS app
         run: |
           cd ./example
 
