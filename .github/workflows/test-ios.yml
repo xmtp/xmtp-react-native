@@ -12,10 +12,9 @@ concurrency:
 
 env:
   GPR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  GPR_USER: ${{ secrets.GITHUB_ACTOR }}
 
 jobs:
-  android-tests:
+  ios-tests:
     timeout-minutes: 60
     name: iOS Tests
     runs-on: macos-15-large
