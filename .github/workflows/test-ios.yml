@@ -53,7 +53,6 @@ jobs:
       - name: Create native iOS app
         run: |
           cd ./example
-
           yarn e2e:ios:build
           xcodebuild \
             -workspace ios/xmtpreactnativesdkexample.xcworkspace  \
@@ -67,7 +66,6 @@ jobs:
       - name: Install app on simulator
         run: |
           cd ./example
-
           xcrun simctl shutdown all
           xcrun simctl bootstatus "iPhone 17" -b
           xcrun simctl install "iPhone 17" ios/build/Build/Products/Release-iphonesimulator/xmtpreactnativesdkexample.app
@@ -78,7 +76,6 @@ jobs:
       - name: Run E2E tests
         run: |
           cd ./example
-
           yarn test:e2e
 
       - name: Stop XMTP backend services
