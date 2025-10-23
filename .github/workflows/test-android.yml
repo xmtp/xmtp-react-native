@@ -4,6 +4,7 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -58,7 +59,7 @@ jobs:
       - name: Start XMTP backend services
         run: docker compose -p xmtp -f ../dev/local/docker-compose.yml up -d
 
-      - name: Run E2E tests
+      - name: Create native Android app and run E2E tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           avd-name: "XMTP_Android_Test"

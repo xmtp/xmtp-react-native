@@ -1,0 +1,86 @@
+name: iOS Tests
+on:
+  schedule:
+    # Run nightly since the tests take about an hour to complete
+    # https://crontab.guru/
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GPR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  ios-tests:
+    timeout-minutes: 60
+    name: iOS Tests
+    runs-on: macos-15-large
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout project sources
+        uses: actions/checkout@v5
+
+      - name: Setup Docker on macOS
+        uses: douglascamata/setup-docker-macos-action@v1.0.1
+        with:
+          lima: v1.2.1
+          colima: v0.9.1
+          colima-network-address: false
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.0.1"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: yarn
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          cd ./example
+          yarn install --frozen-lockfile
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Create native iOS app
+        run: |
+          cd ./example
+          yarn e2e:ios:build
+          xcodebuild \
+            -workspace ios/xmtpreactnativesdkexample.xcworkspace  \
+            -scheme xmtpreactnativesdkexample  \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath ios/build \
+            -quiet \
+            build
+
+      - name: Install app on simulator
+        run: |
+          cd ./example
+          xcrun simctl shutdown all
+          xcrun simctl bootstatus "iPhone 17" -b
+          xcrun simctl install "iPhone 17" ios/build/Build/Products/Release-iphonesimulator/xmtpreactnativesdkexample.app
+
+      - name: Start XMTP backend services
+        run: docker compose -p xmtp -f ./dev/local/docker-compose.yml up -d
+
+      - name: Run E2E tests
+        run: |
+          cd ./example
+          yarn test:e2e
+
+      - name: Stop XMTP backend services
+        if: always()
+        run: docker compose -p xmtp -f ./dev/local/docker-compose.yml down

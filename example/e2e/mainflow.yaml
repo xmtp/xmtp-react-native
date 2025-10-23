@@ -3,7 +3,7 @@ appId: expo.modules.xmtpreactnativesdk.example
 - launchApp:
     clearState: true
 - tapOn: Unit-tests
-- assertVisible: All Unit Tests
+- assertVisible: Unit Tests
 - tapOn: 1,2,3
 - inputText: '1'
 - tapOn: RUN ALL
