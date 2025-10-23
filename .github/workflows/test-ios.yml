@@ -28,15 +28,9 @@ jobs:
         id: setup-docker
         uses: douglascamata/setup-docker-macos-action@v1.0.1
         with:
-          lima: latest
-          colima: latest
-          colima-network-address: "false"
-
-      - name: Log versions
-        run: |
-          echo "Colima version: ${{ steps.setup-docker.outputs.colima-version }}"
-          echo "Docker client version: ${{ steps.setup-docker.outputs.docker-client-version }}"
-          echo "Docker compose version: ${{ steps.setup-docker.outputs.docker-compose-version }}"
+          lima: v2.0.0-alpha.2
+          colima: v0.9.1
+          colima-network-address: false
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
