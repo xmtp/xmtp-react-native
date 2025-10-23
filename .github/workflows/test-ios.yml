@@ -1,9 +1,9 @@
 name: iOS Tests
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  schedule:
+    # Run nightly since the tests take about an hour to complete
+    # https://crontab.guru/
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -25,10 +25,9 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Docker on macOS
-        id: setup-docker
         uses: douglascamata/setup-docker-macos-action@v1.0.1
         with:
-          lima: v2.0.0-alpha.2
+          lima: v1.2.1
           colima: v0.9.1
           colima-network-address: false
 
