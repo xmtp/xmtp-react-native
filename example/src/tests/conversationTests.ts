@@ -1,6 +1,5 @@
 import { content } from '@xmtp/proto'
 import { Wallet } from 'ethers'
-import RNFS from 'react-native-fs'
 
 import {
   Test,
@@ -20,6 +19,11 @@ import {
   GroupUpdatedContent,
   JSContentCodec,
 } from '../../../src/index'
+import {
+  ensureDirectory,
+  joinDocumentPath,
+  pathExists,
+} from './fileSystemHelpers'
 
 export const conversationTests: Test[] = []
 let counter = 1
@@ -143,15 +147,13 @@ test('returns all push topics and validates HMAC keys', async () => {
   const keyBytes = crypto.getRandomValues(new Uint8Array(32))
   const [bo] = await createClients(1)
   const eriWallet = Wallet.createRandom()
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  const dbDirPath2 = joinDocumentPath('xmtp_db2')
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
-  const directoryExists2 = await RNFS.exists(dbDirPath2)
-  if (!directoryExists2) {
-    await RNFS.mkdir(dbDirPath2)
+  if (!(await pathExists(dbDirPath2))) {
+    await ensureDirectory(dbDirPath2)
   }
 
   const eriClient = await Client.create(adaptEthersWalletToSigner(eriWallet), {

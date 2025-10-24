@@ -1,5 +1,4 @@
 import { ethers, Wallet } from 'ethers'
-import RNFS from 'react-native-fs'
 import { ArchiveOptions } from 'xmtp-react-native-sdk/lib/ArchiveOptions'
 import { InstallationId } from 'xmtp-react-native-sdk/lib/Client'
 
@@ -13,9 +12,16 @@ import {
 } from './test-utils'
 import { Client, PublicIdentity } from '../../../src/index'
 import { LogLevel, LogRotation } from '../../../src/lib/types/LogTypes'
+import {
+  documentDirectoryPath,
+  ensureDirectory,
+  joinDocumentPath,
+  pathExists,
+} from './fileSystemHelpers'
 
 export const clientTests: Test[] = []
 let counter = 1
+const DOCUMENT_DIRECTORY = documentDirectoryPath()
 function test(name: string, perform: () => Promise<boolean>) {
   clientTests.push({
     name: String(counter++) + '. ' + name,
@@ -62,15 +68,13 @@ test('can manage revoke manually statically', async () => {
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  const dbDirPath2 = joinDocumentPath('xmtp_db2')
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
-  const directoryExists2 = await RNFS.exists(dbDirPath2)
-  if (!directoryExists2) {
-    await RNFS.mkdir(dbDirPath2)
+  if (!(await pathExists(dbDirPath2))) {
+    await ensureDirectory(dbDirPath2)
   }
   const alixWallet = Wallet.createRandom()
   const alixSigner = adaptEthersWalletToSigner(alixWallet)
@@ -134,15 +138,13 @@ test('static revoke all installations', async () => {
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  const dbDirPath2 = joinDocumentPath('xmtp_db2')
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
-  const directoryExists2 = await RNFS.exists(dbDirPath2)
-  if (!directoryExists2) {
-    await RNFS.mkdir(dbDirPath2)
+  if (!(await pathExists(dbDirPath2))) {
+    await ensureDirectory(dbDirPath2)
   }
   const alixWallet = Wallet.createRandom()
 
@@ -195,13 +197,15 @@ test('cannot create more than 10 installations', async () => {
   const [boClient] = await createClients(1)
   const keyBytes = new Uint8Array(32).fill(2)
   const wallet = Wallet.createRandom()
-  const basePath = `${RNFS.DocumentDirectoryPath}/xmtp_limit_test`
+  const basePath = `${DOCUMENT_DIRECTORY}/xmtp_limit_test`
   const paths: string[] = []
 
   for (let i = 0; i < 11; i++) {
     const p = `${basePath}_${i}`
     paths.push(p)
-    if (!(await RNFS.exists(p))) await RNFS.mkdir(p)
+    if (!(await pathExists(p))) {
+      await ensureDirectory(p)
+    }
   }
 
   const clients = []
@@ -549,10 +553,9 @@ test('can delete a local database', async () => {
 
 test('can make a client with encryption key and database directory', async () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
   const key = new Uint8Array([
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
@@ -922,20 +925,17 @@ test('can manage revoke manually', async () => {
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-  const dbDirPath3 = `${RNFS.DocumentDirectoryPath}/xmtp_db3`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  const dbDirPath2 = joinDocumentPath('xmtp_db2')
+  const dbDirPath3 = joinDocumentPath('xmtp_db3')
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
-  const directoryExists2 = await RNFS.exists(dbDirPath2)
-  if (!directoryExists2) {
-    await RNFS.mkdir(dbDirPath2)
+  if (!(await pathExists(dbDirPath2))) {
+    await ensureDirectory(dbDirPath2)
   }
-  const directoryExists3 = await RNFS.exists(dbDirPath3)
-  if (!directoryExists3) {
-    await RNFS.mkdir(dbDirPath3)
+  if (!(await pathExists(dbDirPath3))) {
+    await ensureDirectory(dbDirPath3)
   }
   const alixWallet = Wallet.createRandom()
   const alixSigner = adaptEthersWalletToSigner(alixWallet)
@@ -1052,20 +1052,17 @@ test('can revoke installations', async () => {
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-  const dbDirPath3 = `${RNFS.DocumentDirectoryPath}/xmtp_db3`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  const dbDirPath2 = joinDocumentPath('xmtp_db2')
+  const dbDirPath3 = joinDocumentPath('xmtp_db3')
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
-  const directoryExists2 = await RNFS.exists(dbDirPath2)
-  if (!directoryExists2) {
-    await RNFS.mkdir(dbDirPath2)
+  if (!(await pathExists(dbDirPath2))) {
+    await ensureDirectory(dbDirPath2)
   }
-  const directoryExists3 = await RNFS.exists(dbDirPath3)
-  if (!directoryExists3) {
-    await RNFS.mkdir(dbDirPath3)
+  if (!(await pathExists(dbDirPath3))) {
+    await ensureDirectory(dbDirPath3)
   }
   const alixWallet = Wallet.createRandom()
 
@@ -1136,13 +1133,13 @@ test('can create, inspect, import and resync archive', async () => {
   const key = crypto.getRandomValues(new Uint8Array(32))
   const encryptionKey = crypto.getRandomValues(new Uint8Array(32))
 
-  const dbPath1 = `${RNFS.DocumentDirectoryPath}/xmtp_test1`
-  const dbPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_test2`
+  const dbPath1 = joinDocumentPath('xmtp_test1')
+  const dbPath2 = joinDocumentPath('xmtp_test2')
   const allPath = `${dbPath1}/testAll.zstd`
   const consentPath = `${dbPath1}/testConsent.zstd`
 
-  await RNFS.mkdir(dbPath1)
-  await RNFS.mkdir(dbPath2)
+  await ensureDirectory(dbPath1)
+  await ensureDirectory(dbPath2)
 
   const alixWallet = Wallet.createRandom()
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
@@ -1222,12 +1219,12 @@ test('can stitch inactive DMs if duplicated after archive import', async () => {
   const key = crypto.getRandomValues(new Uint8Array(32))
   const encryptionKey = crypto.getRandomValues(new Uint8Array(32))
 
-  const dbPath1 = `${RNFS.DocumentDirectoryPath}/xmtp_test1`
-  const dbPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_test2`
+  const dbPath1 = joinDocumentPath('xmtp_test1')
+  const dbPath2 = joinDocumentPath('xmtp_test2')
   const archivePath = `${dbPath1}/testAll.zstd`
 
-  await RNFS.mkdir(dbPath1)
-  await RNFS.mkdir(dbPath2)
+  await ensureDirectory(dbPath1)
+  await ensureDirectory(dbPath2)
 
   const alixWallet = Wallet.createRandom()
   const alix = await Client.create(adaptEthersWalletToSigner(alixWallet), {
@@ -1289,10 +1286,10 @@ test('can stitch inactive DMs if duplicated after archive import', async () => {
 test('can import archive on top of full database', async () => {
   const [alix, bo] = await createClients(2)
   const encryptionKey = crypto.getRandomValues(new Uint8Array(32))
-  const dbPath = `${RNFS.DocumentDirectoryPath}/xmtp_test1`
+  const dbPath = joinDocumentPath('xmtp_test1')
   const archivePath = `${dbPath}/testAll.zstd`
 
-  await RNFS.mkdir(dbPath)
+  await ensureDirectory(dbPath)
 
   const group = await alix.conversations.newGroup([bo.inboxId])
   const dm = await alix.conversations.findOrCreateDm(bo.inboxId)
