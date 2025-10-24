@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import EncryptedStorage from 'react-native-encrypted-storage'
-import RNFS from 'react-native-fs'
+import * as SecureStore from 'expo-secure-store'
+import * as FileSystem from 'expo-file-system'
 import crypto from 'react-native-quick-crypto'
 import { useMutation, useQuery, UseQueryResult } from 'react-query'
 import {
@@ -762,16 +762,16 @@ export function useSavedAddress(): {
 } {
   const { data: address, refetch } = useQuery<string | null>(
     ['xmtp', 'address'],
-    () => EncryptedStorage.getItem('xmtp.address')
+    () => SecureStore.getItem('xmtp.address')
   )
   return {
     address,
     save: async (address: string) => {
-      await EncryptedStorage.setItem('xmtp.address', address)
+      SecureStore.setItem('xmtp.address', address)
       await refetch()
     },
     clear: async () => {
-      await EncryptedStorage.removeItem('xmtp.address')
+      await SecureStore.deleteItemAsync('xmtp.address')
       await refetch()
     },
   }
@@ -784,11 +784,11 @@ export async function getDbEncryptionKey(
   try {
     const key = `xmtp-${network}`
 
-    const result = await EncryptedStorage.getItem(key)
-    if ((result && clear === true) || !result) {
+    const result = SecureStore.getItem(key)
+    if (!result || clear === true) {
       if (result) {
         console.log('Removing existing dbEncryptionKey', key)
-        await EncryptedStorage.removeItem(key)
+        await SecureStore.deleteItemAsync(key)
       }
 
       // Generate random bytes for the encryption key
@@ -797,13 +797,13 @@ export async function getDbEncryptionKey(
 
       // Convert to string for storage
       const randomBytesString = uint8ArrayToHexString(randomBytes)
-      await EncryptedStorage.setItem(key, randomBytesString)
+      SecureStore.setItem(key, randomBytesString)
 
       return randomBytes
-    } else {
-      // Convert stored string back to Uint8Array
-      return hexStringToUint8Array(result)
     }
+
+    // Convert stored string back to Uint8Array
+    return hexStringToUint8Array(result)
   } catch (error) {
     console.error('Error in getDbEncryptionKey:', error)
     // Re-throw or handle as needed
@@ -831,9 +831,15 @@ function hexStringToUint8Array(hexString: string): Uint8Array {
   return new Uint8Array(byteArray)
 }
 
+function ensureFileUri(path: string): string {
+  return path.startsWith('file://') ? path : `file://${path}`
+}
+
 async function fileExists(path: string): Promise<boolean> {
   try {
-    return await RNFS.exists(path)
+    const uri = ensureFileUri(path)
+    const info = await FileSystem.getInfoAsync(uri)
+    return info.exists
   } catch (error) {
     console.error('Error checking file existence:', error)
     return false
@@ -842,8 +848,12 @@ async function fileExists(path: string): Promise<boolean> {
 
 async function getFileSize(path: string): Promise<number> {
   try {
-    const stats = await RNFS.stat(path)
-    return stats.size
+    const uri = ensureFileUri(path)
+    const info = await FileSystem.getInfoAsync(uri, { size: true })
+    if (info.exists) {
+      return info.size
+    }
+    return 0
   } catch (error) {
     console.error('Error getting file size:', error)
     return 0
@@ -853,7 +863,10 @@ async function getFileSize(path: string): Promise<number> {
 async function calculateFileDigest(path: string): Promise<string> {
   try {
     // Read the file content
-    const fileContent = await RNFS.readFile(path, 'base64')
+    const uri = ensureFileUri(path)
+    const fileContent = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    })
     const buffer = Buffer.from(fileContent, 'base64')
 
     // Create SHA-256 hash using react-native-quick-crypto
