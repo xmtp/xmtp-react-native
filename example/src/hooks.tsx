@@ -767,7 +767,7 @@ export function useSavedAddress(): {
   return {
     address,
     save: async (address: string) => {
-      SecureStore.setItem('xmtp.address', address)
+      await SecureStore.setItemAsync('xmtp.address', address)
       await refetch()
     },
     clear: async () => {
@@ -797,7 +797,7 @@ export async function getDbEncryptionKey(
 
       // Convert to string for storage
       const randomBytesString = uint8ArrayToHexString(randomBytes)
-      SecureStore.setItem(key, randomBytesString)
+      await SecureStore.setItemAsync(key, randomBytesString)
 
       return randomBytes
     }
