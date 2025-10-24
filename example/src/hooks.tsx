@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import * as ExpoCrypto from 'expo-crypto'
 import * as SecureStore from 'expo-secure-store'
 import * as FileSystem from 'expo-file-system'
-import crypto from 'react-native-quick-crypto'
 import { useMutation, useQuery, UseQueryResult } from 'react-query'
 import {
   Conversation,
@@ -869,10 +869,12 @@ async function calculateFileDigest(path: string): Promise<string> {
     })
     const buffer = Buffer.from(fileContent, 'base64')
 
-    // Create SHA-256 hash using react-native-quick-crypto
-    const hash = crypto.createHash('sha256')
-    hash.update(buffer.buffer)
-    return hash.digest('hex')
+    // Create SHA-256 hash
+    const digest = await ExpoCrypto.digest(
+      ExpoCrypto.CryptoDigestAlgorithm.SHA256,
+      buffer
+    )
+    return Buffer.from(digest).toString('hex')
   } catch (error) {
     console.error('Error calculating file digest:', error)
     throw error

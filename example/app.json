@@ -16,6 +16,13 @@
     ],
     "plugins": [
       [
+        "expo-sqlite",
+        {
+          "enableFTS": true,
+          "useSQLCipher": true
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "The app accesses your photos to let you attach them as messages.",
