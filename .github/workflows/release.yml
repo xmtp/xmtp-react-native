@@ -1,9 +1,16 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - production
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -18,25 +25,124 @@ jobs:
       issues: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: ".nvmrc"
           cache: "yarn"
+
       - name: Update npm to latest
         run: npm install -g npm@latest
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
-      - name: Publish
-        uses: changesets/action@v1
-        with:
-          title: "release: version packages"
-          commit: "release: version packages"
-          publish: yarn run release
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          echo "type=${{ github.event.inputs.release_type }}" >> $GITHUB_OUTPUT
+          echo "Release type: ${{ github.event.inputs.release_type }}"
+
+      - name: Get current version
+        id: current-version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Validate dev version format (dev releases only)
+        if: steps.release-type.outputs.type == 'dev'
+        run: |
+          CURRENT_VERSION="${{ steps.current-version.outputs.current_version }}"
+          if [[ ! $CURRENT_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+-dev$ ]]; then
+            echo "Error: For dev releases, package version must be in format MAJOR.MINOR.PATCH-dev"
+            echo "Current version is $CURRENT_VERSION"
+            echo "Please update package.json version to follow the dev format (e.g., 1.0.0-dev)"
+            exit 1
+          fi
+
+      - name: Calculate release version
+        id: version
+        run: |
+          CURRENT_VERSION="${{ steps.current-version.outputs.current_version }}"
+          RELEASE_TYPE="${{ steps.release-type.outputs.type }}"
+          
+          if [[ "$RELEASE_TYPE" == "production" ]]; then
+            # For production, use current version as-is
+            RELEASE_VERSION="$CURRENT_VERSION"
+          else
+            # For dev releases, append commit SHA
+            SHA=$(git rev-parse --short=7 HEAD)
+            RELEASE_VERSION="${CURRENT_VERSION}.${SHA}"
+          fi
+          
+          echo "release_version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "Release version will be: $RELEASE_VERSION"
+
+      - name: Update package.json version
+        run: |
+          RELEASE_VERSION="${{ steps.version.outputs.release_version }}"
+          node -e "
+            const fs = require('fs');
+            const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+            packageJson.version = '$RELEASE_VERSION';
+            fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2) + '\n');
+          "
+          echo "Updated package.json version to $RELEASE_VERSION"
+
+      - name: Build package
+        run: yarn build
+
+      - name: Create Git tag
+        run: |
+          RELEASE_VERSION="${{ steps.version.outputs.release_version }}"
+          RELEASE_TYPE="${{ steps.release-type.outputs.type }}"
+          
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if [[ "$RELEASE_TYPE" == "production" ]]; then
+            git tag -a "v$RELEASE_VERSION" -m "Release v$RELEASE_VERSION"
+          else
+            git tag -a "v$RELEASE_VERSION" -m "Dev release v$RELEASE_VERSION"
+          fi
+          
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git "v$RELEASE_VERSION"
+
+      - name: Publish to NPM
+        run: |
+          RELEASE_TYPE="${{ steps.release-type.outputs.type }}"
+          
+          if [[ "$RELEASE_TYPE" == "production" ]]; then
+            echo "Publishing production release..."
+            npm publish --provenance --access public
+          else
+            echo "Publishing development release with prerelease tag..."
+            npm publish --provenance --access public --tag prerelease
+          fi
+
+      - name: Create GitHub Release
+        if: steps.release-type.outputs.type == 'production'
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_GH_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.release_version }}
+          release_name: Release v${{ steps.version.outputs.release_version }}
+          draft: false
+          prerelease: false
+
+      - name: Create GitHub Pre-release
+        if: steps.release-type.outputs.type == 'dev'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_GH_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.release_version }}
+          release_name: Dev Release v${{ steps.version.outputs.release_version }}
+          draft: false
+          prerelease: true

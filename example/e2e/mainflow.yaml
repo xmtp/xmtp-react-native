@@ -1,0 +1,14 @@
+appId: expo.modules.xmtpreactnativesdk.example
+---
+- launchApp:
+    clearState: true
+- tapOn: Unit-tests
+- assertVisible: Unit Tests
+- tapOn: 1,2,3
+- inputText: '1'
+- tapOn: RUN ALL
+- extendedWaitUntil:
+    visible: 'tests-complete'
+    timeout: 1200000
+- assertNotVisible:
+    id: 'FAIL'

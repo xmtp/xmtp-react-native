@@ -7,8 +7,10 @@ node_modules/
 .expo/
 android/
 dist/
-web-build/
+e2e/.maestro/
 expo-env.d.ts
+ios/
+web-build/
 
 # Native
 *.orig.*
