@@ -1,10 +1,10 @@
 module.exports = {
   root: true,
-  parser: "@typescript-eslint/parser",
+  parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: ["./tsconfig.json", "./example/tsconfig.json"]
-  },  
-  plugins: ["@typescript-eslint"],
+    project: ['./tsconfig.json', './example/tsconfig.json'],
+  },
+  plugins: ['@typescript-eslint'],
   extends: ['universe/native', 'universe/web'],
   ignorePatterns: ['build'],
   plugins: ['prettier'],
@@ -12,6 +12,6 @@ module.exports = {
     __dirname: true,
   },
   rules: {
-    "@typescript-eslint/no-floating-promises": ["error"],
+    '@typescript-eslint/no-floating-promises': ['error'],
   },
 }

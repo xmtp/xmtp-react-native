@@ -11,7 +11,8 @@ extension Conversation {
 
 	func cacheKey(_ installationId: String) -> String {
 		return Conversation.cacheKeyForTopic(
-			installationId: installationId, topic: topic)
+			installationId: installationId, topic: topic
+		)
 	}
 }
 
@@ -29,7 +30,7 @@ actor IsolatedManager<T> {
 
 public class XMTPModule: Module {
 	// Constants
-	private struct Constants {
+	private enum Constants {
 		static let fileLoggerEnabledKey = "XMTPFileLoggerEnabled"
 		static let logLevelKey = "XMTPLogLevel"
 		static let logRotationKey = "XMTPLogRotation"
@@ -105,7 +106,7 @@ public class XMTPModule: Module {
 			switch self {
 			case .noClient:
 				return "No client is available."
-			case .conversationNotFound(let id):
+			case let .conversationNotFound(id):
 				return "Conversation with ID '\(id)' was not found."
 			case .noMessage:
 				return "No message was provided."
@@ -146,8 +147,7 @@ public class XMTPModule: Module {
 		)
 
 		AsyncFunction("inboxId") { (installationId: String) -> String in
-			if let client = await clientsManager.getClient(key: installationId)
-			{
+			if let client = await clientsManager.getClient(key: installationId) {
 				return client.inboxID
 			} else {
 				return "No Client."
@@ -218,7 +218,8 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			let inboxStates = try await client.inboxStatesForInboxIds(
-				refreshFromNetwork: refreshFromNetwork, inboxIds: inboxIds)
+				refreshFromNetwork: refreshFromNetwork, inboxIds: inboxIds
+			)
 			return try inboxStates.map { try InboxStateWrapper.encode($0) }
 		}
 
@@ -241,7 +242,6 @@ public class XMTPModule: Module {
 				hasAuthenticateToInboxCallback: Bool?, dbEncryptionKey: [UInt8],
 				authParams: String
 			) -> [String: String] in
-
 			let privateKey = try PrivateKey.generate()
 			if hasAuthenticateToInboxCallback ?? false {
 				preAuthenticateToInboxCallbackDeferred = DispatchSemaphore(
@@ -249,7 +249,7 @@ public class XMTPModule: Module {
 			}
 			let preAuthenticateToInboxCallback: PreEventCallback? =
 				hasAuthenticateToInboxCallback ?? false
-				? self.preAuthenticateToInboxCallback : nil
+					? self.preAuthenticateToInboxCallback : nil
 			let encryptionKeyData = Data(dbEncryptionKey)
 
 			let options = self.createClientConfig(
@@ -258,9 +258,11 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await Client.create(
-				account: privateKey, options: options)
+				account: privateKey, options: options
+			)
 			await clientsManager.updateClient(
-				key: client.installationID, client: client)
+				key: client.installationID, client: client
+			)
 			return try ClientWrapper.encodeToObj(client)
 		}
 
@@ -278,7 +280,8 @@ public class XMTPModule: Module {
 				module: self, publicIdentity: identity,
 				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
-				blockNumber: walletOptions.blockNumber)
+				blockNumber: walletOptions.blockNumber
+			)
 			self.signer = signer
 			if hasAuthenticateToInboxCallback ?? false {
 				self.preAuthenticateToInboxCallbackDeferred = DispatchSemaphore(
@@ -286,7 +289,7 @@ public class XMTPModule: Module {
 			}
 			let preAuthenticateToInboxCallback: PreEventCallback? =
 				hasAuthenticateToInboxCallback ?? false
-				? self.preAuthenticateToInboxCallback : nil
+					? self.preAuthenticateToInboxCallback : nil
 			let encryptionKeyData = Data(dbEncryptionKey)
 
 			let options = self.createClientConfig(
@@ -295,11 +298,13 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.create(
-				account: signer, options: options)
+				account: signer, options: options
+			)
 			await self.clientsManager.updateClient(
-				key: client.installationID, client: client)
+				key: client.installationID, client: client
+			)
 			self.signer = nil
-			self.sendEvent("authed", try ClientWrapper.encodeToObj(client))
+			try self.sendEvent("authed", ClientWrapper.encodeToObj(client))
 		}
 
 		AsyncFunction("build") {
@@ -319,9 +324,11 @@ public class XMTPModule: Module {
 				preAuthenticateToInboxCallback: preAuthenticateToInboxCallback
 			)
 			let client = try await XMTP.Client.build(
-				publicIdentity: identity, options: options, inboxId: inboxId)
+				publicIdentity: identity, options: options, inboxId: inboxId
+			)
 			await clientsManager.updateClient(
-				key: client.installationID, client: client)
+				key: client.installationID, client: client
+			)
 			return try ClientWrapper.encodeToObj(client)
 		}
 
@@ -341,9 +348,11 @@ public class XMTPModule: Module {
 			)
 			let client = try await XMTP.Client.ffiCreateClient(
 				identity: identity,
-				clientOptions: options)
+				clientOptions: options
+			)
 			await clientsManager.updateClient(
-				key: client.installationID, client: client)
+				key: client.installationID, client: client
+			)
 			return try ClientWrapper.encodeToObj(client)
 		}
 
@@ -356,7 +365,8 @@ public class XMTPModule: Module {
 			}
 			let sigRequest = client.ffiSignatureRequest()
 			await clientsManager.updateSignatureRequest(
-				key: client.installationID, signatureRequest: sigRequest)
+				key: client.installationID, signatureRequest: sigRequest
+			)
 			return try await sigRequest?.signatureText()
 		}
 
@@ -364,7 +374,7 @@ public class XMTPModule: Module {
 			(installationId: String, signatureBytes: [UInt8]) in
 			try await clientsManager.getSignatureRequest(
 				key: installationId)?.addEcdsaSignature(
-					signatureBytes: Data(signatureBytes))
+				signatureBytes: Data(signatureBytes))
 		}
 
 		AsyncFunction("ffiAddScwSignature") {
@@ -374,11 +384,12 @@ public class XMTPModule: Module {
 			) in
 			try await clientsManager.getSignatureRequest(
 				key: installationId)?.addScwSignature(
-					signatureBytes: Data(signatureBytes), address: address,
-					chainId: UInt64(chainId),
-					blockNumber: blockNumber.flatMap {
-						$0 >= 0 ? UInt64($0) : nil
-					})
+				signatureBytes: Data(signatureBytes), address: address,
+				chainId: UInt64(chainId),
+				blockNumber: blockNumber.flatMap {
+					$0 >= 0 ? UInt64($0) : nil
+				}
+			)
 		}
 
 		AsyncFunction("ffiRegisterIdentity") {
@@ -415,11 +426,13 @@ public class XMTPModule: Module {
 				module: self, publicIdentity: identity,
 				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
-				blockNumber: walletOptions.blockNumber)
+				blockNumber: walletOptions.blockNumber
+			)
 			self.signer = signer
 
 			try await client.revokeInstallations(
-				signingKey: signer, installationIds: installationIds)
+				signingKey: signer, installationIds: installationIds
+			)
 			self.signer = nil
 		}
 
@@ -441,7 +454,8 @@ public class XMTPModule: Module {
 				module: self, publicIdentity: identity,
 				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
-				blockNumber: walletOptions.blockNumber)
+				blockNumber: walletOptions.blockNumber
+			)
 			self.signer = signer
 
 			try await client.revokeAllOtherInstallations(signingKey: signer)
@@ -467,11 +481,13 @@ public class XMTPModule: Module {
 				module: self, publicIdentity: identity,
 				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
-				blockNumber: walletOptions.blockNumber)
+				blockNumber: walletOptions.blockNumber
+			)
 			self.signer = signer
 
 			try await client.addAccount(
-				newAccount: signer, allowReassignInboxId: allowReassignInboxId)
+				newAccount: signer, allowReassignInboxId: allowReassignInboxId
+			)
 			self.signer = nil
 		}
 
@@ -495,11 +511,13 @@ public class XMTPModule: Module {
 				module: self, publicIdentity: identity,
 				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
-				blockNumber: walletOptions.blockNumber)
+				blockNumber: walletOptions.blockNumber
+			)
 			self.signer = signer
 
 			try await client.removeAccount(
-				recoveryAccount: signer, identityToRemove: remove)
+				recoveryAccount: signer, identityToRemove: remove
+			)
 			self.signer = nil
 		}
 
@@ -513,7 +531,8 @@ public class XMTPModule: Module {
 			let ids = installationIds.map { $0.hexToData }
 			let sigRequest = try await client.ffiRevokeInstallations(ids: ids)
 			await clientsManager.updateSignatureRequest(
-				key: client.installationID, signatureRequest: sigRequest)
+				key: client.installationID, signatureRequest: sigRequest
+			)
 			return try await sigRequest.signatureText()
 		}
 
@@ -526,7 +545,8 @@ public class XMTPModule: Module {
 			}
 			let sigRequest = try await client.ffiRevokeAllOtherInstallations()
 			await clientsManager.updateSignatureRequest(
-				key: client.installationID, signatureRequest: sigRequest)
+				key: client.installationID, signatureRequest: sigRequest
+			)
 			return try await sigRequest.signatureText()
 		}
 
@@ -542,7 +562,8 @@ public class XMTPModule: Module {
 			let sigRequest = try await client.ffiRevokeIdentity(
 				identityToRemove: remove)
 			await clientsManager.updateSignatureRequest(
-				key: client.installationID, signatureRequest: sigRequest)
+				key: client.installationID, signatureRequest: sigRequest
+			)
 			return try await sigRequest.signatureText()
 		}
 
@@ -560,9 +581,11 @@ public class XMTPModule: Module {
 				newIdentity)
 			let sigRequest = try await client.ffiAddIdentity(
 				identityToAdd: identity,
-				allowReassignInboxId: allowReassignInboxId)
+				allowReassignInboxId: allowReassignInboxId
+			)
 			await clientsManager.updateSignatureRequest(
-				key: client.installationID, signatureRequest: sigRequest)
+				key: client.installationID, signatureRequest: sigRequest
+			)
 			return try await sigRequest.signatureText()
 		}
 
@@ -608,7 +631,8 @@ public class XMTPModule: Module {
 				throw Error.noClient
 			}
 			return try client.verifySignature(
-				message: message, signature: Data(signature))
+				message: message, signature: Data(signature)
+			)
 		}
 
 		AsyncFunction("canMessage") {
@@ -643,7 +667,8 @@ public class XMTPModule: Module {
 		AsyncFunction("staticInboxStatesForInboxIds") {
 			(environment: String, inboxIds: [String]) -> [String] in
 			let inboxStates = try await XMTP.Client.inboxStatesForInboxIds(
-				inboxIds: inboxIds, api: createApiClient(env: environment))
+				inboxIds: inboxIds, api: createApiClient(env: environment)
+			)
 			return try inboxStates.map { try InboxStateWrapper.encode($0) }
 		}
 
@@ -652,7 +677,6 @@ public class XMTPModule: Module {
 				environment: String, publicIdentity: String, inboxId: String,
 				walletParams: String, installationIds: [String]
 			) in
-
 			let walletOptions = WalletParamsWrapper.walletParamsFromJson(
 				walletParams)
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
@@ -661,7 +685,8 @@ public class XMTPModule: Module {
 				module: self, publicIdentity: identity,
 				signerType: walletOptions.signerType,
 				chainId: walletOptions.chainId,
-				blockNumber: walletOptions.blockNumber)
+				blockNumber: walletOptions.blockNumber
+			)
 			self.signer = signer
 			try await Client.revokeInstallations(
 				api: createApiClient(env: environment),
@@ -677,7 +702,6 @@ public class XMTPModule: Module {
 				environment: String, publicIdentity: String, inboxId: String,
 				installationIds: [String]
 			) -> String in
-
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
 				publicIdentity)
 			let sigRequest = try await Client.ffiRevokeInstallations(
@@ -689,7 +713,8 @@ public class XMTPModule: Module {
 			let type = SignatureType.revokeInstallations
 
 			await clientsManager.updateSignatureRequest(
-				key: type.rawValue, signatureRequest: sigRequest)
+				key: type.rawValue, signatureRequest: sigRequest
+			)
 			return try await sigRequest.signatureText()
 		}
 
@@ -712,7 +737,7 @@ public class XMTPModule: Module {
 			(signatureType: String, signatureBytes: [UInt8]) in
 			try await clientsManager.getSignatureRequest(
 				key: signatureType)?.addEcdsaSignature(
-					signatureBytes: Data(signatureBytes))
+				signatureBytes: Data(signatureBytes))
 		}
 
 		AsyncFunction("ffiStaticAddScwSignature") {
@@ -722,17 +747,17 @@ public class XMTPModule: Module {
 			) in
 			try await clientsManager.getSignatureRequest(
 				key: signatureType)?.addScwSignature(
-					signatureBytes: Data(signatureBytes), address: address,
-					chainId: UInt64(chainId),
-					blockNumber: blockNumber.flatMap {
-						$0 >= 0 ? UInt64($0) : nil
-					})
+				signatureBytes: Data(signatureBytes), address: address,
+				chainId: UInt64(chainId),
+				blockNumber: blockNumber.flatMap {
+					$0 >= 0 ? UInt64($0) : nil
+				}
+			)
 		}
 
 		AsyncFunction("staticKeyPackageStatuses") {
 			(environment: String, installationIds: [String]) -> [String: String]
 			in
-
 			let keyPackageStatus = try await XMTP.Client
 				.keyPackageStatusesForInstallationIds(
 					installationIds: installationIds,
@@ -753,13 +778,15 @@ public class XMTPModule: Module {
 
 			Client.activatePersistentLibXMTPLogWriter(
 				logLevel: logLevel, rotationSchedule: ffiLogRotation,
-				maxFiles: maxFiles)
+				maxFiles: maxFiles
+			)
 
 			// Save all settings
 			setLogWriterActive(active: true)
 			saveLogSettings(
 				logLevel: logLevelInt, logRotation: logRotationInt,
-				maxFiles: maxFiles)
+				maxFiles: maxFiles
+			)
 		}
 
 		Function("staticDeactivatePersistentLibXMTPLogWriter") {
@@ -811,7 +838,8 @@ public class XMTPModule: Module {
 					publicIdentity)
 				let api = createApiClient(env: environment)
 				return try await XMTP.Client.getOrCreateInboxId(
-					api: api, publicIdentity: identity)
+					api: api, publicIdentity: identity
+				)
 			} catch {
 				throw Error.noClient
 			}
@@ -882,7 +910,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listGroups") {
 			(
 				installationId: String, groupParams: String?,
-				limit: Int?, consentStringStates: [String]?
+				queryParamsJson: String?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -892,19 +920,23 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
-			let consentStates: [ConsentState]?
-			if let states = consentStringStates {
-				consentStates = try getConsentStates(states: states)
-			} else {
-				consentStates = nil
-			}
+			let queryParams = ConversationListParamsWrapper.conversationListParamsFromJson(
+				queryParamsJson ?? "")
 			var groupList: [Group] = try await client.conversations.listGroups(
-				limit: limit, consentStates: consentStates)
+				createdAfterNs: queryParams.createdAfterNs,
+				createdBeforeNs: queryParams.createdBeforeNs,
+				lastActivityAfterNs: queryParams.lastActivityAfterNs,
+				lastActivityBeforeNs: queryParams.lastActivityBeforeNs,
+				limit: queryParams.limit,
+				consentStates: queryParams.consentStates,
+				orderBy: queryParams.orderBy ?? .lastActivity
+			)
 
 			var results: [String] = []
 			for group in groupList {
 				let encodedGroup = try await GroupWrapper.encode(
-					group, client: client, conversationParams: params)
+					group, client: client, conversationParams: params
+				)
 				results.append(encodedGroup)
 			}
 			return results
@@ -913,7 +945,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listDms") {
 			(
 				installationId: String, groupParams: String?,
-				limit: Int?, consentStringStates: [String]?
+				queryParamsJson: String?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -923,19 +955,23 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				groupParams ?? "")
-			let consentStates: [ConsentState]?
-			if let states = consentStringStates {
-				consentStates = try getConsentStates(states: states)
-			} else {
-				consentStates = nil
-			}
+			let queryParams = ConversationListParamsWrapper.conversationListParamsFromJson(
+				queryParamsJson ?? "")
 			var dmList: [Dm] = try await client.conversations.listDms(
-				limit: limit, consentStates: consentStates)
+				createdAfterNs: queryParams.createdAfterNs,
+				createdBeforeNs: queryParams.createdBeforeNs,
+				lastActivityBeforeNs: queryParams.lastActivityBeforeNs,
+				lastActivityAfterNs: queryParams.lastActivityAfterNs,
+				limit: queryParams.limit,
+				consentStates: queryParams.consentStates,
+				orderBy: queryParams.orderBy ?? .lastActivity
+			)
 
 			var results: [String] = []
 			for dm in dmList {
 				let encodedDm = try await DmWrapper.encode(
-					dm, client: client, conversationParams: params)
+					dm, client: client, conversationParams: params
+				)
 				results.append(encodedDm)
 			}
 			return results
@@ -944,7 +980,7 @@ public class XMTPModule: Module {
 		AsyncFunction("listConversations") {
 			(
 				installationId: String, conversationParams: String?,
-				limit: Int?, consentStringStates: [String]?
+				queryParamsJson: String?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -954,14 +990,17 @@ public class XMTPModule: Module {
 
 			let params = ConversationParamsWrapper.conversationParamsFromJson(
 				conversationParams ?? "")
-			let consentStates: [ConsentState]?
-			if let states = consentStringStates {
-				consentStates = try getConsentStates(states: states)
-			} else {
-				consentStates = nil
-			}
+			let queryParams = ConversationListParamsWrapper.conversationListParamsFromJson(
+				queryParamsJson ?? "")
 			let conversations = try await client.conversations.list(
-				limit: limit, consentStates: consentStates)
+				createdAfterNs: queryParams.createdAfterNs,
+				createdBeforeNs: queryParams.createdBeforeNs,
+				lastActivityBeforeNs: queryParams.lastActivityBeforeNs,
+				lastActivityAfterNs: queryParams.lastActivityAfterNs,
+				limit: queryParams.limit,
+				consentStates: queryParams.consentStates,
+				orderBy: queryParams.orderBy ?? .lastActivity
+			)
 
 			var results: [String] = []
 			for conversation in conversations {
@@ -997,8 +1036,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("conversationMessages") {
 			(
-				installationId: String, conversationId: String, limit: Int?,
-				beforeNs: Double?, afterNs: Double?, direction: String?
+				installationId: String, conversationId: String,
+				queryParamsJson: String?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1008,18 +1047,22 @@ public class XMTPModule: Module {
 
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
 			}
+			let queryParams = MessageQueryParamsWrapper.messageQueryParamsFromJson(
+				queryParamsJson ?? "")
 			let messages = try await conversation.messages(
-				limit: limit,
-				beforeNs: (beforeNs != nil) ? Int64(beforeNs!) : nil,
-				afterNs: (afterNs != nil) ? Int64(afterNs!) : nil,
+				limit: queryParams.limit,
+				beforeNs: queryParams.beforeNs,
+				afterNs: queryParams.afterNs,
 				direction: getSortDirection(
-					direction: direction ?? "DESCENDING")
+					direction: queryParams.direction ?? "DESCENDING"),
+				excludeContentTypes: nil,
+				excludeSenderInboxIds: queryParams.excludeSenderInboxIds
 			)
 
 			return messages.compactMap { msg in
@@ -1036,8 +1079,8 @@ public class XMTPModule: Module {
 
 		AsyncFunction("conversationMessagesWithReactions") {
 			(
-				installationId: String, conversationId: String, limit: Int?,
-				beforeNs: Double?, afterNs: Double?, direction: String?
+				installationId: String, conversationId: String,
+				queryParamsJson: String?
 			) -> [String] in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1046,18 +1089,22 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
 			}
+			let queryParams = MessageQueryParamsWrapper.messageQueryParamsFromJson(
+				queryParamsJson ?? "")
 			let messages = try await conversation.messagesWithReactions(
-				limit: limit,
-				beforeNs: beforeNs != nil ? Int64(beforeNs!) : nil,
-				afterNs: afterNs != nil ? Int64(afterNs!) : nil,
+				limit: queryParams.limit,
+				beforeNs: queryParams.beforeNs,
+				afterNs: queryParams.afterNs,
 				direction: getSortDirection(
-					direction: direction ?? "DESCENDING")
+					direction: queryParams.direction ?? "DESCENDING"),
+				excludeContentTypes: nil,
+				excludeSenderInboxIds: queryParams.excludeSenderInboxIds
 			)
 			return messages.compactMap { msg in
 				do {
@@ -1117,7 +1164,8 @@ public class XMTPModule: Module {
 					conversationId: conversationId)
 			{
 				return try await ConversationWrapper.encode(
-					conversation, client: client)
+					conversation, client: client
+				)
 			} else {
 				return nil
 			}
@@ -1135,7 +1183,8 @@ public class XMTPModule: Module {
 					topic: topic)
 			{
 				return try await ConversationWrapper.encode(
-					conversation, client: client)
+					conversation, client: client
+				)
 			} else {
 				return nil
 			}
@@ -1178,7 +1227,7 @@ public class XMTPModule: Module {
 		AsyncFunction("sendEncodedContent") {
 			(
 				installationId: String, conversationId: String,
-				encodedContentData: [UInt8]
+				encodedContentData: [UInt8], shouldPush: Bool
 			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1187,8 +1236,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
@@ -1196,7 +1245,8 @@ public class XMTPModule: Module {
 			let encodedContent = try EncodedContent(
 				serializedBytes: Data(encodedContentData))
 
-			return try await conversation.send(encodedContent: encodedContent)
+			return try await conversation.send(encodedContent: encodedContent,
+			                                   visibilityOptions: MessageVisibilityOptions(shouldPush: shouldPush))
 		}
 
 		AsyncFunction("sendMessage") {
@@ -1209,8 +1259,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: id)
+				.findConversation(
+					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
@@ -1232,8 +1282,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: id)
+				.findConversation(
+					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
@@ -1252,8 +1302,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: id)
+				.findConversation(
+					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
@@ -1270,7 +1320,8 @@ public class XMTPModule: Module {
 			(
 				installationId: String,
 				conversationId: String,
-				encodedContentData: [UInt8]
+				encodedContentData: [UInt8],
+				shouldPush: Bool
 			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1279,8 +1330,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
@@ -1288,7 +1339,8 @@ public class XMTPModule: Module {
 			let encodedContent = try EncodedContent(
 				serializedBytes: Data(encodedContentData))
 			return try await conversation.prepareMessage(
-				encodedContent: encodedContent)
+				encodedContent: encodedContent, visibilityOptions: MessageVisibilityOptions(shouldPush: shouldPush)
+			)
 		}
 
 		AsyncFunction("findOrCreateDm") {
@@ -1303,13 +1355,15 @@ public class XMTPModule: Module {
 			}
 			let settings =
 				(disappearStartingAtNs != nil && retentionDurationInNs != nil)
-				? DisappearingMessageSettings(
-					disappearStartingAtNs: disappearStartingAtNs!,
-					retentionDurationInNs: retentionDurationInNs!) : nil
+					? DisappearingMessageSettings(
+						disappearStartingAtNs: disappearStartingAtNs!,
+						retentionDurationInNs: retentionDurationInNs!
+					) : nil
 
 			do {
 				let dm = try await client.conversations.findOrCreateDm(
-					with: peerInboxId, disappearingMessageSettings: settings)
+					with: peerInboxId, disappearingMessageSettings: settings
+				)
 				return try await DmWrapper.encode(dm, client: client)
 			} catch {
 				print("ERRRO!: \(error.localizedDescription)")
@@ -1329,9 +1383,10 @@ public class XMTPModule: Module {
 			}
 			let settings =
 				(disappearStartingAtNs != nil && retentionDurationInNs != nil)
-				? DisappearingMessageSettings(
-					disappearStartingAtNs: disappearStartingAtNs!,
-					retentionDurationInNs: retentionDurationInNs!) : nil
+					? DisappearingMessageSettings(
+						disappearStartingAtNs: disappearStartingAtNs!,
+						retentionDurationInNs: retentionDurationInNs!
+					) : nil
 			let identity = try PublicIdentityWrapper.publicIdentityFromJson(
 				peerIdentity)
 			do {
@@ -1567,8 +1622,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: dmId)
+				.findConversation(
+					conversationId: dmId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(dmId)")
@@ -1578,7 +1633,6 @@ public class XMTPModule: Module {
 			} else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(dmId)")
-
 			}
 		}
 
@@ -1597,14 +1651,14 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
 			}
 			return try await conversation.members().compactMap { member in
-				return try MemberWrapper.encode(member)
+				try MemberWrapper.encode(member)
 			}
 		}
 
@@ -1644,8 +1698,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: id)
+				.findConversation(
+					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
@@ -1854,8 +1908,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"No conversation found for \(conversationId)")
@@ -1874,8 +1928,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"No conversation found for \(conversationId)")
@@ -1892,8 +1946,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"No conversation found for \(conversationId)")
@@ -1913,8 +1967,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"No conversation found for \(conversationId)")
@@ -1922,7 +1976,8 @@ public class XMTPModule: Module {
 			try await conversation.updateDisappearingMessageSettings(
 				DisappearingMessageSettings(
 					disappearStartingAtNs: startAtNs,
-					retentionDurationInNs: durationInNs)
+					retentionDurationInNs: durationInNs
+				)
 			)
 		}
 
@@ -1935,8 +1990,8 @@ public class XMTPModule: Module {
 			}
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: id)
+				.findConversation(
+					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
@@ -2296,8 +2351,8 @@ public class XMTPModule: Module {
 
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: id)
+				.findConversation(
+					conversationId: id)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(id)")
@@ -2340,7 +2395,8 @@ public class XMTPModule: Module {
 			}
 
 			return try await ConversationWrapper.encode(
-				conversation, client: client)
+				conversation, client: client
+			)
 		}
 
 		AsyncFunction("syncPreferences") { (installationId: String) in
@@ -2383,7 +2439,7 @@ public class XMTPModule: Module {
 						value: value,
 						entryType: resolvedEntryType,
 						consentType: resolvedConsentState
-					)
+					),
 				]
 			)
 		}
@@ -2428,7 +2484,7 @@ public class XMTPModule: Module {
 			return try await ConsentWrapper.consentStateToString(
 				state: client.preferences.conversationState(
 					conversationId:
-						conversationId))
+					conversationId))
 		}
 
 		AsyncFunction("conversationConsentState") {
@@ -2441,8 +2497,8 @@ public class XMTPModule: Module {
 
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
@@ -2461,8 +2517,8 @@ public class XMTPModule: Module {
 
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
@@ -2482,8 +2538,8 @@ public class XMTPModule: Module {
 
 			guard
 				let conversation = try await client.conversations
-					.findConversation(
-						conversationId: conversationId)
+				.findConversation(
+					conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
@@ -2502,7 +2558,7 @@ public class XMTPModule: Module {
 
 			guard
 				let conversation = try await client.conversations
-					.findConversation(conversationId: conversationId)
+				.findConversation(conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
@@ -2522,7 +2578,7 @@ public class XMTPModule: Module {
 
 			guard
 				let conversation = try await client.conversations
-					.findConversation(conversationId: conversationId)
+				.findConversation(conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
@@ -2541,7 +2597,7 @@ public class XMTPModule: Module {
 
 			guard
 				let conversation = try await client.conversations
-					.findConversation(conversationId: conversationId)
+				.findConversation(conversationId: conversationId)
 			else {
 				throw Error.conversationNotFound(
 					"no conversation found for \(conversationId)")
@@ -2553,24 +2609,22 @@ public class XMTPModule: Module {
 
 		AsyncFunction("subscribeToPreferenceUpdates") {
 			(installationId: String) in
-
 			try await subscribeToPreferenceUpdates(
 				installationId: installationId)
 		}
 
 		AsyncFunction("subscribeToConsent") {
 			(installationId: String) in
-
 			try await subscribeToConsent(
 				installationId: installationId)
 		}
 
 		AsyncFunction("subscribeToConversations") {
 			(installationId: String, type: String) in
-
 			try await subscribeToConversations(
 				installationId: installationId,
-				type: getConversationType(type: type))
+				type: getConversationType(type: type)
+			)
 		}
 
 		AsyncFunction("subscribeToAllMessages") {
@@ -2579,14 +2633,15 @@ public class XMTPModule: Module {
 				installationId: installationId,
 				type: getConversationType(type: type),
 				consentStates: (consentStates == nil || consentStates!.isEmpty)
-					? nil : try getConsentStates(states: consentStates!)
+					? nil : getConsentStates(states: consentStates!)
 			)
 		}
 
 		AsyncFunction("subscribeToMessages") {
 			(installationId: String, id: String) in
 			try await subscribeToMessages(
-				installationId: installationId, id: id)
+				installationId: installationId, id: id
+			)
 		}
 
 		AsyncFunction("unsubscribeFromPreferenceUpdates") {
@@ -2618,7 +2673,8 @@ public class XMTPModule: Module {
 		AsyncFunction("unsubscribeFromMessages") {
 			(installationId: String, id: String) in
 			try await unsubscribeFromMessages(
-				installationId: installationId, id: id)
+				installationId: installationId, id: id
+			)
 		}
 
 		AsyncFunction("registerPushToken") {
@@ -2675,7 +2731,7 @@ public class XMTPModule: Module {
 					let logStore = try OSLogStore(
 						scope: .currentProcessIdentifier)
 					let position = logStore.position(
-						timeIntervalSinceLatestBoot: -1200)  // Last 20 min of logs
+						timeIntervalSinceLatestBoot: -1200) // Last 20 min of logs
 					let entries = try logStore.getEntries(at: position)
 
 					for entry in entries {
@@ -2735,70 +2791,70 @@ public class XMTPModule: Module {
 			}
 			return try await
 				(serverUrl?.isEmpty == false
-				? client.debugInformation.uploadDebugInformation(
-					serverUrl: serverUrl!)
-				: client.debugInformation.uploadDebugInformation())
+					? client.debugInformation.uploadDebugInformation(
+						serverUrl: serverUrl!)
+					: client.debugInformation.uploadDebugInformation())
 		}
 
 		AsyncFunction("createArchive") {
-            (
-                installationId: String, path: String, encryptionKey: [UInt8],
-                startNs: Int64?, endNs: Int64?, archiveElements: [String]?
-            ) in
-            guard
-                let client = await clientsManager.getClient(key: installationId)
-            else {
-                throw Error.noClient
-            }
-            
-            let encryptionKeyData = Data(encryptionKey)
-            let elements = try archiveElements?.map { try getArchiveElement($0) } ?? [.messages, .consent]
-            let archiveOptions = XMTP.ArchiveOptions(
-                startNs: startNs,
-                endNs: endNs,
-                archiveElements: elements
-            )
-            
-            try await client.createArchive(
-                path: path,
-                encryptionKey: encryptionKeyData,
-                opts: archiveOptions
-            )
-        }
+			(
+				installationId: String, path: String, encryptionKey: [UInt8],
+				startNs: Int64?, endNs: Int64?, archiveElements: [String]?
+			) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
 
-        AsyncFunction("importArchive") {
-            (installationId: String, path: String, encryptionKey: [UInt8]) in
-            guard
-                let client = await clientsManager.getClient(key: installationId)
-            else {
-                throw Error.noClient
-            }
-            
-            let encryptionKeyData = Data(encryptionKey)
-            
-            try await client.importArchive(
-                path: path,
-                encryptionKey: encryptionKeyData
-            )
-        }
+			let encryptionKeyData = Data(encryptionKey)
+			let elements = try archiveElements?.map { try getArchiveElement($0) } ?? [.messages, .consent]
+			let archiveOptions = XMTP.ArchiveOptions(
+				startNs: startNs,
+				endNs: endNs,
+				archiveElements: elements
+			)
 
-        AsyncFunction("archiveMetadata") {
-            (installationId: String, path: String, encryptionKey: [UInt8]) -> String in
-            guard
-                let client = await clientsManager.getClient(key: installationId)
-            else {
-                throw Error.noClient
-            }
-            
-            let encryptionKeyData = Data(encryptionKey)
-            
-            let metadata = try await client.archiveMetadata(
-                path: path,
-                encryptionKey: encryptionKeyData
-            )
-            
-            return try ArchiveMetadataWrapper.encode(metadata)
-        }
+			try await client.createArchive(
+				path: path,
+				encryptionKey: encryptionKeyData,
+				opts: archiveOptions
+			)
+		}
+
+		AsyncFunction("importArchive") {
+			(installationId: String, path: String, encryptionKey: [UInt8]) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+
+			let encryptionKeyData = Data(encryptionKey)
+
+			try await client.importArchive(
+				path: path,
+				encryptionKey: encryptionKeyData
+			)
+		}
+
+		AsyncFunction("archiveMetadata") {
+			(installationId: String, path: String, encryptionKey: [UInt8]) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+
+			let encryptionKeyData = Data(encryptionKey)
+
+			let metadata = try await client.archiveMetadata(
+				path: path,
+				encryptionKey: encryptionKeyData
+			)
+
+			return try ArchiveMetadataWrapper.encode(metadata)
+		}
 	}
 
 	//
@@ -2806,15 +2862,15 @@ public class XMTPModule: Module {
 	//
 
 	private func getArchiveElement(_ element: String) throws -> XMTP.ArchiveElement {
-        switch element {
-        case "consent":
-            return .consent
-        case "message", "messages":
-            return .messages
-        default:
-            throw WrapperError.encodeError("Invalid archive element: \(element)")
-        }
-    }
+		switch element {
+		case "consent":
+			return .consent
+		case "message", "messages":
+			return .messages
+		default:
+			throw WrapperError.encodeError("Invalid archive element: \(element)")
+		}
+	}
 
 	private func isLogWriterActive() -> Bool {
 		return UserDefaults.standard.bool(
@@ -2823,11 +2879,11 @@ public class XMTPModule: Module {
 
 	private func setLogWriterActive(active: Bool) {
 		UserDefaults.standard.set(
-			active, forKey: Constants.fileLoggerEnabledKey)
+			active, forKey: Constants.fileLoggerEnabledKey
+		)
 	}
 
-	private func saveLogSettings(logLevel: Int, logRotation: Int, maxFiles: Int)
-	{
+	private func saveLogSettings(logLevel: Int, logRotation: Int, maxFiles: Int) {
 		UserDefaults.standard.set(logLevel, forKey: Constants.logLevelKey)
 		UserDefaults.standard.set(logRotation, forKey: Constants.logRotationKey)
 		UserDefaults.standard.set(maxFiles, forKey: Constants.maxFilesKey)
@@ -2885,7 +2941,8 @@ public class XMTPModule: Module {
 
 			Client.activatePersistentLibXMTPLogWriter(
 				logLevel: logLevel, rotationSchedule: logRotation,
-				maxFiles: maxFiles)
+				maxFiles: maxFiles
+			)
 		}
 	}
 
@@ -2934,22 +2991,22 @@ public class XMTPModule: Module {
 		}
 	}
 
-	private func consentRecordFromJson(_ params: String) throws -> ConsentRecord
-	{
+	private func consentRecordFromJson(_ params: String) throws -> ConsentRecord {
 		guard let data = params.data(using: .utf8),
-			let jsonObject = try? JSONSerialization.jsonObject(
-				with: data, options: []) as? [String: Any],
-			let value = jsonObject["value"] as? String,
-			let entry = jsonObject["entryType"] as? String,
-			let consent = jsonObject["state"] as? String
+		      let jsonObject = try? JSONSerialization.jsonObject(
+		      	with: data, options: []
+		      ) as? [String: Any],
+		      let value = jsonObject["value"] as? String,
+		      let entry = jsonObject["entryType"] as? String,
+		      let consent = jsonObject["state"] as? String
 		else {
 			throw Error.invalidPermissionOption
 		}
 
-		return ConsentRecord(
+		return try ConsentRecord(
 			value: value,
-			entryType: try getEntryType(type: entry),
-			consentType: try getConsentState(state: consent)
+			entryType: getEntryType(type: entry),
+			consentType: getConsentState(state: consent)
 		)
 	}
 
@@ -2975,8 +3032,7 @@ public class XMTPModule: Module {
 		}
 	}
 
-	private func getPreferenceUpdatesType(type: PreferenceType) throws -> String
-	{
+	private func getPreferenceUpdatesType(type: PreferenceType) throws -> String {
 		switch type {
 		case .hmac_keys:
 			return "hmac_keys"
@@ -2984,7 +3040,7 @@ public class XMTPModule: Module {
 	}
 
 	private enum SignatureType: String {
-		case revokeInstallations = "revokeInstallations"
+		case revokeInstallations
 	}
 
 	func createApiClient(env: String, customLocalUrl: String? = nil, appVersion: String? = nil)
@@ -2993,7 +3049,7 @@ public class XMTPModule: Module {
 		switch env {
 		case "local":
 			if let customLocalUrl = customLocalUrl, !customLocalUrl.isEmpty {
-				XMTP.XMTPEnvironment.customLocalAddress = customLocalUrl
+				setenv("XMTP_NODE_ADDRESS", customLocalUrl, 1)
 			}
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.local,
@@ -3056,7 +3112,7 @@ public class XMTPModule: Module {
 							self?.sendEvent(
 								"preferencesClosed",
 								[
-									"installationId": installationId
+									"installationId": installationId,
 								]
 							)
 						})
@@ -3066,7 +3122,8 @@ public class XMTPModule: Module {
 							[
 								"installationId": installationId,
 								"type": getPreferenceUpdatesType(type: pref),
-							])
+							]
+						)
 					}
 				} catch {
 					print("Error in preference subscription: \(error)")
@@ -3074,7 +3131,8 @@ public class XMTPModule: Module {
 						getPreferenceUpdatesKey(installationId: installationId))?
 						.cancel()
 				}
-			})
+			}
+		)
 	}
 
 	func subscribeToConsent(installationId: String)
@@ -3097,7 +3155,7 @@ public class XMTPModule: Module {
 							self?.sendEvent(
 								"consentClosed",
 								[
-									"installationId": installationId
+									"installationId": installationId,
 								]
 							)
 						})
@@ -3108,14 +3166,16 @@ public class XMTPModule: Module {
 								"installationId": installationId,
 								"consent": ConsentWrapper.encodeToObj(
 									consent),
-							])
+							]
+						)
 					}
 				} catch {
 					print("Error in consent subscription: \(error)")
 					await subscriptionsManager.get(
 						getConsentKey(installationId: installationId))?.cancel()
 				}
-			})
+			}
+		)
 	}
 
 	func subscribeToConversations(
@@ -3142,18 +3202,21 @@ public class XMTPModule: Module {
 								self?.sendEvent(
 									"conversationClosed",
 									[
-										"installationId": installationId
+										"installationId": installationId,
 									]
 								)
-							})
+							}
+						)
 					{
 						try await sendEvent(
 							"conversation",
 							[
 								"installationId": installationId,
 								"conversation": ConversationWrapper.encodeToObj(
-									conversation, client: client),
-							])
+									conversation, client: client
+								),
+							]
+						)
 					}
 				} catch {
 					print("Error in all conversations subscription: \(error)")
@@ -3161,7 +3224,8 @@ public class XMTPModule: Module {
 						getConversationsKey(installationId: installationId))?
 						.cancel()
 				}
-			})
+			}
+		)
 	}
 
 	func subscribeToAllMessages(
@@ -3190,10 +3254,11 @@ public class XMTPModule: Module {
 								self?.sendEvent(
 									"messageClosed",
 									[
-										"installationId": installationId
+										"installationId": installationId,
 									]
 								)
-							})
+							}
+						)
 					{
 						try sendEvent(
 							"message",
@@ -3201,7 +3266,8 @@ public class XMTPModule: Module {
 								"installationId": installationId,
 								"message": MessageWrapper.encodeToObj(
 									message),
-							])
+							]
+						)
 					}
 				} catch {
 					print("Error in all messages subscription: \(error)")
@@ -3209,7 +3275,8 @@ public class XMTPModule: Module {
 						getMessagesKey(installationId: installationId))?
 						.cancel()
 				}
-			})
+			}
+		)
 	}
 
 	func subscribeToMessages(installationId: String, id: String) async throws {
@@ -3251,7 +3318,8 @@ public class XMTPModule: Module {
 										MessageWrapper.encodeToObj(
 											message),
 									"conversationId": id,
-								])
+								]
+							)
 						} catch {
 							print(
 								"discarding message, unable to encode wrapper \(message.id)"
@@ -3263,7 +3331,8 @@ public class XMTPModule: Module {
 					await subscriptionsManager.get(
 						converation.cacheKey(installationId))?.cancel()
 				}
-			})
+			}
+		)
 	}
 
 	func unsubscribeFromMessages(installationId: String, id: String)
@@ -3307,7 +3376,7 @@ public class XMTPModule: Module {
 
 	func preAuthenticateToInboxCallback() {
 		sendEvent("preAuthenticateToInboxCallback")
-		self.preAuthenticateToInboxCallbackDeferred?.wait()
+		preAuthenticateToInboxCallbackDeferred?.wait()
 	}
 
 	// Helper function to convert OSLogEntryLog.Level to a string

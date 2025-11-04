@@ -3,6 +3,8 @@ export type MessagesOptions = {
   beforeNs?: number | undefined
   afterNs?: number | undefined
   direction?: MessageOrder | undefined
+  excludeContentTypes?: string[] | undefined
+  excludeSenderInboxIds?: string[] | undefined
 }
 
 export type MessageOrder = 'ASCENDING' | 'DESCENDING'

@@ -27,4 +27,8 @@ export class GroupUpdatedCodec
   fallback(): string | undefined {
     return undefined
   }
+
+  shouldPush(content: GroupUpdatedContent): boolean {
+    return true
+  }
 }

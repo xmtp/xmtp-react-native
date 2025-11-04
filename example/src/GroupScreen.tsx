@@ -1163,7 +1163,7 @@ function MessageContents({
       <View>
         <Text style={{ color: 'gray' }}>Reply</Text>
         <MessageContents
-          contentTypeId={replyContentType}
+          contentTypeId={contentTypeId}
           content={actualReplyContent}
         />
       </View>
