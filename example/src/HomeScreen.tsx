@@ -222,6 +222,27 @@ export default function HomeScreen() {
                   <Text>Copy</Text>
                 </TouchableOpacity>
               </View>
+              <Text style={{ fontSize: 14, marginTop: 8 }}>Inbox ID</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, fontWeight: 'bold', flex: 1 }}>
+                  {client?.inboxId}
+                </Text>
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (client?.inboxId) {
+                      await Clipboard.setStringAsync(client.inboxId)
+                    }
+                  }}
+                  style={{
+                    padding: 8,
+                    backgroundColor: '#ddd',
+                    borderRadius: 4,
+                    marginLeft: 8,
+                  }}
+                >
+                  <Text>Copy</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           }
         />
