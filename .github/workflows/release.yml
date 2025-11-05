@@ -58,10 +58,10 @@ jobs:
         if: steps.release-type.outputs.type == 'dev'
         run: |
           CURRENT_VERSION="${{ steps.current-version.outputs.current_version }}"
-          if [[ ! $CURRENT_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+-dev$ ]]; then
-            echo "Error: For dev releases, package version must be in format MAJOR.MINOR.PATCH-dev"
+          if [[ ! $CURRENT_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+-(dev|rc[0-9]+)$ ]]; then
+            echo "Error: For dev releases, package version must be in format MAJOR.MINOR.PATCH-dev or MAJOR.MINOR.PATCH-rc{number}"
             echo "Current version is $CURRENT_VERSION"
-            echo "Please update package.json version to follow the dev format (e.g., 1.0.0-dev)"
+            echo "Please update package.json version to follow the dev format (e.g., 1.0.0-dev or 1.0.0-rc1)"
             exit 1
           fi
 

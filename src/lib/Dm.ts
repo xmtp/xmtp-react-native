@@ -76,7 +76,11 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
     opts?: SendOptions
   ): Promise<MessageId> {
     if (opts && opts.contentType) {
-      return await this._sendWithJSCodec(content, opts.contentType)
+      return await this._sendWithJSCodec(
+        content,
+        opts.contentType,
+        opts.shouldPush
+      )
     }
 
     try {
@@ -97,7 +101,8 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
 
   private async _sendWithJSCodec<T>(
     content: T,
-    contentType: XMTP.ContentTypeId
+    contentType: XMTP.ContentTypeId,
+    shouldPush?: boolean
   ): Promise<MessageId> {
     const codec =
       Client.codecRegistry[
@@ -112,7 +117,8 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
       this.client.installationId,
       this.id,
       content,
-      codec
+      codec,
+      shouldPush ?? codec.shouldPush(content) ?? true
     )
   }
 

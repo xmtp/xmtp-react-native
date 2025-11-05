@@ -6,6 +6,7 @@ import { ArchiveMetadata } from './lib/ArchiveOptions'
 import {
   Address,
   Client,
+  ForkRecoveryOptions,
   InboxId,
   InstallationId,
   SignatureType,
@@ -128,7 +129,9 @@ export async function createRandom(
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  gatewayHost?: string | undefined,
+  forkRecoveryOptions?: ForkRecoveryOptions | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -138,6 +141,11 @@ export async function createRandom(
     deviceSyncEnabled,
     debugEventsEnabled,
     appVersion,
+    gatewayHost,
+    enableRecoveryRequests: forkRecoveryOptions?.enableRecoveryRequests,
+    groupsToRequestRecovery: forkRecoveryOptions?.groupsToRequestRecovery,
+    disableRecoveryResponses: forkRecoveryOptions?.disableRecoveryResponses,
+    workerIntervalNs: forkRecoveryOptions?.workerIntervalNs,
   }
   return await XMTPModule.createRandom(
     hasPreAuthenticateToInboxCallback,
@@ -159,7 +167,9 @@ export async function create(
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  gatewayHost?: string | undefined,
+  forkRecoveryOptions?: ForkRecoveryOptions | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -169,6 +179,11 @@ export async function create(
     deviceSyncEnabled,
     debugEventsEnabled,
     appVersion,
+    gatewayHost,
+    enableRecoveryRequests: forkRecoveryOptions?.enableRecoveryRequests,
+    groupsToRequestRecovery: forkRecoveryOptions?.groupsToRequestRecovery,
+    disableRecoveryResponses: forkRecoveryOptions?.disableRecoveryResponses,
+    workerIntervalNs: forkRecoveryOptions?.workerIntervalNs,
   }
   const signerParams: SignerParams = {
     signerType,
@@ -194,7 +209,9 @@ export async function build(
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  gatewayHost?: string | undefined,
+  forkRecoveryOptions?: ForkRecoveryOptions | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -204,6 +221,11 @@ export async function build(
     deviceSyncEnabled,
     debugEventsEnabled,
     appVersion,
+    gatewayHost,
+    enableRecoveryRequests: forkRecoveryOptions?.enableRecoveryRequests,
+    groupsToRequestRecovery: forkRecoveryOptions?.groupsToRequestRecovery,
+    disableRecoveryResponses: forkRecoveryOptions?.disableRecoveryResponses,
+    workerIntervalNs: forkRecoveryOptions?.workerIntervalNs,
   }
   return await XMTPModule.build(
     JSON.stringify(identity),
@@ -222,7 +244,9 @@ export async function ffiCreateClient(
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
-  appVersion?: string | undefined
+  appVersion?: string | undefined,
+  gatewayHost?: string | undefined,
+  forkRecoveryOptions?: ForkRecoveryOptions | undefined
 ): Promise<string> {
   const authParams: AuthParams = {
     environment,
@@ -232,6 +256,11 @@ export async function ffiCreateClient(
     deviceSyncEnabled,
     debugEventsEnabled,
     appVersion,
+    gatewayHost,
+    enableRecoveryRequests: forkRecoveryOptions?.enableRecoveryRequests,
+    groupsToRequestRecovery: forkRecoveryOptions?.groupsToRequestRecovery,
+    disableRecoveryResponses: forkRecoveryOptions?.disableRecoveryResponses,
+    workerIntervalNs: forkRecoveryOptions?.workerIntervalNs,
   }
   return await XMTPModule.ffiCreateClient(
     JSON.stringify(identity),
@@ -918,7 +947,8 @@ export async function sendWithContentType<T>(
   installationId: InboxId,
   conversationId: ConversationId,
   content: T,
-  codec: ContentCodec<T>
+  codec: ContentCodec<T>,
+  shouldPush?: boolean
 ): Promise<MessageId> {
   if ('contentKey' in codec) {
     const contentJson = JSON.stringify(content)
@@ -936,7 +966,7 @@ export async function sendWithContentType<T>(
       installationId,
       conversationId,
       Array.from(encodedContentData),
-      codec.shouldPush(content)
+      shouldPush ?? codec.shouldPush(content)
     )
   }
 }
@@ -1817,6 +1847,13 @@ export async function archiveMetadata(
   return new ArchiveMetadata(metadata)
 }
 
+export async function leaveGroup(
+  installationId: InstallationId,
+  id: ConversationId
+): Promise<void> {
+  return await XMTPModule.leaveGroup(installationId, id)
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 interface AuthParams {
@@ -1827,6 +1864,11 @@ interface AuthParams {
   deviceSyncEnabled?: boolean
   debugEventsEnabled?: boolean
   appVersion?: string
+  gatewayHost?: string
+  enableRecoveryRequests?: string
+  groupsToRequestRecovery?: string[]
+  disableRecoveryResponses?: boolean
+  workerIntervalNs?: number
 }
 
 interface SignerParams {

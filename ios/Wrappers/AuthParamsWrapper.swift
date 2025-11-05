@@ -8,6 +8,7 @@
 import Foundation
 import XMTP
 
+
 struct AuthParamsWrapper {
 	let environment: String
 	let dbDirectory: String?
@@ -16,12 +17,15 @@ struct AuthParamsWrapper {
 	let deviceSyncEnabled: Bool
 	let debugEventsEnabled: Bool
 	let appVersion: String?
+	let gatewayHost: String?
+	let forkRecoveryOptions: ForkRecoveryOptions?
 
 	init(
 		environment: String, dbDirectory: String?,
 		historySyncUrl: String?, customLocalUrl: String?,
 		deviceSyncEnabled: Bool, debugEventsEnabled: Bool,
-		appVersion: String?
+		appVersion: String?, gatewayHost: String?,
+		forkRecoveryOptions: ForkRecoveryOptions?
 	) {
 		self.environment = environment
 		self.dbDirectory = dbDirectory
@@ -30,6 +34,43 @@ struct AuthParamsWrapper {
 		self.deviceSyncEnabled = deviceSyncEnabled
 		self.debugEventsEnabled = debugEventsEnabled
 		self.appVersion = appVersion
+		self.gatewayHost = gatewayHost
+		self.forkRecoveryOptions = forkRecoveryOptions
+	}
+
+	private static func createForkRecoveryOptions(
+		enableRecoveryRequestsString: String?,
+		groupsToRequestRecovery: [String]?,
+		disableRecoveryResponse: Bool?,
+		workerIntervalNs: UInt64?
+	) -> ForkRecoveryOptions? {
+		// If none of the fork recovery options are provided, return nil
+		if enableRecoveryRequestsString == nil && 
+		   groupsToRequestRecovery == nil && 
+		   disableRecoveryResponse == nil && 
+		   workerIntervalNs == nil {
+			return nil
+		}
+		
+		return ForkRecoveryOptions(
+			enableRecoveryRequests: convertToForkRecoveryPolicy(enableRecoveryRequestsString),
+			groupsToRequestRecovery: groupsToRequestRecovery ?? [],
+			disableRecoveryResponses: disableRecoveryResponse,
+			workerIntervalNs: workerIntervalNs
+		)
+	}
+	
+	private static func convertToForkRecoveryPolicy(_ enableRecoveryRequestsString: String?) -> ForkRecoveryPolicy {
+		switch enableRecoveryRequestsString {
+		case "none":
+			return .none
+		case "all":
+			return .all
+		case "groups":
+			return .allowlistedGroups
+		default:
+			return .none
+		}
 	}
 
 	static func authParamsFromJson(_ authParams: String) -> AuthParamsWrapper {
@@ -42,7 +83,8 @@ struct AuthParamsWrapper {
 				environment: "dev", dbDirectory: nil,
 				historySyncUrl: nil, customLocalUrl: nil,
 				deviceSyncEnabled: true, debugEventsEnabled: false,
-				appVersion: nil
+				appVersion: nil, gatewayHost: nil,
+				forkRecoveryOptions: nil
 			)
 		}
 
@@ -61,6 +103,20 @@ struct AuthParamsWrapper {
 		let debugEventsEnabled =
 			jsonOptions["debugEventsEnabled"] as? Bool ?? false
 		let appVersion = jsonOptions["appVersion"] as? String
+		let gatewayHost = jsonOptions["gatewayHost"] as? String
+		
+		// Parse fork recovery options
+		let enableRecoveryRequestsString = jsonOptions["enableRecoveryRequests"] as? String
+		let groupsToRequestRecovery = jsonOptions["groupsToRequestRecovery"] as? [String]
+		let disableRecoveryResponse = jsonOptions["disableRecoveryResponses"] as? Bool
+		let workerIntervalNs = jsonOptions["workerIntervalNs"] as? UInt64
+		
+		let forkRecoveryOptions = createForkRecoveryOptions(
+			enableRecoveryRequestsString: enableRecoveryRequestsString,
+			groupsToRequestRecovery: groupsToRequestRecovery,
+			disableRecoveryResponse: disableRecoveryResponse,
+			workerIntervalNs: workerIntervalNs
+		)
 
 		return AuthParamsWrapper(
 			environment: environment,
@@ -69,7 +125,9 @@ struct AuthParamsWrapper {
 			customLocalUrl: customLocalUrl,
 			deviceSyncEnabled: deviceSyncEnabled,
 			debugEventsEnabled: debugEventsEnabled,
-			appVersion: appVersion
+			appVersion: appVersion,
+			gatewayHost: gatewayHost,
+			forkRecoveryOptions: forkRecoveryOptions
 		)
 	}
 }

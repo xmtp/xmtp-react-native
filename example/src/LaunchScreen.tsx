@@ -264,6 +264,10 @@ export default function LaunchScreen(
                   codecs: supportedCodecs,
                   preAuthenticateToInboxCallback,
                   dbEncryptionKey,
+                  forkRecoveryOptions: {
+                    enableRecoveryRequests: 'all',
+                    workerIntervalNs: 10_000_000_000,
+                  },
                 })
               )
             })().catch(console.error) // Don't forget error handling
