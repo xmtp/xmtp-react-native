@@ -107,7 +107,9 @@ export class Client<
       options.customLocalHost,
       options.deviceSyncEnabled,
       options.debugEventsEnabled,
-      options.appVersion
+      options.appVersion,
+      options.gatewayHost,
+      options.forkRecoveryOptions
     )
     this.removeSubscription(authInboxSubscription)
 
@@ -196,7 +198,9 @@ export class Client<
           options.customLocalHost,
           options.deviceSyncEnabled,
           options.debugEventsEnabled,
-          options.appVersion
+          options.appVersion,
+          options.gatewayHost,
+          options.forkRecoveryOptions
         )
       })().catch((error) => {
         this.removeAllSubscriptions(authInboxSubscription)
@@ -235,7 +239,9 @@ export class Client<
       options.customLocalHost,
       options.deviceSyncEnabled,
       options.debugEventsEnabled,
-      options.appVersion
+      options.appVersion,
+      options.gatewayHost,
+      options.forkRecoveryOptions
     )
 
     return new Client(
@@ -281,7 +287,9 @@ export class Client<
       options.customLocalHost,
       options.deviceSyncEnabled,
       options.debugEventsEnabled,
-      options.appVersion
+      options.appVersion,
+      options.gatewayHost,
+      options.forkRecoveryOptions
     )
 
     return new Client(
@@ -1174,6 +1182,30 @@ export class Client<
 export type XMTPEnvironment = 'local' | 'dev' | 'production'
 export type SignatureType = 'revokeInstallations'
 
+export type ForkRecoveryPolicy = 'none' | 'all' | 'groups'
+
+export type ForkRecoveryOptions = {
+  /**
+   * Policy for enabling recovery requests
+   * - 'none': No recovery requests
+   * - 'all': Recovery for all groups
+   * - 'groups': Recovery only for allowlisted groups
+   */
+  enableRecoveryRequests?: ForkRecoveryPolicy
+  /**
+   * List of group IDs to request recovery for (when enableRecoveryRequests is 'groups')
+   */
+  groupsToRequestRecovery?: string[]
+  /**
+   * Whether to disable recovery responses
+   */
+  disableRecoveryResponses?: boolean
+  /**
+   * Worker interval in nanoseconds (will be converted to ULong on Android, UInt64 on iOS)
+   */
+  workerIntervalNs?: number
+}
+
 export type ClientOptions = {
   /**
    * Specify which XMTP environment to connect to. (default: `dev`)
@@ -1211,4 +1243,12 @@ export type ClientOptions = {
    * OPTIONAL specify if debug events should be tracked defaults to false
    */
   debugEventsEnabled?: boolean
+  /**
+   * OPTIONAL specify the gateway host
+   */
+  gatewayHost?: string
+  /**
+   * OPTIONAL specify fork recovery options for handling group forks
+   */
+  forkRecoveryOptions?: ForkRecoveryOptions
 }

@@ -2315,6 +2315,56 @@ test('handles disappearing messages in a group', async () => {
   return true
 })
 
+test('can leave a group', async () => {
+  const [alixClient, boClient] = await createClients(2)
+
+  // Create group with alix and bo and verify we have 2 members and group is active for Alix
+  const boGroup = await boClient.conversations.newGroup([alixClient.inboxId])
+  await alixClient.conversations.syncAllConversations()
+  await boClient.conversations.syncAllConversations()
+  const alixGroup = await alixClient.conversations.findGroup(boGroup.id)
+  if (!alixGroup) {
+    throw new Error('alixGroup should not be undefined')
+  }
+
+  const groupMembers = await boGroup.members()
+  assert(
+    groupMembers.length === 2,
+    `Group should have 2 members but has ${groupMembers.length}`
+  )
+
+  assert(await alixGroup.isActive(), 'Alix group should be active initially')
+
+  // Alix leaves group and bo syncs
+  await alixGroup.leaveGroup()
+  await alixGroup.sync()
+  await boGroup.sync()
+
+  // Alix Group is still active until worker runs
+  assert(
+    await alixGroup.isActive(),
+    'Alix group should still be active immediately after leaving'
+  )
+
+  // Delay here so that the removal is processed
+  // Verify 1 member and group is no longer active
+  await delayToPropogate(3000) // 3 seconds
+
+  const groupMembersAfterLeave = await boGroup.members()
+  assert(
+    groupMembersAfterLeave.length === 1,
+    `Group should have 1 member after leave but has ${groupMembersAfterLeave.length}`
+  )
+
+  await alixGroup.sync()
+  assert(
+    !(await alixGroup.isActive()),
+    'Alix group should not be active after processing'
+  )
+
+  return true
+})
+
 // Commenting this out so it doesn't block people, but nice to have?
 // test('can stream messages for a long time', async () => {
 //   const bo = await Client.createRandom({ env: 'local', enableV3: true })

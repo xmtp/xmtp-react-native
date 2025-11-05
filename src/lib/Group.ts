@@ -126,7 +126,8 @@ export class Group<
 
   private async _sendWithJSCodec<T>(
     content: T,
-    contentType: XMTP.ContentTypeId
+    contentType: XMTP.ContentTypeId,
+    shouldPush?: boolean
   ): Promise<MessageId> {
     const codec =
       Client.codecRegistry[
@@ -141,7 +142,8 @@ export class Group<
       this.client.installationId,
       this.id,
       content,
-      codec
+      codec,
+      shouldPush ?? codec.shouldPush(content) ?? true
     )
   }
 
@@ -802,5 +804,12 @@ export class Group<
    */
   async getDebugInformation(): Promise<ConversationDebugInfo> {
     return await XMTP.getDebugInformation(this.client.installationId, this.id)
+  }
+
+  /**
+   * @returns {Promise<void>} A Promise that resolves when the group is left.
+   */
+  async leaveGroup(): Promise<void> {
+    return await XMTP.leaveGroup(this.client.installationId, this.id)
   }
 }

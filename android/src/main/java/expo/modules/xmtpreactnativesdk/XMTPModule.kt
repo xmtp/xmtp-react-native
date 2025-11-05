@@ -51,6 +51,8 @@ import org.xmtp.android.library.ConsentState
 import org.xmtp.android.library.Conversation
 import org.xmtp.android.library.Conversations
 import org.xmtp.android.library.Conversations.ConversationFilterType
+import org.xmtp.android.library.ForkRecoveryOptions
+import org.xmtp.android.library.ForkRecoveryPolicy
 import org.xmtp.android.library.PreEventCallback
 import org.xmtp.android.library.PreferenceType
 import org.xmtp.android.library.SendOptions
@@ -167,7 +169,7 @@ class XMTPModule : Module() {
             return reactContext
         }
 
-    private fun apiEnvironments(env: String, customLocalUrl: String? = null, appVersion: String? = null): ClientOptions.Api {
+    private fun apiEnvironments(env: String, customLocalUrl: String? = null, appVersion: String? = null, gatewayHost: String? = null): ClientOptions.Api {
         return when (env) {
             "local" -> {
                 if (customLocalUrl.isNullOrBlank()) {
@@ -175,12 +177,14 @@ class XMTPModule : Module() {
                         env = XMTPEnvironment.LOCAL,
                         isSecure = false,
                         appVersion = appVersion,
+                        gatewayHost = gatewayHost,
                     )
                 } else {
                     ClientOptions.Api(
                         env = XMTPEnvironment.LOCAL.withValue(customLocalUrl),
                         isSecure = false,
                         appVersion = appVersion,
+                        gatewayHost = gatewayHost,
                     )
                 }
             }
@@ -189,12 +193,14 @@ class XMTPModule : Module() {
                 env = XMTPEnvironment.PRODUCTION,
                 isSecure = true,
                 appVersion = appVersion,
+                gatewayHost = gatewayHost,
             )
 
             else -> ClientOptions.Api(
                 env = XMTPEnvironment.DEV,
                 isSecure = true,
                 appVersion = appVersion,
+                gatewayHost = gatewayHost,
             )
         }
     }
@@ -220,7 +226,12 @@ class XMTPModule : Module() {
                 else -> "https://message-history.dev.ephemera.network/"
             }
         return ClientOptions(
-            api = apiEnvironments(authOptions.environment, authOptions.customLocalUrl, authOptions.appVersion),
+            api = apiEnvironments(
+                authOptions.environment,
+                authOptions.customLocalUrl,
+                authOptions.appVersion,
+                authOptions.gatewayHost,
+            ),
             preAuthenticateToInboxCallback = preAuthenticateToInboxCallback,
             appContext = context,
             dbEncryptionKey = encryptionKeyBytes,
@@ -228,6 +239,7 @@ class XMTPModule : Module() {
             historySyncUrl = historySyncUrl,
             deviceSyncEnabled = authOptions.deviceSyncEnabled,
             debugEventsEnabled = authOptions.debugEventsEnabled,
+            forkRecoveryOptions = authOptions.forkRecoveryOptions
         )
     }
 
@@ -970,20 +982,20 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("getHmacKeys") Coroutine { inboxId: String ->
+        AsyncFunction("getHmacKeys") Coroutine { installationId: String ->
             withContext(Dispatchers.IO) {
                 logV("getHmacKeys")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val client = clients[installationId] ?: throw XMTPException("No client")
                 val hmacKeys = client.conversations.getHmacKeys()
                 logV("$hmacKeys")
                 hmacKeys.toByteArray().map { it.toInt() and 0xFF }
             }
         }
 
-        AsyncFunction("getAllPushTopics") Coroutine { inboxId: String ->
+        AsyncFunction("getAllPushTopics") Coroutine { installationId: String ->
             withContext(Dispatchers.IO) {
                 logV("getAllPushTopics")
-                val client = clients[inboxId] ?: throw XMTPException("No client")
+                val client = clients[installationId] ?: throw XMTPException("No client")
                 client.conversations.allPushTopics()
             }
         }
@@ -1354,7 +1366,7 @@ class XMTPModule : Module() {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val consentStates = consentStringStates?.let { ConsentWrapper.getConsentStates(it) }
                 val numGroupsSyncedInt: Int =
-                    client.conversations.syncAllConversations(consentStates).toInt()
+                    client.conversations.syncAllConversations(consentStates).numSynced.toInt()
                 numGroupsSyncedInt
             }
         }
@@ -1851,6 +1863,16 @@ class XMTPModule : Module() {
                 val conversation = client.conversations.findConversation(conversationId)
                     ?: throw XMTPException("no group found for $conversationId")
                 ConversationDebugInfoWrapper.encode(conversation.getDebugInformation())
+            }
+        }
+
+        AsyncFunction("leaveGroup") Coroutine { clientInstallationId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("leaveGroup")
+                val client = clients[clientInstallationId] ?: throw XMTPException("No client")
+                val group = client.conversations.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.leaveGroup()
             }
         }
 
