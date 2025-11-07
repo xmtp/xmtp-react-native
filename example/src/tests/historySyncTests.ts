@@ -1,5 +1,4 @@
 import { Wallet } from 'ethers'
-import RNFS from 'react-native-fs'
 import { PreferenceUpdates } from 'xmtp-react-native-sdk/lib/PrivatePreferences'
 
 import {
@@ -10,6 +9,11 @@ import {
   adaptEthersWalletToSigner,
 } from './test-utils'
 import { Client, ConsentRecord } from '../../../src/index'
+import {
+  ensureDirectory,
+  joinDocumentPath,
+  pathExists,
+} from './fileSystemHelpers'
 
 export const historySyncTests: Test[] = []
 let counter = 1
@@ -27,15 +31,13 @@ test('can sync consent (expected to fail unless historySyncUrl is set)', async (
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  const dbDirPath2 = joinDocumentPath('xmtp_db2')
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
-  const directoryExists2 = await RNFS.exists(dbDirPath2)
-  if (!directoryExists2) {
-    await RNFS.mkdir(dbDirPath2)
+  if (!(await pathExists(dbDirPath2))) {
+    await ensureDirectory(dbDirPath2)
   }
   const alixWallet = Wallet.createRandom()
 
@@ -101,15 +103,15 @@ test('can stream consent (expected to fail unless historySyncUrl is set)', async
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  const dbDirPath2 = joinDocumentPath('xmtp_db2')
 
   // Ensure the directories exist
-  if (!(await RNFS.exists(dbDirPath))) {
-    await RNFS.mkdir(dbDirPath)
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
-  if (!(await RNFS.exists(dbDirPath2))) {
-    await RNFS.mkdir(dbDirPath2)
+  if (!(await pathExists(dbDirPath2))) {
+    await ensureDirectory(dbDirPath2)
   }
 
   const alixWallet = Wallet.createRandom()
@@ -170,15 +172,15 @@ test('can preference updates (expected to fail unless historySyncUrl is set)', a
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const dbDirPath2 = `${RNFS.DocumentDirectoryPath}/xmtp_db2`
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  const dbDirPath2 = joinDocumentPath('xmtp_db2')
 
   // Ensure the directories exist
-  if (!(await RNFS.exists(dbDirPath))) {
-    await RNFS.mkdir(dbDirPath)
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
-  if (!(await RNFS.exists(dbDirPath2))) {
-    await RNFS.mkdir(dbDirPath2)
+  if (!(await pathExists(dbDirPath2))) {
+    await ensureDirectory(dbDirPath2)
   }
 
   const alixWallet = Wallet.createRandom()
