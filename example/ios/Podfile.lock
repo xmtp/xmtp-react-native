@@ -10,7 +10,7 @@ PODS:
   - EXImageLoader (5.0.0):
     - ExpoModulesCore
     - React-Core
-  - Expo (52.0.47):
+  - Expo (52.0.44):
     - ExpoModulesCore
   - ExpoAsset (11.0.5):
     - ExpoModulesCore
@@ -51,9 +51,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - ExpoSplashScreen (0.29.24):
-    - ExpoModulesCore
-  - ExpoSystemUI (4.0.9):
+  - ExpoSplashScreen (0.29.22):
     - ExpoModulesCore
   - fast_float (6.1.4)
   - FBLazyVector (0.76.9)
@@ -1377,7 +1375,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-netinfo (11.4.1):
+  - react-native-netinfo (9.3.7):
     - React-Core
   - react-native-quick-base64 (2.1.2):
     - DoubleConversion
@@ -1425,31 +1423,12 @@ PODS:
     - Yoga
   - react-native-randombytes (3.6.1):
     - React-Core
-  - react-native-safe-area-context (4.12.0):
+  - react-native-safe-area-context (5.3.0):
     - React-Core
   - react-native-sqlite-storage (6.0.1):
     - React-Core
-  - react-native-webview (13.12.5):
-    - DoubleConversion
-    - glog
-    - hermes-engine
-    - RCT-Folly (= 2024.10.14.00)
-    - RCTRequired
-    - RCTTypeSafety
+  - react-native-webview (11.26.0):
     - React-Core
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - Yoga
   - React-nativeconfig (0.76.9)
   - React-NativeModulesApple (0.76.9):
     - glog
@@ -1722,11 +1701,11 @@ PODS:
     - React-logger
     - React-perflogger
     - React-utils (= 0.76.9)
-  - RNCAsyncStorage (1.23.1):
+  - RNCAsyncStorage (1.17.11):
     - React-Core
   - RNFS (2.20.0):
     - React-Core
-  - RNScreens (4.4.0):
+  - RNScreens (4.10.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1748,7 +1727,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNSVG (15.8.0):
+  - RNSVG (15.11.2):
     - React-Core
   - SocketRocket (0.7.1)
   - SQLCipher (4.5.7):
@@ -1757,16 +1736,16 @@ PODS:
   - SQLCipher/standard (4.5.7):
     - SQLCipher/common
   - SwiftProtobuf (1.28.2)
-  - XMTP (4.6.1-rc3):
+  - XMTP (4.7.0-dev.ff66c0f):
     - Connect-Swift (= 1.0.0)
     - CryptoSwift (= 1.8.3)
     - SQLCipher (= 4.5.7)
-  - XMTPReactNative (5.0.6):
+  - XMTPReactNative (5.1.0-rc1):
     - CSecp256k1 (~> 0.2)
     - ExpoModulesCore
     - MessagePacker
     - SQLCipher (= 4.5.7)
-    - XMTP (= 4.6.1-rc3)
+    - XMTP (= 4.7.0-dev.ff66c0f)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -1785,7 +1764,6 @@ DEPENDENCIES:
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
-  - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
   - fast_float (from `../node_modules/react-native/third-party-podspecs/fast_float.podspec`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
@@ -1913,8 +1891,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-modules-core"
   ExpoSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
-  ExpoSystemUI:
-    :path: "../node_modules/expo-system-ui/ios"
   fast_float:
     :podspec: "../node_modules/react-native/third-party-podspecs/fast_float.podspec"
   FBLazyVector:
@@ -2083,7 +2059,7 @@ SPEC CHECKSUMS:
   DoubleConversion: f16ae600a246532c4020132d54af21d0ddb2a385
   EXConstants: fcfc75800824ac2d5c592b5bc74130bad17b146b
   EXImageLoader: e5da974e25b13585c196b658a440720c075482d5
-  Expo: 1687edb10c76b0c0f135306d6ae245379f50ed54
+  Expo: 75e002fc29a18a72aa3db967b41b29c2b206875d
   ExpoAsset: 48386d40d53a8c1738929b3ed509bcad595b5516
   ExpoClipboard: 44fd1c8959ee8f6175d059dc011b154c9709a969
   ExpoCrypto: e97e864c8d7b9ce4a000bca45dddb93544a1b2b4
@@ -2093,8 +2069,7 @@ SPEC CHECKSUMS:
   ExpoImagePicker: 24e5ba8da111f74519b1e6dc556e0b438b2b8464
   ExpoKeepAwake: b0171a73665bfcefcfcc311742a72a956e6aa680
   ExpoModulesCore: 725faec070d590810d2ea5983d9f78f7cf6a38ec
-  ExpoSplashScreen: 399ee9f85b6c8a61b965e13a1ecff8384db591c2
-  ExpoSystemUI: b82a45cf0f6a4fa18d07c46deba8725dd27688b4
+  ExpoSplashScreen: cb4e3d3ee646ed59810f7776cca0ae5c03ab4285
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
   FBLazyVector: 7605ea4810e0e10ae4815292433c09bf4324ba45
   fmt: 01b82d4ca6470831d1cc0852a1af644be019e8f6
@@ -2138,13 +2113,13 @@ SPEC CHECKSUMS:
   react-native-encrypted-storage: 569d114e329b1c2c2d9f8c84bcdbe4478dda2258
   react-native-get-random-values: d16467cf726c618e9c7a8c3c39c31faa2244bbba
   react-native-mmkv: f0574e88f254d13d1a87cf6d38c36bc5d3910d49
-  react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
+  react-native-netinfo: be701059f57093572e5ba08cba14483d334b425d
   react-native-quick-base64: 5565249122493bef017004646d73f918e8c2dfb0
   react-native-quick-crypto: c168ffba24470d8edfd03961d9492638431b9869
   react-native-randombytes: 3c8f3e89d12487fd03a2f966c288d495415fc116
-  react-native-safe-area-context: 8b8404e70b0cbf2a56428a17017c14c1dcc16448
+  react-native-safe-area-context: fdb0a66feac038cb6eb1edafcf2ccee2b5cf0284
   react-native-sqlite-storage: 0c84826214baaa498796c7e46a5ccc9a82e114ed
-  react-native-webview: 69a5462ca94921ff695e1b52b12fffe62af7d312
+  react-native-webview: 5bb1454f1eb43e0bad229bb428a378d6b865a0ad
   React-nativeconfig: 8efdb1ef1e9158c77098a93085438f7e7b463678
   React-NativeModulesApple: cebca2e5320a3d66e123cade23bd90a167ffce5e
   React-perflogger: 72e653eb3aba9122f9e57cf012d22d2486f33358
@@ -2172,15 +2147,15 @@ SPEC CHECKSUMS:
   React-utils: ed818f19ab445000d6b5c4efa9d462449326cc9f
   ReactCodegen: f853a20cc9125c5521c8766b4b49375fec20648b
   ReactCommon: 300d8d9c5cb1a6cd79a67cf5d8f91e4d477195f9
-  RNCAsyncStorage: aa75595c1aefa18f868452091fa0c411a516ce11
+  RNCAsyncStorage: 357676e1dc19095208c80d4271066c407cd02ed1
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
-  RNScreens: 295d9c0aaeb7f680d03d7e9b476569a4959aae89
-  RNSVG: 8542aa11770b27563714bbd8494a8436385fc85f
+  RNScreens: 5cac36d8f7b3d92fb4304abcb44c5de336413df8
+  RNSVG: a07e14363aa208062c6483bad24a438d5986d490
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SQLCipher: 5e6bfb47323635c8b657b1b27d25c5f1baf63bf5
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
-  XMTP: d9e99e75df20472dd4845f5b9f0476e4748d1fd6
-  XMTPReactNative: ae7fe2223f35aae19235a1c792f3035f8ff70cb9
+  XMTP: fbef51f8aa0cb762cfac902668f9648b77465a7f
+  XMTPReactNative: 439874cb0553196c7f6804014f829a2f5ec9c215
   Yoga: feb4910aba9742cfedc059e2b2902e22ffe9954a
 
 PODFILE CHECKSUM: 5b1b93f724b9cde6043d1824960f7bfd9a7973cd

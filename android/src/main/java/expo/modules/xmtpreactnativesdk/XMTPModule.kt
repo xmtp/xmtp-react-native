@@ -71,6 +71,7 @@ import org.xmtp.android.library.hexToByteArray
 import org.xmtp.android.library.libxmtp.ArchiveElement
 import org.xmtp.android.library.libxmtp.ArchiveOptions
 import org.xmtp.android.library.libxmtp.DecodedMessage
+import org.xmtp.android.library.libxmtp.DecodedMessage.SortBy
 import org.xmtp.android.library.libxmtp.DisappearingMessageSettings
 import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import org.xmtp.android.library.libxmtp.PermissionOption
@@ -1012,7 +1013,13 @@ class XMTPModule : Module() {
                     afterNs = queryParams.afterNs,
                     direction = DecodedMessage.SortDirection.valueOf(
                         queryParams.direction ?: "DESCENDING"
-                    )
+                    ),
+                    insertedAfterNs = queryParams.insertedAfterNs,
+                    insertedBeforeNs = queryParams.insertedBeforeNs,
+                    sortBy = when (queryParams.sortBy) {
+                        "INSERTED" -> SortBy.INSERTED_TIME
+                        else -> SortBy.SENT_TIME
+                    }
                 )?.map { MessageWrapper.encode(it) }
             }
         }
@@ -1029,8 +1036,29 @@ class XMTPModule : Module() {
                     afterNs = queryParams.afterNs,
                     direction = DecodedMessage.SortDirection.valueOf(
                         queryParams.direction ?: "DESCENDING"
-                    )
+                    ),
+                    insertedAfterNs = queryParams.insertedAfterNs,
+                    insertedBeforeNs = queryParams.insertedBeforeNs,
+                    sortBy = when (queryParams.sortBy) {
+                        "INSERTED" -> SortBy.INSERTED_TIME
+                        else -> SortBy.SENT_TIME
+                    }
                 )?.map { MessageWrapper.encode(it) }
+            }
+        }
+
+        AsyncFunction("countMessages") Coroutine { installationId: String, conversationId: String, queryParamsJson: String? ->
+            withContext(Dispatchers.IO) {
+                logV("countMessages")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                val queryParams = MessageQueryParamsWrapper.messageQueryParamsFromJson(queryParamsJson ?: "")
+                conversation?.countMessages(
+                    beforeNs = queryParams.beforeNs,
+                    afterNs = queryParams.afterNs,
+                    insertedAfterNs = queryParams.insertedAfterNs,
+                    insertedBeforeNs = queryParams.insertedBeforeNs
+                ) ?: 0
             }
         }
 

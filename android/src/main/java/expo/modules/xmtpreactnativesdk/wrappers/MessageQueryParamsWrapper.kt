@@ -9,11 +9,17 @@ class MessageQueryParamsWrapper(
     val direction: String?,
     val excludeContentTypes: List<String>?,
     val excludeSenderInboxIds: List<String>?,
+    val insertedAfterNs: Long?,
+    val insertedBeforeNs: Long?,
+    val sortBy: String?,
 ) {
     companion object {
         fun messageQueryParamsFromJson(paramsJson: String): MessageQueryParamsWrapper {
             if (paramsJson.isEmpty()) {
                 return MessageQueryParamsWrapper(
+                    null,
+                    null,
+                    null,
                     null,
                     null,
                     null,
@@ -69,6 +75,27 @@ class MessageQueryParamsWrapper(
                     null
                 }
 
+            val insertedAfterNs =
+                if (jsonOptions.has("insertedAfterNs")) {
+                    jsonOptions.get("insertedAfterNs").asLong
+                } else {
+                    null
+                }
+
+            val insertedBeforeNs =
+                if (jsonOptions.has("insertedBeforeNs")) {
+                    jsonOptions.get("insertedBeforeNs").asLong
+                } else {
+                    null
+                }
+
+            val sortBy =
+                if (jsonOptions.has("sortBy")) {
+                    jsonOptions.get("sortBy").asString
+                } else {
+                    null
+                }
+
             return MessageQueryParamsWrapper(
                 limit,
                 beforeNs,
@@ -76,6 +103,9 @@ class MessageQueryParamsWrapper(
                 direction,
                 excludeContentTypes,
                 excludeSenderInboxIds,
+                insertedAfterNs,
+                insertedBeforeNs,
+                sortBy,
             )
         }
     }

@@ -1062,7 +1062,10 @@ public class XMTPModule: Module {
 				direction: getSortDirection(
 					direction: queryParams.direction ?? "DESCENDING"),
 				excludeContentTypes: nil,
-				excludeSenderInboxIds: queryParams.excludeSenderInboxIds
+				excludeSenderInboxIds: queryParams.excludeSenderInboxIds,
+				sortBy: getSortBy(sortBy: queryParams.sortBy),
+				insertedAfterNs: queryParams.insertedAfterNs,
+				insertedBeforeNs: queryParams.insertedBeforeNs
 			)
 
 			return messages.compactMap { msg in
@@ -1104,7 +1107,10 @@ public class XMTPModule: Module {
 				direction: getSortDirection(
 					direction: queryParams.direction ?? "DESCENDING"),
 				excludeContentTypes: nil,
-				excludeSenderInboxIds: queryParams.excludeSenderInboxIds
+				excludeSenderInboxIds: queryParams.excludeSenderInboxIds,
+				sortBy: getSortBy(sortBy: queryParams.sortBy),
+				insertedAfterNs: queryParams.insertedAfterNs,
+				insertedBeforeNs: queryParams.insertedBeforeNs
 			)
 			return messages.compactMap { msg in
 				do {
@@ -1116,6 +1122,35 @@ public class XMTPModule: Module {
 					return nil
 				}
 			}
+		}
+
+		AsyncFunction("countMessages") {
+			(
+				installationId: String, conversationId: String,
+				queryParamsJson: String?
+			) -> Int in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+
+			guard
+				let conversation = try await client.conversations
+				.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
+			}
+			let queryParams = MessageQueryParamsWrapper.messageQueryParamsFromJson(
+				queryParamsJson ?? "")
+			return try Int(await conversation.countMessages(
+				beforeNs: queryParams.beforeNs,
+				afterNs: queryParams.afterNs,
+				insertedAfterNs: queryParams.insertedAfterNs,
+				insertedBeforeNs: queryParams.insertedBeforeNs
+			))
 		}
 
 		AsyncFunction("findMessage") {
@@ -1686,7 +1721,7 @@ public class XMTPModule: Module {
 				consentStates = nil
 			}
 			return try await client.conversations.syncAllConversations(
-                consentStates: consentStates).numSynced
+				consentStates: consentStates).numSynced
 		}
 
 		AsyncFunction("syncConversation") {
@@ -2855,26 +2890,26 @@ public class XMTPModule: Module {
 
 			return try ArchiveMetadataWrapper.encode(metadata)
 		}
-        
-        AsyncFunction("leaveGroup") { (
+
+		AsyncFunction("leaveGroup") { (
 			installationId: String,
 			groupId: String
 		) in
-            guard
-                let client = await clientsManager.getClient(
-                    key: installationId)
-            else {
-                throw Error.noClient
-            }
-            guard
-                let group = try await client.conversations.findGroup(
-                    groupId: groupId)
-            else {
-                throw Error.conversationNotFound(
-                    "no conversation found for \(groupId)")
-            }
-            try await group.leaveGroup()
-        }
+			guard
+				let client = await clientsManager.getClient(
+					key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let group = try await client.conversations.findGroup(
+					groupId: groupId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(groupId)")
+			}
+			try await group.leaveGroup()
+		}
 	}
 
 	//
@@ -3039,6 +3074,15 @@ public class XMTPModule: Module {
 		}
 	}
 
+	private func getSortBy(sortBy: String?) -> MessageSortBy {
+		switch sortBy {
+		case "INSERTED":
+			return .insertedAt
+		default:
+			return .sentAt
+		}
+	}
+
 	private func getConversationType(type: String) throws
 		-> ConversationFilterType
 	{
@@ -3063,7 +3107,7 @@ public class XMTPModule: Module {
 		case revokeInstallations
 	}
 
-    func createApiClient(env: String, customLocalUrl: String? = nil, appVersion: String? = nil, gatewayHost: String? = nil)
+	func createApiClient(env: String, customLocalUrl: String? = nil, appVersion: String? = nil, gatewayHost: String? = nil)
 		-> XMTP.ClientOptions.Api
 	{
 		switch env {
@@ -3075,21 +3119,21 @@ public class XMTPModule: Module {
 				env: XMTP.XMTPEnvironment.local,
 				isSecure: false,
 				appVersion: appVersion,
-                gatewayHost: gatewayHost
+				gatewayHost: gatewayHost
 			)
 		case "production":
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
 				isSecure: true,
 				appVersion: appVersion,
-                gatewayHost: gatewayHost
+				gatewayHost: gatewayHost
 			)
 		default:
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
 				isSecure: true,
 				appVersion: appVersion,
-                gatewayHost: gatewayHost
+				gatewayHost: gatewayHost
 			)
 		}
 	}
@@ -3105,7 +3149,7 @@ public class XMTPModule: Module {
 				env: authOptions.environment,
 				customLocalUrl: authOptions.customLocalUrl,
 				appVersion: authOptions.appVersion,
-                gatewayHost: authOptions.gatewayHost,
+				gatewayHost: authOptions.gatewayHost
 			),
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 			dbEncryptionKey: dbEncryptionKey,
@@ -3113,7 +3157,7 @@ public class XMTPModule: Module {
 			historySyncUrl: authOptions.historySyncUrl,
 			deviceSyncEnabled: authOptions.deviceSyncEnabled,
 			debugEventsEnabled: authOptions.debugEventsEnabled,
-            forkRecoveryOptions: authOptions.forkRecoveryOptions
+			forkRecoveryOptions: authOptions.forkRecoveryOptions
 		)
 	}
 
