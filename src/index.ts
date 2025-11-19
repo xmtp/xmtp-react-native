@@ -41,7 +41,11 @@ import {
 import { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { LogLevel, LogRotation } from './lib/types/LogTypes'
-import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
+import {
+  MessageId,
+  MessageOrder,
+  MessageSortBy,
+} from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 
 export * from './context'
@@ -787,7 +791,10 @@ export async function conversationMessages<
   afterNs?: number | undefined,
   direction?: MessageOrder | undefined,
   excludeContentTypes?: string[] | undefined,
-  excludeSenderInboxIds?: string[] | undefined
+  excludeSenderInboxIds?: string[] | undefined,
+  insertedAfterNs?: number | undefined,
+  insertedBeforeNs?: number | undefined,
+  sortBy?: MessageSortBy | undefined
 ): Promise<DecodedMessageUnion<ContentTypes>[]> {
   const queryParamsJson = JSON.stringify({
     limit,
@@ -796,6 +803,9 @@ export async function conversationMessages<
     direction,
     excludeContentTypes,
     excludeSenderInboxIds,
+    insertedAfterNs,
+    insertedBeforeNs,
+    sortBy,
   })
   const messages = await XMTPModule.conversationMessages(
     clientInstallationId,
@@ -817,7 +827,10 @@ export async function conversationMessagesWithReactions<
   afterNs?: number | undefined,
   direction?: MessageOrder | undefined,
   excludeContentTypes?: string[] | undefined,
-  excludeSenderInboxIds?: string[] | undefined
+  excludeSenderInboxIds?: string[] | undefined,
+  insertedAfterNs?: number | undefined,
+  insertedBeforeNs?: number | undefined,
+  sortBy?: MessageSortBy | undefined
 ): Promise<DecodedMessageUnion<ContentTypes>[]> {
   const queryParamsJson = JSON.stringify({
     limit,
@@ -826,6 +839,9 @@ export async function conversationMessagesWithReactions<
     direction,
     excludeContentTypes,
     excludeSenderInboxIds,
+    insertedAfterNs,
+    insertedBeforeNs,
+    sortBy,
   })
   const messages = await XMTPModule.conversationMessagesWithReactions(
     clientInstallationId,
@@ -835,6 +851,27 @@ export async function conversationMessagesWithReactions<
   return messages.map((json: string) => {
     return DecodedMessage.from(json)
   })
+}
+
+export async function countMessages(
+  clientInstallationId: InstallationId,
+  conversationId: ConversationId,
+  beforeNs?: number | undefined,
+  afterNs?: number | undefined,
+  insertedAfterNs?: number | undefined,
+  insertedBeforeNs?: number | undefined
+): Promise<number> {
+  const queryParamsJson = JSON.stringify({
+    beforeNs,
+    afterNs,
+    insertedAfterNs,
+    insertedBeforeNs,
+  })
+  return await XMTPModule.countMessages(
+    clientInstallationId,
+    conversationId,
+    queryParamsJson
+  )
 }
 
 export async function findMessage<
@@ -1906,7 +1943,11 @@ export {
   ConversationTopic,
   ConversationFilterType,
 } from './lib/types/ConversationOptions'
-export { MessageId, MessageOrder } from './lib/types/MessagesOptions'
+export {
+  MessageId,
+  MessageOrder,
+  MessageSortBy,
+} from './lib/types/MessagesOptions'
 export { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 export { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
 export { PublicIdentity } from './lib/PublicIdentity'

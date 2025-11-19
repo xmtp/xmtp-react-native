@@ -8,6 +8,9 @@ struct MessageQueryParamsWrapper {
 	let direction: String?
 	let excludeContentTypes: [String]?
 	let excludeSenderInboxIds: [String]?
+	let insertedAfterNs: Int64?
+	let insertedBeforeNs: Int64?
+	let sortBy: String?
 
 	static func messageQueryParamsFromJson(_ paramsJson: String)
 		-> MessageQueryParamsWrapper
@@ -19,14 +22,17 @@ struct MessageQueryParamsWrapper {
 				afterNs: nil,
 				direction: nil,
 				excludeContentTypes: nil,
-				excludeSenderInboxIds: nil
+				excludeSenderInboxIds: nil,
+				insertedAfterNs: nil,
+				insertedBeforeNs: nil,
+				sortBy: nil
 			)
 		}
 
 		let data = paramsJson.data(using: .utf8) ?? Data()
 		let jsonOptions =
 			(try? JSONSerialization.jsonObject(with: data, options: []))
-			as? [String: Any] ?? [:]
+				as? [String: Any] ?? [:]
 
 		let limit = jsonOptions["limit"] as? Int
 		let beforeNs = jsonOptions["beforeNs"] as? Int64
@@ -34,6 +40,9 @@ struct MessageQueryParamsWrapper {
 		let direction = jsonOptions["direction"] as? String
 		let excludeContentTypes = jsonOptions["excludeContentTypes"] as? [String]
 		let excludeSenderInboxIds = jsonOptions["excludeSenderInboxIds"] as? [String]
+		let insertedAfterNs = jsonOptions["insertedAfterNs"] as? Int64
+		let insertedBeforeNs = jsonOptions["insertedBeforeNs"] as? Int64
+		let sortBy = jsonOptions["sortBy"] as? String
 
 		return MessageQueryParamsWrapper(
 			limit: limit,
@@ -41,7 +50,10 @@ struct MessageQueryParamsWrapper {
 			afterNs: afterNs,
 			direction: direction,
 			excludeContentTypes: excludeContentTypes,
-			excludeSenderInboxIds: excludeSenderInboxIds
+			excludeSenderInboxIds: excludeSenderInboxIds,
+			insertedAfterNs: insertedAfterNs,
+			insertedBeforeNs: insertedBeforeNs,
+			sortBy: sortBy
 		)
 	}
 }

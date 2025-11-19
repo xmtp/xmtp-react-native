@@ -240,7 +240,10 @@ export class Group<
       opts?.afterNs,
       opts?.direction,
       opts?.excludeContentTypes,
-      opts?.excludeSenderInboxIds
+      opts?.excludeSenderInboxIds,
+      opts?.insertedAfterNs,
+      opts?.insertedBeforeNs,
+      opts?.sortBy
     )
   }
 
@@ -267,7 +270,35 @@ export class Group<
       opts?.afterNs,
       opts?.direction,
       opts?.excludeContentTypes,
-      opts?.excludeSenderInboxIds
+      opts?.excludeSenderInboxIds,
+      opts?.insertedAfterNs,
+      opts?.insertedBeforeNs,
+      opts?.sortBy
+    )
+  }
+
+  /**
+   * Returns the count of messages in the group.
+   *
+   * @param {number | undefined} beforeNs - Optional filter for messages before this timestamp.
+   * @param {number | undefined} afterNs - Optional filter for messages after this timestamp.
+   * @param {number | undefined} insertedAfterNs - Optional filter for messages inserted after this timestamp.
+   * @param {number | undefined} insertedBeforeNs - Optional filter for messages inserted before this timestamp.
+   * @returns {Promise<number>} A Promise that resolves to the count of messages.
+   */
+  async countMessages(
+    beforeNs?: number,
+    afterNs?: number,
+    insertedAfterNs?: number,
+    insertedBeforeNs?: number
+  ): Promise<number> {
+    return await XMTP.countMessages(
+      this.client.installationId,
+      this.id,
+      beforeNs,
+      afterNs,
+      insertedAfterNs,
+      insertedBeforeNs
     )
   }
 
