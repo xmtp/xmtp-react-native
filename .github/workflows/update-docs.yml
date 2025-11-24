@@ -77,8 +77,8 @@ jobs:
           - Documentation repo: `docs-repo/`
 
           ## Task
-          1. Analyze the diff between the previous tag and current tag in the React Native SDK
-          2. Identify API changes, new features, deprecated methods, and breaking changes
+          1. Analyze the diff between the previous tag and current tag in the React Native SDK (entire `src/` directory)
+          2. Identify API changes, new features, new exported functions, new types, new options in existing APIs, deprecated methods, and breaking changes
           3. Review documentation in `docs-repo/` for React Native-related content
           4. Focus on code samples, API references, and integration guides
           5. Update documentation files in `docs-repo/` to match the current SDK state
@@ -94,6 +94,7 @@ jobs:
           - Error handling patterns
           - Authentication flows
           - Expo integration
+          - **New exported functions, types, and options in all APIs**
 
           ## Requirements
           - All code samples must be valid TypeScript/JavaScript with the current SDK version (${{ steps.tag.outputs.tag }})
@@ -105,6 +106,7 @@ jobs:
           - Verify documentation accuracy by cross-referencing with source code
           - Search for related documentation files that may need updates
           - Pay special attention to React Native specific patterns and examples
+          - **Document all new features, exported functions, types, and options**
 
           ## Available Tools
           You have access to comprehensive tools including:
@@ -128,11 +130,11 @@ jobs:
 
           # Append the release diff to the prompt
           cd react-native-sdk
-          echo "### Changed Files:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} --name-only | head -30 >> ../docs-repo/analysis_prompt.md
+          echo "### Changed Files (src/):" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} --name-only | grep '^src/' >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
-          echo "### Key API Changes:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Client.ts src/XMTPModule.ts src/index.ts src/lib/Conversation.ts src/lib/Group.ts src/lib/Dm.ts | head -100 >> ../docs-repo/analysis_prompt.md
+          echo "### Key API and Feature Changes (entire src/):" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/ | head -1000 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
           echo "Please analyze these changes and update the documentation files in the docs-repo/ directory accordingly." >> ../docs-repo/analysis_prompt.md
       
