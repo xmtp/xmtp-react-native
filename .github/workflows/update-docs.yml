@@ -79,9 +79,9 @@ jobs:
           ## Task
           1. Analyze the diff between the previous tag and current tag in the React Native SDK (entire `src/` directory)
           2. Identify API changes, new features, new exported functions, new types, new options in existing APIs, deprecated methods, and breaking changes
-          3. Review documentation in `docs-repo/` for React Native-related content
-          4. Focus on code samples, API references, and integration guides
-          5. Update documentation files in `docs-repo/` to match the current SDK state
+          3. For every new or changed API, function, or feature in the diff, update or create all relevant documentation files in `docs-repo/` to reflect the changes. If a doc does not exist, create a new one. List all files you update or create.
+          4. Review documentation in `docs-repo/` for React Native-related content
+          5. Focus on code samples, API references, and integration guides
           6. Ensure all React Native code samples are accurate and use current APIs
 
           ## Key areas to check
@@ -107,6 +107,7 @@ jobs:
           - Search for related documentation files that may need updates
           - Pay special attention to React Native specific patterns and examples
           - **Document all new features, exported functions, types, and options**
+          - **If a relevant doc does not exist, create it.**
 
           ## Available Tools
           You have access to comprehensive tools including:
@@ -145,7 +146,7 @@ jobs:
           prompt_file: docs-repo/analysis_prompt.md
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_tools: "Bash,Read,Write,Edit,MultiEdit,Glob,Grep,LS,Task,WebFetch,WebSearch,TodoRead,TodoWrite,NotebookRead,NotebookEdit"
-          max_turns: 15
+          max_turns: 40
           timeout_minutes: 20
       
       - name: Create branch and commit changes
