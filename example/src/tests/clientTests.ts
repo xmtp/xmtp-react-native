@@ -984,7 +984,7 @@ test('can manage revoke manually', async () => {
   )
 
   const sigText2 = await alix.ffiRevokeAllOtherInstallationsSignatureText()
-  const signedMessage2 = await alixSigner.signMessage(sigText2)
+  const signedMessage2 = await alixSigner.signMessage(sigText2!)
 
   ;({ r, s, v } = ethers.utils.splitSignature(signedMessage2.signature))
   const signature2 = ethers.utils.arrayify(

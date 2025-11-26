@@ -5,7 +5,6 @@ import org.xmtp.android.library.codecs.description
 import org.xmtp.android.library.libxmtp.DecodedMessage
 
 class MessageWrapper {
-
     companion object {
         fun encode(model: DecodedMessage): String {
             val gson = GsonBuilder().create()
@@ -24,9 +23,10 @@ class MessageWrapper {
                 "content" to ContentJson(model.encodedContent).toJsonMap(),
                 "senderInboxId" to model.senderInboxId,
                 "sentNs" to model.sentAtNs,
+                "insertedAtNs" to model.insertedAtNs,
                 "fallback" to fallback,
                 "deliveryStatus" to model.deliveryStatus.toString(),
-                "childMessages" to model.childMessages?.map { childMessage -> encodeMap(childMessage) }
+                "childMessages" to model.childMessages?.map { childMessage -> encodeMap(childMessage) },
             )
         }
     }

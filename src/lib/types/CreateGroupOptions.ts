@@ -6,4 +6,5 @@ export type CreateGroupOptions = {
   imageUrl?: string | undefined
   description?: string | undefined
   disappearingMessageSettings?: DisappearingMessageSettings | undefined
+  appData?: string | undefined
 }

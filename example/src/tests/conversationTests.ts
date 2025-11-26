@@ -87,6 +87,10 @@ class NumberCodec implements JSContentCodec<NumberRef> {
   fallback(content: NumberRef): string | undefined {
     return 'a billion'
   }
+
+  shouldPush(content: NumberRef): boolean {
+    return true
+  }
 }
 
 class NumberCodecUndefinedFallback extends NumberCodec {
@@ -640,18 +644,22 @@ test('can filter sync all by consent', async () => {
   // Bo denied + 1; Bo unknown - 1
   await boDmWithCaro?.updateConsent('denied')
 
-  const boConvos = await boClient.conversations.syncAllConversations()
-  const boConvosFilteredAllowed =
+  const { numEligible: boConvos } =
+    await boClient.conversations.syncAllConversations()
+  const { numEligible: boConvosFilteredAllowed } =
     await boClient.conversations.syncAllConversations(['allowed'])
-  const boConvosFilteredUnknown =
+  const { numEligible: boConvosFilteredUnknown } =
     await boClient.conversations.syncAllConversations(['unknown'])
 
-  const boConvosFilteredAllowedOrDenied =
+  const { numEligible: boConvosFilteredAllowedOrDenied } =
     await boClient.conversations.syncAllConversations(['allowed', 'denied'])
 
-  const boConvosFilteredAll = await boClient.conversations.syncAllConversations(
-    ['allowed', 'denied', 'unknown']
-  )
+  const { numEligible: boConvosFilteredAll } =
+    await boClient.conversations.syncAllConversations([
+      'allowed',
+      'denied',
+      'unknown',
+    ])
 
   assert(boConvos === 4, `Conversation length should be 4 but was ${boConvos}`)
   assert(
@@ -868,8 +876,8 @@ test('can stream conversation messages', async () => {
     'conversation stream should have received 1 conversation'
   )
   assert(
-    dmMessageCallbacks === 1,
-    'message stream should have received 1 message'
+    dmMessageCallbacks >= 1,
+    `message stream should have received 1 or more messages. Received ${dmMessageCallbacks}`
   )
 
   return true

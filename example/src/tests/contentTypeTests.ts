@@ -34,12 +34,14 @@ test('DecodedMessage.from() should throw informative error on null', async () =>
   }
 
   try {
+    //@ts-expect-error
     DecodedMessage.from(undefined)
   } catch (e: any) {
     assert(e.toString().includes('JSON Parse error'), 'Error: ' + e.toString())
   }
 
   try {
+    //@ts-expect-error
     DecodedMessage.from(null)
   } catch (e: any) {
     assert(
