@@ -1118,9 +1118,12 @@ export class Client<
 
   /**
    * This function is delicate and should be used with caution. Should only be used if trying to manage the signature flow independently otherwise use `revokeAllOtherInstallations()` instead.
-   * Gets the signature text for the revoke installations action
+   * Gets the signature text for the revoke installations action.
+   * Returns undefined if there are no other installations to revoke.
    */
-  async ffiRevokeAllOtherInstallationsSignatureText(): Promise<string> {
+  async ffiRevokeAllOtherInstallationsSignatureText(): Promise<
+    string | undefined
+  > {
     console.warn(
       '⚠️ This function is delicate and should be used with caution. ' +
         'Should only be used if trying to manage the signature flow independently otherwise use `revokeAllOtherInstallations()` instead'

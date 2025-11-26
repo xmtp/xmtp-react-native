@@ -401,7 +401,7 @@ export async function ffiRevokeInstallationsSignatureText(
 
 export async function ffiRevokeAllOtherInstallationsSignatureText(
   installationId: InstallationId
-): Promise<string> {
+): Promise<string | undefined> {
   return await XMTPModule.ffiRevokeAllOtherInstallationsSignatureText(
     installationId
   )
@@ -1249,11 +1249,20 @@ export async function syncConversations(installationId: InstallationId) {
   await XMTPModule.syncConversations(installationId)
 }
 
+export interface GroupSyncSummary {
+  numEligible: number
+  numSynced: number
+}
+
 export async function syncAllConversations(
   installationId: InstallationId,
   consentStates?: ConsentState[] | undefined
-): Promise<number> {
-  return await XMTPModule.syncAllConversations(installationId, consentStates)
+): Promise<GroupSyncSummary> {
+  const json = await XMTPModule.syncAllConversations(
+    installationId,
+    consentStates
+  )
+  return JSON.parse(json) as GroupSyncSummary
 }
 
 export async function syncConversation(
@@ -1346,6 +1355,21 @@ export function updateGroupDescription(
   description: string
 ): Promise<void> {
   return XMTPModule.updateGroupDescription(installationId, id, description)
+}
+
+export function groupAppData(
+  installationId: InstallationId,
+  id: ConversationId
+): string | PromiseLike<string> {
+  return XMTPModule.groupAppData(installationId, id)
+}
+
+export function updateGroupAppData(
+  installationId: InstallationId,
+  id: ConversationId,
+  appData: string
+): Promise<void> {
+  return XMTPModule.updateGroupAppData(installationId, id, appData)
 }
 
 export async function disappearingMessageSettings(
@@ -1811,7 +1835,8 @@ export async function createArchive(
   encryptionKey: Uint8Array,
   startNs?: number | undefined,
   endNs?: number | undefined,
-  archiveElements?: string[] | undefined
+  archiveElements?: string[] | undefined,
+  excludeDisappearingMessages?: boolean | undefined
 ): Promise<void> {
   return await XMTPModule.createArchive(
     installationId,
@@ -1819,7 +1844,8 @@ export async function createArchive(
     Array.from(encryptionKey),
     startNs,
     endNs,
-    archiveElements
+    archiveElements,
+    excludeDisappearingMessages
   )
 }
 export async function importArchive(
