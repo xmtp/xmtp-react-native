@@ -29,6 +29,7 @@ export class DecodedMessage<
   contentTypeId: string
   senderInboxId: InboxId
   sentNs: number // timestamp in nanoseconds
+  insertedAtNs: number // timestamp in nanoseconds when message was inserted locally
   nativeContent: NativeMessageContent
   fallback: string | undefined
   deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
@@ -56,6 +57,7 @@ export class DecodedMessage<
       decoded.contentTypeId,
       decoded.senderInboxId,
       decoded.sentNs,
+      decoded.insertedAtNs,
       decoded.content,
       decoded.fallback,
       decoded.deliveryStatus,
@@ -72,6 +74,7 @@ export class DecodedMessage<
     contentTypeId: string
     senderInboxId: InboxId
     sentNs: number // timestamp in nanoseconds
+    insertedAtNs?: number // timestamp in nanoseconds when message was inserted locally
     content: any
     fallback: string | undefined
     deliveryStatus: MessageDeliveryStatus | undefined
@@ -82,6 +85,7 @@ export class DecodedMessage<
       object.contentTypeId,
       object.senderInboxId,
       object.sentNs,
+      object.insertedAtNs ?? object.sentNs,
       object.content,
       object.fallback,
       object.deliveryStatus
@@ -94,6 +98,7 @@ export class DecodedMessage<
     contentTypeId: string,
     senderInboxId: InboxId,
     sentNs: number,
+    insertedAtNs: number,
     content: any,
     fallback: string | undefined,
     deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED,
@@ -104,6 +109,7 @@ export class DecodedMessage<
     this.contentTypeId = contentTypeId
     this.senderInboxId = senderInboxId
     this.sentNs = sentNs
+    this.insertedAtNs = insertedAtNs
     this.nativeContent = content
     // undefined comes back as null when bridged, ensure undefined so integrators don't have to add a new check for null as well
     this.fallback = fallback ?? undefined

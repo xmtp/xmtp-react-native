@@ -14,13 +14,14 @@ struct CreateGroupParamsWrapper {
 		let data = authParams.data(using: .utf8) ?? Data()
 		let jsonOptions =
 			(try? JSONSerialization.jsonObject(with: data, options: []))
-			as? [String: Any] ?? [:]
+				as? [String: Any] ?? [:]
 
 		var settings: DisappearingMessageSettings? = nil
-		
+
 		// Only create DisappearingMessageSettings if both values are provided
 		if let disappearStartingAtNs = jsonOptions["disappearStartingAtNs"] as? Int64,
-		   let retentionDurationInNs = jsonOptions["retentionDurationInNs"] as? Int64 {
+		   let retentionDurationInNs = jsonOptions["retentionDurationInNs"] as? Int64
+		{
 			settings = DisappearingMessageSettings(
 				disappearStartingAtNs: disappearStartingAtNs,
 				retentionDurationInNs: retentionDurationInNs

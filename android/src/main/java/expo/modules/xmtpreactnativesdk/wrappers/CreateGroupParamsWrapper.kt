@@ -15,14 +15,15 @@ class CreateGroupParamsWrapper(
             val jsonOptions = JsonParser.parseString(authParams).asJsonObject
 
             // Only create DisappearingMessageSettings if both values are provided
-            val settings = if (jsonOptions.has("disappearStartingAtNs") && jsonOptions.has("retentionDurationInNs")) {
-                DisappearingMessageSettings(
-                    jsonOptions.get("disappearStartingAtNs").asLong,
-                    jsonOptions.get("retentionDurationInNs").asLong
-                )
-            } else {
-                null
-            }
+            val settings =
+                if (jsonOptions.has("disappearStartingAtNs") && jsonOptions.has("retentionDurationInNs")) {
+                    DisappearingMessageSettings(
+                        jsonOptions.get("disappearStartingAtNs").asLong,
+                        jsonOptions.get("retentionDurationInNs").asLong,
+                    )
+                } else {
+                    null
+                }
 
             return CreateGroupParamsWrapper(
                 if (jsonOptions.has("name")) jsonOptions.get("name").asString else "",

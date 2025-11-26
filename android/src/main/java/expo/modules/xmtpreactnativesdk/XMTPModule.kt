@@ -27,6 +27,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DisappearingMessageSettingsWrapp
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.EnrichedMessageQueryParamsWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.GroupSyncSummaryWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.KeyPackageStatusWrapper
@@ -72,6 +73,7 @@ import org.xmtp.android.library.hexToByteArray
 import org.xmtp.android.library.libxmtp.ArchiveElement
 import org.xmtp.android.library.libxmtp.ArchiveOptions
 import org.xmtp.android.library.libxmtp.DecodedMessage
+import uniffi.xmtpv3.FfiContentType
 import org.xmtp.android.library.libxmtp.DisappearingMessageSettings
 import org.xmtp.android.library.libxmtp.GroupPermissionPreconfiguration
 import org.xmtp.android.library.libxmtp.PermissionOption
@@ -1023,7 +1025,12 @@ class XMTPModule : Module() {
                     afterNs = queryParams.afterNs,
                     direction = DecodedMessage.SortDirection.valueOf(
                         queryParams.direction ?: "DESCENDING"
-                    )
+                    ),
+                    excludedContentTypes = getExcludedContentTypes(queryParams.excludeContentTypes),
+                    excludeSenderInboxIds = queryParams.excludeSenderInboxIds,
+                    insertedAfterNs = queryParams.insertedAfterNs,
+                    insertedBeforeNs = queryParams.insertedBeforeNs,
+                    sortBy = getMessageSortBy(queryParams.sortBy)
                 )?.map { MessageWrapper.encode(it) }
             }
         }
@@ -1040,7 +1047,12 @@ class XMTPModule : Module() {
                     afterNs = queryParams.afterNs,
                     direction = DecodedMessage.SortDirection.valueOf(
                         queryParams.direction ?: "DESCENDING"
-                    )
+                    ),
+                    excludedContentTypes = getExcludedContentTypes(queryParams.excludeContentTypes),
+                    excludeSenderInboxIds = queryParams.excludeSenderInboxIds,
+                    insertedAfterNs = queryParams.insertedAfterNs,
+                    insertedBeforeNs = queryParams.insertedBeforeNs,
+                    sortBy = getMessageSortBy(queryParams.sortBy)
                 )?.map { MessageWrapper.encode(it) }
             }
         }
@@ -1437,9 +1449,8 @@ class XMTPModule : Module() {
                 logV("syncAllConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val consentStates = consentStringStates?.let { ConsentWrapper.getConsentStates(it) }
-                val numGroupsSyncedInt: Int =
-                    client.conversations.syncAllConversations(consentStates).numSynced.toInt()
-                numGroupsSyncedInt
+                val summary = client.conversations.syncAllConversations(consentStates)
+                GroupSyncSummaryWrapper.encode(summary)
             }
         }
 
@@ -1554,6 +1565,26 @@ class XMTPModule : Module() {
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateDescription(groupDescription)
+            }
+        }
+
+        AsyncFunction("groupAppData") Coroutine { installationId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("groupAppData")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val group = client.conversations.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.appData()
+            }
+        }
+
+        AsyncFunction("updateGroupAppData") Coroutine { installationId: String, groupId: String, appData: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupAppData")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val group = client.conversations.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateAppData(appData)
             }
         }
 
@@ -2111,7 +2142,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createArchive") Coroutine { installationId: String, path: String, encryptionKey: List<Int>, startNs: Int?, endNs: Int?, archiveElements: List<String>? ->
+        AsyncFunction("createArchive") Coroutine { installationId: String, path: String, encryptionKey: List<Int>, startNs: Int?, endNs: Int?, archiveElements: List<String>?, excludeDisappearingMessages: Boolean? ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val encryptionKeyBytes =
@@ -2119,7 +2150,7 @@ class XMTPModule : Module() {
                         a.apply { set(i, v.toByte()) }
                     }
                 val elements = archiveElements?.map { getArchiveElement(it) } ?: listOf(ArchiveElement.MESSAGES, ArchiveElement.CONSENT)
-                val archiveOptions = ArchiveOptions(startNs?.toLong(), endNs?.toLong(), elements)
+                val archiveOptions = ArchiveOptions(startNs?.toLong(), endNs?.toLong(), elements, excludeDisappearingMessages ?: false)
                 client.createArchive(path, encryptionKeyBytes, archiveOptions)
             }
         }
@@ -2457,6 +2488,48 @@ class XMTPModule : Module() {
         if (isDebugEnabled) {
             Log.v("XMTPModule", msg)
         }
+    }
+
+    private fun getMessageSortBy(sortBy: String?): DecodedMessage.SortBy {
+        return when (sortBy) {
+            "INSERTED_TIME" -> DecodedMessage.SortBy.INSERTED_TIME
+            else -> DecodedMessage.SortBy.SENT_TIME
+        }
+    }
+
+    /**
+     * Converts content type ID strings (e.g. "xmtp.org/text:1.0") to [List][FfiContentType] for the SDK.
+     * Unrecognized or custom content types are skipped.
+     */
+    private fun getExcludedContentTypes(strings: List<String>?): List<FfiContentType>? {
+        if (strings.isNullOrEmpty()) return null
+        val mapped = strings.mapNotNull { contentTypeIdString ->
+            val typeId = if (contentTypeIdString.contains(":")) {
+                contentTypeIdString.substringBefore(":").substringAfterLast("/")
+            } else {
+                contentTypeIdString
+            }
+            when (typeId.lowercase()) {
+                "text" -> FfiContentType.TEXT
+                "group_updated" -> FfiContentType.GROUP_UPDATED
+                "group_membership_change" -> FfiContentType.GROUP_MEMBERSHIP_CHANGE
+                "reaction" -> FfiContentType.REACTION
+                "read_receipt" -> FfiContentType.READ_RECEIPT
+                "reply" -> FfiContentType.REPLY
+                "attachment" -> FfiContentType.ATTACHMENT
+                "remote_attachment" -> FfiContentType.REMOTE_ATTACHMENT
+                "multi_remote_attachment" -> FfiContentType.MULTI_REMOTE_ATTACHMENT
+                "leave_request" -> FfiContentType.LEAVE_REQUEST
+                "delete_message" -> FfiContentType.UNKNOWN
+                "markdown" -> FfiContentType.MARKDOWN
+                "actions" -> FfiContentType.ACTIONS
+                "intent" -> FfiContentType.INTENT
+                "transaction_reference" -> FfiContentType.TRANSACTION_REFERENCE
+                "wallet_send_calls" -> FfiContentType.WALLET_SEND_CALLS
+                else -> null
+            }
+        }
+        return mapped.ifEmpty { null }
     }
 
     private val preAuthenticateToInboxCallback: suspend () -> Unit = {

@@ -12,6 +12,18 @@ struct EnrichedMessageQueryParamsWrapper {
 	let insertedBeforeNs: Int64?
 	let sortBy: String?
 
+	/// JSONSerialization decodes numbers as Int or Double; coerce to Int64 so ns timestamps parse correctly.
+	/// Also accepts numeric strings so JS can pass large ns values without precision loss.
+	private static func int64FromJson(_ value: Any?) -> Int64? {
+		guard let v = value else { return nil }
+		if let n = v as? Int64 { return n }
+		if let n = v as? Int { return Int64(n) }
+		if let n = v as? Double { return Int64(n) }
+		if let n = v as? NSNumber { return n.int64Value }
+		if let s = v as? String { return Int64(s) }
+		return nil
+	}
+
 	static func fromJson(_ paramsJson: String) -> EnrichedMessageQueryParamsWrapper {
 		guard !paramsJson.isEmpty else {
 			return EnrichedMessageQueryParamsWrapper(
@@ -33,13 +45,13 @@ struct EnrichedMessageQueryParamsWrapper {
 			as? [String: Any] ?? [:]
 
 		let limit = jsonOptions["limit"] as? Int
-		let beforeNs = jsonOptions["beforeNs"] as? Int64
-		let afterNs = jsonOptions["afterNs"] as? Int64
+		let beforeNs = Self.int64FromJson(jsonOptions["beforeNs"])
+		let afterNs = Self.int64FromJson(jsonOptions["afterNs"])
 		let direction = jsonOptions["direction"] as? String
-		let excludeSenderInboxIds = jsonOptions["excludeSenderInboxIds"] as? [String]
+		let excludeSenderInboxIds: [String]? = (jsonOptions["excludeSenderInboxIds"] as? [Any])?.compactMap { $0 as? String }
 		let deliveryStatus = jsonOptions["deliveryStatus"] as? String
-		let insertedAfterNs = jsonOptions["insertedAfterNs"] as? Int64
-		let insertedBeforeNs = jsonOptions["insertedBeforeNs"] as? Int64
+		let insertedAfterNs = Self.int64FromJson(jsonOptions["insertedAfterNs"])
+		let insertedBeforeNs = Self.int64FromJson(jsonOptions["insertedBeforeNs"])
 		let sortBy = jsonOptions["sortBy"] as? String
 
 		return EnrichedMessageQueryParamsWrapper(
