@@ -27,7 +27,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout project sources
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Java
         uses: actions/setup-java@v5
