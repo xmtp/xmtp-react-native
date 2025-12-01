@@ -51,6 +51,13 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Analyzing tag: $TAG"
 
+      - name: Skip if tag is dev or rc
+        run: |
+          if echo "${{ steps.tag.outputs.tag }}" | grep -E 'dev|rc'; then
+            echo "Skipping documentation PR for dev or rc release: ${{ steps.tag.outputs.tag }}"
+            exit 0
+          fi
+
       - name: Get previous tag for diff
         id: prev_tag
         run: |
