@@ -45,10 +45,18 @@ jobs:
           elif [ "${{ github.event_name }}" = "release" ]; then
             TAG="${{ github.event.release.tag_name }}"
           else
-            TAG=$(git describe --tags --abbrev=0)
+            # Use the latest tag by creation date (any type)
+            TAG=$(git tag --sort=-creatordate | head -n 1)
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Analyzing tag: $TAG"
+
+      - name: Skip if tag is dev or rc
+        run: |
+          if echo "${{ steps.tag.outputs.tag }}" | grep -E 'dev|rc'; then
+            echo "Skipping documentation PR for dev or rc release: ${{ steps.tag.outputs.tag }}"
+            exit 0
+          fi
 
       - name: Get previous tag for diff
         id: prev_tag
@@ -57,7 +65,6 @@ jobs:
           CURRENT_TAG="${{ steps.tag.outputs.tag }}"
           PREV_TAG=$(git tag --sort=-version:refname | grep -A 1 "^$CURRENT_TAG$" | tail -n 1)
           if [ "$PREV_TAG" = "$CURRENT_TAG" ] || [ -z "$PREV_TAG" ]; then
-            # If no previous tag or same tag, get the tag before current
             PREV_TAG=$(git tag --sort=-version:refname | head -n 2 | tail -n 1)
           fi
           echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
@@ -77,11 +84,11 @@ jobs:
           - Documentation repo: `docs-repo/`
 
           ## Task
-          1. Analyze the diff between the previous tag and current tag in the React Native SDK
-          2. Identify API changes, new features, deprecated methods, and breaking changes
-          3. Review documentation in `docs-repo/` for React Native-related content
-          4. Focus on code samples, API references, and integration guides
-          5. Update documentation files in `docs-repo/` to match the current SDK state
+          1. Analyze the diff between the previous tag and current tag in the React Native SDK (entire `src/` directory)
+          2. Identify API changes, new features, new exported functions, new types, new options in existing APIs, deprecated methods, and breaking changes
+          3. For every new or changed API, function, or feature in the diff, update or create all relevant documentation files in `docs-repo/` to reflect the changes. If a doc does not exist, create a new one. List all files you update or create.
+          4. Review documentation in `docs-repo/` for React Native-related content
+          5. Focus on code samples, API references, and integration guides
           6. Ensure all React Native code samples are accurate and use current APIs
 
           ## Key areas to check
@@ -94,6 +101,7 @@ jobs:
           - Error handling patterns
           - Authentication flows
           - Expo integration
+          - **New exported functions, types, and options in all APIs**
 
           ## Requirements
           - All code samples must be valid TypeScript/JavaScript with the current SDK version (${{ steps.tag.outputs.tag }})
@@ -105,6 +113,8 @@ jobs:
           - Verify documentation accuracy by cross-referencing with source code
           - Search for related documentation files that may need updates
           - Pay special attention to React Native specific patterns and examples
+          - **Document all new features, exported functions, types, and options**
+          - **If a relevant doc does not exist, create it.**
 
           ## Available Tools
           You have access to comprehensive tools including:
@@ -128,11 +138,11 @@ jobs:
 
           # Append the release diff to the prompt
           cd react-native-sdk
-          echo "### Changed Files:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} --name-only | head -30 >> ../docs-repo/analysis_prompt.md
+          echo "### Changed Files (src/):" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} --name-only | grep '^src/' >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
-          echo "### Key API Changes:" >> ../docs-repo/analysis_prompt.md
-          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/lib/Client.ts src/XMTPModule.ts src/index.ts src/lib/Conversation.ts src/lib/Group.ts src/lib/Dm.ts | head -100 >> ../docs-repo/analysis_prompt.md
+          echo "### Key API and Feature Changes (entire src/):" >> ../docs-repo/analysis_prompt.md
+          git diff ${{ steps.prev_tag.outputs.prev_tag }}..${{ steps.tag.outputs.tag }} -- src/ | head -1000 >> ../docs-repo/analysis_prompt.md
           echo "" >> ../docs-repo/analysis_prompt.md
           echo "Please analyze these changes and update the documentation files in the docs-repo/ directory accordingly." >> ../docs-repo/analysis_prompt.md
       
@@ -143,7 +153,7 @@ jobs:
           prompt_file: docs-repo/analysis_prompt.md
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_tools: "Bash,Read,Write,Edit,MultiEdit,Glob,Grep,LS,Task,WebFetch,WebSearch,TodoRead,TodoWrite,NotebookRead,NotebookEdit"
-          max_turns: 15
+          max_turns: 40
           timeout_minutes: 20
       
       - name: Create branch and commit changes
@@ -156,17 +166,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Check if branch already exists and delete it
-          if git show-ref --verify --quiet refs/remotes/origin/$BRANCH_NAME; then
-            echo "Branch $BRANCH_NAME already exists, deleting it"
-            git push origin --delete "$BRANCH_NAME" || true
-          fi
+          # Always work with the latest main
+          git fetch origin main
+          git checkout main
+          git pull origin main
 
-          # Create and switch to new branch
-          git checkout -b "$BRANCH_NAME"
+          # Create or reset the update branch from latest main
+          git checkout -B "$BRANCH_NAME" main
 
-          # Remove the analysis prompt file (internal workflow file)
-          rm -f analysis_prompt.md
+          # Remove the analysis prompt and any Claude-generated PR files (internal workflow files)
+          rm -f analysis_prompt.md claude_pr_title.txt claude_pr_body.txt
 
           # Check if there are any changes
           if git diff --quiet && git diff --cached --quiet; then
@@ -176,25 +185,15 @@ jobs:
             echo "Documentation changes detected"
             echo "has_changes=true" >> $GITHUB_OUTPUT
             echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-            
-            # Add all changes (excluding the removed prompt file)
-            git add .
-            
-            # Commit changes
-            git commit -m "Update React Native SDK documentation for release ${{ steps.tag.outputs.tag }}
 
-            Automated update based on changes in xmtp-react-native ${{ steps.tag.outputs.tag }}
-            
-            Changes analyzed:
-            - API modifications and new features
-            - Code sample accuracy
-            - Version compatibility
-            - Breaking changes documentation
-            
-            Generated by Claude Code Actions"
-            
-            # Push branch
-            git push origin "$BRANCH_NAME"
+            # Add all changes (excluding the removed prompt and PR files)
+            git add .
+
+            # Commit changes (single-line message to avoid YAML syntax issues)
+            git commit -m "Update React Native SDK documentation for release ${{ steps.tag.outputs.tag }}. Automated update based on changes in xmtp-react-native ${{ steps.tag.outputs.tag }}. Changes analyzed: API modifications and new features, code sample accuracy, version compatibility, breaking changes documentation. Generated by Claude Code Actions."
+
+            # Force push branch to overwrite remote
+            git push --force origin "$BRANCH_NAME"
           fi
       
       - name: Create Pull Request
@@ -210,47 +209,49 @@ jobs:
             PR_TITLE=$(cat claude_pr_title.txt)
             rm claude_pr_title.txt
           fi
-          
+
           # Use Claude Code generated PR body if available, otherwise use default
           if [ -f "claude_pr_body.txt" ]; then
-            PR_BODY=$(cat claude_pr_body.txt)
+            cp claude_pr_body.txt pr_body.md
             rm claude_pr_body.txt
           else
-            PR_BODY="## 🤖 Automated React Native SDK Documentation Update
-
-          # Create PR body
-          PR_BODY="## 🤖 Automated React Native SDK Documentation Update
-
-          This PR updates the documentation to align with React Native SDK release [\`${{ steps.tag.outputs.tag }}\`](https://github.com/xmtp/xmtp-react-native/releases/tag/${{ steps.tag.outputs.tag }}).
-
-          ### Changes Made
-          - Updated code samples to match current SDK APIs
-          - Verified React Native integration examples
-          - Updated version references and installation instructions
-          - Addressed any breaking changes or deprecations
-          - Updated TypeScript/JavaScript examples for accuracy
-          - Verified Expo integration patterns
-
-          ### Analysis Summary
-          Documentation analysis and updates completed using Claude Code Actions.
-
-          ### Verification Needed
-          - [ ] Review all React Native code samples for accuracy
-          - [ ] Test integration examples with current SDK version
-          - [ ] Verify version compatibility information
-          - [ ] Check TypeScript definitions and examples
-          - [ ] Validate Expo configuration steps
-          - [ ] Check for any missed documentation updates
-
-          ---
-          *This PR was automatically generated by Claude Code Actions*"
+            echo '## 🤖 Automated React Native SDK Documentation Update' > pr_body.md
+            echo '' >> pr_body.md
+            echo "This PR updates the documentation to align with React Native SDK release [\`${{ steps.tag.outputs.tag }}\`](https://github.com/xmtp/xmtp-react-native/releases/tag/${{ steps.tag.outputs.tag }})." >> pr_body.md
+            echo '' >> pr_body.md
+            echo '### Changes Made' >> pr_body.md
+            echo '- Updated code samples to match current SDK APIs' >> pr_body.md
+            echo '- Verified React Native integration examples' >> pr_body.md
+            echo '- Updated version references and installation instructions' >> pr_body.md
+            echo '- Addressed any breaking changes or deprecations' >> pr_body.md
+            echo '- Updated TypeScript/JavaScript examples for accuracy' >> pr_body.md
+            echo '- Verified Expo integration patterns' >> pr_body.md
+            echo '' >> pr_body.md
+            echo '### Analysis Summary' >> pr_body.md
+            echo 'Documentation analysis and updates completed using Claude Code Actions.' >> pr_body.md
+            echo '' >> pr_body.md
+            echo '### Verification Needed' >> pr_body.md
+            echo '- [ ] Review all React Native code samples for accuracy' >> pr_body.md
+            echo '- [ ] Test integration examples with current SDK version' >> pr_body.md
+            echo '- [ ] Verify version compatibility information' >> pr_body.md
+            echo '- [ ] Check TypeScript definitions and examples' >> pr_body.md
+            echo '- [ ] Validate Expo configuration steps' >> pr_body.md
+            echo '- [ ] Check for any missed documentation updates' >> pr_body.md
+            echo '' >> pr_body.md
+            echo '*This PR was automatically generated by Claude Code Actions*' >> pr_body.md
           fi
-          # Create the PR without labels
-          gh pr create \
-            --title "$PR_TITLE" \
-            --body "$PR_BODY" \
-            --head "${{ steps.commit.outputs.branch_name }}" \
-            --base main
+          # Check if a PR already exists for this branch
+          EXISTING_PR_URL=$(gh pr list --head "${{ steps.commit.outputs.branch_name }}" --base main --json url --jq '.[0].url')
+          if [ -n "$EXISTING_PR_URL" ]; then
+            echo "ℹ️ Existing PR found: $EXISTING_PR_URL"
+            echo "✅ Existing PR was updated with new commits."
+          else
+            gh pr create \
+              --title "$PR_TITLE" \
+              --body-file pr_body.md \
+              --head "${{ steps.commit.outputs.branch_name }}" \
+              --base main
+          fi
 
       - name: Output results
         run: |
