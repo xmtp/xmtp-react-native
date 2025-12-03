@@ -240,7 +240,10 @@ export class Group<
       opts?.afterNs,
       opts?.direction,
       opts?.excludeContentTypes,
-      opts?.excludeSenderInboxIds
+      opts?.excludeSenderInboxIds,
+      opts?.sortBy,
+      opts?.insertedAfterNs,
+      opts?.insertedBeforeNs
     )
   }
 
@@ -267,7 +270,10 @@ export class Group<
       opts?.afterNs,
       opts?.direction,
       opts?.excludeContentTypes,
-      opts?.excludeSenderInboxIds
+      opts?.excludeSenderInboxIds,
+      opts?.sortBy,
+      opts?.insertedAfterNs,
+      opts?.insertedBeforeNs
     )
   }
 
@@ -462,6 +468,25 @@ export class Group<
       this.id,
       description
     )
+  }
+
+  /**
+   * Returns the app-specific data for this group.
+   * To get the latest app data from the network, call sync() first.
+   * @returns {Promise<string>} A Promise that resolves to the app data string.
+   */
+  async appData(): Promise<string> {
+    return XMTP.groupAppData(this.client.installationId, this.id)
+  }
+
+  /**
+   * Updates the app-specific data for this group.
+   * Will throw if the user does not have the required permissions.
+   * @param {string} appData new app data
+   * @returns {Promise<void>}
+   */
+  async updateAppData(appData: string): Promise<void> {
+    return XMTP.updateGroupAppData(this.client.installationId, this.id, appData)
   }
 
   /**

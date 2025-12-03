@@ -537,13 +537,16 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("ffiRevokeAllOtherInstallationsSignatureText") {
-			(installationId: String) -> String in
+			(installationId: String) -> String? in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			let sigRequest = try await client.ffiRevokeAllOtherInstallations()
+			guard let sigRequest = try await client.ffiRevokeAllOtherInstallations()
+			else {
+				return nil
+			}
 			await clientsManager.updateSignatureRequest(
 				key: client.installationID, signatureRequest: sigRequest
 			)
@@ -1431,7 +1434,8 @@ public class XMTPModule: Module {
 					imageUrl: createGroupParams.groupImageUrl,
 					description: createGroupParams.groupDescription,
 					disappearingMessageSettings: createGroupParams
-						.disappearingMessageSettings
+						.disappearingMessageSettings,
+					appData: createGroupParams.appData
 				)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1465,7 +1469,8 @@ public class XMTPModule: Module {
 						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
-							.disappearingMessageSettings
+							.disappearingMessageSettings,
+						appData: createGroupParams.appData
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1510,7 +1515,8 @@ public class XMTPModule: Module {
 						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
-							.disappearingMessageSettings
+							.disappearingMessageSettings,
+						appData: createGroupParams.appData
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1548,7 +1554,8 @@ public class XMTPModule: Module {
 						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
-							.disappearingMessageSettings
+							.disappearingMessageSettings,
+						appData: createGroupParams.appData
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1587,7 +1594,8 @@ public class XMTPModule: Module {
 					groupImageUrlSquare: createGroupParams.groupImageUrl,
 					groupDescription: createGroupParams.groupDescription,
 					disappearingMessageSettings: createGroupParams
-						.disappearingMessageSettings
+						.disappearingMessageSettings,
+					appData: createGroupParams.appData
 				)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1672,7 +1680,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("syncAllConversations") {
-			(installationId: String, consentStringStates: [String]?) -> UInt64
+			(installationId: String, consentStringStates: [String]?) -> String
 			in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1685,8 +1693,9 @@ public class XMTPModule: Module {
 			} else {
 				consentStates = nil
 			}
-			return try await client.conversations.syncAllConversations(
-                consentStates: consentStates).numSynced
+			let summary = try await client.conversations.syncAllConversations(
+				consentStates: consentStates)
+			return try GroupSyncSummaryWrapper(summary).toJson()
 		}
 
 		AsyncFunction("syncConversation") {
@@ -1897,6 +1906,42 @@ public class XMTPModule: Module {
 			}
 
 			try await group.updateDescription(description: description)
+		}
+
+		AsyncFunction("groupAppData") {
+			(installationId: String, id: String) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let group = try await client.conversations.findGroup(
+					groupId: id)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(id)")
+			}
+
+			return try group.appData()
+		}
+
+		AsyncFunction("updateGroupAppData") {
+			(installationId: String, id: String, appData: String) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let group = try await client.conversations.findGroup(
+					groupId: id)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(id)")
+			}
+
+			try await group.updateAppData(appData: appData)
 		}
 
 		AsyncFunction("disappearingMessageSettings") {
@@ -2855,26 +2900,26 @@ public class XMTPModule: Module {
 
 			return try ArchiveMetadataWrapper.encode(metadata)
 		}
-        
-        AsyncFunction("leaveGroup") { (
+
+		AsyncFunction("leaveGroup") { (
 			installationId: String,
 			groupId: String
 		) in
-            guard
-                let client = await clientsManager.getClient(
-                    key: installationId)
-            else {
-                throw Error.noClient
-            }
-            guard
-                let group = try await client.conversations.findGroup(
-                    groupId: groupId)
-            else {
-                throw Error.conversationNotFound(
-                    "no conversation found for \(groupId)")
-            }
-            try await group.leaveGroup()
-        }
+			guard
+				let client = await clientsManager.getClient(
+					key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let group = try await client.conversations.findGroup(
+					groupId: groupId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(groupId)")
+			}
+			try await group.leaveGroup()
+		}
 	}
 
 	//
@@ -3063,7 +3108,7 @@ public class XMTPModule: Module {
 		case revokeInstallations
 	}
 
-    func createApiClient(env: String, customLocalUrl: String? = nil, appVersion: String? = nil, gatewayHost: String? = nil)
+	func createApiClient(env: String, customLocalUrl: String? = nil, appVersion: String? = nil, gatewayHost: String? = nil)
 		-> XMTP.ClientOptions.Api
 	{
 		switch env {
@@ -3075,21 +3120,21 @@ public class XMTPModule: Module {
 				env: XMTP.XMTPEnvironment.local,
 				isSecure: false,
 				appVersion: appVersion,
-                gatewayHost: gatewayHost
+				gatewayHost: gatewayHost
 			)
 		case "production":
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.production,
 				isSecure: true,
 				appVersion: appVersion,
-                gatewayHost: gatewayHost
+				gatewayHost: gatewayHost
 			)
 		default:
 			return XMTP.ClientOptions.Api(
 				env: XMTP.XMTPEnvironment.dev,
 				isSecure: true,
 				appVersion: appVersion,
-                gatewayHost: gatewayHost
+				gatewayHost: gatewayHost
 			)
 		}
 	}
@@ -3105,7 +3150,7 @@ public class XMTPModule: Module {
 				env: authOptions.environment,
 				customLocalUrl: authOptions.customLocalUrl,
 				appVersion: authOptions.appVersion,
-                gatewayHost: authOptions.gatewayHost,
+				gatewayHost: authOptions.gatewayHost
 			),
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 			dbEncryptionKey: dbEncryptionKey,
@@ -3113,7 +3158,7 @@ public class XMTPModule: Module {
 			historySyncUrl: authOptions.historySyncUrl,
 			deviceSyncEnabled: authOptions.deviceSyncEnabled,
 			debugEventsEnabled: authOptions.debugEventsEnabled,
-            forkRecoveryOptions: authOptions.forkRecoveryOptions
+			forkRecoveryOptions: authOptions.forkRecoveryOptions
 		)
 	}
 

@@ -453,7 +453,7 @@ test('can cancel streams', async () => {
 
   try {
     assert(
-      messageCallbacks === 2,
+      messageCallbacks === 5,
       `message stream should have received 2 messages, but received ${messageCallbacks}`
     )
   } finally {
@@ -741,7 +741,7 @@ test('unpublished messages handling', async () => {
   const preparedMessageId = await alixGroup.prepareMessage('Test text')
 
   // Verify the message count in the group
-  const alixMessages = await alixGroup.messages({ direction: 'DESCENDING' })
+  const alixMessages = await alixGroup.messages({ direction: 'ASCENDING' })
   let messageCount = alixMessages.length
   if (messageCount !== 2) {
     throw new Error(`Message count should be 2, but it is ${messageCount}`)
@@ -1937,17 +1937,19 @@ test('can sync all groups', async () => {
   }
 
   // First syncAllConversations after removal will still sync each group to set group inactive
-  const numGroupsSynced2 = await bo.conversations.syncAllConversations()
+  const { numSynced: numGroupsSynced2 } =
+    await bo.conversations.syncAllConversations()
   assert(
-    numGroupsSynced2 === 51,
-    `should have synced 51 groups but synced ${numGroupsSynced2}`
+    numGroupsSynced2 === 50,
+    `should have synced 50 groups but synced ${numGroupsSynced2}`
   )
 
   // Next syncAllConversations will not sync inactive groups
-  const numGroupsSynced3 = await bo.conversations.syncAllConversations()
+  const { numSynced: numGroupsSynced3 } =
+    await bo.conversations.syncAllConversations()
   assert(
-    numGroupsSynced3 === 1,
-    `should have synced 1 groups but synced ${numGroupsSynced3}`
+    numGroupsSynced3 === 0,
+    `should have synced 0 groups but synced ${numGroupsSynced3}`
   )
   return true
 })

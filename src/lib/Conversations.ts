@@ -444,11 +444,11 @@ export default class Conversations<
    * Executes a network request to sync all active conversations associated with the client
    * @param {consentStates} ConsentState[] - Filter the conversations to sync by a list of consent states.
    *
-   * @returns {Promise<number>} A Promise that resolves to the number of conversations synced.
+   * @returns {Promise<GroupSyncSummary>} A Promise that resolves to a summary of the sync operation.
    */
   async syncAllConversations(
     consentStates: ConsentState[] | undefined = undefined
-  ): Promise<number> {
+  ): Promise<XMTPModule.GroupSyncSummary> {
     return await XMTPModule.syncAllConversations(
       this.client.installationId,
       consentStates

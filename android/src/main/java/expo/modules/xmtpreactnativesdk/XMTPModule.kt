@@ -26,6 +26,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.DisappearingMessageSettingsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.GroupSyncSummaryWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.KeyPackageStatusWrapper
@@ -584,7 +585,7 @@ class XMTPModule : Module() {
                 logV("ffiRevokeAllOtherInstallationsSignatureText")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val sigRequest = client.ffiRevokeAllOtherInstallations()
-                sigRequest.let {
+                sigRequest?.let {
                     clientSignatureRequests[installationId] = it
                     it.signatureText()
                 }
@@ -1012,7 +1013,10 @@ class XMTPModule : Module() {
                     afterNs = queryParams.afterNs,
                     direction = DecodedMessage.SortDirection.valueOf(
                         queryParams.direction ?: "DESCENDING"
-                    )
+                    ),
+                    insertedAfterNs = queryParams.insertedAfterNs,
+                    insertedBeforeNs = queryParams.insertedBeforeNs,
+                    sortBy = getMessageSortBy(queryParams.sortBy)
                 )?.map { MessageWrapper.encode(it) }
             }
         }
@@ -1029,7 +1033,10 @@ class XMTPModule : Module() {
                     afterNs = queryParams.afterNs,
                     direction = DecodedMessage.SortDirection.valueOf(
                         queryParams.direction ?: "DESCENDING"
-                    )
+                    ),
+                    insertedAfterNs = queryParams.insertedAfterNs,
+                    insertedBeforeNs = queryParams.insertedBeforeNs,
+                    sortBy = getMessageSortBy(queryParams.sortBy)
                 )?.map { MessageWrapper.encode(it) }
             }
         }
@@ -1224,7 +1231,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1246,7 +1254,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1270,7 +1279,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1294,7 +1304,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1315,7 +1326,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1365,9 +1377,8 @@ class XMTPModule : Module() {
                 logV("syncAllConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val consentStates = consentStringStates?.let { ConsentWrapper.getConsentStates(it) }
-                val numGroupsSyncedInt: Int =
-                    client.conversations.syncAllConversations(consentStates).numSynced.toInt()
-                numGroupsSyncedInt
+                val summary = client.conversations.syncAllConversations(consentStates)
+                GroupSyncSummaryWrapper.encode(summary)
             }
         }
 
@@ -1482,6 +1493,26 @@ class XMTPModule : Module() {
                 val group = client.conversations.findGroup(groupId)
                     ?: throw XMTPException("no group found for $groupId")
                 group.updateDescription(groupDescription)
+            }
+        }
+
+        AsyncFunction("groupAppData") Coroutine { installationId: String, groupId: String ->
+            withContext(Dispatchers.IO) {
+                logV("groupAppData")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val group = client.conversations.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.appData()
+            }
+        }
+
+        AsyncFunction("updateGroupAppData") Coroutine { installationId: String, groupId: String, appData: String ->
+            withContext(Dispatchers.IO) {
+                logV("updateGroupAppData")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val group = client.conversations.findGroup(groupId)
+                    ?: throw XMTPException("no group found for $groupId")
+                group.updateAppData(appData)
             }
         }
 
@@ -2029,7 +2060,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("createArchive") Coroutine { installationId: String, path: String, encryptionKey: List<Int>, startNs: Int?, endNs: Int?, archiveElements: List<String>? ->
+        AsyncFunction("createArchive") Coroutine { installationId: String, path: String, encryptionKey: List<Int>, startNs: Int?, endNs: Int?, archiveElements: List<String>?, excludeDisappearingMessages: Boolean? ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val encryptionKeyBytes =
@@ -2037,7 +2068,7 @@ class XMTPModule : Module() {
                         a.apply { set(i, v.toByte()) }
                     }
                 val elements = archiveElements?.map { getArchiveElement(it) } ?: listOf(ArchiveElement.MESSAGES, ArchiveElement.CONSENT)
-                val archiveOptions = ArchiveOptions(startNs?.toLong(), endNs?.toLong(), elements)
+                val archiveOptions = ArchiveOptions(startNs?.toLong(), endNs?.toLong(), elements, excludeDisappearingMessages ?: false)
                 client.createArchive(path, encryptionKeyBytes, archiveOptions)
             }
         }
@@ -2345,6 +2376,13 @@ class XMTPModule : Module() {
     private fun logV(msg: String) {
         if (isDebugEnabled) {
             Log.v("XMTPModule", msg)
+        }
+    }
+
+    private fun getMessageSortBy(sortBy: String?): DecodedMessage.SortBy {
+        return when (sortBy) {
+            "INSERTED_TIME" -> DecodedMessage.SortBy.INSERTED_TIME
+            else -> DecodedMessage.SortBy.SENT_TIME
         }
     }
 
