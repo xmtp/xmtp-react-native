@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-extra-non-null-assertion */
 import { Wallet } from 'ethers'
-import RNFS from 'react-native-fs'
 import {
   Client,
   GroupUpdatedCodec,
@@ -16,6 +15,11 @@ import {
   createClients,
   adaptEthersWalletToSigner,
 } from './test-utils'
+import {
+  ensureDirectory,
+  joinDocumentPath,
+  pathExists,
+} from './fileSystemHelpers'
 
 export const groupPerformanceTests: Test[] = []
 let counter = 1
@@ -31,10 +35,9 @@ test('building and creating', async () => {
     233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
     166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
   ])
-  const dbDirPath = `${RNFS.DocumentDirectoryPath}/xmtp_db`
-  const directoryExists = await RNFS.exists(dbDirPath)
-  if (!directoryExists) {
-    await RNFS.mkdir(dbDirPath)
+  const dbDirPath = joinDocumentPath('xmtp_db')
+  if (!(await pathExists(dbDirPath))) {
+    await ensureDirectory(dbDirPath)
   }
   const alixWallet = Wallet.createRandom()
 

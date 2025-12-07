@@ -42,11 +42,12 @@ jobs:
           node-version-file: ".nvmrc"
           cache: yarn
 
-      - name: Install dependencies
+      - name: Install and test npm dependencies
         run: |
           yarn install --frozen-lockfile
           cd ./example
           yarn install --frozen-lockfile
+          yarn test
 
       - name: Install Maestro
         run: |
