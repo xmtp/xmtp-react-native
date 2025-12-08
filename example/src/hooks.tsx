@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import EncryptedStorage from 'react-native-encrypted-storage'
+import * as SecureStore from 'expo-secure-store'
 import RNFS from 'react-native-fs'
 import crypto from 'react-native-quick-crypto'
 import { useMutation, useQuery, UseQueryResult } from 'react-query'
@@ -762,16 +762,16 @@ export function useSavedAddress(): {
 } {
   const { data: address, refetch } = useQuery<string | null>(
     ['xmtp', 'address'],
-    () => EncryptedStorage.getItem('xmtp.address')
+    () => SecureStore.getItemAsync('xmtp.address')
   )
   return {
     address,
     save: async (address: string) => {
-      await EncryptedStorage.setItem('xmtp.address', address)
+      await SecureStore.setItemAsync('xmtp.address', address)
       await refetch()
     },
     clear: async () => {
-      await EncryptedStorage.removeItem('xmtp.address')
+      await SecureStore.deleteItemAsync('xmtp.address')
       await refetch()
     },
   }
@@ -784,11 +784,11 @@ export async function getDbEncryptionKey(
   try {
     const key = `xmtp-${network}`
 
-    const result = await EncryptedStorage.getItem(key)
+    const result = await SecureStore.getItemAsync(key)
     if ((result && clear === true) || !result) {
       if (result) {
         console.log('Removing existing dbEncryptionKey', key)
-        await EncryptedStorage.removeItem(key)
+        await SecureStore.deleteItemAsync(key)
       }
 
       // Generate random bytes for the encryption key
@@ -797,7 +797,7 @@ export async function getDbEncryptionKey(
 
       // Convert to string for storage
       const randomBytesString = uint8ArrayToHexString(randomBytes)
-      await EncryptedStorage.setItem(key, randomBytesString)
+      await SecureStore.setItemAsync(key, randomBytesString)
 
       return randomBytes
     } else {
