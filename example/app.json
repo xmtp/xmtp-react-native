@@ -21,7 +21,8 @@
           "photosPermission": "The app accesses your photos to let you attach them as messages.",
           "cameraPermission": "The app accesses your camera to let you attach photos as messages."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "ios": {
       "supportsTablet": true,
