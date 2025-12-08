@@ -5,6 +5,12 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to test"
+        required: false
+        default: "main"
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,6 +34,8 @@ jobs:
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch || github.ref }}
 
       - name: Setup Java
         uses: actions/setup-java@v5

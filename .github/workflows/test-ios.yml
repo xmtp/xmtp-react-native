@@ -5,6 +5,12 @@ on:
     # https://crontab.guru/
     - cron: "0 0 * * *"
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to test"
+        required: false
+        default: "main"
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,6 +29,8 @@ jobs:
     steps:
       - name: Checkout project sources
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch || github.ref }}
 
       - name: Setup Docker on macOS
         uses: douglascamata/setup-docker-macos-action@v1.0.2
