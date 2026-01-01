@@ -33,7 +33,7 @@ jobs:
           ref: ${{ inputs.branch || github.ref }}
 
       - name: Setup Docker on macOS
-        uses: douglascamata/setup-docker-macos-action@v1.0.2
+        uses: douglascamata/setup-docker-macos-action@v1.1.0
         with:
           lima: v1.2.1
           colima: v0.9.1
