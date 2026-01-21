@@ -238,7 +238,6 @@ class XMTPModule : Module() {
             dbDirectory = authOptions.dbDirectory,
             historySyncUrl = historySyncUrl,
             deviceSyncEnabled = authOptions.deviceSyncEnabled,
-            debugEventsEnabled = authOptions.debugEventsEnabled,
             forkRecoveryOptions = authOptions.forkRecoveryOptions
         )
     }
@@ -584,7 +583,7 @@ class XMTPModule : Module() {
                 logV("ffiRevokeAllOtherInstallationsSignatureText")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val sigRequest = client.ffiRevokeAllOtherInstallations()
-                sigRequest.let {
+                sigRequest?.let {
                     clientSignatureRequests[installationId] = it
                     it.signatureText()
                 }
@@ -2017,15 +2016,6 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 client.debugInformation.clearAllStatistics()
-            }
-        }
-
-        AsyncFunction("uploadDebugInformation") Coroutine { installationId: String, serverUrl: String? ->
-            withContext(Dispatchers.IO) {
-                val client = clients[installationId] ?: throw XMTPException("No client")
-                serverUrl.takeUnless { it.isNullOrBlank() }?.let {
-                    client.debugInformation.uploadDebugInformation(it)
-                } ?: client.debugInformation.uploadDebugInformation()
             }
         }
 
