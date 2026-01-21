@@ -346,6 +346,7 @@ export class Group<
       await XMTP.unsubscribeFromMessages(this.client.installationId, this.id)
     }
   }
+
   /**
    *
    * @param inboxIds inboxIds to add to the group

@@ -1709,6 +1709,12 @@ export async function subscribeToMessages(
   return await XMTPModule.subscribeToMessages(installationId, id)
 }
 
+export async function subscribeToMessageDeletions(
+  installationId: InstallationId
+) {
+  return await XMTPModule.subscribeToMessageDeletions(installationId)
+}
+
 export function unsubscribeFromPreferenceUpdates(
   installationId: InstallationId
 ) {
@@ -1732,6 +1738,12 @@ export async function unsubscribeFromMessages(
   id: ConversationId
 ) {
   return await XMTPModule.unsubscribeFromMessages(installationId, id)
+}
+
+export function unsubscribeFromMessageDeletions(
+  installationId: InstallationId
+) {
+  return XMTPModule.unsubscribeFromMessageDeletions(installationId)
 }
 
 export function registerPushToken(pushServer: string, token: string) {

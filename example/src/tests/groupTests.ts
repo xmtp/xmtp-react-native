@@ -2315,6 +2315,103 @@ test('handles disappearing messages in a group', async () => {
   return true
 })
 
+test('streams deleted messages when disappearing messages occur a group', async () => {
+  const [alixClient, boClient] = await createClients(2)
+
+  debugLog('test disappearing messages in a group please')
+
+  const initialSettings = {
+    disappearStartingAtNs: 1_000_000_000,
+    retentionDurationInNs: 1_000_000_000, // 1s duration
+  }
+
+  // Create group with disappearing messages enabled
+  const boGroup = await boClient.conversations.newGroup([alixClient.inboxId], {
+    disappearingMessageSettings: initialSettings,
+  })
+  await boClient.conversations.newGroupWithIdentities(
+    [alixClient.publicIdentity],
+    {
+      disappearingMessageSettings: initialSettings,
+    }
+  )
+
+  let deletedMessages = 0
+  await boClient.conversations.streamMessageDeletions(
+    async (messageId, conversationId) => {
+      console.log(
+        `Deleted message ${messageId} in conversation ${conversationId}`
+      )
+      deletedMessages++
+    }
+  )
+
+  await boGroup.send('howdy')
+  await alixClient.conversations.syncAllConversations()
+
+  const alixGroup = await alixClient.conversations.findGroup(boGroup.id)
+
+  // Validate initial state
+  await assertEqual(
+    () => boGroup.messages().then((m) => m.length),
+    2,
+    'BoGroup should have 2 messages'
+  )
+  await assertEqual(
+    () => alixGroup!.messages().then((m) => m.length),
+    2,
+    'AlixGroup should have 2 message'
+  )
+  await assertEqual(
+    () => boGroup.disappearingMessageSettings() !== undefined,
+    true,
+    'BoGroup should have disappearing settings'
+  )
+  await assertEqual(
+    () =>
+      boGroup
+        .disappearingMessageSettings()
+        .then((s) => s!.retentionDurationInNs),
+    1_000_000_000,
+    'Retention duration should be 1s'
+  )
+  await assertEqual(
+    () =>
+      boGroup
+        .disappearingMessageSettings()
+        .then((s) => s!.disappearStartingAtNs),
+    1_000_000_000,
+    'Disappearing should start at 1s'
+  )
+
+  // Wait for messages to disappear
+  await delayToPropogate(5000)
+
+  // Validate messages are deleted
+  await assertEqual(
+    () => boGroup.messages().then((m) => m.length),
+    1,
+    'BoGroup should have 1 remaining message'
+  )
+  await assertEqual(
+    () => alixGroup!.messages().then((m) => m.length),
+    1,
+    'AlixGroup should have 1 messages left'
+  )
+
+  await assertEqual(
+    () => boGroup.isDisappearingMessagesEnabled(),
+    true,
+    'BoGroup should have disappearing enabled'
+  )
+
+  boClient.conversations.cancelStreamMessageDeletions()
+
+  await assertEqual(() => deletedMessages, 1, 'Deleted messages should be 1')
+
+  return true
+})
+
 test('can leave a group', async () => {
   const [alixClient, boClient] = await createClients(2)
 

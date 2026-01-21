@@ -152,6 +152,10 @@ fun Conversation.cacheKey(installationId: String): String {
     return "${installationId}:${topic}"
 }
 
+fun getMessageDeletionsCacheKey(installationId: String): String {
+    return "${installationId}:messageDeletions"
+}
+
 class XMTPModule : Module() {
     private val PREFS_NAME = "XMTPModulePrefs"
     private val LOG_WRITER_ACTIVE_KEY = "logWriterActive"
@@ -272,12 +276,14 @@ class XMTPModule : Module() {
             "conversationMessage",
             "consent",
             "preferences",
+            "messageDeletion",
             // Streams Closed
             "conversationClosed",
             "messageClosed",
             "conversationMessageClosed",
             "consentClosed",
             "preferencesClosed",
+            "messageDeletionClosed"
         )
 
         Function("inboxId") { installationId: String ->
@@ -847,6 +853,11 @@ class XMTPModule : Module() {
         Function("unsubscribeFromConsent") { installationId: String ->
             logV("unsubscribeFromConsent")
             subscriptions[getConsentKey(installationId)]?.cancel()
+        }
+
+        Function("unsubscribeFromMessageDeletions") { installationId: String ->
+            logV("unsubscribeFromMessageDeletions")
+            subscriptions[getMessageDeletionsCacheKey(installationId)]?.cancel()
         }
 
         AsyncFunction("getOrCreateInboxId") Coroutine { publicIdentity: String, environment: String ->
@@ -1914,6 +1925,15 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("subscribeToMessageDeletions") Coroutine { installationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("subscribeToMessageDeletions")
+                subscribeToMessageDeletions(
+                    installationId = installationId,
+                )
+            }
+        }
+
         Function("unsubscribeFromPreferenceUpdates") { installationId: String ->
             logV("unsubscribeFromPreferenceUpdates")
             subscriptions[getPreferenceUpdatesKey(installationId)]?.cancel()
@@ -2303,6 +2323,36 @@ class XMTPModule : Module() {
                 } catch (e: Exception) {
                     Log.e("XMTPModule", "Error in messages subscription: $e")
                     subscriptions[conversation.cacheKey(installationId)]?.cancel()
+                }
+            }
+    }
+
+    private fun subscribeToMessageDeletions(installationId: String) {
+        val client = clients[installationId] ?: throw XMTPException("No client")
+
+        subscriptions[getMessageDeletionsCacheKey(installationId)]?.cancel()
+        subscriptions[getMessageDeletionsCacheKey(installationId)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    client.conversations.streamMessageDeletions(onClose = {
+                        sendEvent(
+                            "messageDeletionClosed", mapOf(
+                                "installationId" to installationId,
+                            )
+                        )
+                    }).collect { message ->
+                        sendEvent(
+                            "messageDeletion",
+                            mapOf(
+                                "installationId" to installationId,
+                                "messageId" to message.id,
+                                "conversationId" to message.conversationId,
+                                )
+                            )
+                    }
+                } catch (e: Exception) {
+                    Log.e("XMTPModule", "Error in message deletions subscription: $e")
+                    subscriptions[getMessageDeletionsCacheKey(installationId)]?.cancel()
                 }
             }
     }

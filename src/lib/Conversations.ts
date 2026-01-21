@@ -1,4 +1,5 @@
 import { keystore } from '@xmtp/proto'
+import { Subscription } from 'expo-modules-core'
 
 import { Client, InboxId } from './Client'
 import { ConversationVersion } from './Conversation'
@@ -562,6 +563,53 @@ export default class Conversations<
     }
   }
 
+  async streamMessageDeletions(
+    callback: (
+      messageId: MessageId,
+      conversationId: ConversationId
+    ) => Promise<void>,
+    onClose?: () => void
+  ): Promise<() => void> {
+    await XMTPModule.subscribeToMessageDeletions(this.client.installationId)
+    const messageDeletionSubscription = XMTPModule.emitter.addListener(
+      EventTypes.MessageDeletion,
+      async ({
+        installationId,
+        messageId,
+        conversationId,
+      }: {
+        installationId: string
+        messageId: MessageId
+        conversationId: ConversationId
+      }) => {
+        if (installationId !== this.client.installationId) {
+          return
+        }
+        await callback(messageId, conversationId)
+      }
+    )
+    this.subscriptions[EventTypes.MessageDeletion] = messageDeletionSubscription
+    let closedMessageDeletionSubscription: Subscription | undefined
+    if (onClose) {
+      closedMessageDeletionSubscription = XMTPModule.emitter.addListener(
+        EventTypes.MessageDeletionClosed,
+        ({ installationId }: { installationId: string }) => {
+          if (installationId !== this.client.installationId) {
+            return
+          }
+          onClose()
+        }
+      )
+      this.subscriptions[EventTypes.MessageDeletionClosed] =
+        closedMessageDeletionSubscription
+    }
+    return async () => {
+      messageDeletionSubscription.remove()
+      closedMessageDeletionSubscription?.remove()
+      XMTPModule.unsubscribeFromMessageDeletions(this.client.installationId)
+    }
+  }
+
   /**
    * Cancels the stream for new conversations.
    */
@@ -590,5 +638,20 @@ export default class Conversations<
       delete this.subscriptions[EventTypes.MessageClosed]
     }
     XMTPModule.unsubscribeFromAllMessages(this.client.installationId)
+  }
+
+  /**
+   * Cancels the stream for message deletions.
+   */
+  async cancelStreamMessageDeletions() {
+    if (this.subscriptions[EventTypes.MessageDeletion]) {
+      this.subscriptions[EventTypes.MessageDeletion].remove()
+      delete this.subscriptions[EventTypes.MessageDeletion]
+    }
+    if (this.subscriptions[EventTypes.MessageDeletionClosed]) {
+      this.subscriptions[EventTypes.MessageDeletionClosed].remove()
+      delete this.subscriptions[EventTypes.MessageDeletionClosed]
+    }
+    XMTPModule.unsubscribeFromMessageDeletions(this.client.installationId)
   }
 }
