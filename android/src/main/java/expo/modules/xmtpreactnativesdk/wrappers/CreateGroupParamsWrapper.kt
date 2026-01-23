@@ -8,6 +8,7 @@ class CreateGroupParamsWrapper(
     val groupImageUrl: String,
     val groupDescription: String,
     val disappearingMessageSettings: DisappearingMessageSettings?,
+    val appData: String,
 ) {
     companion object {
         fun createGroupParamsFromJson(authParams: String): CreateGroupParamsWrapper {
@@ -27,7 +28,8 @@ class CreateGroupParamsWrapper(
                 if (jsonOptions.has("name")) jsonOptions.get("name").asString else "",
                 if (jsonOptions.has("imageUrl")) jsonOptions.get("imageUrl").asString else "",
                 if (jsonOptions.has("description")) jsonOptions.get("description").asString else "",
-                settings
+                settings,
+                if (jsonOptions.has("appData")) jsonOptions.get("appData").asString else "",
             )
         }
     }

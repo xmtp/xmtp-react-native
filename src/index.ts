@@ -984,6 +984,18 @@ export async function sendMessage(
   )
 }
 
+export async function publishMessage(
+  installationId: InstallationId,
+  conversationId: ConversationId,
+  messageId: MessageId
+): Promise<void> {
+  return await XMTPModule.publishMessage(
+    installationId,
+    conversationId,
+    messageId
+  )
+}
+
 export async function publishPreparedMessages(
   installationId: InstallationId,
   conversationId: ConversationId
@@ -997,13 +1009,15 @@ export async function publishPreparedMessages(
 export async function prepareMessage(
   installationId: InstallationId,
   conversationId: ConversationId,
-  content: any
+  content: any,
+  noSend: boolean
 ): Promise<MessageId> {
   const contentJson = JSON.stringify(content)
   return await XMTPModule.prepareMessage(
     installationId,
     conversationId,
-    contentJson
+    contentJson,
+    noSend
   )
 }
 
@@ -1011,10 +1025,11 @@ export async function prepareMessageWithContentType<T>(
   installationId: InstallationId,
   conversationId: ConversationId,
   content: any,
-  codec: ContentCodec<T>
+  codec: ContentCodec<T>,
+  noSend: boolean
 ): Promise<MessageId> {
   if ('contentKey' in codec) {
-    return prepareMessage(installationId, conversationId, content)
+    return prepareMessage(installationId, conversationId, content, noSend)
   }
   const encodedContent = codec.encode(content)
   encodedContent.fallback = codec.fallback(content)
@@ -1023,7 +1038,8 @@ export async function prepareMessageWithContentType<T>(
     installationId,
     conversationId,
     Array.from(encodedContentData),
-    codec.shouldPush(content)
+    codec.shouldPush(content),
+    noSend
   )
 }
 
@@ -1075,7 +1091,8 @@ export async function createGroup<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1083,6 +1100,7 @@ export async function createGroup<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const group = JSON.parse(
     await XMTPModule.createGroup(
@@ -1106,7 +1124,8 @@ export async function createGroupCustomPermissionsWithIdentities<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1114,6 +1133,7 @@ export async function createGroupCustomPermissionsWithIdentities<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const identities = peerIdentities.map((identity) => JSON.stringify(identity))
   const group = JSON.parse(
@@ -1138,7 +1158,8 @@ export async function createGroupWithIdentities<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1146,6 +1167,7 @@ export async function createGroupWithIdentities<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const identities = peerIdentities.map((identity) => JSON.stringify(identity))
   const group = JSON.parse(
@@ -1170,7 +1192,8 @@ export async function createGroupCustomPermissions<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1178,6 +1201,7 @@ export async function createGroupCustomPermissions<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissions(
@@ -1200,7 +1224,8 @@ export async function createGroupOptimistic<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1208,6 +1233,7 @@ export async function createGroupOptimistic<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupOptimistic(
@@ -1903,6 +1929,7 @@ interface CreateGroupParams {
   description: string
   disappearStartingAtNs: number | undefined
   retentionDurationInNs: number | undefined
+  appData: string
 }
 
 export { Client } from './lib/Client'

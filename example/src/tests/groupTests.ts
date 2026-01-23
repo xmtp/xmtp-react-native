@@ -2092,6 +2092,7 @@ test('handles disappearing messages in a group', async () => {
     updateGroupDescriptionPolicy: 'allow',
     updateGroupImagePolicy: 'admin',
     updateMessageDisappearingPolicy: 'deny',
+    updateAppDataPolicy: 'allow',
   }
 
   // Create group with disappearing messages enabled

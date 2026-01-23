@@ -87,6 +87,10 @@ class NumberCodec implements JSContentCodec<NumberRef> {
   fallback(content: NumberRef): string | undefined {
     return 'a billion'
   }
+
+  shouldPush(content: NumberRef): boolean {
+    return true
+  }
 }
 
 class NumberCodecUndefinedFallback extends NumberCodec {
@@ -1268,6 +1272,7 @@ test('messages dont disappear newGroupCustomPermissionsWithIdentities', async ()
         updateGroupDescriptionPolicy: 'allow',
         updateGroupImagePolicy: 'allow',
         updateMessageDisappearingPolicy: 'admin',
+        updateAppDataPolicy: 'allow',
       },
       groupCreationOptions
     )
@@ -1544,19 +1549,23 @@ test('streams message deletion to other user when message is deleted', async () 
   let deletedConversationId: string | null = null
   await bo.conversations.streamMessageDeletions(
     async (messageId, conversationId) => {
-      console.log(`Bo received deletion: message ${messageId} in ${conversationId}`)
+      console.log(
+        `Bo received deletion: message ${messageId} in ${conversationId}`
+      )
       deletedMessageId = messageId
       deletedConversationId = conversationId
     }
   )
 
   // Alix sends a message
-  const messageId = await alixGroup.send({ text: 'This message will be deleted' })
+  const messageId = await alixGroup.send({
+    text: 'This message will be deleted',
+  })
   await alixGroup.sync()
   await boGroup!.sync()
 
   // Verify Bo has the message
-  let boMessages = await boGroup!.messages()
+  const boMessages = await boGroup!.messages()
   assert(
     boMessages.some((m) => m.id === messageId),
     'Bo should have the message before deletion'
@@ -1582,6 +1591,98 @@ test('streams message deletion to other user when message is deleted', async () 
 
   // Clean up
   bo.conversations.cancelStreamMessageDeletions()
+
+  return true
+})
+
+test('prepareMessage with noSend does not send until publishMessage is called', async () => {
+  const [alix, bo] = await createClients(2, undefined, [new NumberCodec()])
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+  await bo.conversations.sync()
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  assert(boGroup !== undefined, 'Bo should find the group')
+
+  // Prepare a regular text message with noSend=true
+  const textMessageId = await alixGroup.prepareMessage(
+    { text: 'Hello, this is a noSend text message' },
+    undefined,
+    true // noSend
+  )
+
+  // Prepare a custom codec message with noSend=true
+  const customMessageId = await alixGroup.prepareMessage(
+    { topNumber: { bottomNumber: 42 } },
+    { contentType: ContentTypeNumber },
+    true // noSend
+  )
+
+  // Verify the messages are in Alix's local messages
+  const alixMessages = await alixGroup.messages()
+  assert(
+    alixMessages.some((m) => m.id === textMessageId),
+    'Text message should exist locally'
+  )
+  assert(
+    alixMessages.some((m) => m.id === customMessageId),
+    'Custom message should exist locally'
+  )
+
+  // Call publishPreparedMessages - this should NOT send noSend messages
+  await alixGroup.publishPreparedMessages()
+  await alixGroup.sync()
+  await boGroup!.sync()
+
+  // Bo should NOT have received the messages yet (only the group creation message)
+  let boMessages = await boGroup!.messages()
+  assert(
+    !boMessages.some((m) => m.id === textMessageId),
+    'Bo should NOT have text message after publishPreparedMessages'
+  )
+  assert(
+    !boMessages.some((m) => m.id === customMessageId),
+    'Bo should NOT have custom message after publishPreparedMessages'
+  )
+
+  // Now publish the text message individually
+  await alixGroup.publishMessage(textMessageId)
+  await alixGroup.sync()
+  await boGroup!.sync()
+
+  // Bo should now have the text message
+  boMessages = await boGroup!.messages()
+  assert(
+    boMessages.some((m) => m.id === textMessageId),
+    'Bo should have text message after publishMessage'
+  )
+  assert(
+    !boMessages.some((m) => m.id === customMessageId),
+    'Bo should still NOT have custom message'
+  )
+
+  // Now publish the custom message individually
+  await alixGroup.publishMessage(customMessageId)
+  await alixGroup.sync()
+  await boGroup!.sync()
+
+  // Bo should now have both messages
+  boMessages = await boGroup!.messages()
+  assert(
+    boMessages.some((m) => m.id === textMessageId),
+    'Bo should have text message'
+  )
+  assert(
+    boMessages.some((m) => m.id === customMessageId),
+    'Bo should have custom message after publishMessage'
+  )
+
+  // Verify the content of the custom message
+  const customMessage = boMessages.find((m) => m.id === customMessageId)
+  const customContent = customMessage?.content() as NumberRef
+  assert(
+    customContent?.topNumber?.bottomNumber === 42,
+    `Custom content should have bottomNumber 42, got ${customContent?.topNumber?.bottomNumber}`
+  )
 
   return true
 })

@@ -1145,6 +1145,16 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("publishMessage") Coroutine { installationId: String, id: String, messageId: String ->
+            withContext(Dispatchers.IO) {
+                logV("publishMessage")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(id)
+                    ?: throw XMTPException("no conversation found for $id")
+                conversation.publishMessage(messageId)
+            }
+        }
+
         AsyncFunction("publishPreparedMessages") Coroutine { installationId: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("publishPreparedMessages")
@@ -1155,7 +1165,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("prepareMessage") Coroutine { installationId: String, id: String, contentJson: String ->
+        AsyncFunction("prepareMessage") Coroutine { installationId: String, id: String, contentJson: String, noSend: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("prepareMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -1164,12 +1174,13 @@ class XMTPModule : Module() {
                 val sending = ContentJson.fromJson(contentJson)
                 conversation.prepareMessage(
                     content = sending.content,
-                    options = SendOptions(contentType = sending.type)
+                    options = SendOptions(contentType = sending.type),
+                    noSend = noSend
                 )
             }
         }
 
-        AsyncFunction("prepareEncodedMessage") Coroutine { installationId: String, conversationId: String, encodedContentData: List<Int>, shouldPush: Boolean ->
+        AsyncFunction("prepareEncodedMessage") Coroutine { installationId: String, conversationId: String, encodedContentData: List<Int>, shouldPush: Boolean, noSend: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("prepareEncodedMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -1185,7 +1196,7 @@ class XMTPModule : Module() {
                         }
                     }
                 val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
-                conversation.prepareMessage(encodedContent = encodedContent, opts = MessageVisibilityOptions(shouldPush))
+                conversation.prepareMessage(encodedContent = encodedContent, opts = MessageVisibilityOptions(shouldPush), noSend = noSend)
             }
         }
 
@@ -1234,7 +1245,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1256,7 +1268,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1280,7 +1293,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1304,7 +1318,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1325,7 +1340,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
