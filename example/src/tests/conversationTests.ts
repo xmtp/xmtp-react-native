@@ -1384,3 +1384,204 @@ test('new groups and dms contain a message including who added the user', async 
 
   return true
 })
+
+test('sender can delete their own message', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+  await alixGroup.sync()
+
+  const messageId = await alixGroup.send({
+    text: 'Hello, this message will be deleted',
+  })
+  await alixGroup.sync()
+
+  let messages = await alixGroup.messages()
+  assert(
+    messages.some((m) => m.id === messageId),
+    'Message should exist before deletion'
+  )
+
+  const deletionMessageId = await alixGroup.deleteMessage(messageId)
+  assert(deletionMessageId !== null, 'Deletion message id should not be null')
+
+  await alixGroup.sync()
+  messages = await alixGroup.messages()
+  assert(
+    messages.some((m) => m.id === deletionMessageId),
+    'Deletion message should exist after deletion'
+  )
+
+  return true
+})
+
+test('super admin can delete others message', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+  await bo.conversations.sync()
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  assert(boGroup !== undefined, 'Bo should find the group')
+
+  const messageId = await boGroup!.send({ text: 'Hello from Bo' })
+  await alixGroup.sync()
+  await boGroup!.sync()
+
+  const isSuperAdmin = await alixGroup.isSuperAdmin(alix.inboxId)
+  assert(isSuperAdmin === true, 'Alix should be super admin')
+
+  const deletionMessageId = await alixGroup.deleteMessage(messageId)
+  assert(deletionMessageId !== null, 'Deletion message id should not be null')
+
+  return true
+})
+
+test('regular user cannot delete others message', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+  await bo.conversations.sync()
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  assert(boGroup !== undefined, 'Bo should find the group')
+
+  const messageId = await alixGroup.send({ text: 'Hello from Alix' })
+  await alixGroup.sync()
+  await boGroup!.sync()
+
+  const isSuperAdmin = await boGroup!.isSuperAdmin(bo.inboxId)
+  assert(isSuperAdmin === false, 'Bo should not be super admin')
+
+  try {
+    await boGroup!.deleteMessage(messageId)
+    return false // Should have thrown
+  } catch (e) {
+    // Expected error - regular user cannot delete others' messages
+    return true
+  }
+})
+
+test('cannot delete already deleted message', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+  const messageId = await alixGroup.send({ text: 'Message to delete twice' })
+
+  await alixGroup.deleteMessage(messageId)
+  await alixGroup.sync()
+
+  try {
+    await alixGroup.deleteMessage(messageId)
+    return false // Should have thrown
+  } catch (e) {
+    // Expected error - cannot delete already deleted message
+    return true
+  }
+})
+
+test('can delete message in DM', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixDm = await alix.conversations.findOrCreateDm(bo.inboxId)
+  const messageId = await alixDm.send({ text: 'Hello in DM' })
+
+  await bo.conversations.syncAllConversations()
+  const boDm = await bo.conversations.findDmByInboxId(alix.inboxId)
+
+  await alixDm.sync()
+  let messages = await alixDm.messages()
+  assert(
+    messages.some((m) => m.id === messageId),
+    'Message should exist before deletion'
+  )
+
+  // Bo trying to delete the message from alix should result in an error
+  try {
+    await boDm!.deleteMessage(messageId)
+    return false // Should have thrown
+  } catch (e) {
+    // Expected error: user cannot delete other's messages in a DM
+  }
+
+  const deletionMessageId = await alixDm.deleteMessage(messageId)
+  assert(deletionMessageId !== null, 'Deletion message id should not be null')
+
+  await alixDm.sync()
+  messages = await alixDm.messages()
+  assert(
+    messages.some((m) => m.id === deletionMessageId),
+    'Deletion message should exist after deletion'
+  )
+
+  return true
+})
+
+test('delete message with invalid id throws error', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+
+  try {
+    await alixGroup.deleteMessage(
+      '0000000000000000000000000000000000000000000000000000000000000000' as any
+    )
+    return false // Should have thrown
+  } catch (e) {
+    // Expected error - invalid message id
+    return true
+  }
+})
+
+test('streams message deletion to other user when message is deleted', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+  await bo.conversations.sync()
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  assert(boGroup !== undefined, 'Bo should find the group')
+
+  // Set up deletion stream for Bo
+  let deletedMessageId: string | null = null
+  let deletedConversationId: string | null = null
+  await bo.conversations.streamMessageDeletions(
+    async (messageId, conversationId) => {
+      console.log(`Bo received deletion: message ${messageId} in ${conversationId}`)
+      deletedMessageId = messageId
+      deletedConversationId = conversationId
+    }
+  )
+
+  // Alix sends a message
+  const messageId = await alixGroup.send({ text: 'This message will be deleted' })
+  await alixGroup.sync()
+  await boGroup!.sync()
+
+  // Verify Bo has the message
+  let boMessages = await boGroup!.messages()
+  assert(
+    boMessages.some((m) => m.id === messageId),
+    'Bo should have the message before deletion'
+  )
+
+  // Alix deletes the message
+  await alixGroup.deleteMessage(messageId)
+  await alixGroup.sync()
+  await boGroup!.sync()
+
+  // Wait for the deletion stream to trigger
+  await delayToPropogate(2000)
+
+  // Verify Bo received the deletion event
+  assert(
+    deletedMessageId === messageId,
+    `Bo should have received deletion for message ${messageId}, got ${deletedMessageId}`
+  )
+  assert(
+    deletedConversationId === alixGroup.id,
+    `Deleted conversation id should match ${alixGroup.id}, got ${deletedConversationId}`
+  )
+
+  // Clean up
+  bo.conversations.cancelStreamMessageDeletions()
+
+  return true
+})

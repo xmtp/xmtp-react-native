@@ -69,6 +69,7 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   getConversationHmacKeys(): Promise<keystore.GetConversationHmacKeysResponse>
   getConversationPushTopics(): Promise<ConversationTopic[]>
   getDebugInformation(): Promise<ConversationDebugInfo>
+  deleteMessage(messageId: MessageId): Promise<string>
 }
 
 export type Conversation<

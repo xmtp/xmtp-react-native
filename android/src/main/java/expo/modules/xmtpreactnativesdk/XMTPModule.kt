@@ -1886,6 +1886,16 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("deleteMessage") Coroutine { clientInstallationId: String, conversationId: String, messageId: String ->
+            withContext(Dispatchers.IO) {
+                logV("deleteMessage")
+                val client = clients[clientInstallationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.deleteMessage(messageId)
+            }
+        }
+
         Function("subscribeToPreferenceUpdates") { installationId: String ->
             logV("subscribeToPreferenceUpdates")
 
@@ -2329,7 +2339,6 @@ class XMTPModule : Module() {
 
     private fun subscribeToMessageDeletions(installationId: String) {
         val client = clients[installationId] ?: throw XMTPException("No client")
-
         subscriptions[getMessageDeletionsCacheKey(installationId)]?.cancel()
         subscriptions[getMessageDeletionsCacheKey(installationId)] =
             CoroutineScope(Dispatchers.IO).launch {

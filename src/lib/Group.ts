@@ -813,4 +813,17 @@ export class Group<
   async leaveGroup(): Promise<void> {
     return await XMTP.leaveGroup(this.client.installationId, this.id)
   }
+
+  /**
+   * Deletes a message from the dm. You must be the sender of the message or a super admin of the conversation in order to delete the message.
+   * @param {MessageId} messageId The id of the message to delete.
+   * @returns {Promise<string>} A Promise that resolves to the id of the deleted message.
+   */
+  async deleteMessage(messageId: MessageId): Promise<string> {
+    return await XMTP.deleteMessage(
+      this.client.installationId,
+      this.id,
+      messageId
+    )
+  }
 }

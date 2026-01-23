@@ -1866,6 +1866,14 @@ export async function leaveGroup(
   return await XMTPModule.leaveGroup(installationId, id)
 }
 
+export async function deleteMessage(
+  installationId: InstallationId,
+  id: ConversationId,
+  messageId: MessageId
+): Promise<string> {
+  return await XMTPModule.deleteMessage(installationId, id, messageId)
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 interface AuthParams {
