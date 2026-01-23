@@ -4,15 +4,18 @@ export class ArchiveOptions {
   startNs?: number
   endNs?: number
   archiveElements?: ArchiveElement[]
+  excludeDisappearingMessages?: boolean
 
   constructor(
     archiveElements?: ArchiveElement[],
     startNs?: number,
-    endNs?: number
+    endNs?: number,
+    excludeDisappearingMessages?: boolean
   ) {
     this.archiveElements = archiveElements
     this.startNs = startNs
     this.endNs = endNs
+    this.excludeDisappearingMessages = excludeDisappearingMessages
   }
 }
 
