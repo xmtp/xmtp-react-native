@@ -6,6 +6,8 @@ import {
   RemoteAttachmentCodec,
   StaticAttachmentCodec,
   MultiRemoteAttachmentCodec,
+  LeaveRequestCodec,
+  DeleteMessageCodec,
 } from 'xmtp-react-native-sdk'
 
 export const supportedCodecs = [
@@ -16,6 +18,8 @@ export const supportedCodecs = [
   new MultiRemoteAttachmentCodec(),
   new StaticAttachmentCodec(),
   new GroupUpdatedCodec(),
+  new LeaveRequestCodec(),
+  new DeleteMessageCodec(),
 ]
 
 export type SupportedContentTypes = typeof supportedCodecs

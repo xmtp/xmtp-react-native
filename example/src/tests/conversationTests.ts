@@ -1396,12 +1396,20 @@ test('sender can delete their own message', async () => {
   const alixGroup = await alix.conversations.newGroup([bo.inboxId])
   await alixGroup.sync()
 
+  let messages = await alixGroup.messages()
+  let messagesString = messages.map((m) => `- ${m.id}: ${m.contentTypeId}`).join('\n')
+  console.log('After group creation::\n' + messagesString)
+
   const messageId = await alixGroup.send({
     text: 'Hello, this message will be deleted',
   })
   await alixGroup.sync()
 
-  let messages = await alixGroup.messages()
+  messages = await alixGroup.messages()
+  messagesString = messages.map((m) => `- ${m.id}: ${m.contentTypeId}`).join('\n')
+  console.log('After send and sync::\n' + messagesString)
+
+  messages = await alixGroup.messages()
   assert(
     messages.some((m) => m.id === messageId),
     'Message should exist before deletion'
@@ -1412,9 +1420,29 @@ test('sender can delete their own message', async () => {
 
   await alixGroup.sync()
   messages = await alixGroup.messages()
+
+  messages = await alixGroup.messages()
+  messagesString = messages.map((m) => `- ${m.id}: ${m.contentTypeId}`).join('\n')
+  console.log('After delete and sync::\n' + messagesString)
   assert(
     messages.some((m) => m.id === deletionMessageId),
     'Deletion message should exist after deletion'
+  )
+
+  // format the list of messages and the contents nicely and print them out
+  messagesString = messages
+    .map((m) => {
+      const base = `- ${m.id}: ${m.contentTypeId}`
+      if (m.contentTypeId.includes('text')) {
+        return `${base} - "${m.content()}"`
+      }
+    })
+    .join('\n')
+  console.log('Messages after deletion:\n' + messagesString)
+
+  assert(
+    !messages.some((m) => m.id === messageId),
+    'Original message should no longer exist after deletion'
   )
 
   return true

@@ -16,6 +16,10 @@ extension Conversation {
 	}
 }
 
+func getMessageDeletionsCacheKey(installationId: String) -> String {
+	return "\(installationId):messageDeletions"
+}
+
 actor IsolatedManager<T> {
 	private var map: [String: T] = [:]
 
@@ -138,12 +142,14 @@ public class XMTPModule: Module {
 			"conversationMessage",
 			"consent",
 			"preferences",
+			"messageDeletion",
 			// Stream Closed
 			"conversationClosed",
 			"messageClosed",
 			"conversationMessageClosed",
 			"consentClosed",
-			"preferencesClosed"
+			"preferencesClosed",
+			"messageDeletionClosed"
 		)
 
 		AsyncFunction("inboxId") { (installationId: String) -> String in
@@ -537,13 +543,15 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("ffiRevokeAllOtherInstallationsSignatureText") {
-			(installationId: String) -> String in
+			(installationId: String) -> String? in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
 			else {
 				throw Error.noClient
 			}
-			let sigRequest = try await client.ffiRevokeAllOtherInstallations()
+			guard let sigRequest = try await client.ffiRevokeAllOtherInstallations() else {
+				return nil
+			}
 			await clientsManager.updateSignatureRequest(
 				key: client.installationID, signatureRequest: sigRequest
 			)
@@ -1273,6 +1281,23 @@ public class XMTPModule: Module {
 			)
 		}
 
+		AsyncFunction("publishMessage") {
+			(installationId: String, id: String, messageId: String) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let conversation = try await client.conversations
+					.findConversation(conversationId: id)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(id)")
+			}
+			try await conversation.publishMessage(messageId: messageId)
+		}
+
 		AsyncFunction("publishPreparedMessages") {
 			(installationId: String, id: String) in
 			guard
@@ -1293,7 +1318,7 @@ public class XMTPModule: Module {
 		}
 
 		AsyncFunction("prepareMessage") {
-			(installationId: String, id: String, contentJson: String) -> String
+			(installationId: String, id: String, contentJson: String, noSend: Bool) -> String
 			in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1312,7 +1337,8 @@ public class XMTPModule: Module {
 			let sending = try ContentJson.fromJson(contentJson)
 			return try await conversation.prepareMessage(
 				content: sending.content,
-				options: SendOptions(contentType: sending.type)
+				options: SendOptions(contentType: sending.type),
+				noSend: noSend
 			)
 		}
 
@@ -1321,7 +1347,8 @@ public class XMTPModule: Module {
 				installationId: String,
 				conversationId: String,
 				encodedContentData: [UInt8],
-				shouldPush: Bool
+				shouldPush: Bool,
+				noSend: Bool
 			) -> String in
 			guard
 				let client = await clientsManager.getClient(key: installationId)
@@ -1339,7 +1366,7 @@ public class XMTPModule: Module {
 			let encodedContent = try EncodedContent(
 				serializedBytes: Data(encodedContentData))
 			return try await conversation.prepareMessage(
-				encodedContent: encodedContent, visibilityOptions: MessageVisibilityOptions(shouldPush: shouldPush)
+				encodedContent: encodedContent, visibilityOptions: MessageVisibilityOptions(shouldPush: shouldPush), noSend: noSend
 			)
 		}
 
@@ -1431,7 +1458,8 @@ public class XMTPModule: Module {
 					imageUrl: createGroupParams.groupImageUrl,
 					description: createGroupParams.groupDescription,
 					disappearingMessageSettings: createGroupParams
-						.disappearingMessageSettings
+						.disappearingMessageSettings,
+					appData: createGroupParams.appData
 				)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1465,7 +1493,8 @@ public class XMTPModule: Module {
 						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
-							.disappearingMessageSettings
+							.disappearingMessageSettings,
+						appData: createGroupParams.appData
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1510,7 +1539,8 @@ public class XMTPModule: Module {
 						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
-							.disappearingMessageSettings
+							.disappearingMessageSettings,
+						appData: createGroupParams.appData
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1548,7 +1578,8 @@ public class XMTPModule: Module {
 						imageUrl: createGroupParams.groupImageUrl,
 						description: createGroupParams.groupDescription,
 						disappearingMessageSettings: createGroupParams
-							.disappearingMessageSettings
+							.disappearingMessageSettings,
+						appData: createGroupParams.appData
 					)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -1587,7 +1618,8 @@ public class XMTPModule: Module {
 					groupImageUrlSquare: createGroupParams.groupImageUrl,
 					groupDescription: createGroupParams.groupDescription,
 					disappearingMessageSettings: createGroupParams
-						.disappearingMessageSettings
+						.disappearingMessageSettings,
+					appData: createGroupParams.appData
 				)
 				return try await GroupWrapper.encode(group, client: client)
 			} catch {
@@ -2644,6 +2676,13 @@ public class XMTPModule: Module {
 			)
 		}
 
+		AsyncFunction("subscribeToMessageDeletions") {
+			(installationId: String) in
+			try await subscribeToMessageDeletions(
+				installationId: installationId
+			)
+		}
+
 		AsyncFunction("unsubscribeFromPreferenceUpdates") {
 			(installationId: String) in
 			await subscriptionsManager.get(
@@ -2675,6 +2714,13 @@ public class XMTPModule: Module {
 			try await unsubscribeFromMessages(
 				installationId: installationId, id: id
 			)
+		}
+
+		AsyncFunction("unsubscribeFromMessageDeletions") {
+			(installationId: String) in
+			await subscriptionsManager.get(
+				getMessageDeletionsCacheKey(installationId: installationId))?
+				.cancel()
 		}
 
 		AsyncFunction("registerPushToken") {
@@ -2782,20 +2828,6 @@ public class XMTPModule: Module {
 			client.debugInformation.clearAllStatistics()
 		}
 
-		AsyncFunction("uploadDebugInformation") {
-			(installationId: String, serverUrl: String?) -> String in
-			guard
-				let client = await clientsManager.getClient(key: installationId)
-			else {
-				throw Error.noClient
-			}
-			return try await
-				(serverUrl?.isEmpty == false
-					? client.debugInformation.uploadDebugInformation(
-						serverUrl: serverUrl!)
-					: client.debugInformation.uploadDebugInformation())
-		}
-
 		AsyncFunction("createArchive") {
 			(
 				installationId: String, path: String, encryptionKey: [UInt8],
@@ -2875,6 +2907,26 @@ public class XMTPModule: Module {
             }
             try await group.leaveGroup()
         }
+
+		AsyncFunction("deleteMessage") { (
+			installationId: String,
+			conversationId: String,
+			messageId: String
+		) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let conversation = try await client.conversations.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
+			}
+			return try await conversation.deleteMessage(messageId: messageId)
+		}
 	}
 
 	//
@@ -3355,6 +3407,48 @@ public class XMTPModule: Module {
 					print("Error in group messages subscription: \(error)")
 					await subscriptionsManager.get(
 						converation.cacheKey(installationId))?.cancel()
+				}
+			}
+		)
+	}
+
+	func subscribeToMessageDeletions(installationId: String) async throws {
+		guard let client = await clientsManager.getClient(key: installationId)
+		else {
+			throw Error.noClient
+		}
+
+		await subscriptionsManager.get(
+			getMessageDeletionsCacheKey(installationId: installationId))?
+			.cancel()
+		await subscriptionsManager.set(
+			getMessageDeletionsCacheKey(installationId: installationId),
+			Task {
+				do {
+					for try await message in await client.conversations.streamMessageDeletions(
+						onClose: { [weak self] in
+							self?.sendEvent(
+								"messageDeletionClosed",
+								[
+									"installationId": installationId,
+								]
+							)
+						}
+					) {
+						try sendEvent(
+							"messageDeletion",
+							[
+								"installationId": installationId,
+								"messageId": message.id,
+								"conversationId": message.conversationId,
+							]
+						)
+					}
+				} catch {
+					print("Error in message deletions subscription: \(error)")
+					await subscriptionsManager.get(
+						getMessageDeletionsCacheKey(installationId: installationId))?
+						.cancel()
 				}
 			}
 		)

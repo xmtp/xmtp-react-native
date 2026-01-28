@@ -6,6 +6,7 @@ struct CreateGroupParamsWrapper {
 	let groupImageUrl: String
 	let groupDescription: String
 	let disappearingMessageSettings: DisappearingMessageSettings?
+	let appData: String
 
 	static func createGroupParamsFromJson(_ authParams: String)
 		-> CreateGroupParamsWrapper
@@ -29,12 +30,14 @@ struct CreateGroupParamsWrapper {
 		let groupName = jsonOptions["name"] as? String ?? ""
 		let groupImageUrl = jsonOptions["imageUrl"] as? String ?? ""
 		let groupDescription = jsonOptions["description"] as? String ?? ""
+		let appData = jsonOptions["appData"] as? String ?? ""
 
 		return CreateGroupParamsWrapper(
 			groupName: groupName,
 			groupImageUrl: groupImageUrl,
 			groupDescription: groupDescription,
-			disappearingMessageSettings: settings
+			disappearingMessageSettings: settings,
+			appData: appData
 		)
 	}
 }

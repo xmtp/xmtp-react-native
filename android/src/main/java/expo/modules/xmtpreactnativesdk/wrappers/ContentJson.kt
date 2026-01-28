@@ -27,6 +27,9 @@ import org.xmtp.android.library.codecs.MultiRemoteAttachment
 import org.xmtp.android.library.codecs.Reaction
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.ReactionV2Codec
+import org.xmtp.android.library.codecs.ContentTypeLeaveRequest
+import org.xmtp.android.library.codecs.LeaveRequest
+import org.xmtp.android.library.codecs.LeaveRequestCodec
 import org.xmtp.android.library.codecs.ReadReceipt
 import org.xmtp.android.library.codecs.ReadReceiptCodec
 import org.xmtp.android.library.codecs.RemoteAttachment
@@ -71,6 +74,8 @@ class ContentJson(
             Client.register(ReadReceiptCodec())
             Client.register(GroupUpdatedCodec())
             Client.register(ReactionV2Codec())
+            Client.register(LeaveRequestCodec())
+            Client.register(DeleteMessageCodec())
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -279,6 +284,18 @@ class ContentJson(
                             "fieldName" to it.fieldName,
                         )
                     },
+                )
+            )
+
+            ContentTypeLeaveRequest.id -> mapOf(
+                "leaveRequest" to mapOf(
+                    "authenticatedNote" to ((content as? LeaveRequest)?.authenticatedNote ?: "")
+                )
+            )
+
+            ContentTypeDeleteMessage.id -> mapOf(
+                "deleteMessage" to mapOf(
+                    "messageId" to ((content as? DeleteMessage)?.messageId ?: "")
                 )
             )
 

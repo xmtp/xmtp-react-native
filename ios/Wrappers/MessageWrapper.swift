@@ -51,6 +51,8 @@ struct ContentJson {
 		MultiRemoteAttachmentCodec(),
 		ReadReceiptCodec(),
 		GroupUpdatedCodec(),
+		LeaveRequestCodec(),
+		DeleteMessageCodec(),
 	]
 
 	static func initCodecs() {
@@ -262,6 +264,17 @@ struct ContentJson {
 					]
 				}
 			]]
+		case ContentTypeLeaveRequest.id where content is XMTP.LeaveRequest:
+			let leaveRequest = content as! XMTP.LeaveRequest
+			let noteString = leaveRequest.authenticatedNote.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+			return ["leaveRequest": [
+				"authenticatedNote": noteString
+			]]
+//		case ContentTypeDeleteMessage.id where content is XMTP.DeleteMessage:
+//			let deleteMessage = content as! XMTP.DeleteMessage
+//			return ["deleteMessage": [
+//				"messageId": deleteMessage.messageId,
+//			]]
 		default:
 			if let encodedContent, let encodedContentJSON = try? encodedContent.jsonString() {
 				return ["encoded": encodedContentJSON]

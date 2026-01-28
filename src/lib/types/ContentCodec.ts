@@ -53,6 +53,14 @@ export type EncryptedLocalAttachment = {
   metadata: RemoteAttachmentMetadata
 }
 
+export type LeaveRequestContent = {
+  authenticatedNote?: string
+}
+
+export type DeleteMessageContent = {
+  messageId?: string
+}
+
 export type MultiRemoteAttachmentMetadata = {
   filename?: string
   secret: string
@@ -101,6 +109,8 @@ export type NativeMessageContent = {
   readReceipt?: ReadReceiptContent
   encoded?: string
   groupUpdated?: GroupUpdatedContent
+  leaveRequest?: LeaveRequestContent
+  deleteMessage?: DeleteMessageContent
 }
 
 export interface JSContentCodec<T> {

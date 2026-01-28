@@ -12,6 +12,8 @@ import {
   MultiRemoteAttachmentCodec,
   PublicIdentity,
   JSContentCodec,
+  LeaveRequestCodec,
+  DeleteMessageCodec,
 } from 'xmtp-react-native-sdk'
 
 // Debug logging state
@@ -72,6 +74,8 @@ export async function createClients(
     Client.register(new MultiRemoteAttachmentCodec())
     Client.register(new ReactionCodec())
     Client.register(new ReactionV2Codec())
+    Client.register(new LeaveRequestCodec())
+    Client.register(new DeleteMessageCodec())
     for (const codec of customCodecs ?? []) {
       Client.register(codec)
     }

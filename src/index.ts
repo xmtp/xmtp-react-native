@@ -50,6 +50,8 @@ export { GroupUpdatedCodec } from './lib/NativeCodecs/GroupUpdatedCodec'
 export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
 export { ReactionV2Codec } from './lib/NativeCodecs/ReactionV2Codec'
 export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
+export { LeaveRequestCodec } from './lib/NativeCodecs/LeaveRequestCodec'
+export { DeleteMessageCodec } from './lib/NativeCodecs/DeleteMessageCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
 export { MultiRemoteAttachmentCodec } from './lib/NativeCodecs/MultiRemoteAttachmentCodec'
 export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
@@ -1766,10 +1768,10 @@ export async function unsubscribeFromMessages(
   return await XMTPModule.unsubscribeFromMessages(installationId, id)
 }
 
-export function unsubscribeFromMessageDeletions(
+export async function unsubscribeFromMessageDeletions(
   installationId: InstallationId
 ) {
-  return XMTPModule.unsubscribeFromMessageDeletions(installationId)
+  return await XMTPModule.unsubscribeFromMessageDeletions(installationId)
 }
 
 export function registerPushToken(pushServer: string, token: string) {
