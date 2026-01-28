@@ -606,7 +606,9 @@ export default class Conversations<
     return async () => {
       messageDeletionSubscription.remove()
       closedMessageDeletionSubscription?.remove()
-      XMTPModule.unsubscribeFromMessageDeletions(this.client.installationId)
+      await XMTPModule.unsubscribeFromMessageDeletions(
+        this.client.installationId
+      )
     }
   }
 
@@ -652,6 +654,6 @@ export default class Conversations<
       this.subscriptions[EventTypes.MessageDeletionClosed].remove()
       delete this.subscriptions[EventTypes.MessageDeletionClosed]
     }
-    XMTPModule.unsubscribeFromMessageDeletions(this.client.installationId)
+    await XMTPModule.unsubscribeFromMessageDeletions(this.client.installationId)
   }
 }

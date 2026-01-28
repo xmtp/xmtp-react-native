@@ -6,6 +6,7 @@ import {
   ConversationTopic,
   MessageId,
   MessagesOptions,
+  EnrichedMessagesOptions,
   SendOptions,
 } from './types'
 import {
@@ -18,7 +19,10 @@ import {
   ConversationDebugInfo,
 } from '../index'
 import { CommitLogForkStatus } from './ConversationDebugInfo'
-import { DecodedMessageUnion } from './types/DecodedMessageUnion'
+import {
+  DecodedMessageUnion,
+  DecodedMessageUnionV2,
+} from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 
 export enum ConversationVersion {
@@ -48,6 +52,9 @@ export interface ConversationBase<ContentTypes extends DefaultContentTypes> {
   publishMessage(messageId: MessageId): Promise<void>
   sync()
   messages(opts?: MessagesOptions): Promise<DecodedMessageUnion<ContentTypes>[]>
+  enrichedMessages(
+    opts?: EnrichedMessagesOptions
+  ): Promise<DecodedMessageUnionV2<ContentTypes>[]>
   streamMessages(
     callback: (message: DecodedMessage<ContentTypes[number]>) => Promise<void>,
     onClose?: () => void

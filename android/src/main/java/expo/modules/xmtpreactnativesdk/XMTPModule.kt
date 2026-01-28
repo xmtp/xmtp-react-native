@@ -26,6 +26,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.DisappearingMessageSettingsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.EnrichedMessageQueryParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.KeyPackageStatusWrapper
@@ -1040,6 +1041,43 @@ class XMTPModule : Module() {
                     direction = DecodedMessage.SortDirection.valueOf(
                         queryParams.direction ?: "DESCENDING"
                     )
+                )?.map { MessageWrapper.encode(it) }
+            }
+        }
+
+        AsyncFunction("conversationEnrichedMessages") Coroutine { installationId: String, conversationId: String, queryParamsJson: String? ->
+            withContext(Dispatchers.IO) {
+                logV("conversationEnrichedMessages")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                val queryParams = EnrichedMessageQueryParamsWrapper.fromJson(queryParamsJson ?: "")
+                
+                // Convert deliveryStatus string to enum
+                val deliveryStatus = when (queryParams.deliveryStatus?.uppercase()) {
+                    "PUBLISHED" -> DecodedMessage.MessageDeliveryStatus.PUBLISHED
+                    "UNPUBLISHED" -> DecodedMessage.MessageDeliveryStatus.UNPUBLISHED
+                    "FAILED" -> DecodedMessage.MessageDeliveryStatus.FAILED
+                    else -> DecodedMessage.MessageDeliveryStatus.ALL
+                }
+                
+                // Convert sortBy string to enum
+                val sortBy = when (queryParams.sortBy?.uppercase()) {
+                    "INSERTED_TIME" -> DecodedMessage.SortBy.INSERTED_TIME
+                    else -> DecodedMessage.SortBy.SENT_TIME
+                }
+                
+                conversation?.enrichedMessages(
+                    limit = queryParams.limit,
+                    beforeNs = queryParams.beforeNs,
+                    afterNs = queryParams.afterNs,
+                    direction = DecodedMessage.SortDirection.valueOf(
+                        queryParams.direction ?: "DESCENDING"
+                    ),
+                    deliveryStatus = deliveryStatus,
+                    excludeSenderInboxIds = queryParams.excludeSenderInboxIds,
+                    insertedAfterNs = queryParams.insertedAfterNs,
+                    insertedBeforeNs = queryParams.insertedBeforeNs,
+                    sortBy = sortBy
                 )?.map { MessageWrapper.encode(it) }
             }
         }

@@ -14,6 +14,7 @@ import {
   JSContentCodec,
   LeaveRequestCodec,
   DeleteMessageCodec,
+  ReplyCodec,
 } from 'xmtp-react-native-sdk'
 
 // Debug logging state
@@ -76,6 +77,7 @@ export async function createClients(
     Client.register(new ReactionV2Codec())
     Client.register(new LeaveRequestCodec())
     Client.register(new DeleteMessageCodec())
+    Client.register(new ReplyCodec())
     for (const codec of customCodecs ?? []) {
       Client.register(codec)
     }

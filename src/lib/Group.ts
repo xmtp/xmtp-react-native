@@ -16,10 +16,17 @@ import {
   PublicIdentity,
 } from '../index'
 import { ConversationSendPayload } from './types/ConversationCodecs'
-import { DecodedMessageUnion } from './types/DecodedMessageUnion'
+import {
+  DecodedMessageUnion,
+  DecodedMessageUnionV2,
+} from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 import { EventTypes } from './types/EventTypes'
-import { MessageId, MessagesOptions } from './types/MessagesOptions'
+import {
+  MessageId,
+  MessagesOptions,
+  EnrichedMessagesOptions,
+} from './types/MessagesOptions'
 import { PermissionPolicySet } from './types/PermissionPolicySet'
 import { SendOptions } from './types/SendOptions'
 
@@ -259,6 +266,32 @@ export class Group<
       opts?.direction,
       opts?.excludeContentTypes,
       opts?.excludeSenderInboxIds
+    )
+  }
+
+  /**
+   * This method returns an array of enriched messages (V2) associated with the group.
+   * Enriched messages include additional metadata like reactions, delivery status, and more.
+   * To get the latest messages from the network, call sync() first.
+   *
+   * @param {EnrichedMessagesOptions} opts - Optional parameters for filtering messages.
+   * @returns {Promise<DecodedMessageUnionV2<ContentTypes>[]>} A Promise that resolves to an array of DecodedMessageV2 objects.
+   */
+  async enrichedMessages(
+    opts?: EnrichedMessagesOptions
+  ): Promise<DecodedMessageUnionV2<ContentTypes>[]> {
+    return await XMTP.conversationEnrichedMessages(
+      this.client.installationId,
+      this.id,
+      opts?.limit,
+      opts?.beforeNs,
+      opts?.afterNs,
+      opts?.direction,
+      opts?.excludeSenderInboxIds,
+      opts?.deliveryStatus,
+      opts?.insertedAfterNs,
+      opts?.insertedBeforeNs,
+      opts?.sortBy
     )
   }
 

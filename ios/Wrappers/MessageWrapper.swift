@@ -27,6 +27,36 @@ struct MessageWrapper {
 		let obj = try encodeToObj(model)
 		return try obj.toJson()
 	}
+
+	static func encodeToObjV2(_ model: XMTP.DecodedMessageV2) throws -> [String: Any] {
+		let reactionsList = model.reactions ?? []
+		let reactions = reactionsList.compactMap { reaction in
+			try? encodeToObjV2(reaction)
+		}
+		let reactionCount = reactionsList.count
+		return [
+			"id": model.id,
+			"conversationId": model.conversationId,
+			"contentTypeId": model.contentTypeId.description,
+			"nativeContent": ContentJsonV2.toJsonMap(model),
+			"senderInboxId": model.senderInboxId,
+			"sentAt": model.sentAtNs / 1_000_000,
+			"sentAtNs": model.sentAtNs,
+			"insertedAtNs": model.insertedAtNs,
+			"expiresAtNs": model.expiresAtNs as Any,
+			"expiresAt": model.expiresAt.map { Int64($0.timeIntervalSince1970 * 1000) } as Any,
+			"fallbackText": (try? model.fallback) as Any,
+			"deliveryStatus": model.deliveryStatus.rawValue.uppercased(),
+			"reactions": reactions,
+			"hasReactions": reactionCount > 0,
+			"reactionCount": Int64(reactionCount)
+		]
+	}
+
+	static func encodeV2(_ model: XMTP.DecodedMessageV2) throws -> String {
+		let obj = try encodeToObjV2(model)
+		return try obj.toJson()
+	}
 }
 
 // NOTE: cribbed from xmtp-ios to make visible here.
@@ -147,7 +177,7 @@ struct ContentJson {
                 )
             }
             return ContentJson(type: ContentTypeMultiRemoteAttachment, content: MultiRemoteAttachment(remoteAttachments: attachments))
-        } else if let readReceipt = obj["readReceipt"] as? [String: Any] {
+        } else if obj["readReceipt"] != nil {
 			return ContentJson(type: ContentTypeReadReceipt, content: ReadReceipt())
 		} else {
 			throw Error.unknownContentType
@@ -284,6 +314,142 @@ struct ContentJson {
 		}
 	}
 	
+}
+
+// ContentJsonV2 for DecodedMessageV2 content serialization
+struct ContentJsonV2 {
+	static func toJsonMap(_ message: XMTP.DecodedMessageV2) -> [String: Any] {
+		let contentTypeId = message.contentTypeId
+		
+		switch contentTypeId.id {
+		case ContentTypeText.id:
+			if let text: String = try? message.content() {
+				return ["text": text]
+			}
+			return ["text": ""]
+			
+		case ContentTypeReaction.id, ContentTypeReactionV2.id:
+			if let reaction: XMTP.Reaction = try? message.content() {
+				return ["reaction": [
+					"reference": reaction.reference,
+					"action": reaction.action.rawValue,
+					"schema": reaction.schema.rawValue,
+					"content": reaction.content,
+				]]
+			}
+			return ["reaction": [:]]
+			
+		case ContentTypeReply.id:
+			// For DecodedMessageV2, Reply content may be returned as XMTP.Reply
+			if let reply: XMTP.Reply = try? message.content() {
+				// Reply has: reference, content, contentType
+				let nestedContentMap: [String: Any]
+				if let textContent = reply.content as? String {
+					nestedContentMap = ["text": textContent]
+				} else {
+					// Content is Any (non-optional), serialize it
+					nestedContentMap = ["content": String(describing: reply.content)]
+				}
+				return ["reply": [
+					"reference": reply.reference,
+					"content": nestedContentMap
+				]]
+			}
+			return ["reply": [:]]
+			
+		case ContentTypeAttachment.id:
+			if let attachment: XMTP.Attachment = try? message.content() {
+				return ["attachment": [
+					"filename": attachment.filename,
+					"mimeType": attachment.mimeType,
+					"data": attachment.data.base64EncodedString(),
+				]]
+			}
+			return ["attachment": [:]]
+			
+		case ContentTypeRemoteAttachment.id:
+			if let remoteAttachment: XMTP.RemoteAttachment = try? message.content() {
+				return ["remoteAttachment": [
+					"filename": remoteAttachment.filename ?? "",
+					"secret": remoteAttachment.secret.toHex,
+					"salt": remoteAttachment.salt.toHex,
+					"nonce": remoteAttachment.nonce.toHex,
+					"contentDigest": remoteAttachment.contentDigest,
+					"contentLength": String(remoteAttachment.contentLength ?? 0),
+					"scheme": "https://",
+					"url": remoteAttachment.url,
+				]]
+			}
+			return ["remoteAttachment": [:]]
+			
+		case ContentTypeMultiRemoteAttachment.id:
+			if let multiRemoteAttachment: XMTP.MultiRemoteAttachment = try? message.content() {
+				let attachmentMaps = multiRemoteAttachment.remoteAttachments.map { attachment in
+					return [
+						"scheme": "https",
+						"url": attachment.url,
+						"filename": attachment.filename,
+						"contentLength": String(attachment.contentLength),
+						"contentDigest": attachment.contentDigest,
+						"secret": attachment.secret.toHex,
+						"salt": attachment.salt.toHex,
+						"nonce": attachment.nonce.toHex
+					]
+				}
+				return ["multiRemoteAttachment": [
+					"attachments": attachmentMaps
+				]]
+			}
+			return ["multiRemoteAttachment": ["attachments": []]]
+			
+		case ContentTypeReadReceipt.id:
+			return ["readReceipt": ""]
+			
+		case ContentTypeGroupUpdated.id:
+			if let groupUpdated: XMTP.GroupUpdated = try? message.content() {
+				return ["groupUpdated": [
+					"initiatedByInboxId": groupUpdated.initiatedByInboxID,
+					"membersAdded": groupUpdated.addedInboxes.map { member in
+						["inboxId": member.inboxID]
+					},
+					"membersRemoved": groupUpdated.removedInboxes.map { member in
+						["inboxId": member.inboxID]
+					},
+					"metadataFieldsChanged": groupUpdated.metadataFieldChanges.map { metadata in
+						[
+							"oldValue": metadata.oldValue,
+							"newValue": metadata.newValue,
+							"fieldName": metadata.fieldName,
+						]
+					}
+				]]
+			}
+			return ["groupUpdated": [:]]
+			
+		case ContentTypeLeaveRequest.id:
+			if let leaveRequest: XMTP.LeaveRequest = try? message.content() {
+				let noteString = leaveRequest.authenticatedNote.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+				return ["leaveRequest": [
+					"authenticatedNote": noteString
+				]]
+			}
+			return ["leaveRequest": [:]]
+			
+		default:
+			// For unknown/custom content types, try to serialize the content
+			if let content: Any = try? message.content() {
+				// Try to convert to JSON-serializable format
+				let contentString = String(describing: content)
+				return ["unknown": [
+					"contentTypeId": contentTypeId.description,
+					"content": contentString
+				]]
+			}
+			return ["unknown": [
+				"contentTypeId": contentTypeId.description
+			]]
+		}
+	}
 }
 
 struct ReactionV2Schema {

@@ -1126,6 +1126,63 @@ public class XMTPModule: Module {
 			}
 		}
 
+		AsyncFunction("conversationEnrichedMessages") {
+			(
+				installationId: String, conversationId: String,
+				queryParamsJson: String?
+			) -> [String] in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			guard
+				let conversation = try await client.conversations
+				.findConversation(
+					conversationId: conversationId)
+			else {
+				throw Error.conversationNotFound(
+					"no conversation found for \(conversationId)")
+			}
+			let queryParams = EnrichedMessageQueryParamsWrapper.fromJson(
+				queryParamsJson ?? "")
+			
+			// Convert deliveryStatus string to enum
+			let deliveryStatus: MessageDeliveryStatus
+			switch queryParams.deliveryStatus?.uppercased() {
+			case "PUBLISHED":
+				deliveryStatus = .published
+			case "UNPUBLISHED":
+				deliveryStatus = .unpublished
+			case "FAILED":
+				deliveryStatus = .failed
+			default:
+				deliveryStatus = .all
+			}
+			
+			let messages = try await conversation.enrichedMessages(
+				limit: queryParams.limit,
+				beforeNs: queryParams.beforeNs,
+				afterNs: queryParams.afterNs,
+				direction: getSortDirection(
+					direction: queryParams.direction ?? "DESCENDING"),
+				deliveryStatus: deliveryStatus,
+				excludeSenderInboxIds: queryParams.excludeSenderInboxIds,
+				insertedAfterNs: queryParams.insertedAfterNs,
+				insertedBeforeNs: queryParams.insertedBeforeNs
+			)
+			return messages.compactMap { msg in
+				do {
+					return try MessageWrapper.encodeV2(msg)
+				} catch {
+					print(
+						"discarding message, unable to encode wrapper \(msg.id)"
+					)
+					return nil
+				}
+			}
+		}
+
 		AsyncFunction("findMessage") {
 			(installationId: String, messageId: String) -> String? in
 			guard

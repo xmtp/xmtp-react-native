@@ -21,6 +21,7 @@ import {
 import { Conversation, ConversationVersion } from './lib/Conversation'
 import { ConversationDebugInfo } from './lib/ConversationDebugInfo'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
+import { DecodedMessageV2 } from './lib/DecodedMessageV2'
 import { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
 import { Dm } from './lib/Dm'
 import { Group, PermissionUpdateOption } from './lib/Group'
@@ -38,10 +39,18 @@ import {
   ConversationId,
   ConversationTopic,
 } from './lib/types/ConversationOptions'
-import { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
+import {
+  DecodedMessageUnion,
+  DecodedMessageUnionV2,
+} from './lib/types/DecodedMessageUnion'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { LogLevel, LogRotation } from './lib/types/LogTypes'
-import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
+import {
+  MessageId,
+  MessageOrder,
+  EnrichedMessageDeliveryStatus,
+  EnrichedMessageSortBy,
+} from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 
 export * from './context'
@@ -806,6 +815,42 @@ export async function conversationMessages<
   )
   return messages.map((json: string) => {
     return DecodedMessage.from(json)
+  })
+}
+
+export async function conversationEnrichedMessages<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  clientInstallationId: InstallationId,
+  conversationId: ConversationId,
+  limit?: number | undefined,
+  beforeNs?: number | undefined,
+  afterNs?: number | undefined,
+  direction?: MessageOrder | undefined,
+  excludeSenderInboxIds?: string[] | undefined,
+  deliveryStatus?: EnrichedMessageDeliveryStatus | undefined,
+  insertedAfterNs?: number | undefined,
+  insertedBeforeNs?: number | undefined,
+  sortBy?: EnrichedMessageSortBy | undefined
+): Promise<DecodedMessageUnionV2<ContentTypes>[]> {
+  const queryParamsJson = JSON.stringify({
+    limit,
+    beforeNs,
+    afterNs,
+    direction,
+    excludeSenderInboxIds,
+    deliveryStatus,
+    insertedAfterNs,
+    insertedBeforeNs,
+    sortBy,
+  })
+  const messages = await XMTPModule.conversationEnrichedMessages(
+    clientInstallationId,
+    conversationId,
+    queryParamsJson
+  )
+  return messages.map((json: string) => {
+    return DecodedMessageV2.from(json)
   })
 }
 

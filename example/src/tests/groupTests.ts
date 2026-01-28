@@ -762,7 +762,9 @@ test('unpublished messages handling', async () => {
       millis = Math.floor(sentNs / 1_000_000)
     }
     const timestamp = new Date(millis).toISOString()
-    debugLog(`Message ${index}: contentTypeId = "${message.contentTypeId}" timestamp = ${timestamp}`)
+    debugLog(
+      `Message ${index}: contentTypeId = "${message.contentTypeId}" timestamp = ${timestamp}`
+    )
   })
   debugLog('=====================================')
 
@@ -772,29 +774,29 @@ test('unpublished messages handling', async () => {
     `the message should have a content type id of xmtp.org/group_updated:1.0 but it was ${alixMessages[0].contentTypeId}`
   )
 
-  // // Publish the prepared message
-  // await alixGroup.publishPreparedMessages()
+  // Publish the prepared message
+  await alixGroup.publishPreparedMessages()
 
-  // // Sync the group after publishing the message
-  // await alixGroup.sync()
-  // messageCount = (await alixGroup.messages()).length
-  // if (messageCount !== 2) {
-  //   throw new Error(`Message count should be 2, but it is ${messageCount}`)
-  // }
+  // Sync the group after publishing the message
+  await alixGroup.sync()
+  messageCount = (await alixGroup.messages()).length
+  if (messageCount !== 2) {
+    throw new Error(`Message count should be 2, but it is ${messageCount}`)
+  }
 
-  // // Check if the group is allowed after preparing the message
-  // const isGroupAllowed = await alixClient.preferences.conversationConsentState(
-  //   boGroup.id
-  // )
-  // if (isGroupAllowed !== 'allowed') {
-  //   throw new Error('Group should be allowed after preparing a message')
-  // }
+  // Check if the group is allowed after preparing the message
+  const isGroupAllowed = await alixClient.preferences.conversationConsentState(
+    boGroup.id
+  )
+  if (isGroupAllowed !== 'allowed') {
+    throw new Error('Group should be allowed after preparing a message')
+  }
 
-  // // Retrieve all messages and verify the prepared message ID
-  // const messages = await alixGroup.messages({ direction: 'DESCENDING' })
-  // if (preparedMessageId !== messages[0].id) {
-  //   throw new Error(`Message ID should match the prepared message ID`)
-  // }
+  // Retrieve all messages and verify the prepared message ID
+  const messages = await alixGroup.messages({ direction: 'DESCENDING' })
+  if (preparedMessageId !== messages[0].id) {
+    throw new Error(`Message ID should match the prepared message ID`)
+  }
 
   return true
 })
@@ -2418,7 +2420,7 @@ test('streams deleted messages when disappearing messages occur a group', async 
     'BoGroup should have disappearing enabled'
   )
 
-  boClient.conversations.cancelStreamMessageDeletions()
+  await boClient.conversations.cancelStreamMessageDeletions()
 
   await assertEqual(() => deletedMessages, 1, 'Deleted messages should be 1')
 
@@ -2474,18 +2476,18 @@ test('can leave a group', async () => {
 
   // Inspect the leave group message content
   const boMessages = await boGroup.messages()
-  
+
   // Log all messages to see what's available
   console.log('All messages after leave:')
   boMessages.forEach((m) => {
     console.log(`  - ${m.id}: ${m.contentTypeId}`)
     console.log(`    nativeContent: ${JSON.stringify(m.nativeContent)}`)
   })
-  
+
   const leaveMessage = boMessages.find(
     (m) => m.contentTypeId === 'xmtp.org/leave_request:1.0'
   )
-  
+
   if (!leaveMessage) {
     console.log('No leave_request message found, checking for group_updated...')
     const groupUpdatedMessage = boMessages.find(
@@ -2493,23 +2495,30 @@ test('can leave a group', async () => {
     )
     if (groupUpdatedMessage) {
       console.log('Found group_updated message instead')
-      console.log('nativeContent:', JSON.stringify(groupUpdatedMessage.nativeContent))
+      console.log(
+        'nativeContent:',
+        JSON.stringify(groupUpdatedMessage.nativeContent)
+      )
     }
   }
-  
+
   assert(leaveMessage !== undefined, 'Leave message should exist')
 
-  console.log('Leave message nativeContent:', JSON.stringify(leaveMessage?.nativeContent))
-  const leaveContent: LeaveRequestContent = (leaveMessage?.nativeContent as any)?.leaveRequest as LeaveRequestContent
+  console.log(
+    'Leave message nativeContent:',
+    JSON.stringify(leaveMessage?.nativeContent)
+  )
+  const leaveContent: LeaveRequestContent = (leaveMessage?.nativeContent as any)
+    ?.leaveRequest as LeaveRequestContent
   console.log('Leave group message content:', JSON.stringify(leaveContent))
 
   // LeaveRequestContent only has an optional authenticatedNote field
   // The actual leave is indicated by the message existing with the leave_request content type
-  assert(
-    leaveContent !== undefined,
-    'Leave content should be defined'
+  assert(leaveContent !== undefined, 'Leave content should be defined')
+  console.log(
+    'Leave request authenticatedNote:',
+    leaveContent?.authenticatedNote
   )
-  console.log('Leave request authenticatedNote:', leaveContent?.authenticatedNote)
 
   return true
 })
