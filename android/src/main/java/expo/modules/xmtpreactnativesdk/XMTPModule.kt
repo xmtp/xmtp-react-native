@@ -1424,6 +1424,14 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("sendSyncRequest") Coroutine { installationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("sendSyncRequest")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                client.sendSyncRequest()
+            }
+        }
+
         AsyncFunction("syncAllConversations") Coroutine { installationId: String, consentStringStates: List<String>? ->
             withContext(Dispatchers.IO) {
                 logV("syncAllConversations")

@@ -1760,6 +1760,15 @@ public class XMTPModule: Module {
 			try await client.conversations.sync()
 		}
 
+		AsyncFunction("sendSyncRequest") { (installationId: String) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			try await client.sendSyncRequest()
+		}
+
 		AsyncFunction("syncAllConversations") {
 			(installationId: String, consentStringStates: [String]?) -> UInt64
 			in

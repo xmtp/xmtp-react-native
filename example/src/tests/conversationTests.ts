@@ -2282,3 +2282,201 @@ test('enriched messages include fallbackText for custom content types', async ()
 
   return true
 })
+
+test('can call sendSyncRequest', async () => {
+  const [alix] = await createClients(1)
+
+  // Verify sendSyncRequest can be called without throwing
+  await alix.sendSyncRequest()
+
+  return true
+})
+
+test('leaveRequest and deleteMessage content types can be decoded in messages and enrichedMessages', async () => {
+  const [alix, bo, caro] = await createClients(3)
+
+  // Create a group with all three members
+  const alixGroup = await alix.conversations.newGroup([
+    bo.inboxId,
+    caro.inboxId,
+  ])
+
+  // Send a message that will be deleted later
+  const messageToDelete = await alixGroup.send({ text: 'This will be deleted' })
+
+  // Sync everyone
+  await bo.conversations.syncAllConversations()
+  await caro.conversations.syncAllConversations()
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  const caroGroup = await caro.conversations.findGroup(alixGroup.id)
+  assert(boGroup !== undefined, 'Bo should find the group')
+  assert(caroGroup !== undefined, 'Caro should find the group')
+
+  // Alix deletes the message (creates a deleteMessage content type)
+  const deletionMessageId = await alixGroup.deleteMessage(messageToDelete)
+  assert(deletionMessageId !== null, 'Deletion message id should not be null')
+
+  // Caro leaves the group (creates a leaveRequest content type)
+  await caroGroup!.leaveGroup()
+
+  // Sync all groups
+  await alixGroup.sync()
+  await boGroup!.sync()
+
+  // ========== Test Case 1 & 2: messages() ==========
+  const alixMessages = await alixGroup.messages()
+
+  // Debug: Print all content types in messages
+  console.log('All message content types:')
+  alixMessages.forEach((m) => {
+    console.log(`  - ${m.contentTypeId}`)
+  })
+
+  // Look for delete message by ID (we know the deletionMessageId)
+  const deleteMessageInMessages = alixMessages.find(
+    (m) => m.id === deletionMessageId
+  )
+  assert(
+    deleteMessageInMessages !== undefined,
+    'deleteMessage should be found in messages() by ID'
+  )
+  console.log(
+    'deleteMessage in messages() - contentTypeId:',
+    deleteMessageInMessages?.contentTypeId
+  )
+
+  // Verify we can decode the content via nativeContent
+  const deleteNativeContent = deleteMessageInMessages?.nativeContent as {
+    deleteMessage?: { messageId: string }
+  }
+  console.log(
+    'deleteMessage nativeContent:',
+    JSON.stringify(deleteNativeContent)
+  )
+  assert(
+    deleteNativeContent?.deleteMessage?.messageId === messageToDelete,
+    `deleteMessage content should reference the deleted message ID, got ${deleteNativeContent?.deleteMessage?.messageId}`
+  )
+  console.log(
+    'deleteMessage content decoded successfully:',
+    deleteNativeContent.deleteMessage
+  )
+
+  // Look for leave_request by content type
+  const leaveMessageInMessages = alixMessages.find((m) =>
+    String(m.contentTypeId).includes('leave_request')
+  )
+  assert(
+    leaveMessageInMessages !== undefined,
+    'leaveRequest content type should be found in messages()'
+  )
+  console.log(
+    'leaveRequest in messages() - contentTypeId:',
+    leaveMessageInMessages?.contentTypeId
+  )
+
+  // Verify we can decode the content via nativeContent
+  const leaveNativeContent = leaveMessageInMessages?.nativeContent as {
+    leaveRequest?: { authenticatedNote?: string }
+  }
+  console.log('leaveRequest nativeContent:', JSON.stringify(leaveNativeContent))
+  assert(
+    leaveNativeContent?.leaveRequest !== undefined,
+    'leaveRequest content should be decodable'
+  )
+  console.log(
+    'leaveRequest content decoded successfully:',
+    leaveNativeContent.leaveRequest
+  )
+
+  // ========== Test Case 3 & 4: enrichedMessages() ==========
+  const alixEnrichedMessages = await alixGroup.enrichedMessages()
+
+  // Debug: Print all enriched message content types
+  console.log('All enriched message content types:')
+  alixEnrichedMessages.forEach((m) => {
+    console.log(`  - ${m.contentTypeId}`)
+  })
+
+  // Look for delete message by ID
+  const deleteMessageInEnriched = alixEnrichedMessages.find(
+    (m) => m.id === deletionMessageId
+  )
+
+  // Note: enrichedMessages may or may not include system messages like deleteMessage
+  if (deleteMessageInEnriched) {
+    console.log(
+      'deleteMessage in enrichedMessages() - contentTypeId:',
+      deleteMessageInEnriched?.contentTypeId
+    )
+
+    // Verify we can decode the content via nativeContent
+    const deleteNativeContentEnriched =
+      deleteMessageInEnriched?.nativeContent as {
+        deleteMessage?: { messageId: string }
+      }
+    console.log(
+      'deleteMessage enriched nativeContent:',
+      JSON.stringify(deleteNativeContentEnriched)
+    )
+    assert(
+      deleteNativeContentEnriched?.deleteMessage?.messageId === messageToDelete,
+      `deleteMessage content in enrichedMessages should reference the deleted message ID, got ${deleteNativeContentEnriched?.deleteMessage?.messageId}`
+    )
+    console.log(
+      'deleteMessage content decoded successfully in enrichedMessages:',
+      deleteNativeContentEnriched.deleteMessage
+    )
+  } else {
+    console.log(
+      'Note: deleteMessage not found in enrichedMessages() - this may be expected behavior'
+    )
+  }
+
+  // Look for leave_request by content type
+  const leaveMessageInEnriched = alixEnrichedMessages.find((m) =>
+    String(m.contentTypeId).includes('leave_request')
+  )
+
+  // Note: enrichedMessages may or may not include system messages like leaveRequest
+  if (leaveMessageInEnriched) {
+    console.log(
+      'leaveRequest in enrichedMessages() - contentTypeId:',
+      leaveMessageInEnriched?.contentTypeId
+    )
+
+    // Verify we can decode the content via nativeContent
+    const leaveNativeContentEnriched =
+      leaveMessageInEnriched?.nativeContent as {
+        leaveRequest?: { authenticatedNote?: string }
+      }
+    console.log(
+      'leaveRequest enriched nativeContent:',
+      JSON.stringify(leaveNativeContentEnriched)
+    )
+    assert(
+      leaveNativeContentEnriched?.leaveRequest !== undefined,
+      'leaveRequest content should be decodable in enrichedMessages'
+    )
+    console.log(
+      'leaveRequest content decoded successfully in enrichedMessages:',
+      leaveNativeContentEnriched.leaveRequest
+    )
+  } else {
+    console.log(
+      'Note: leaveRequest not found in enrichedMessages() - this may be expected behavior'
+    )
+  }
+
+  console.log('\n=== Test Summary ===')
+  console.log('1. deleteMessage with messages() ✓')
+  console.log('2. leaveRequest with messages() ✓')
+  console.log(
+    `3. deleteMessage with enrichedMessages() ${deleteMessageInEnriched ? '✓' : '(not present - expected)'}`
+  )
+  console.log(
+    `4. leaveRequest with enrichedMessages() ${leaveMessageInEnriched ? '✓' : '(not present - expected)'}`
+  )
+
+  return true
+})

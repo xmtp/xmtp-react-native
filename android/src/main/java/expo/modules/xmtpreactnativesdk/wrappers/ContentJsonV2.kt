@@ -11,6 +11,7 @@ import org.xmtp.android.library.Client
 import org.xmtp.android.library.codecs.Attachment
 import org.xmtp.android.library.codecs.AttachmentCodec
 import org.xmtp.android.library.codecs.ContentTypeAttachment
+import org.xmtp.android.library.codecs.ContentTypeDeleteMessageRequest
 import org.xmtp.android.library.codecs.ContentTypeGroupUpdated
 import org.xmtp.android.library.codecs.ContentTypeId
 import org.xmtp.android.library.codecs.ContentTypeMultiRemoteAttachment
@@ -28,6 +29,8 @@ import org.xmtp.android.library.codecs.Reaction
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.ReactionV2Codec
 import org.xmtp.android.library.codecs.ContentTypeLeaveRequest
+import org.xmtp.android.library.codecs.DeleteMessageCodec
+import org.xmtp.android.library.codecs.DeleteMessageRequest
 import org.xmtp.android.library.codecs.LeaveRequest
 import org.xmtp.android.library.codecs.LeaveRequestCodec
 import org.xmtp.android.library.codecs.ReadReceipt
@@ -70,7 +73,7 @@ class ContentJsonV2(
             Client.register(GroupUpdatedCodec())
             Client.register(ReactionV2Codec())
             Client.register(LeaveRequestCodec())
-//            Client.register(DeleteMessageCodec())
+            Client.register(DeleteMessageCodec())
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -311,11 +314,14 @@ class ContentJsonV2(
                 )
             }
 
-//            ContentTypeDeleteMessage.id -> mapOf(
-//                "deleteMessage" to mapOf(
-//                    "messageId" to ((content as? DeleteMessage)?.messageId ?: "")
-//                )
-//            )
+           ContentTypeDeleteMessageRequest.id -> {
+               val content: DeleteMessageRequest? = message.content<DeleteMessageRequest>()
+               mapOf(
+                   "deleteMessage" to mapOf(
+                       "messageId" to ((content as? DeleteMessageRequest)?.messageId ?: "")
+                   )
+               )
+           }
 
             else -> {
                 // Fallback for unhandled content types

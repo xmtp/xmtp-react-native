@@ -902,6 +902,13 @@ export class Client<
   }
 
   /**
+   * Manually trigger a device sync request to sync records from another active device using this inbox.
+   */
+  async sendSyncRequest(): Promise<void> {
+    return await XMTPModule.sendSyncRequest(this.installationId)
+  }
+
+  /**
    * Make a request for your inbox state.
    *
    * @param {boolean} refreshFromNetwork - If you want to refresh the current state of in the inbox from the network or not.

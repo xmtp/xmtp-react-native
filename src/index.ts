@@ -1322,6 +1322,12 @@ export async function syncConversations(installationId: InstallationId) {
   await XMTPModule.syncConversations(installationId)
 }
 
+export async function sendSyncRequest(
+  installationId: InstallationId
+): Promise<void> {
+  return await XMTPModule.sendSyncRequest(installationId)
+}
+
 export async function syncAllConversations(
   installationId: InstallationId,
   consentStates?: ConsentState[] | undefined

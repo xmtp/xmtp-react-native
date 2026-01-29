@@ -27,7 +27,10 @@ import org.xmtp.android.library.codecs.MultiRemoteAttachment
 import org.xmtp.android.library.codecs.Reaction
 import org.xmtp.android.library.codecs.ReactionCodec
 import org.xmtp.android.library.codecs.ReactionV2Codec
+import org.xmtp.android.library.codecs.ContentTypeDeleteMessageRequest
 import org.xmtp.android.library.codecs.ContentTypeLeaveRequest
+import org.xmtp.android.library.codecs.DeleteMessageCodec
+import org.xmtp.android.library.codecs.DeleteMessageRequest
 import org.xmtp.android.library.codecs.LeaveRequest
 import org.xmtp.android.library.codecs.LeaveRequestCodec
 import org.xmtp.android.library.codecs.ReadReceipt
@@ -75,7 +78,7 @@ class ContentJson(
             Client.register(GroupUpdatedCodec())
             Client.register(ReactionV2Codec())
             Client.register(LeaveRequestCodec())
-//            Client.register(DeleteMessageCodec())
+            Client.register(DeleteMessageCodec())
         }
 
         fun fromJsonObject(obj: JsonObject): ContentJson {
@@ -293,11 +296,11 @@ class ContentJson(
                 )
             )
 
-//            ContentTypeDeleteMessage.id -> mapOf(
-//                "deleteMessage" to mapOf(
-//                    "messageId" to ((content as? DeleteMessage)?.messageId ?: "")
-//                )
-//            )
+           ContentTypeDeleteMessageRequest.id -> mapOf(
+               "deleteMessage" to mapOf(
+                   "messageId" to ((content as? DeleteMessageRequest)?.messageId ?: "")
+               )
+           )
 
             else -> {
                 val json = JsonObject()

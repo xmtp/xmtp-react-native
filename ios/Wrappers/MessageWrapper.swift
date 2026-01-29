@@ -300,11 +300,11 @@ struct ContentJson {
 			return ["leaveRequest": [
 				"authenticatedNote": noteString
 			]]
-//		case ContentTypeDeleteMessage.id where content is XMTP.DeleteMessage:
-//			let deleteMessage = content as! XMTP.DeleteMessage
-//			return ["deleteMessage": [
-//				"messageId": deleteMessage.messageId,
-//			]]
+		case ContentTypeDeleteMessageRequest.id where content is XMTP.DeleteMessageRequest:
+			let deleteMessage = content as! XMTP.DeleteMessageRequest
+			return ["deleteMessage": [
+				"messageId": deleteMessage.messageId,
+			]]
 		default:
 			if let encodedContent, let encodedContentJSON = try? encodedContent.jsonString() {
 				return ["encoded": encodedContentJSON]
