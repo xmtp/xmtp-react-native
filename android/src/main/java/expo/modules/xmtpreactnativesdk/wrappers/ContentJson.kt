@@ -151,7 +151,7 @@ class ContentJson(
                         action = getReactionAction(reaction.get("action").asString.lowercase()),
                         schema = getReactionSchema(reaction.get("schema").asString.lowercase()),
                         content = reaction.get("content").asString,
-                        referenceInboxId = reaction.get("referenceInboxId")?.asString ?: ""
+                        referenceInboxId = reaction.get("referenceInboxId")?.takeIf { !it.isJsonNull }?.asString ?: ""
                     )
                 )
             } else if (obj.has("reply")) {
