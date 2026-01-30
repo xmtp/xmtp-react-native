@@ -441,6 +441,14 @@ struct ContentJsonV2 {
 			}
 			return ["leaveRequest": [:]]
 			
+		case ContentTypeDeleteMessageRequest.id:
+			if let deleteMessageRequest: XMTP.DeleteMessageRequest = try? message.content() {
+				return ["deleteMessage": [
+					"messageId": deleteMessageRequest.messageId,
+				]]
+			}
+			return ["deleteMessage": [:]]
+			
 		default:
 			// For unknown/custom content types, try to serialize the content
 			// Match Android's approach: check types first, then use fallback
