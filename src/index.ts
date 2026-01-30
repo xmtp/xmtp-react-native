@@ -21,6 +21,7 @@ import {
 import { Conversation, ConversationVersion } from './lib/Conversation'
 import { ConversationDebugInfo } from './lib/ConversationDebugInfo'
 import { DecodedMessage, MessageDeliveryStatus } from './lib/DecodedMessage'
+import { DecodedMessageV2 } from './lib/DecodedMessageV2'
 import { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
 import { Dm } from './lib/Dm'
 import { Group, PermissionUpdateOption } from './lib/Group'
@@ -38,10 +39,18 @@ import {
   ConversationId,
   ConversationTopic,
 } from './lib/types/ConversationOptions'
-import { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
+import {
+  DecodedMessageUnion,
+  DecodedMessageUnionV2,
+} from './lib/types/DecodedMessageUnion'
 import { DefaultContentTypes } from './lib/types/DefaultContentType'
 import { LogLevel, LogRotation } from './lib/types/LogTypes'
-import { MessageId, MessageOrder } from './lib/types/MessagesOptions'
+import {
+  MessageId,
+  MessageOrder,
+  EnrichedMessageDeliveryStatus,
+  EnrichedMessageSortBy,
+} from './lib/types/MessagesOptions'
 import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 
 export * from './context'
@@ -50,6 +59,8 @@ export { GroupUpdatedCodec } from './lib/NativeCodecs/GroupUpdatedCodec'
 export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
 export { ReactionV2Codec } from './lib/NativeCodecs/ReactionV2Codec'
 export { ReadReceiptCodec } from './lib/NativeCodecs/ReadReceiptCodec'
+export { LeaveRequestCodec } from './lib/NativeCodecs/LeaveRequestCodec'
+export { DeleteMessageCodec } from './lib/NativeCodecs/DeleteMessageCodec'
 export { RemoteAttachmentCodec } from './lib/NativeCodecs/RemoteAttachmentCodec'
 export { MultiRemoteAttachmentCodec } from './lib/NativeCodecs/MultiRemoteAttachmentCodec'
 export { ReplyCodec } from './lib/NativeCodecs/ReplyCodec'
@@ -807,6 +818,42 @@ export async function conversationMessages<
   })
 }
 
+export async function conversationEnrichedMessages<
+  ContentTypes extends DefaultContentTypes = DefaultContentTypes,
+>(
+  clientInstallationId: InstallationId,
+  conversationId: ConversationId,
+  limit?: number | undefined,
+  beforeNs?: number | undefined,
+  afterNs?: number | undefined,
+  direction?: MessageOrder | undefined,
+  excludeSenderInboxIds?: string[] | undefined,
+  deliveryStatus?: EnrichedMessageDeliveryStatus | undefined,
+  insertedAfterNs?: number | undefined,
+  insertedBeforeNs?: number | undefined,
+  sortBy?: EnrichedMessageSortBy | undefined
+): Promise<DecodedMessageUnionV2<ContentTypes>[]> {
+  const queryParamsJson = JSON.stringify({
+    limit,
+    beforeNs,
+    afterNs,
+    direction,
+    excludeSenderInboxIds,
+    deliveryStatus,
+    insertedAfterNs,
+    insertedBeforeNs,
+    sortBy,
+  })
+  const messages = await XMTPModule.conversationEnrichedMessages(
+    clientInstallationId,
+    conversationId,
+    queryParamsJson
+  )
+  return messages.map((json: string) => {
+    return DecodedMessageV2.from(json)
+  })
+}
+
 export async function conversationMessagesWithReactions<
   ContentTypes extends DefaultContentTypes = DefaultContentTypes,
 >(
@@ -984,6 +1031,18 @@ export async function sendMessage(
   )
 }
 
+export async function publishMessage(
+  installationId: InstallationId,
+  conversationId: ConversationId,
+  messageId: MessageId
+): Promise<void> {
+  return await XMTPModule.publishMessage(
+    installationId,
+    conversationId,
+    messageId
+  )
+}
+
 export async function publishPreparedMessages(
   installationId: InstallationId,
   conversationId: ConversationId
@@ -997,13 +1056,15 @@ export async function publishPreparedMessages(
 export async function prepareMessage(
   installationId: InstallationId,
   conversationId: ConversationId,
-  content: any
+  content: any,
+  noSend: boolean
 ): Promise<MessageId> {
   const contentJson = JSON.stringify(content)
   return await XMTPModule.prepareMessage(
     installationId,
     conversationId,
-    contentJson
+    contentJson,
+    noSend
   )
 }
 
@@ -1011,10 +1072,11 @@ export async function prepareMessageWithContentType<T>(
   installationId: InstallationId,
   conversationId: ConversationId,
   content: any,
-  codec: ContentCodec<T>
+  codec: ContentCodec<T>,
+  noSend: boolean
 ): Promise<MessageId> {
   if ('contentKey' in codec) {
-    return prepareMessage(installationId, conversationId, content)
+    return prepareMessage(installationId, conversationId, content, noSend)
   }
   const encodedContent = codec.encode(content)
   encodedContent.fallback = codec.fallback(content)
@@ -1023,7 +1085,8 @@ export async function prepareMessageWithContentType<T>(
     installationId,
     conversationId,
     Array.from(encodedContentData),
-    codec.shouldPush(content)
+    codec.shouldPush(content),
+    noSend
   )
 }
 
@@ -1075,7 +1138,8 @@ export async function createGroup<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1083,6 +1147,7 @@ export async function createGroup<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const group = JSON.parse(
     await XMTPModule.createGroup(
@@ -1106,7 +1171,8 @@ export async function createGroupCustomPermissionsWithIdentities<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1114,6 +1180,7 @@ export async function createGroupCustomPermissionsWithIdentities<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const identities = peerIdentities.map((identity) => JSON.stringify(identity))
   const group = JSON.parse(
@@ -1138,7 +1205,8 @@ export async function createGroupWithIdentities<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1146,6 +1214,7 @@ export async function createGroupWithIdentities<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const identities = peerIdentities.map((identity) => JSON.stringify(identity))
   const group = JSON.parse(
@@ -1170,7 +1239,8 @@ export async function createGroupCustomPermissions<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1178,6 +1248,7 @@ export async function createGroupCustomPermissions<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupCustomPermissions(
@@ -1200,7 +1271,8 @@ export async function createGroupOptimistic<
   imageUrl: string = '',
   description: string = '',
   disappearStartingAtNs: number | undefined = undefined,
-  retentionDurationInNs: number | undefined = undefined
+  retentionDurationInNs: number | undefined = undefined,
+  appData: string = ''
 ): Promise<Group<ContentTypes>> {
   const options: CreateGroupParams = {
     name,
@@ -1208,6 +1280,7 @@ export async function createGroupOptimistic<
     description,
     disappearStartingAtNs,
     retentionDurationInNs,
+    appData,
   }
   const group = JSON.parse(
     await XMTPModule.createGroupOptimistic(
@@ -1247,6 +1320,12 @@ export async function listConversationMembers(
 
 export async function syncConversations(installationId: InstallationId) {
   await XMTPModule.syncConversations(installationId)
+}
+
+export async function sendSyncRequest(
+  installationId: InstallationId
+): Promise<void> {
+  return await XMTPModule.sendSyncRequest(installationId)
 }
 
 export async function syncAllConversations(
@@ -1709,6 +1788,12 @@ export async function subscribeToMessages(
   return await XMTPModule.subscribeToMessages(installationId, id)
 }
 
+export async function subscribeToMessageDeletions(
+  installationId: InstallationId
+) {
+  return await XMTPModule.subscribeToMessageDeletions(installationId)
+}
+
 export function unsubscribeFromPreferenceUpdates(
   installationId: InstallationId
 ) {
@@ -1732,6 +1817,12 @@ export async function unsubscribeFromMessages(
   id: ConversationId
 ) {
   return await XMTPModule.unsubscribeFromMessages(installationId, id)
+}
+
+export async function unsubscribeFromMessageDeletions(
+  installationId: InstallationId
+) {
+  return await XMTPModule.unsubscribeFromMessageDeletions(installationId)
 }
 
 export function registerPushToken(pushServer: string, token: string) {
@@ -1797,14 +1888,6 @@ export async function clearAllNetworkStatistics(
   return await XMTPModule.clearAllNetworkStatistics(installationId)
 }
 
-export async function uploadDebugInformation(
-  installationId: InstallationId,
-  serverUrl?: string
-): Promise<string> {
-  const key = await XMTPModule.uploadDebugInformation(installationId, serverUrl)
-  return key
-}
-
 export async function createArchive(
   installationId: InstallationId,
   path: string,
@@ -1854,6 +1937,14 @@ export async function leaveGroup(
   return await XMTPModule.leaveGroup(installationId, id)
 }
 
+export async function deleteMessage(
+  installationId: InstallationId,
+  id: ConversationId,
+  messageId: MessageId
+): Promise<string> {
+  return await XMTPModule.deleteMessage(installationId, id, messageId)
+}
+
 export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 
 interface AuthParams {
@@ -1883,6 +1974,7 @@ interface CreateGroupParams {
   description: string
   disappearStartingAtNs: number | undefined
   retentionDurationInNs: number | undefined
+  appData: string
 }
 
 export { Client } from './lib/Client'

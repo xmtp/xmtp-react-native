@@ -27,6 +27,43 @@ struct MessageWrapper {
 		let obj = try encodeToObj(model)
 		return try obj.toJson()
 	}
+
+	static func encodeToObjV2(_ model: XMTP.DecodedMessageV2) throws -> [String: Any] {
+		let reactionsList = model.reactions ?? []
+		let reactions = reactionsList.compactMap { reaction in
+			try? encodeToObjV2(reaction)
+		}
+		let reactionCount = reactionsList.count
+		var result: [String: Any] = [
+			"id": model.id,
+			"conversationId": model.conversationId,
+			"contentTypeId": model.contentTypeId.description,
+			"nativeContent": ContentJsonV2.toJsonMap(model),
+			"senderInboxId": model.senderInboxId,
+			"sentAt": model.sentAtNs / 1_000_000,
+			"sentAtNs": model.sentAtNs,
+			"insertedAtNs": model.insertedAtNs,
+			"deliveryStatus": model.deliveryStatus.rawValue.uppercased(),
+			"reactions": reactions,
+			"hasReactions": reactionCount > 0,
+			"reactionCount": Int64(reactionCount)
+		]
+		if let expiresAtNs = model.expiresAtNs {
+			result["expiresAtNs"] = expiresAtNs
+		}
+		if let expiresAt = model.expiresAt {
+			result["expiresAt"] = Int64(expiresAt.timeIntervalSince1970 * 1000)
+		}
+		if let fallbackText = try? model.fallback {
+			result["fallbackText"] = fallbackText
+		}
+		return result
+	}
+
+	static func encodeV2(_ model: XMTP.DecodedMessageV2) throws -> String {
+		let obj = try encodeToObjV2(model)
+		return try obj.toJson()
+	}
 }
 
 // NOTE: cribbed from xmtp-ios to make visible here.
@@ -51,6 +88,8 @@ struct ContentJson {
 		MultiRemoteAttachmentCodec(),
 		ReadReceiptCodec(),
 		GroupUpdatedCodec(),
+		LeaveRequestCodec(),
+		DeleteMessageCodec(),
 	]
 
 	static func initCodecs() {
@@ -76,13 +115,12 @@ struct ContentJson {
 				schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "")
 			))
 		} else if let reaction = obj["reactionV2"] as? [String: Any] {
-            return ContentJson(type: ContentTypeReactionV2, content: FfiReactionPayload(
+			// Use SDK Reaction type (not FfiReactionPayload); ReactionV2Codec encodes Reaction.
+			return ContentJson(type: ContentTypeReactionV2, content: Reaction(
 				reference: reaction["reference"] as? String ?? "",
-				// Update if we add referenceInboxId to ../src/lib/types/ContentCodec.ts#L19-L24
-                referenceInboxId: "",
-				action: ReactionV2Action.fromString(reaction["action"] as? String ?? ""),
+				action: ReactionAction(rawValue: reaction["action"] as? String ?? ""),
 				content: reaction["content"] as? String ?? "",
-				schema: ReactionV2Schema.fromString(reaction["schema"] as? String ?? "")
+				schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "")
 			))
 		}else if let reply = obj["reply"] as? [String: Any] {
 			guard let nestedContent = reply["content"] as? [String: Any] else {
@@ -145,7 +183,7 @@ struct ContentJson {
                 )
             }
             return ContentJson(type: ContentTypeMultiRemoteAttachment, content: MultiRemoteAttachment(remoteAttachments: attachments))
-        } else if let readReceipt = obj["readReceipt"] as? [String: Any] {
+        } else if obj["readReceipt"] != nil {
 			return ContentJson(type: ContentTypeReadReceipt, content: ReadReceipt())
 		} else {
 			throw Error.unknownContentType
@@ -262,6 +300,17 @@ struct ContentJson {
 					]
 				}
 			]]
+		case ContentTypeLeaveRequest.id where content is XMTP.LeaveRequest:
+			let leaveRequest = content as! XMTP.LeaveRequest
+			let noteString = leaveRequest.authenticatedNote.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+			return ["leaveRequest": [
+				"authenticatedNote": noteString
+			]]
+		case ContentTypeDeleteMessageRequest.id where content is XMTP.DeleteMessageRequest:
+			let deleteMessage = content as! XMTP.DeleteMessageRequest
+			return ["deleteMessage": [
+				"messageId": deleteMessage.messageId,
+			]]
 		default:
 			if let encodedContent, let encodedContentJSON = try? encodedContent.jsonString() {
 				return ["encoded": encodedContentJSON]
@@ -271,6 +320,195 @@ struct ContentJson {
 		}
 	}
 	
+}
+
+// ContentJsonV2 for DecodedMessageV2 content serialization
+struct ContentJsonV2 {
+	static func toJsonMap(_ message: XMTP.DecodedMessageV2) -> [String: Any] {
+		let contentTypeId = message.contentTypeId
+		
+		switch contentTypeId.id {
+		case ContentTypeText.id:
+			if let text: String = try? message.content() {
+				return ["text": text]
+			}
+			return ["text": ""]
+			
+		case ContentTypeReaction.id, ContentTypeReactionV2.id:
+			if let reaction: XMTP.Reaction = try? message.content() {
+				return ["reaction": [
+					"reference": reaction.reference,
+					"action": reaction.action.rawValue,
+					"schema": reaction.schema.rawValue,
+					"content": reaction.content,
+				]]
+			}
+			return ["reaction": [:]]
+			
+		case ContentTypeReply.id:
+			// For DecodedMessageV2, Reply content may be returned as XMTP.Reply
+			if let reply: XMTP.Reply = try? message.content() {
+				// Reply has: reference, content, contentType
+				let nestedContentMap: [String: Any]
+				if let textContent = reply.content as? String {
+					nestedContentMap = ["text": textContent]
+				} else {
+					// Content is Any (non-optional), serialize it
+					nestedContentMap = ["content": String(describing: reply.content)]
+				}
+				return ["reply": [
+					"reference": reply.reference,
+					"content": nestedContentMap
+				]]
+			}
+			return ["reply": [:]]
+			
+		case ContentTypeAttachment.id:
+			if let attachment: XMTP.Attachment = try? message.content() {
+				return ["attachment": [
+					"filename": attachment.filename,
+					"mimeType": attachment.mimeType,
+					"data": attachment.data.base64EncodedString(),
+				]]
+			}
+			return ["attachment": [:]]
+			
+		case ContentTypeRemoteAttachment.id:
+			if let remoteAttachment: XMTP.RemoteAttachment = try? message.content() {
+				return ["remoteAttachment": [
+					"filename": remoteAttachment.filename ?? "",
+					"secret": remoteAttachment.secret.toHex,
+					"salt": remoteAttachment.salt.toHex,
+					"nonce": remoteAttachment.nonce.toHex,
+					"contentDigest": remoteAttachment.contentDigest,
+					"contentLength": String(remoteAttachment.contentLength ?? 0),
+					"scheme": "https://",
+					"url": remoteAttachment.url,
+				]]
+			}
+			return ["remoteAttachment": [:]]
+			
+		case ContentTypeMultiRemoteAttachment.id:
+			if let multiRemoteAttachment: XMTP.MultiRemoteAttachment = try? message.content() {
+				let attachmentMaps = multiRemoteAttachment.remoteAttachments.map { attachment in
+					return [
+						"scheme": "https",
+						"url": attachment.url,
+						"filename": attachment.filename,
+						"contentLength": String(attachment.contentLength),
+						"contentDigest": attachment.contentDigest,
+						"secret": attachment.secret.toHex,
+						"salt": attachment.salt.toHex,
+						"nonce": attachment.nonce.toHex
+					]
+				}
+				return ["multiRemoteAttachment": [
+					"attachments": attachmentMaps
+				]]
+			}
+			return ["multiRemoteAttachment": ["attachments": []]]
+			
+		case ContentTypeReadReceipt.id:
+			return ["readReceipt": ""]
+			
+		case ContentTypeGroupUpdated.id:
+			if let groupUpdated: XMTP.GroupUpdated = try? message.content() {
+				return ["groupUpdated": [
+					"initiatedByInboxId": groupUpdated.initiatedByInboxID,
+					"membersAdded": groupUpdated.addedInboxes.map { member in
+						["inboxId": member.inboxID]
+					},
+					"membersRemoved": groupUpdated.removedInboxes.map { member in
+						["inboxId": member.inboxID]
+					},
+					"metadataFieldsChanged": groupUpdated.metadataFieldChanges.map { metadata in
+						[
+							"oldValue": metadata.oldValue,
+							"newValue": metadata.newValue,
+							"fieldName": metadata.fieldName,
+						]
+					}
+				]]
+			}
+			return ["groupUpdated": [:]]
+			
+		case ContentTypeLeaveRequest.id:
+			if let leaveRequest: XMTP.LeaveRequest = try? message.content() {
+				let noteString = leaveRequest.authenticatedNote.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+				return ["leaveRequest": [
+					"authenticatedNote": noteString
+				]]
+			}
+			return ["leaveRequest": [:]]
+			
+		case ContentTypeDeleteMessageRequest.id:
+			if let deleteMessageRequest: XMTP.DeleteMessageRequest = try? message.content() {
+				return ["deleteMessage": [
+					"messageId": deleteMessageRequest.messageId,
+				]]
+			}
+			return ["deleteMessage": [:]]
+			
+		default:
+			// For unknown/custom content types, try to serialize the content
+			// Match Android's approach: check types first, then use fallback
+			if let content: Any = try? message.content() {
+				// First check if content is already a dictionary (most common case)
+				if let dict = content as? [String: Any] {
+					return ["unknown": [
+						"contentTypeId": contentTypeId.description,
+						"content": dict
+					]]
+				}
+				// Check if it's an array
+				if let array = content as? [Any] {
+					return ["unknown": [
+						"contentTypeId": contentTypeId.description,
+						"content": array
+					]]
+				}
+				// Check if it's a simple value (string, number, bool)
+				if let str = content as? String {
+					return ["unknown": [
+						"contentTypeId": contentTypeId.description,
+						"content": str
+					]]
+				}
+				if let num = content as? NSNumber {
+					return ["unknown": [
+						"contentTypeId": contentTypeId.description,
+						"content": num
+					]]
+				}
+				// For custom types, check if JSONSerialization can handle it
+				if JSONSerialization.isValidJSONObject(content) {
+					do {
+						let jsonData = try JSONSerialization.data(withJSONObject: content, options: [])
+						if let jsonObject = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
+							return ["unknown": [
+								"contentTypeId": contentTypeId.description,
+								"content": jsonObject
+							]]
+						}
+					} catch {
+						// Fall through to fallback
+					}
+				}
+				// Fall back to fallback text for non-serializable types
+				let fallbackText = (try? message.fallback) ?? "Unsupported content type"
+				return ["unknown": [
+					"contentTypeId": contentTypeId.description,
+					"fallback": fallbackText
+				]]
+			}
+			// Content decoding returned nil
+			let fallbackText = (try? message.fallback) ?? "Failed to decode content"
+			return ["unknown": [
+				"contentTypeId": contentTypeId.description,
+				"fallback": fallbackText
+			]]
+		}
+	}
 }
 
 struct ReactionV2Schema {

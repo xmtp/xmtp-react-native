@@ -15,4 +15,5 @@ export type PermissionPolicySet = {
   updateGroupDescriptionPolicy: PermissionOption
   updateGroupImagePolicy: PermissionOption
   updateMessageDisappearingPolicy: PermissionOption
+  updateAppDataPolicy: PermissionOption
 }

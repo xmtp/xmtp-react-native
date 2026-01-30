@@ -11,6 +11,10 @@ import {
   ReactionV2Codec,
   MultiRemoteAttachmentCodec,
   PublicIdentity,
+  JSContentCodec,
+  LeaveRequestCodec,
+  DeleteMessageCodec,
+  ReplyCodec,
 } from 'xmtp-react-native-sdk'
 
 // Debug logging state
@@ -52,7 +56,8 @@ export function assert(condition: boolean, msg: string) {
 
 export async function createClients(
   numClients: number,
-  env?: XMTPEnvironment | undefined
+  env?: XMTPEnvironment | undefined,
+  customCodecs?: JSContentCodec<any>[]
 ): Promise<Client[]> {
   const clients = []
   for (let i = 0; i < numClients; i++) {
@@ -70,6 +75,12 @@ export async function createClients(
     Client.register(new MultiRemoteAttachmentCodec())
     Client.register(new ReactionCodec())
     Client.register(new ReactionV2Codec())
+    Client.register(new LeaveRequestCodec())
+    Client.register(new DeleteMessageCodec())
+    Client.register(new ReplyCodec())
+    for (const codec of customCodecs ?? []) {
+      Client.register(codec)
+    }
     clients.push(client)
   }
   return clients

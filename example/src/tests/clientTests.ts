@@ -1119,18 +1119,6 @@ test('can revoke installations', async () => {
   return true
 })
 
-test('can upload archive debug information', async () => {
-  const [alix] = await createClients(1)
-  const uploadKey = await alix.debugInformation.uploadDebugInformation()
-
-  assert(
-    typeof uploadKey === 'string' && uploadKey.length > 0,
-    'uploadKey should not be empty'
-  )
-
-  return true
-})
-
 test('can create, inspect, import and resync archive', async () => {
   const [bo] = await createClients(1)
   const key = crypto.getRandomValues(new Uint8Array(32))

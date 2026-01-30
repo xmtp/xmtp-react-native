@@ -37,6 +37,7 @@ class PermissionPolicySetWrapper {
                 "updateGroupDescriptionPolicy" to fromPermissionOption(policySet.updateGroupDescriptionPolicy),
                 "updateGroupImagePolicy" to fromPermissionOption(policySet.updateGroupImagePolicy),
                 "updateMessageDisappearingPolicy" to fromPermissionOption(policySet.updateMessageDisappearingPolicy),
+                "updateAppDataPolicy" to fromPermissionOption(policySet.updateAppDataPolicy),
             )
         }
 
@@ -51,6 +52,7 @@ class PermissionPolicySetWrapper {
                 updateGroupDescriptionPolicy = createPermissionOptionFromString(jsonObj.get("updateGroupDescriptionPolicy").asString),
                 updateGroupImagePolicy = createPermissionOptionFromString(jsonObj.get("updateGroupImagePolicy").asString),
                 updateMessageDisappearingPolicy = createPermissionOptionFromString(jsonObj.get("updateMessageDisappearingPolicy").asString),
+                updateAppDataPolicy = createPermissionOptionFromString(jsonObj.get("updateAppDataPolicy").asString),
             )
         }
 

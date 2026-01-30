@@ -47,4 +47,12 @@ export enum EventTypes {
    * A preference stream was closed
    */
   PreferenceUpdatesClosed = 'preferencesClosed',
+  /**
+   * A message deletion event
+   */
+  MessageDeletion = 'messageDeletion',
+  /**
+   * A message deletion stream was closed
+   */
+  MessageDeletionClosed = 'messageDeletionClosed',
 }

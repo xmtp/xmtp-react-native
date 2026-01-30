@@ -5,8 +5,18 @@ import { InboxId } from '../Client'
 export type EncodedContent = content.EncodedContent
 export type ContentTypeId = content.ContentTypeId
 
+/**
+ * Converts a ContentTypeId to a string that can be used as a hash key.
+ * Format: "authorityId/typeId:versionMajor.versionMinor"
+ * Example: "xmtp.org/text:1.0"
+ */
+export function contentTypeIdToString(contentTypeId: ContentTypeId): string {
+  return `${contentTypeId.authorityId}/${contentTypeId.typeId}:${contentTypeId.versionMajor}.${contentTypeId.versionMinor}`
+}
+
 export type UnknownContent = {
   contentTypeId: string
+  content?: string
 }
 
 export type ReadReceiptContent = object
@@ -51,6 +61,14 @@ export type RemoteAttachmentMetadata = {
 export type EncryptedLocalAttachment = {
   encryptedLocalFileUri: string
   metadata: RemoteAttachmentMetadata
+}
+
+export type LeaveRequestContent = {
+  authenticatedNote?: string
+}
+
+export type DeleteMessageContent = {
+  messageId?: string
 }
 
 export type MultiRemoteAttachmentMetadata = {
@@ -101,6 +119,8 @@ export type NativeMessageContent = {
   readReceipt?: ReadReceiptContent
   encoded?: string
   groupUpdated?: GroupUpdatedContent
+  leaveRequest?: LeaveRequestContent
+  deleteMessage?: DeleteMessageContent
 }
 
 export interface JSContentCodec<T> {

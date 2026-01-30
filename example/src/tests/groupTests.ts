@@ -21,6 +21,8 @@ import {
   DecodedMessage,
   ConsentRecord,
   PublicIdentity,
+  LeaveRequestCodec,
+  LeaveRequestContent,
 } from '../../../src/index'
 
 export const groupTests: Test[] = []
@@ -750,7 +752,19 @@ test('unpublished messages handling', async () => {
   // Log content type IDs for debugging
   debugLog('=== alixMessages content type IDs ===')
   alixMessages.forEach((message, index) => {
-    debugLog(`Message ${index}: contentTypeId = "${message.contentTypeId}"`)
+    // Handle sentNs as either bigint or number for robustness
+    const sentNs = message.sentNs
+    // Divide by 1_000_000 to get milliseconds
+    let millis: number
+    if (typeof sentNs === 'bigint') {
+      millis = Number(sentNs / 1000000n)
+    } else {
+      millis = Math.floor(sentNs / 1_000_000)
+    }
+    const timestamp = new Date(millis).toISOString()
+    debugLog(
+      `Message ${index}: contentTypeId = "${message.contentTypeId}" timestamp = ${timestamp}`
+    )
   })
   debugLog('=====================================')
 
@@ -2092,6 +2106,7 @@ test('handles disappearing messages in a group', async () => {
     updateGroupDescriptionPolicy: 'allow',
     updateGroupImagePolicy: 'admin',
     updateMessageDisappearingPolicy: 'deny',
+    updateAppDataPolicy: 'allow',
   }
 
   // Create group with disappearing messages enabled
@@ -2315,6 +2330,103 @@ test('handles disappearing messages in a group', async () => {
   return true
 })
 
+test('streams deleted messages when disappearing messages occur a group', async () => {
+  const [alixClient, boClient] = await createClients(2)
+
+  debugLog('test disappearing messages in a group please')
+
+  const initialSettings = {
+    disappearStartingAtNs: 1_000_000_000,
+    retentionDurationInNs: 1_000_000_000, // 1s duration
+  }
+
+  // Create group with disappearing messages enabled
+  const boGroup = await boClient.conversations.newGroup([alixClient.inboxId], {
+    disappearingMessageSettings: initialSettings,
+  })
+  await boClient.conversations.newGroupWithIdentities(
+    [alixClient.publicIdentity],
+    {
+      disappearingMessageSettings: initialSettings,
+    }
+  )
+
+  let deletedMessages = 0
+  await boClient.conversations.streamMessageDeletions(
+    async (messageId, conversationId) => {
+      console.log(
+        `Deleted message ${messageId} in conversation ${conversationId}`
+      )
+      deletedMessages++
+    }
+  )
+
+  await boGroup.send('howdy')
+  await alixClient.conversations.syncAllConversations()
+
+  const alixGroup = await alixClient.conversations.findGroup(boGroup.id)
+
+  // Validate initial state
+  await assertEqual(
+    () => boGroup.messages().then((m) => m.length),
+    2,
+    'BoGroup should have 2 messages'
+  )
+  await assertEqual(
+    () => alixGroup!.messages().then((m) => m.length),
+    2,
+    'AlixGroup should have 2 message'
+  )
+  await assertEqual(
+    () => boGroup.disappearingMessageSettings() !== undefined,
+    true,
+    'BoGroup should have disappearing settings'
+  )
+  await assertEqual(
+    () =>
+      boGroup
+        .disappearingMessageSettings()
+        .then((s) => s!.retentionDurationInNs),
+    1_000_000_000,
+    'Retention duration should be 1s'
+  )
+  await assertEqual(
+    () =>
+      boGroup
+        .disappearingMessageSettings()
+        .then((s) => s!.disappearStartingAtNs),
+    1_000_000_000,
+    'Disappearing should start at 1s'
+  )
+
+  // Wait for messages to disappear
+  await delayToPropogate(5000)
+
+  // Validate messages are deleted
+  await assertEqual(
+    () => boGroup.messages().then((m) => m.length),
+    1,
+    'BoGroup should have 1 remaining message'
+  )
+  await assertEqual(
+    () => alixGroup!.messages().then((m) => m.length),
+    1,
+    'AlixGroup should have 1 messages left'
+  )
+
+  await assertEqual(
+    () => boGroup.isDisappearingMessagesEnabled(),
+    true,
+    'BoGroup should have disappearing enabled'
+  )
+
+  await boClient.conversations.cancelStreamMessageDeletions()
+
+  await assertEqual(() => deletedMessages, 1, 'Deleted messages should be 1')
+
+  return true
+})
+
 test('can leave a group', async () => {
   const [alixClient, boClient] = await createClients(2)
 
@@ -2362,44 +2474,51 @@ test('can leave a group', async () => {
     'Alix group should not be active after processing'
   )
 
+  // Inspect the leave group message content
+  const boMessages = await boGroup.messages()
+
+  // Log all messages to see what's available
+  console.log('All messages after leave:')
+  boMessages.forEach((m) => {
+    console.log(`  - ${m.id}: ${m.contentTypeId}`)
+    console.log(`    nativeContent: ${JSON.stringify(m.nativeContent)}`)
+  })
+
+  const leaveMessage = boMessages.find(
+    (m) => m.contentTypeId === 'xmtp.org/leave_request:1.0'
+  )
+
+  if (!leaveMessage) {
+    console.log('No leave_request message found, checking for group_updated...')
+    const groupUpdatedMessage = boMessages.find(
+      (m) => m.contentTypeId === 'xmtp.org/group_updated:1.0'
+    )
+    if (groupUpdatedMessage) {
+      console.log('Found group_updated message instead')
+      console.log(
+        'nativeContent:',
+        JSON.stringify(groupUpdatedMessage.nativeContent)
+      )
+    }
+  }
+
+  assert(leaveMessage !== undefined, 'Leave message should exist')
+
+  console.log(
+    'Leave message nativeContent:',
+    JSON.stringify(leaveMessage?.nativeContent)
+  )
+  const leaveContent: LeaveRequestContent = (leaveMessage?.nativeContent as any)
+    ?.leaveRequest as LeaveRequestContent
+  console.log('Leave group message content:', JSON.stringify(leaveContent))
+
+  // LeaveRequestContent only has an optional authenticatedNote field
+  // The actual leave is indicated by the message existing with the leave_request content type
+  assert(leaveContent !== undefined, 'Leave content should be defined')
+  console.log(
+    'Leave request authenticatedNote:',
+    leaveContent?.authenticatedNote
+  )
+
   return true
 })
-
-// Commenting this out so it doesn't block people, but nice to have?
-// test('can stream messages for a long time', async () => {
-//   const bo = await Client.createRandom({ env: 'local', enableV3: true })
-//   await delayToPropogate()
-//   const alix = await Client.createRandom({ env: 'local', enableV3: true })
-//   await delayToPropogate()
-//   const caro = await Client.createRandom({ env: 'local', enableV3: true })
-//   await delayToPropogate()
-
-//   // Setup stream alls
-//   const allBoMessages: any[] = []
-//   const allAliMessages: any[] = []
-
-//   const group = await caro.conversations.newGroup([alix.inboxId])
-//   await bo.conversations.streamAllMessages(async (conversation) => {
-//     allBoMessages.push(conversation)
-//   }, true)
-//   await alix.conversations.streamAllMessages(async (conversation) => {
-//     allAliMessages.push(conversation)
-//   }, true)
-
-//   // Wait for 15 minutes
-//   await delayToPropogate(15 * 1000 * 60)
-
-//   // Start Caro starts a new conversation.
-//   const convo = await caro.conversations.newConversation(alix.inboxId)
-//   await group.send({ text: 'hello' })
-//   await convo.send({ text: 'hello' })
-//   await delayToPropogate()
-//   if (allBoMessages.length !== 0) {
-//     throw Error('Unexpected all conversations count ' + allBoMessages.length)
-//   }
-//   if (allAliMessages.length !== 2) {
-//     throw Error('Unexpected all conversations count ' + allAliMessages.length)
-//   }
-
-//   return true
-// })

@@ -20,13 +20,6 @@ export default class XMTPDebugInformation {
     )
   }
 
-  async uploadDebugInformation(serverUrl?: string): Promise<string> {
-    return await XMTPModule.uploadDebugInformation(
-      this.client.installationId,
-      serverUrl
-    )
-  }
-
   async getKeyPackageStatuses(
     installationIds: InstallationId[]
   ): Promise<KeyPackageStatuses> {

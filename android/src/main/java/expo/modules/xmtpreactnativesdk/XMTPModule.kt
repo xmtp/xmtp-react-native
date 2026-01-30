@@ -26,6 +26,7 @@ import expo.modules.xmtpreactnativesdk.wrappers.DecryptedLocalAttachment
 import expo.modules.xmtpreactnativesdk.wrappers.DisappearingMessageSettingsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.DmWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.EncryptedLocalAttachment
+import expo.modules.xmtpreactnativesdk.wrappers.EnrichedMessageQueryParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.GroupWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.InboxStateWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.KeyPackageStatusWrapper
@@ -152,6 +153,10 @@ fun Conversation.cacheKey(installationId: String): String {
     return "${installationId}:${topic}"
 }
 
+fun getMessageDeletionsCacheKey(installationId: String): String {
+    return "${installationId}:messageDeletions"
+}
+
 class XMTPModule : Module() {
     private val PREFS_NAME = "XMTPModulePrefs"
     private val LOG_WRITER_ACTIVE_KEY = "logWriterActive"
@@ -238,7 +243,6 @@ class XMTPModule : Module() {
             dbDirectory = authOptions.dbDirectory,
             historySyncUrl = historySyncUrl,
             deviceSyncEnabled = authOptions.deviceSyncEnabled,
-            debugEventsEnabled = authOptions.debugEventsEnabled,
             forkRecoveryOptions = authOptions.forkRecoveryOptions
         )
     }
@@ -273,12 +277,14 @@ class XMTPModule : Module() {
             "conversationMessage",
             "consent",
             "preferences",
+            "messageDeletion",
             // Streams Closed
             "conversationClosed",
             "messageClosed",
             "conversationMessageClosed",
             "consentClosed",
             "preferencesClosed",
+            "messageDeletionClosed"
         )
 
         Function("inboxId") { installationId: String ->
@@ -584,7 +590,7 @@ class XMTPModule : Module() {
                 logV("ffiRevokeAllOtherInstallationsSignatureText")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val sigRequest = client.ffiRevokeAllOtherInstallations()
-                sigRequest.let {
+                sigRequest?.let {
                     clientSignatureRequests[installationId] = it
                     it.signatureText()
                 }
@@ -850,6 +856,11 @@ class XMTPModule : Module() {
             subscriptions[getConsentKey(installationId)]?.cancel()
         }
 
+        Function("unsubscribeFromMessageDeletions") { installationId: String ->
+            logV("unsubscribeFromMessageDeletions")
+            subscriptions[getMessageDeletionsCacheKey(installationId)]?.cancel()
+        }
+
         AsyncFunction("getOrCreateInboxId") Coroutine { publicIdentity: String, environment: String ->
             withContext(Dispatchers.IO) {
                 try {
@@ -1034,6 +1045,43 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("conversationEnrichedMessages") Coroutine { installationId: String, conversationId: String, queryParamsJson: String? ->
+            withContext(Dispatchers.IO) {
+                logV("conversationEnrichedMessages")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                val queryParams = EnrichedMessageQueryParamsWrapper.fromJson(queryParamsJson ?: "")
+                
+                // Convert deliveryStatus string to enum
+                val deliveryStatus = when (queryParams.deliveryStatus?.uppercase()) {
+                    "PUBLISHED" -> DecodedMessage.MessageDeliveryStatus.PUBLISHED
+                    "UNPUBLISHED" -> DecodedMessage.MessageDeliveryStatus.UNPUBLISHED
+                    "FAILED" -> DecodedMessage.MessageDeliveryStatus.FAILED
+                    else -> DecodedMessage.MessageDeliveryStatus.ALL
+                }
+                
+                // Convert sortBy string to enum
+                val sortBy = when (queryParams.sortBy?.uppercase()) {
+                    "INSERTED_TIME" -> DecodedMessage.SortBy.INSERTED_TIME
+                    else -> DecodedMessage.SortBy.SENT_TIME
+                }
+                
+                conversation?.enrichedMessages(
+                    limit = queryParams.limit,
+                    beforeNs = queryParams.beforeNs,
+                    afterNs = queryParams.afterNs,
+                    direction = DecodedMessage.SortDirection.valueOf(
+                        queryParams.direction ?: "DESCENDING"
+                    ),
+                    deliveryStatus = deliveryStatus,
+                    excludeSenderInboxIds = queryParams.excludeSenderInboxIds,
+                    insertedAfterNs = queryParams.insertedAfterNs,
+                    insertedBeforeNs = queryParams.insertedBeforeNs,
+                    sortBy = sortBy
+                )?.map { MessageWrapper.encode(it) }
+            }
+        }
+
         AsyncFunction("findMessage") Coroutine { installationId: String, messageId: String ->
             withContext(Dispatchers.IO) {
                 logV("findMessage")
@@ -1135,6 +1183,16 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("publishMessage") Coroutine { installationId: String, id: String, messageId: String ->
+            withContext(Dispatchers.IO) {
+                logV("publishMessage")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(id)
+                    ?: throw XMTPException("no conversation found for $id")
+                conversation.publishMessage(messageId)
+            }
+        }
+
         AsyncFunction("publishPreparedMessages") Coroutine { installationId: String, id: String ->
             withContext(Dispatchers.IO) {
                 logV("publishPreparedMessages")
@@ -1145,7 +1203,7 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("prepareMessage") Coroutine { installationId: String, id: String, contentJson: String ->
+        AsyncFunction("prepareMessage") Coroutine { installationId: String, id: String, contentJson: String, noSend: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("prepareMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -1154,12 +1212,13 @@ class XMTPModule : Module() {
                 val sending = ContentJson.fromJson(contentJson)
                 conversation.prepareMessage(
                     content = sending.content,
-                    options = SendOptions(contentType = sending.type)
+                    options = SendOptions(contentType = sending.type),
+                    noSend = noSend
                 )
             }
         }
 
-        AsyncFunction("prepareEncodedMessage") Coroutine { installationId: String, conversationId: String, encodedContentData: List<Int>, shouldPush: Boolean ->
+        AsyncFunction("prepareEncodedMessage") Coroutine { installationId: String, conversationId: String, encodedContentData: List<Int>, shouldPush: Boolean, noSend: Boolean ->
             withContext(Dispatchers.IO) {
                 logV("prepareEncodedMessage")
                 val client = clients[installationId] ?: throw XMTPException("No client")
@@ -1175,7 +1234,7 @@ class XMTPModule : Module() {
                         }
                     }
                 val encodedContent = EncodedContent.parseFrom(encodedContentDataBytes)
-                conversation.prepareMessage(encodedContent = encodedContent, opts = MessageVisibilityOptions(shouldPush))
+                conversation.prepareMessage(encodedContent = encodedContent, opts = MessageVisibilityOptions(shouldPush), noSend = noSend)
             }
         }
 
@@ -1224,7 +1283,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1246,7 +1306,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1270,7 +1331,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1294,7 +1356,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1315,7 +1378,8 @@ class XMTPModule : Module() {
                     createGroupParams.groupName,
                     createGroupParams.groupImageUrl,
                     createGroupParams.groupDescription,
-                    createGroupParams.disappearingMessageSettings
+                    createGroupParams.disappearingMessageSettings,
+                    createGroupParams.appData
                 )
                 GroupWrapper.encode(client, group)
             }
@@ -1357,6 +1421,14 @@ class XMTPModule : Module() {
                 logV("syncConversations")
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 client.conversations.sync()
+            }
+        }
+
+        AsyncFunction("sendSyncRequest") Coroutine { installationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("sendSyncRequest")
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                client.sendSyncRequest()
             }
         }
 
@@ -1876,6 +1948,16 @@ class XMTPModule : Module() {
             }
         }
 
+        AsyncFunction("deleteMessage") Coroutine { clientInstallationId: String, conversationId: String, messageId: String ->
+            withContext(Dispatchers.IO) {
+                logV("deleteMessage")
+                val client = clients[clientInstallationId] ?: throw XMTPException("No client")
+                val conversation = client.conversations.findConversation(conversationId)
+                    ?: throw XMTPException("no conversation found for $conversationId")
+                conversation.deleteMessage(messageId)
+            }
+        }
+
         Function("subscribeToPreferenceUpdates") { installationId: String ->
             logV("subscribeToPreferenceUpdates")
 
@@ -1911,6 +1993,15 @@ class XMTPModule : Module() {
                 subscribeToMessages(
                     installationId = installationId,
                     id = id
+                )
+            }
+        }
+
+        AsyncFunction("subscribeToMessageDeletions") Coroutine { installationId: String ->
+            withContext(Dispatchers.IO) {
+                logV("subscribeToMessageDeletions")
+                subscribeToMessageDeletions(
+                    installationId = installationId,
                 )
             }
         }
@@ -2017,15 +2108,6 @@ class XMTPModule : Module() {
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 client.debugInformation.clearAllStatistics()
-            }
-        }
-
-        AsyncFunction("uploadDebugInformation") Coroutine { installationId: String, serverUrl: String? ->
-            withContext(Dispatchers.IO) {
-                val client = clients[installationId] ?: throw XMTPException("No client")
-                serverUrl.takeUnless { it.isNullOrBlank() }?.let {
-                    client.debugInformation.uploadDebugInformation(it)
-                } ?: client.debugInformation.uploadDebugInformation()
             }
         }
 
@@ -2313,6 +2395,35 @@ class XMTPModule : Module() {
                 } catch (e: Exception) {
                     Log.e("XMTPModule", "Error in messages subscription: $e")
                     subscriptions[conversation.cacheKey(installationId)]?.cancel()
+                }
+            }
+    }
+
+    private fun subscribeToMessageDeletions(installationId: String) {
+        val client = clients[installationId] ?: throw XMTPException("No client")
+        subscriptions[getMessageDeletionsCacheKey(installationId)]?.cancel()
+        subscriptions[getMessageDeletionsCacheKey(installationId)] =
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    client.conversations.streamMessageDeletions(onClose = {
+                        sendEvent(
+                            "messageDeletionClosed", mapOf(
+                                "installationId" to installationId,
+                            )
+                        )
+                    }).collect { message ->
+                        sendEvent(
+                            "messageDeletion",
+                            mapOf(
+                                "installationId" to installationId,
+                                "messageId" to message.id,
+                                "conversationId" to message.conversationId,
+                                )
+                            )
+                    }
+                } catch (e: Exception) {
+                    Log.e("XMTPModule", "Error in message deletions subscription: $e")
+                    subscriptions[getMessageDeletionsCacheKey(installationId)]?.cancel()
                 }
             }
     }
