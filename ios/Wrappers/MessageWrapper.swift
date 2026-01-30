@@ -115,13 +115,12 @@ struct ContentJson {
 				schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "")
 			))
 		} else if let reaction = obj["reactionV2"] as? [String: Any] {
-            return ContentJson(type: ContentTypeReactionV2, content: FfiReactionPayload(
+			// Use SDK Reaction type (not FfiReactionPayload); ReactionV2Codec encodes Reaction.
+			return ContentJson(type: ContentTypeReactionV2, content: Reaction(
 				reference: reaction["reference"] as? String ?? "",
-				// Update if we add referenceInboxId to ../src/lib/types/ContentCodec.ts#L19-L24
-                referenceInboxId: "",
-				action: ReactionV2Action.fromString(reaction["action"] as? String ?? ""),
+				action: ReactionAction(rawValue: reaction["action"] as? String ?? ""),
 				content: reaction["content"] as? String ?? "",
-				schema: ReactionV2Schema.fromString(reaction["schema"] as? String ?? "")
+				schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "")
 			))
 		}else if let reply = obj["reply"] as? [String: Any] {
 			guard let nestedContent = reply["content"] as? [String: Any] else {
