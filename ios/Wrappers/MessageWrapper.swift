@@ -437,16 +437,61 @@ struct ContentJsonV2 {
 			
 		default:
 			// For unknown/custom content types, try to serialize the content
+			// Match Android's approach: check types first, then use fallback
 			if let content: Any = try? message.content() {
-				// Try to convert to JSON-serializable format
-				let contentString = String(describing: content)
+				// First check if content is already a dictionary (most common case)
+				if let dict = content as? [String: Any] {
+					return ["unknown": [
+						"contentTypeId": contentTypeId.description,
+						"content": dict
+					]]
+				}
+				// Check if it's an array
+				if let array = content as? [Any] {
+					return ["unknown": [
+						"contentTypeId": contentTypeId.description,
+						"content": array
+					]]
+				}
+				// Check if it's a simple value (string, number, bool)
+				if let str = content as? String {
+					return ["unknown": [
+						"contentTypeId": contentTypeId.description,
+						"content": str
+					]]
+				}
+				if let num = content as? NSNumber {
+					return ["unknown": [
+						"contentTypeId": contentTypeId.description,
+						"content": num
+					]]
+				}
+				// For custom types, check if JSONSerialization can handle it
+				if JSONSerialization.isValidJSONObject(content) {
+					do {
+						let jsonData = try JSONSerialization.data(withJSONObject: content, options: [])
+						if let jsonObject = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
+							return ["unknown": [
+								"contentTypeId": contentTypeId.description,
+								"content": jsonObject
+							]]
+						}
+					} catch {
+						// Fall through to fallback
+					}
+				}
+				// Fall back to fallback text for non-serializable types
+				let fallbackText = (try? message.fallback) ?? "Unsupported content type"
 				return ["unknown": [
 					"contentTypeId": contentTypeId.description,
-					"content": contentString
+					"fallback": fallbackText
 				]]
 			}
+			// Content decoding returned nil
+			let fallbackText = (try? message.fallback) ?? "Failed to decode content"
 			return ["unknown": [
-				"contentTypeId": contentTypeId.description
+				"contentTypeId": contentTypeId.description,
+				"fallback": fallbackText
 			]]
 		}
 	}

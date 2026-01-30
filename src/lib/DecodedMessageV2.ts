@@ -31,7 +31,7 @@ export class DecodedMessageV2<
   insertedAtNs: number
   expiresAtNs: number | undefined
   expiresAt: Date | undefined
-  deliveryStatus: MessageDeliveryStatus = MessageDeliveryStatus.PUBLISHED
+  deliveryStatus: MessageDeliveryStatus
   reactions: DecodedMessageV2<ContentType>[]
   hasReactions: boolean
   reactionCount: number

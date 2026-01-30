@@ -2048,6 +2048,29 @@ test('enriched messages with custom JS content type', async () => {
       customContent?.topNumber?.bottomNumber === 99,
       `Custom content bottomNumber should be 99, got ${customContent?.topNumber?.bottomNumber}`
     )
+
+    // Verify nativeContent is properly structured JSON, not a debug string
+    // This catches the iOS bug where String(describing:) was used instead of JSON serialization
+    const nativeContent = customMessage.nativeContent as {
+      unknown?: { content?: unknown; contentTypeId?: string }
+      encoded?: string
+    }
+    console.log(
+      'Custom message nativeContent:',
+      JSON.stringify(nativeContent)
+    )
+
+    // If it's in the "unknown" branch, verify content is a proper object, not a string like "NumberRef(...)"
+    if (nativeContent.unknown?.content) {
+      const contentValue = nativeContent.unknown.content
+      // Content should be a proper JSON object, not a debug string representation
+      assert(
+        typeof contentValue === 'object' ||
+          (typeof contentValue === 'string' &&
+            !contentValue.toString().includes('NumberRef(')),
+        `Custom content should be proper JSON, not a debug string. Got: ${JSON.stringify(contentValue)}`
+      )
+    }
   }
 
   return true
