@@ -1888,14 +1888,6 @@ export async function clearAllNetworkStatistics(
   return await XMTPModule.clearAllNetworkStatistics(installationId)
 }
 
-export async function uploadDebugInformation(
-  installationId: InstallationId,
-  serverUrl?: string
-): Promise<string> {
-  const key = await XMTPModule.uploadDebugInformation(installationId, serverUrl)
-  return key
-}
-
 export async function createArchive(
   installationId: InstallationId,
   path: string,
