@@ -2053,6 +2053,13 @@ test('enriched messages with custom JS content type', async () => {
   return true
 })
 
+// NOTE: Test for transforming codec limitation removed.
+// KNOWN LIMITATION: enrichedMessages() uses the native FFI layer which decodes
+// content before sending to JS. This means JSContentCodec.decode() transformations
+// are NOT applied. The content is returned as-is from FFI.
+// For custom content types that need transformation in decode(), use messages() instead.
+// See DecodedMessageV2.ts for detailed documentation of this limitation.
+
 test('enriched messages can exclude sender inbox ids', async () => {
   const [alix, bo] = await createClients(2)
 

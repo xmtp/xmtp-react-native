@@ -65,7 +65,7 @@ export class DecodedMessageV2<
       decoded.expiresAtNs,
       decoded.expiresAt,
       decoded.deliveryStatus,
-      decoded.reactions,
+      reactions ?? [],
       decoded.hasReactions,
       decoded.reactionCount,
       decoded.fallbackText,
@@ -166,19 +166,29 @@ export class DecodedMessageV2<
     } else if (this.nativeContent.unknown) {
       // Handle unknown/custom content types from DecodedMessageV2
       // The native layer returns {"unknown": {"contentTypeId": "...", "content": "..."}}
+      //
+      // LIMITATION: Unlike regular messages(), the native FFI layer for enrichedMessages()
+      // already decodes the content before sending it to JS. This means:
+      // 1. We cannot call JSContentCodec.decode() because it expects raw EncodedContent
+      // 2. Any transformations a codec does in decode() will NOT be applied
+      // 3. The content is returned as-is from the FFI layer (just JSON parsed)
+      //
+      // For custom content types that need transformation in decode(), use messages() instead.
       const unknownContent = this.nativeContent.unknown
       const contentTypeIdStr =
         unknownContent.contentTypeId ??
         contentTypeIdToString(this.contentTypeId)
-      const codec = Client.codecRegistry[contentTypeIdStr] as JSContentCodec<
-        ExtractDecodedType<ContentType>
-      >
+
+      // Verify we have a codec registered for this content type
+      const codec = Client.codecRegistry[contentTypeIdStr]
       if (!codec) {
         throw new Error(
           `no content type found for unknown content: ${JSON.stringify(this.nativeContent)}`
         )
       }
-      // The content is already JSON-stringified, parse it directly
+
+      // The content is already decoded by FFI and JSON-stringified
+      // We can only return it as-is - codec.decode() cannot be used here
       if (unknownContent.content) {
         return JSON.parse(
           unknownContent.content
