@@ -472,6 +472,7 @@ test('can create a group with custom permissions', async () => {
     updateGroupDescriptionPolicy: 'allow',
     updateGroupImagePolicy: 'admin',
     updateMessageDisappearingPolicy: 'deny',
+    updateAppDataPolicy: 'allow',
   }
 
   // Bo creates a group with Alix and Caro with custom permissions
@@ -552,6 +553,7 @@ test('creating a group with invalid permissions should fail', async () => {
     updateGroupDescriptionPolicy: 'allow',
     updateGroupImagePolicy: 'admin',
     updateMessageDisappearingPolicy: 'admin',
+    updateAppDataPolicy: 'allow',
   }
 
   // Bo creates a group with Alix and Caro
