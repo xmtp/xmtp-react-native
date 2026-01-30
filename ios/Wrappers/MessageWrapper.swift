@@ -34,7 +34,7 @@ struct MessageWrapper {
 			try? encodeToObjV2(reaction)
 		}
 		let reactionCount = reactionsList.count
-		return [
+		var result: [String: Any] = [
 			"id": model.id,
 			"conversationId": model.conversationId,
 			"contentTypeId": model.contentTypeId.description,
@@ -43,14 +43,21 @@ struct MessageWrapper {
 			"sentAt": model.sentAtNs / 1_000_000,
 			"sentAtNs": model.sentAtNs,
 			"insertedAtNs": model.insertedAtNs,
-			"expiresAtNs": model.expiresAtNs as Any,
-			"expiresAt": model.expiresAt.map { Int64($0.timeIntervalSince1970 * 1000) } as Any,
-			"fallbackText": (try? model.fallback) as Any,
 			"deliveryStatus": model.deliveryStatus.rawValue.uppercased(),
 			"reactions": reactions,
 			"hasReactions": reactionCount > 0,
 			"reactionCount": Int64(reactionCount)
 		]
+		if let expiresAtNs = model.expiresAtNs {
+			result["expiresAtNs"] = expiresAtNs
+		}
+		if let expiresAt = model.expiresAt {
+			result["expiresAt"] = Int64(expiresAt.timeIntervalSince1970 * 1000)
+		}
+		if let fallbackText = try? model.fallback {
+			result["fallbackText"] = fallbackText
+		}
+		return result
 	}
 
 	static func encodeV2(_ model: XMTP.DecodedMessageV2) throws -> String {
