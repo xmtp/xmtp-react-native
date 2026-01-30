@@ -2,7 +2,10 @@ import ReactNativeBlobUtil from 'react-native-blob-util'
 
 import { Test, assert, createClients, delayToPropogate } from './test-utils'
 import {
+  contentTypeIdToString,
   DecodedMessage,
+  DeleteMessageCodec,
+  LeaveRequestCodec,
   MultiRemoteAttachmentCodec,
   MultiRemoteAttachmentContent,
   ReactionContent,
@@ -10,6 +13,13 @@ import {
   RemoteAttachmentInfo,
 } from '../../../src/index'
 const { fs } = ReactNativeBlobUtil
+
+// Expected native content type ID strings (must match Android ContentType* and iOS ContentType*).
+// Used to assert JS native codecs stay in parity with native SDKs.
+const NATIVE_CONTENT_TYPE_IDS = {
+  deleteMessage: 'xmtp.org/deleteMessage:1.0', // ContentTypeDeleteMessageRequest
+  leave_request: 'xmtp.org/leave_request:1.0', // ContentTypeLeaveRequest
+} as const
 
 export const contentTypeTests: Test[] = []
 let counter = 1
@@ -19,6 +29,27 @@ function test(name: string, perform: () => Promise<boolean>) {
     run: perform,
   })
 }
+
+test('native codec contentTypeIds match expected native SDK values', async () => {
+  // Asserts parity between JS native codecs and Android/iOS ContentType* ids.
+  // A mismatch (e.g. typeId 'deletedMessage' vs native 'deleteMessage') would break
+  // codec lookups, fallbackText, and custom handling.
+  const deleteMessageCodec = new DeleteMessageCodec()
+  const deleteMessageId = contentTypeIdToString(deleteMessageCodec.contentType)
+  assert(
+    deleteMessageId === NATIVE_CONTENT_TYPE_IDS.deleteMessage,
+    `DeleteMessageCodec contentType should match native ContentTypeDeleteMessageRequest. Expected ${NATIVE_CONTENT_TYPE_IDS.deleteMessage}, got ${deleteMessageId}`
+  )
+
+  const leaveRequestCodec = new LeaveRequestCodec()
+  const leaveRequestId = contentTypeIdToString(leaveRequestCodec.contentType)
+  assert(
+    leaveRequestId === NATIVE_CONTENT_TYPE_IDS.leave_request,
+    `LeaveRequestCodec contentType should match native ContentTypeLeaveRequest. Expected ${NATIVE_CONTENT_TYPE_IDS.leave_request}, got ${leaveRequestId}`
+  )
+
+  return true
+})
 
 test('DecodedMessage.from() should throw informative error on null', async () => {
   try {

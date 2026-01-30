@@ -5,6 +5,11 @@ import {
   NativeMessageContent,
 } from '../ContentCodec'
 
+/**
+ * Native codec for delete-message content.
+ * contentType must match Android ContentTypeDeleteMessageRequest and iOS ContentTypeDeleteMessageRequest
+ * (authorityId/typeId/version). Serialized under key "deleteMessage" in ContentJson/ContentJsonV2/MessageWrapper.
+ */
 export class DeleteMessageCodec
   implements NativeContentCodec<DeleteMessageContent>
 {
@@ -12,7 +17,7 @@ export class DeleteMessageCodec
 
   contentType: ContentTypeId = {
     authorityId: 'xmtp.org',
-    typeId: 'deletedMessage',
+    typeId: 'deleteMessage',
     versionMajor: 1,
     versionMinor: 0,
   }
