@@ -144,14 +144,14 @@ class ContentJson(
                 )
             } else if (obj.has("reactionV2")) {
                 val reaction = obj.get("reactionV2").asJsonObject
+                // Use SDK Reaction type (not FfiReactionPayload); ReactionV2Codec encodes Reaction.
                 return ContentJson(
-                    ContentTypeReactionV2, FfiReactionPayload(
+                    ContentTypeReactionV2, Reaction(
                         reference = reaction.get("reference").asString,
-                        action = getReactionV2Action(reaction.get("action").asString.lowercase()),
-                        schema = getReactionV2Schema(reaction.get("schema").asString.lowercase()),
+                        action = getReactionAction(reaction.get("action").asString.lowercase()),
+                        schema = getReactionSchema(reaction.get("schema").asString.lowercase()),
                         content = reaction.get("content").asString,
-                        // Update if we add referenceInboxId to ../src/lib/types/ContentCodec.ts#L19-L24
-                        referenceInboxId = ""
+                        referenceInboxId = reaction.get("referenceInboxId")?.asString ?: ""
                     )
                 )
             } else if (obj.has("reply")) {
