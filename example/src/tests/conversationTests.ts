@@ -2055,10 +2055,7 @@ test('enriched messages with custom JS content type', async () => {
       unknown?: { content?: unknown; contentTypeId?: string }
       encoded?: string
     }
-    console.log(
-      'Custom message nativeContent:',
-      JSON.stringify(nativeContent)
-    )
+    console.log('Custom message nativeContent:', JSON.stringify(nativeContent))
 
     // If it's in the "unknown" branch, verify content is a proper object, not a string like "NumberRef(...)"
     if (nativeContent.unknown?.content) {

@@ -10,9 +10,7 @@ import {
 } from './ContentCodec'
 import { MessageDeliveryStatus } from './DecodedMessage'
 import { ConversationId, MessageId } from './types'
-import {
-  DecodedMessageUnionV2,
-} from './types/DecodedMessageUnion'
+import { DecodedMessageUnionV2 } from './types/DecodedMessageUnion'
 import { DefaultContentTypes } from './types/DefaultContentType'
 
 const allowEmptyProperties: (keyof NativeMessageContent)[] = [
