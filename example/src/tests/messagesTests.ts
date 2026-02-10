@@ -205,6 +205,97 @@ test('can filter dm messages by afterNs and beforeNs', async () => {
   return true
 })
 
+test('can sort messages by sortBy parameter', async () => {
+  const [alixClient, boClient] = await createClients(2)
+
+  const alixGroup = await alixClient.conversations.newGroup([boClient.inboxId])
+
+  // Send messages with delays to ensure different timestamps
+  await alixGroup.send('message 1')
+  await delayToPropogate(100)
+  await alixGroup.send('message 2')
+  await delayToPropogate(100)
+  await alixGroup.send('message 3')
+  await delayToPropogate(100)
+
+  // Fetch messages sorted by SENT_TIME ascending
+  const messagesBySentAsc = await alixGroup.messages({
+    direction: 'ASCENDING',
+    sortBy: 'SENT_TIME',
+  })
+  // Filter to only text messages (exclude group creation membership change)
+  const textMessagesBySentAsc = messagesBySentAsc.filter(
+    (m) => typeof m.content() === 'string' && (m.content() as string).startsWith('message')
+  )
+  assert(
+    textMessagesBySentAsc.length === 3,
+    `Expected 3 text messages sorted by SENT_TIME, got ${textMessagesBySentAsc.length}`
+  )
+  assert(
+    textMessagesBySentAsc[0].content() === 'message 1',
+    `Expected first message to be 'message 1' when sorted by SENT_TIME ascending, got '${textMessagesBySentAsc[0].content()}'`
+  )
+  assert(
+    textMessagesBySentAsc[2].content() === 'message 3',
+    `Expected last message to be 'message 3' when sorted by SENT_TIME ascending, got '${textMessagesBySentAsc[2].content()}'`
+  )
+
+  // Fetch messages sorted by SENT_TIME descending
+  const messagesBySentDesc = await alixGroup.messages({
+    direction: 'DESCENDING',
+    sortBy: 'SENT_TIME',
+  })
+  const textMessagesBySentDesc = messagesBySentDesc.filter(
+    (m) => typeof m.content() === 'string' && (m.content() as string).startsWith('message')
+  )
+  assert(
+    textMessagesBySentDesc[0].content() === 'message 3',
+    `Expected first message to be 'message 3' when sorted by SENT_TIME descending, got '${textMessagesBySentDesc[0].content()}'`
+  )
+
+  // Fetch messages sorted by INSERTED_TIME ascending
+  const messagesByInsertedAsc = await alixGroup.messages({
+    direction: 'ASCENDING',
+    sortBy: 'INSERTED_TIME',
+  })
+  const textMessagesByInsertedAsc = messagesByInsertedAsc.filter(
+    (m) => typeof m.content() === 'string' && (m.content() as string).startsWith('message')
+  )
+  assert(
+    textMessagesByInsertedAsc.length === 3,
+    `Expected 3 text messages sorted by INSERTED_TIME, got ${textMessagesByInsertedAsc.length}`
+  )
+  // Verify ordering: inserted time should be in ascending order
+  for (let i = 0; i < textMessagesByInsertedAsc.length - 1; i++) {
+    assert(
+      textMessagesByInsertedAsc[i].insertedAtNs <= textMessagesByInsertedAsc[i + 1].insertedAtNs,
+      `Messages not in ascending INSERTED_TIME order at index ${i}`
+    )
+  }
+
+  // Fetch messages sorted by INSERTED_TIME descending
+  const messagesByInsertedDesc = await alixGroup.messages({
+    direction: 'DESCENDING',
+    sortBy: 'INSERTED_TIME',
+  })
+  const textMessagesByInsertedDesc = messagesByInsertedDesc.filter(
+    (m) => typeof m.content() === 'string' && (m.content() as string).startsWith('message')
+  )
+  assert(
+    textMessagesByInsertedDesc[0].content() === 'message 3',
+    `Expected first message to be 'message 3' when sorted by INSERTED_TIME descending, got '${textMessagesByInsertedDesc[0].content()}'`
+  )
+  // Verify ordering: inserted time should be in descending order
+  for (let i = 0; i < textMessagesByInsertedDesc.length - 1; i++) {
+    assert(
+      textMessagesByInsertedDesc[i].insertedAtNs >= textMessagesByInsertedDesc[i + 1].insertedAtNs,
+      `Messages not in descending INSERTED_TIME order at index ${i}`
+    )
+  }
+
+  return true
+})
+
 test('can filter dm messages by insertedAfterNs and insertedBeforeNs', async () => {
   const [alixClient, boClient] = await createClients(2)
 
