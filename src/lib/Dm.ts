@@ -238,7 +238,10 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
       opts?.afterNs,
       opts?.direction,
       opts?.excludeContentTypes,
-      opts?.excludeSenderInboxIds
+      opts?.excludeSenderInboxIds,
+      opts?.sortBy,
+      opts?.insertedAfterNs,
+      opts?.insertedBeforeNs
     )
   }
 
@@ -290,7 +293,10 @@ export class Dm<ContentTypes extends DefaultContentTypes = DefaultContentTypes>
       opts?.afterNs,
       opts?.direction,
       opts?.excludeContentTypes,
-      opts?.excludeSenderInboxIds
+      opts?.excludeSenderInboxIds,
+      opts?.sortBy,
+      opts?.insertedAfterNs,
+      opts?.insertedBeforeNs
     )
   }
 

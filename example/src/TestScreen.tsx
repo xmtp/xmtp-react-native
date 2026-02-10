@@ -10,6 +10,7 @@ import { groupPerformanceTests } from './tests/groupPerformanceTests'
 import { groupPermissionsTests } from './tests/groupPermissionsTests'
 import { groupTests } from './tests/groupTests'
 import { historySyncTests } from './tests/historySyncTests'
+import { messagesTests } from './tests/messagesTests'
 import { restartStreamTests } from './tests/restartStreamsTests'
 import {
   Test,
@@ -158,6 +159,7 @@ export enum TestCategory {
   dm = 'dm',
   group = 'group',
   conversation = 'conversation',
+  messages = 'messages',
   restartStreans = 'restartStreams',
   groupPermissions = 'groupPermissions',
   groupPerformance = 'groupPerformance',
@@ -187,6 +189,7 @@ export default function TestScreen(): JSX.Element {
     ...dmTests,
     ...groupTests,
     ...conversationTests,
+    ...messagesTests,
     ...restartStreamTests,
     ...groupPermissionsTests,
     ...contentTypeTests,
@@ -213,6 +216,10 @@ export default function TestScreen(): JSX.Element {
     case TestCategory.conversation:
       activeTests = conversationTests
       title = 'Conversation Unit Tests'
+      break
+    case TestCategory.messages:
+      activeTests = messagesTests
+      title = 'Messages Unit Tests'
       break
     case TestCategory.restartStreans:
       activeTests = restartStreamTests

@@ -3,24 +3,25 @@ import XMTP
 
 // Wrapper around XMTP.DecodedMessage to allow passing these objects back
 // into react native.
-struct MessageWrapper {
+enum MessageWrapper {
 	static func encodeToObj(_ model: XMTP.DecodedMessage) throws -> [String: Any] {
-    // Swift Protos don't support null values and will always put the default ""
-    // Check if there is a fallback, if there is then make it the set fallback, if not null
+		// Swift Protos don't support null values and will always put the default ""
+		// Check if there is a fallback, if there is then make it the set fallback, if not null
 		let fallback = try model.encodedContent.hasFallback ? model.encodedContent.fallback : nil
-		return [
+		return try [
 			"id": model.id,
 			"topic": model.topic,
-			"contentTypeId": try model.encodedContent.type.description,
-			"content": try ContentJson.fromEncoded(model.encodedContent).toJsonMap() as Any,
+			"contentTypeId": model.encodedContent.type.description,
+			"content": ContentJson.fromEncoded(model.encodedContent).toJsonMap() as Any,
 			"senderInboxId": model.senderInboxId,
 			"sentNs": model.sentAtNs,
+			"insertedAtNs": model.insertedAtNs,
 			"fallback": fallback,
 			"deliveryStatus": model.deliveryStatus.rawValue.uppercased(),
-            "childMessages": model.childMessages?.map { childMessage in
-                try? encodeToObj(childMessage)
-            }
-        ]
+			"childMessages": model.childMessages?.map { childMessage in
+				try? encodeToObj(childMessage)
+			},
+		]
 	}
 
 	static func encode(_ model: XMTP.DecodedMessage) throws -> String {
@@ -122,7 +123,7 @@ struct ContentJson {
 				content: reaction["content"] as? String ?? "",
 				schema: ReactionSchema(rawValue: reaction["schema"] as? String ?? "")
 			))
-		}else if let reply = obj["reply"] as? [String: Any] {
+		} else if let reply = obj["reply"] as? [String: Any] {
 			guard let nestedContent = reply["content"] as? [String: Any] else {
 				throw Error.badReplyContent
 			}
@@ -208,29 +209,30 @@ struct ContentJson {
 				"schema": reaction.schema.rawValue,
 				"content": reaction.content,
 			]]
-        case ContentTypeReactionV2.id:
-            guard let encodedContent = encodedContent else {
-                return ["error": "Missing encoded content for reaction"]
-            }
-            do {
-                let bytes = try encodedContent.serializedData()
-                let reaction = try decodeReaction(bytes: bytes)
-                return ["reaction": [
-                    "reference": reaction.reference,
-                    "action": ReactionV2Action.toString(reaction.action),
-                    "schema": ReactionV2Schema.toString(reaction.schema),
-                    "content": reaction.content,
-                ]]
-            } catch {
-                return ["error": "Failed to decode reaction: \(error.localizedDescription)"]
-            }
+		case ContentTypeReactionV2.id:
+			guard let encodedContent = encodedContent else {
+				return ["error": "Missing encoded content for reaction"]
+			}
+			do {
+				let bytes = try encodedContent.serializedData()
+				let reaction = try decodeReaction(bytes: bytes)
+				return ["reaction": [
+					"reference": reaction.reference,
+					"referenceInboxId": reaction.referenceInboxId,
+					"action": ReactionV2Action.toString(reaction.action),
+					"schema": ReactionV2Schema.toString(reaction.schema),
+					"content": reaction.content,
+				]]
+			} catch {
+				return ["error": "Failed to decode reaction: \(error.localizedDescription)"]
+			}
 		case ContentTypeReply.id where content is XMTP.Reply:
 			let reply = content as! XMTP.Reply
 			let nested = ContentJson(type: reply.contentType, content: reply.content)
 			return ["reply": [
 				"reference": reply.reference,
 				"content": nested.toJsonMap(),
-                "contentType": reply.contentType.description
+				"contentType": reply.contentType.description,
 			] as [String: Any]]
 		case ContentTypeAttachment.id where content is XMTP.Attachment:
 			let attachment = content as! XMTP.Attachment
@@ -252,30 +254,30 @@ struct ContentJson {
 				"url": remoteAttachment.url,
 			]]
 		case ContentTypeMultiRemoteAttachment.id where content is XMTP.MultiRemoteAttachment:
-            guard let encodedContent = encodedContent else {
-                return ["error": "Missing encoded content for multi remote attachment"]
-            }
-            do {
-                let bytes = try encodedContent.serializedData()
-                let multiRemoteAttachment = try decodeMultiRemoteAttachment(bytes: bytes)
-                let attachmentMaps = multiRemoteAttachment.attachments.map { attachment in
-                    return [
-                        "scheme": "https",
-                        "url": attachment.url,
-                        "filename": attachment.filename ?? "",
-                        "contentLength": String(attachment.contentLength ?? 0),
-                        "contentDigest": attachment.contentDigest,
-                        "secret": attachment.secret.toHex,
-                        "salt": attachment.salt.toHex,
-                        "nonce": attachment.nonce.toHex
-                    ]
-                }
-                return ["multiRemoteAttachment": [
-                    "attachments": attachmentMaps
-                ]]
-            } catch {
-                return ["error": "Failed to decode multi remote attachment: \(error.localizedDescription)"]
-            }
+			guard let encodedContent = encodedContent else {
+				return ["error": "Missing encoded content for multi remote attachment"]
+			}
+			do {
+				let bytes = try encodedContent.serializedData()
+				let multiRemoteAttachment = try decodeMultiRemoteAttachment(bytes: bytes)
+				let attachmentMaps = multiRemoteAttachment.attachments.map { attachment in
+					[
+						"scheme": "https",
+						"url": attachment.url,
+						"filename": attachment.filename ?? "",
+						"contentLength": String(attachment.contentLength ?? 0),
+						"contentDigest": attachment.contentDigest,
+						"secret": attachment.secret.toHex,
+						"salt": attachment.salt.toHex,
+						"nonce": attachment.nonce.toHex,
+					]
+				}
+				return ["multiRemoteAttachment": [
+					"attachments": attachmentMaps,
+				]]
+			} catch {
+				return ["error": "Failed to decode multi remote attachment: \(error.localizedDescription)"]
+			}
 		case ContentTypeReadReceipt.id where content is XMTP.ReadReceipt:
 			return ["readReceipt": ""]
 		case ContentTypeGroupUpdated.id where content is XMTP.GroupUpdated:
@@ -298,7 +300,7 @@ struct ContentJson {
 						"newValue": metadata.newValue,
 						"fieldName": metadata.fieldName,
 					]
-				}
+				},
 			]]
 		case ContentTypeLeaveRequest.id where content is XMTP.LeaveRequest:
 			let leaveRequest = content as! XMTP.LeaveRequest
@@ -319,7 +321,6 @@ struct ContentJson {
 			}
 		}
 	}
-	
 }
 
 // ContentJsonV2 for DecodedMessageV2 content serialization
@@ -539,28 +540,28 @@ struct ReactionV2Schema {
     }
 }
 
-struct ReactionV2Action {
-    static func fromString(_ action: String) -> FfiReactionAction {
-        switch action {
-        case "removed":
-            return .removed
-        case "added":
-            return .added
-        default:
-            return .unknown
-        }
-    }
-    
-    static func toString(_ action: FfiReactionAction) -> String {
-        switch action {
-        case .removed:
-            return "removed"
-        case .added:
-            return "added"
-        case .unknown:
-            return "unknown"
-        }
-    }
+enum ReactionV2Action {
+	static func fromString(_ action: String) -> FfiReactionAction {
+		switch action {
+		case "removed":
+			return .removed
+		case "added":
+			return .added
+		default:
+			return .unknown
+		}
+	}
+
+	static func toString(_ action: FfiReactionAction) -> String {
+		switch action {
+		case .removed:
+			return "removed"
+		case .added:
+			return "added"
+		case .unknown:
+			return "unknown"
+		}
+	}
 }
 
 struct EncryptedAttachmentMetadata {
@@ -592,7 +593,7 @@ struct EncryptedAttachmentMetadata {
 		let secret = (obj["secret"] as? String ?? "").hexToData
 		let salt = (obj["salt"] as? String ?? "").hexToData
 		let nonce = (obj["nonce"] as? String ?? "").hexToData
-		
+
 		return EncryptedAttachmentMetadata(
 			filename: obj["filename"] as? String ?? "",
 			secret: secret,

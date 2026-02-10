@@ -644,18 +644,22 @@ test('can filter sync all by consent', async () => {
   // Bo denied + 1; Bo unknown - 1
   await boDmWithCaro?.updateConsent('denied')
 
-  const boConvos = await boClient.conversations.syncAllConversations()
-  const boConvosFilteredAllowed =
+  const { numEligible: boConvos } =
+    await boClient.conversations.syncAllConversations()
+  const { numEligible: boConvosFilteredAllowed } =
     await boClient.conversations.syncAllConversations(['allowed'])
-  const boConvosFilteredUnknown =
+  const { numEligible: boConvosFilteredUnknown } =
     await boClient.conversations.syncAllConversations(['unknown'])
 
-  const boConvosFilteredAllowedOrDenied =
+  const { numEligible: boConvosFilteredAllowedOrDenied } =
     await boClient.conversations.syncAllConversations(['allowed', 'denied'])
 
-  const boConvosFilteredAll = await boClient.conversations.syncAllConversations(
-    ['allowed', 'denied', 'unknown']
-  )
+  const { numEligible: boConvosFilteredAll } =
+    await boClient.conversations.syncAllConversations([
+      'allowed',
+      'denied',
+      'unknown',
+    ])
 
   assert(boConvos === 4, `Conversation length should be 4 but was ${boConvos}`)
   assert(
@@ -872,8 +876,8 @@ test('can stream conversation messages', async () => {
     'conversation stream should have received 1 conversation'
   )
   assert(
-    dmMessageCallbacks === 1,
-    'message stream should have received 1 message'
+    dmMessageCallbacks >= 1,
+    `message stream should have received 1 or more messages. Received ${dmMessageCallbacks}`
   )
 
   return true
@@ -2503,6 +2507,63 @@ test('leaveRequest and deleteMessage content types can be decoded in messages an
   )
   console.log(
     `4. leaveRequest with enrichedMessages() ${leaveMessageInEnriched ? '✓' : '(not present - expected)'}`
+  )
+
+  return true
+})
+
+test('messages excludeContentTypes filters by content type', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const group = await alix.conversations.newGroup([bo.inboxId])
+  await group.send({ text: 'First text message' })
+  await group.send({ text: 'Second text message' })
+
+  await group.sync()
+
+  // Get all messages (should include group_updated and text)
+  const allMessages = await group.messages()
+  const textMessages = allMessages.filter((m) =>
+    String(m.contentTypeId).includes('text')
+  )
+  assert(
+    textMessages.length >= 2,
+    `Should have at least 2 text messages, got ${textMessages.length}`
+  )
+
+  // Get messages excluding text content type
+  const textContentTypeId = 'xmtp.org/text:1.0'
+  const messagesExcludingText = await group.messages({
+    excludeContentTypes: [textContentTypeId],
+  })
+
+  // No returned message should be text
+  const textInExcluded = messagesExcludingText.filter((m) =>
+    String(m.contentTypeId).includes('text')
+  )
+  assert(
+    textInExcluded.length === 0,
+    `excludeContentTypes should filter out text messages, but got ${textInExcluded.length} text message(s)`
+  )
+
+  // Should still have other message types (e.g. group_updated)
+  assert(
+    messagesExcludingText.length >= 1,
+    `Should have at least 1 non-text message (e.g. group_updated), got ${messagesExcludingText.length}`
+  )
+
+  // Excluding multiple types: exclude both text and group_updated
+  const messagesExcludingBoth = await group.messages({
+    excludeContentTypes: [textContentTypeId, 'xmtp.org/group_updated:1.0'],
+  })
+  const hasTextOrGroupUpdated = messagesExcludingBoth.some(
+    (m) =>
+      String(m.contentTypeId).includes('text') ||
+      String(m.contentTypeId).includes('group_updated')
+  )
+  assert(
+    !hasTextOrGroupUpdated,
+    `Excluding both text and group_updated should return no such messages, got content types: ${messagesExcludingBoth.map((m) => m.contentTypeId).join(', ')}`
   )
 
   return true

@@ -28,6 +28,7 @@ export type ReplyContent = {
 
 export type ReactionContent = {
   reference: string
+  referenceInboxId?: string
   action: 'added' | 'removed' | 'unknown'
   schema: 'unicode' | 'shortcode' | 'custom' | 'unknown'
   content: string
