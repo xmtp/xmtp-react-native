@@ -1818,6 +1818,63 @@ test('can read and update group name', async () => {
   return true
 })
 
+test('updateGroupAppData works as expected', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+
+  await alixGroup.sync()
+  let appData = await alixGroup.appData()
+  assert(
+    appData === '',
+    `Initial app data should be empty string, got "${appData}"`
+  )
+
+  const updatedAppData = '{"pinnedMessageId":"msg-123","theme":"dark"}'
+  await alixGroup.updateAppData(updatedAppData)
+
+  await alixGroup.sync()
+  appData = await alixGroup.appData()
+  assert(
+    appData === updatedAppData,
+    `App data after update should match, got "${appData}"`
+  )
+
+  await bo.conversations.sync()
+  const boGroup = (await bo.conversations.listGroups())[0]
+  let boAppData = await boGroup.appData()
+  assert(
+    boAppData === '',
+    `Bo should see empty app data before group sync, got "${boAppData}"`
+  )
+
+  await boGroup.sync()
+  boAppData = await boGroup.appData()
+  assert(
+    boAppData === updatedAppData,
+    `Bo should see updated app data after sync, got "${boAppData}"`
+  )
+
+  const secondUpdate = '{"pinnedMessageId":"msg-456"}'
+  await alixGroup.updateAppData(secondUpdate)
+  await alixGroup.sync()
+
+  appData = await alixGroup.appData()
+  assert(
+    appData === secondUpdate,
+    `App data after second update should match, got "${appData}"`
+  )
+
+  await boGroup.sync()
+  boAppData = await boGroup.appData()
+  assert(
+    boAppData === secondUpdate,
+    `Bo should see second app data update after sync, got "${boAppData}"`
+  )
+
+  return true
+})
+
 test('can list groups does not fork', async () => {
   const [alix, bo] = await createClients(2)
   debugLog('created clients')
@@ -2520,6 +2577,63 @@ test('can leave a group', async () => {
   console.log(
     'Leave request authenticatedNote:',
     leaveContent?.authenticatedNote
+  )
+
+  return true
+})
+
+test('updateGroupAppData works as expected', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+
+  await alixGroup.sync()
+  let appData = await alixGroup.appData()
+  assert(
+    appData === '',
+    `Initial app data should be empty string, got "${appData}"`
+  )
+
+  const updatedAppData = '{"pinnedMessageId":"msg-123","theme":"dark"}'
+  await alixGroup.updateAppData(updatedAppData)
+
+  await alixGroup.sync()
+  appData = await alixGroup.appData()
+  assert(
+    appData === updatedAppData,
+    `App data after update should match, got "${appData}"`
+  )
+
+  await bo.conversations.sync()
+  const boGroup = (await bo.conversations.listGroups())[0]
+  let boAppData = await boGroup.appData()
+  assert(
+    boAppData === '',
+    `Bo should see empty app data before group sync, got "${boAppData}"`
+  )
+
+  await boGroup.sync()
+  boAppData = await boGroup.appData()
+  assert(
+    boAppData === updatedAppData,
+    `Bo should see updated app data after sync, got "${boAppData}"`
+  )
+
+  const secondUpdate = '{"pinnedMessageId":"msg-456"}'
+  await alixGroup.updateAppData(secondUpdate)
+  await alixGroup.sync()
+
+  appData = await alixGroup.appData()
+  assert(
+    appData === secondUpdate,
+    `App data after second update should match, got "${appData}"`
+  )
+
+  await boGroup.sync()
+  boAppData = await boGroup.appData()
+  assert(
+    boAppData === secondUpdate,
+    `Bo should see second app data update after sync, got "${boAppData}"`
   )
 
   return true
