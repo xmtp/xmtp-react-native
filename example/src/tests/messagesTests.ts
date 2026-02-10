@@ -225,7 +225,9 @@ test('can sort messages by sortBy parameter', async () => {
   })
   // Filter to only text messages (exclude group creation membership change)
   const textMessagesBySentAsc = messagesBySentAsc.filter(
-    (m) => typeof m.content() === 'string' && (m.content() as string).startsWith('message')
+    (m) =>
+      typeof m.content() === 'string' &&
+      (m.content() as string).startsWith('message')
   )
   assert(
     textMessagesBySentAsc.length === 3,
@@ -246,7 +248,9 @@ test('can sort messages by sortBy parameter', async () => {
     sortBy: 'SENT_TIME',
   })
   const textMessagesBySentDesc = messagesBySentDesc.filter(
-    (m) => typeof m.content() === 'string' && (m.content() as string).startsWith('message')
+    (m) =>
+      typeof m.content() === 'string' &&
+      (m.content() as string).startsWith('message')
   )
   assert(
     textMessagesBySentDesc[0].content() === 'message 3',
@@ -259,7 +263,9 @@ test('can sort messages by sortBy parameter', async () => {
     sortBy: 'INSERTED_TIME',
   })
   const textMessagesByInsertedAsc = messagesByInsertedAsc.filter(
-    (m) => typeof m.content() === 'string' && (m.content() as string).startsWith('message')
+    (m) =>
+      typeof m.content() === 'string' &&
+      (m.content() as string).startsWith('message')
   )
   assert(
     textMessagesByInsertedAsc.length === 3,
@@ -268,7 +274,8 @@ test('can sort messages by sortBy parameter', async () => {
   // Verify ordering: inserted time should be in ascending order
   for (let i = 0; i < textMessagesByInsertedAsc.length - 1; i++) {
     assert(
-      textMessagesByInsertedAsc[i].insertedAtNs <= textMessagesByInsertedAsc[i + 1].insertedAtNs,
+      textMessagesByInsertedAsc[i].insertedAtNs <=
+        textMessagesByInsertedAsc[i + 1].insertedAtNs,
       `Messages not in ascending INSERTED_TIME order at index ${i}`
     )
   }
@@ -279,7 +286,9 @@ test('can sort messages by sortBy parameter', async () => {
     sortBy: 'INSERTED_TIME',
   })
   const textMessagesByInsertedDesc = messagesByInsertedDesc.filter(
-    (m) => typeof m.content() === 'string' && (m.content() as string).startsWith('message')
+    (m) =>
+      typeof m.content() === 'string' &&
+      (m.content() as string).startsWith('message')
   )
   assert(
     textMessagesByInsertedDesc[0].content() === 'message 3',
@@ -288,7 +297,8 @@ test('can sort messages by sortBy parameter', async () => {
   // Verify ordering: inserted time should be in descending order
   for (let i = 0; i < textMessagesByInsertedDesc.length - 1; i++) {
     assert(
-      textMessagesByInsertedDesc[i].insertedAtNs >= textMessagesByInsertedDesc[i + 1].insertedAtNs,
+      textMessagesByInsertedDesc[i].insertedAtNs >=
+        textMessagesByInsertedDesc[i + 1].insertedAtNs,
       `Messages not in descending INSERTED_TIME order at index ${i}`
     )
   }
