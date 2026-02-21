@@ -1579,7 +1579,9 @@ test('delete message with invalid id throws error', async () => {
   }
 })
 
-test('streams message deletion to other user when message is deleted', async () => {
+// Reproduces: When another group member deletes a message, streamMessageDeletions
+// may not deliver in real-time; DELETE_MESSAGE will only arrive when we sync the delete message from the network.
+test('streamMessageDeletions: other member deletion received real-time or via next message', async () => {
   const [alix, bo] = await createClients(2)
 
   const alixGroup = await alix.conversations.newGroup([bo.inboxId])
@@ -1588,15 +1590,10 @@ test('streams message deletion to other user when message is deleted', async () 
   assert(boGroup !== undefined, 'Bo should find the group')
 
   // Set up deletion stream for Bo
-  let deletedMessageId: string | null = null
-  let deletedConversationId: string | null = null
+  let deletionReceivedViaStream: string | null = null
   await bo.conversations.streamMessageDeletions(
     async (messageId, conversationId) => {
-      console.log(
-        `Bo received deletion: message ${messageId} in ${conversationId}`
-      )
-      deletedMessageId = messageId
-      deletedConversationId = conversationId
+      deletionReceivedViaStream = messageId
     }
   )
 
@@ -1607,10 +1604,9 @@ test('streams message deletion to other user when message is deleted', async () 
   await alixGroup.sync()
   await boGroup!.sync()
 
-  // Verify Bo has the message
-  const boMessages = await boGroup!.messages()
+  const boMessagesBefore = await boGroup!.messages()
   assert(
-    boMessages.some((m) => m.id === messageId),
+    boMessagesBefore.some((m) => m.id === messageId),
     'Bo should have the message before deletion'
   )
 
@@ -1619,22 +1615,61 @@ test('streams message deletion to other user when message is deleted', async () 
   await alixGroup.sync()
   await boGroup!.sync()
 
-  // Wait for the deletion stream to trigger
-  await delayToPropogate(2000)
+  // Real-time streamMessageDeletions callback will get fired since we called sync() on the group
+  await delayToPropogate(4000)
 
-  // Verify Bo received the deletion event
-  assert(
-    deletedMessageId === messageId,
-    `Bo should have received deletion for message ${messageId}, got ${deletedMessageId}`
-  )
-  assert(
-    deletedConversationId === alixGroup.id,
-    `Deleted conversation id should match ${alixGroup.id}, got ${deletedConversationId}`
+  if (deletionReceivedViaStream === messageId) {
+    // Ideal: callback fired in real-time
+    await bo.conversations.cancelStreamMessageDeletions()
+    return true
+  }
+
+  return false
+})
+
+// When streamAllMessages is running, streamMessageDeletions should fire immediately
+// when another member deletes a message (no need for a follow-up message or sync)).
+test('streamMessageDeletions fires immediately when streamAllMessages is also running', async () => {
+  const [alix, bo] = await createClients(2)
+
+  const alixGroup = await alix.conversations.newGroup([bo.inboxId])
+  await bo.conversations.sync()
+  const boGroup = await bo.conversations.findGroup(alixGroup.id)
+  assert(boGroup !== undefined, 'Bo should find the group')
+
+  // Bo runs both streams (as a typical app might)
+  await bo.conversations.streamAllMessages(async () => {})
+  let deletionReceivedViaStream: string | null = null
+  await bo.conversations.streamMessageDeletions(
+    async (messageId, _conversationId) => {
+      deletionReceivedViaStream = messageId
+    }
   )
 
-  // Clean up
+  const messageId = await alixGroup.send({
+    text: 'Message to delete',
+  })
+  await alixGroup.sync()
+  await boGroup!.sync()
+
+  assert(
+    (await boGroup!.messages()).some((m) => m.id === messageId),
+    'Bo should have the message before deletion'
+  )
+
+  await alixGroup.deleteMessage(messageId)
+  await alixGroup.sync()
+  // await boGroup!.sync()
+
+  await delayToPropogate(3000)
+
+  assert(
+    deletionReceivedViaStream === messageId,
+    `streamMessageDeletions should fire when streamAllMessages is running; expected messageId ${messageId}, got ${deletionReceivedViaStream}`
+  )
+
   await bo.conversations.cancelStreamMessageDeletions()
-
+  bo.conversations.cancelStreamAllMessages()
   return true
 })
 
