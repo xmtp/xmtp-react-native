@@ -47,6 +47,8 @@ Use the [XMTP React Native example app](example) as a tool to start building an 
 
 Follow the [React Native guide](https://reactnative.dev/docs/environment-setup) to set up a CLI environment.
 
+This repo uses **Yarn 4 (Berry)**. If you haven't already, run `corepack enable`, then:
+
 ```bash
 yarn
 cd example

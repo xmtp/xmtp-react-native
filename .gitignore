@@ -64,4 +64,9 @@ android/keystores/debug.keystore
 
 # Typedocs
 docs/
-**/.yarn/*
+# Yarn Berry: ignore cache and state, but commit .yarn/releases so the pinned version is used
+**/.yarn/cache
+**/.yarn/unplugged
+**/.yarn/build-state.yml
+**/.yarn/install-state.gz
+**/.yarn/*.pnp.*
