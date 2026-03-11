@@ -103,7 +103,6 @@ export class Client<
       options.dbEncryptionKey,
       Boolean(authInboxSubscription),
       options.dbDirectory,
-      options.historySyncUrl,
       options.customLocalHost,
       options.deviceSyncEnabled,
       options.debugEventsEnabled,
@@ -191,7 +190,6 @@ export class Client<
           options.dbEncryptionKey,
           Boolean(authInboxSubscription),
           options.dbDirectory,
-          options.historySyncUrl,
           signingKey.signerType?.(),
           signingKey.getChainId?.(),
           signingKey.getBlockNumber?.(),
@@ -234,7 +232,6 @@ export class Client<
       options.env,
       options.dbEncryptionKey,
       options.dbDirectory,
-      options.historySyncUrl,
       inboxId,
       options.customLocalHost,
       options.deviceSyncEnabled,
@@ -283,7 +280,6 @@ export class Client<
       options.env,
       options.dbEncryptionKey,
       options.dbDirectory,
-      options.historySyncUrl,
       options.customLocalHost,
       options.deviceSyncEnabled,
       options.debugEventsEnabled,
@@ -909,6 +905,54 @@ export class Client<
   }
 
   /**
+   * Send a sync archive to the history sync server (e.g. for another device to process).
+   */
+  async sendSyncArchive(
+    pin: string,
+    serverUrl?: string,
+    startNs?: number,
+    endNs?: number,
+    archiveElements?: string[],
+    excludeDisappearingMessages?: boolean
+  ): Promise<void> {
+    return await XMTPModule.sendSyncArchive(
+      this.installationId,
+      pin,
+      serverUrl,
+      startNs,
+      endNs,
+      archiveElements,
+      excludeDisappearingMessages
+    )
+  }
+
+  /**
+   * Process a sync archive (e.g. one listed by listAvailableArchives or sent from another device).
+   */
+  async processSyncArchive(archivePin?: string): Promise<void> {
+    return await XMTPModule.processSyncArchive(this.installationId, archivePin)
+  }
+
+  /**
+   * List available sync archives (e.g. from other devices) within the given days cutoff.
+   */
+  async listAvailableArchives(
+    daysCutoff: number
+  ): Promise<XMTPModule.AvailableArchive[]> {
+    return await XMTPModule.listAvailableArchives(
+      this.installationId,
+      daysCutoff
+    )
+  }
+
+  /**
+   * Sync all device sync groups for this client.
+   */
+  async syncAllDeviceSyncGroups(): Promise<XMTPModule.GroupSyncSummary> {
+    return await XMTPModule.syncAllDeviceSyncGroups(this.installationId)
+  }
+
+  /**
    * Make a request for your inbox state.
    *
    * @param {boolean} refreshFromNetwork - If you want to refresh the current state of in the inbox from the network or not.
@@ -1237,10 +1281,6 @@ export type ClientOptions = {
    * OPTIONAL specify an appVersion
    */
   appVersion?: string
-  /**
-   * OPTIONAL specify a url to sync message history from
-   */
-  historySyncUrl?: string
   /**
    * OPTIONAL specify a custom local host for testing on physical devices for example `localhost`
    */

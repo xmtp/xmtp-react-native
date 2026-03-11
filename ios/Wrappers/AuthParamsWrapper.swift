@@ -12,7 +12,6 @@ import XMTP
 struct AuthParamsWrapper {
 	let environment: String
 	let dbDirectory: String?
-	let historySyncUrl: String?
 	let customLocalUrl: String?
 	let deviceSyncEnabled: Bool
 	let debugEventsEnabled: Bool
@@ -22,14 +21,13 @@ struct AuthParamsWrapper {
 
 	init(
 		environment: String, dbDirectory: String?,
-		historySyncUrl: String?, customLocalUrl: String?,
+        customLocalUrl: String?,
 		deviceSyncEnabled: Bool, debugEventsEnabled: Bool,
 		appVersion: String?, gatewayHost: String?,
 		forkRecoveryOptions: ForkRecoveryOptions?
 	) {
 		self.environment = environment
 		self.dbDirectory = dbDirectory
-		self.historySyncUrl = historySyncUrl
 		self.customLocalUrl = customLocalUrl
 		self.deviceSyncEnabled = deviceSyncEnabled
 		self.debugEventsEnabled = debugEventsEnabled
@@ -81,7 +79,7 @@ struct AuthParamsWrapper {
 		else {
 			return AuthParamsWrapper(
 				environment: "dev", dbDirectory: nil,
-				historySyncUrl: nil, customLocalUrl: nil,
+				customLocalUrl: nil,
 				deviceSyncEnabled: true, debugEventsEnabled: false,
 				appVersion: nil, gatewayHost: nil,
 				forkRecoveryOptions: nil
@@ -90,10 +88,6 @@ struct AuthParamsWrapper {
 
 		let environment = jsonOptions["environment"] as? String ?? "dev"
 		let dbDirectory = jsonOptions["dbDirectory"] as? String
-		let historySyncUrl = jsonOptions["historySyncUrl"] as? String
-		if let historySyncUrl = historySyncUrl {
-			setenv("XMTP_HISTORY_SERVER_ADDRESS", historySyncUrl, 1)
-		}
 		let customLocalUrl = jsonOptions["customLocalUrl"] as? String
 		if let customLocalUrl = customLocalUrl {
 			setenv("XMTP_NODE_ADDRESS", customLocalUrl, 1)
@@ -121,7 +115,6 @@ struct AuthParamsWrapper {
 		return AuthParamsWrapper(
 			environment: environment,
 			dbDirectory: dbDirectory,
-			historySyncUrl: historySyncUrl,
 			customLocalUrl: customLocalUrl,
 			deviceSyncEnabled: deviceSyncEnabled,
 			debugEventsEnabled: debugEventsEnabled,

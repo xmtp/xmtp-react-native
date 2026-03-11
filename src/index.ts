@@ -2,7 +2,7 @@ import { content, keystore } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
 import XMTPModule from './XMTPModule'
-import { ArchiveMetadata } from './lib/ArchiveOptions'
+import { ArchiveMetadata, AvailableArchive } from './lib/ArchiveOptions'
 import {
   Address,
   Client,
@@ -137,7 +137,6 @@ export async function createRandom(
   dbEncryptionKey: Uint8Array,
   hasPreAuthenticateToInboxCallback?: boolean | undefined,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined,
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
@@ -148,7 +147,6 @@ export async function createRandom(
   const authParams: AuthParams = {
     environment,
     dbDirectory,
-    historySyncUrl,
     customLocalHost,
     deviceSyncEnabled,
     debugEventsEnabled,
@@ -172,7 +170,6 @@ export async function create(
   dbEncryptionKey: Uint8Array,
   hasPreAuthenticateToInboxCallback?: boolean | undefined,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined,
   signerType?: SignerType | undefined,
   chainId?: number | undefined,
   blockNumber?: number | undefined,
@@ -186,7 +183,6 @@ export async function create(
   const authParams: AuthParams = {
     environment,
     dbDirectory,
-    historySyncUrl,
     customLocalHost,
     deviceSyncEnabled,
     debugEventsEnabled,
@@ -216,7 +212,6 @@ export async function build(
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined,
   inboxId?: InboxId | undefined,
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
@@ -228,7 +223,6 @@ export async function build(
   const authParams: AuthParams = {
     environment,
     dbDirectory,
-    historySyncUrl,
     customLocalHost,
     deviceSyncEnabled,
     debugEventsEnabled,
@@ -252,7 +246,6 @@ export async function ffiCreateClient(
   environment: 'local' | 'dev' | 'production',
   dbEncryptionKey: Uint8Array,
   dbDirectory?: string | undefined,
-  historySyncUrl?: string | undefined,
   customLocalHost?: string | undefined,
   deviceSyncEnabled?: boolean | undefined,
   debugEventsEnabled?: boolean | undefined,
@@ -263,7 +256,6 @@ export async function ffiCreateClient(
   const authParams: AuthParams = {
     environment,
     dbDirectory,
-    historySyncUrl,
     customLocalHost,
     deviceSyncEnabled,
     debugEventsEnabled,
@@ -1342,9 +1334,54 @@ export async function sendSyncRequest(
   return await XMTPModule.sendSyncRequest(installationId)
 }
 
+export async function sendSyncArchive(
+  installationId: InstallationId,
+  pin: string,
+  serverUrl?: string | undefined,
+  startNs?: number | undefined,
+  endNs?: number | undefined,
+  archiveElements?: string[] | undefined,
+  excludeDisappearingMessages?: boolean | undefined
+): Promise<void> {
+  return await XMTPModule.sendSyncArchive(
+    installationId,
+    pin,
+    serverUrl,
+    startNs,
+    endNs,
+    archiveElements,
+    excludeDisappearingMessages
+  )
+}
+
+export async function processSyncArchive(
+  installationId: InstallationId,
+  archivePin?: string | undefined
+): Promise<void> {
+  return await XMTPModule.processSyncArchive(installationId, archivePin)
+}
+
+export async function listAvailableArchives(
+  installationId: InstallationId,
+  daysCutoff: number
+): Promise<AvailableArchive[]> {
+  const json = await XMTPModule.listAvailableArchives(
+    installationId,
+    daysCutoff
+  )
+  return JSON.parse(json) as AvailableArchive[]
+}
+
 export interface GroupSyncSummary {
   numEligible: number
   numSynced: number
+}
+
+export async function syncAllDeviceSyncGroups(
+  installationId: InstallationId
+): Promise<GroupSyncSummary> {
+  const json = await XMTPModule.syncAllDeviceSyncGroups(installationId)
+  return JSON.parse(json) as GroupSyncSummary
 }
 
 export async function syncAllConversations(
@@ -1990,7 +2027,6 @@ export const emitter = new EventEmitter(XMTPModule ?? NativeModulesProxy.XMTP)
 interface AuthParams {
   environment: string
   dbDirectory?: string
-  historySyncUrl?: string
   customLocalHost?: string
   deviceSyncEnabled?: boolean
   debugEventsEnabled?: boolean
@@ -2042,3 +2078,4 @@ export { MessageId, MessageOrder } from './lib/types/MessagesOptions'
 export { DecodedMessageUnion } from './lib/types/DecodedMessageUnion'
 export { DisappearingMessageSettings } from './lib/DisappearingMessageSettings'
 export { PublicIdentity } from './lib/PublicIdentity'
+export type { AvailableArchive } from './lib/ArchiveOptions'
