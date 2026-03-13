@@ -22,7 +22,8 @@
           "cameraPermission": "The app accesses your camera to let you attach photos as messages."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "./plugins/withReactNativeConfigEnv.js"
     ],
     "ios": {
       "supportsTablet": true,

@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 // import { ConnectWallet, useSigner } from '@thirdweb-dev/react-native'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   Button,
   ScrollView,
@@ -18,6 +18,7 @@ import { NavigationParamList } from './Navigation'
 import { TestCategory } from './TestScreen'
 import { supportedCodecs } from './contentTypes/contentTypes'
 import { getDbEncryptionKey } from './hooks'
+import { setTestEnv, type TestEnvOption } from './testEnv'
 
 // Custom Modal Picker Component
 const CustomPicker = ({
@@ -105,9 +106,15 @@ export default function LaunchScreen(
   const [selectedTest, setSelectedTest] = useState<TestCategory>(
     TestCategory.all
   )
+  const [selectedTestEnv, setSelectedTestEnv] = useState<TestEnvOption>('local')
   const [selectedNetwork, setSelectedNetwork] = useState<
     'dev' | 'local' | 'production'
   >('dev')
+
+  useEffect(() => {
+    setTestEnv(selectedTestEnv)
+  }, [selectedTestEnv])
+
   // const signer = useSigner()
   // const [signerAddressDisplay, setSignerAddressDisplay] = useState<string>()
   const { setClient } = useXmtp()
@@ -170,6 +177,12 @@ export default function LaunchScreen(
     label,
   }))
 
+  const testEnvOptions: { id: TestEnvOption; label: string }[] = [
+    { id: 'local', label: 'local' },
+    { id: 'dev', label: 'dev' },
+    { id: 'd14n', label: 'd14n (dev + gateway)' },
+  ]
+
   return (
     <ScrollView>
       <Text style={styles.title}>Automated Tests</Text>
@@ -180,6 +193,23 @@ export default function LaunchScreen(
           onValueChange={(value) => setSelectedTest(value as TestCategory)}
           options={testOptions}
           placeholder="Select Test"
+        />
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Test environment:</Text>
+        <CustomPicker
+          value={
+            testEnvOptions.find((o) => o.id === selectedTestEnv)?.label ??
+            selectedTestEnv
+          }
+          onValueChange={(value) => {
+            const option = testEnvOptions.find((o) => o.label === value)
+            const env = (option?.id ?? value) as TestEnvOption
+            setSelectedTestEnv(env)
+            setTestEnv(env)
+          }}
+          options={testEnvOptions}
+          placeholder="Test environment"
         />
       </View>
       <View key="run-tests" style={{ margin: 16 }}>
