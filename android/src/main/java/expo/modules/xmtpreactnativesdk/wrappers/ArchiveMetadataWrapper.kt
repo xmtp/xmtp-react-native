@@ -32,11 +32,11 @@ class ArchiveMetadataWrapper {
             }
         }
 
-        fun encode(metadata: ArchiveMetadata?): String {
-            val obj = if (metadata != null) {
+        /** Returns metadata as a map for embedding in another JSON object (avoids double JSON encoding). */
+        fun encodeToMap(metadata: ArchiveMetadata?): Map<String, Any?> {
+            return if (metadata != null) {
                 encodeToObj(metadata)
             } else {
-                // Create a default metadata object when null
                 mapOf(
                     "archiveVersion" to 0u,
                     "elements" to listOf("messages", "consent"),
@@ -45,7 +45,10 @@ class ArchiveMetadataWrapper {
                     "endNs" to null
                 )
             }
-            return gson.toJson(obj)
+        }
+
+        fun encode(metadata: ArchiveMetadata?): String {
+            return gson.toJson(encodeToMap(metadata))
         }
     }
 }

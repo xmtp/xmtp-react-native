@@ -3013,7 +3013,8 @@ public class XMTPModule: Module {
 			let opts = XMTP.ArchiveOptions(
 				startNs: startNs,
 				endNs: endNs,
-				archiveElements: elements
+				archiveElements: elements,
+				excludeDisappearingMessages: excludeDisappearingMessages ?? false
 			)
 			try await client.sendSyncArchive(opts: opts, serverUrl: serverUrl, pin: pin)
 		}

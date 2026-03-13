@@ -8,9 +8,9 @@ class AvailableArchiveWrapper {
     companion object {
         private val gson = GsonBuilder().create()
 
-        fun encodeToObj(archive: AvailableArchive): Map<String, Any> = mapOf(
+        fun encodeToObj(archive: AvailableArchive): Map<String, Any?> = mapOf(
             "pin" to archive.pin,
-            "metadata" to ArchiveMetadataWrapper.encode(archive.metadata),
+            "metadata" to ArchiveMetadataWrapper.encodeToMap(archive.metadata),
             "sentByInstallation" to Base64.encodeToString(archive.sentByInstallation, Base64.NO_WRAP),
         )
 

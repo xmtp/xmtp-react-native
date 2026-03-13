@@ -2172,11 +2172,11 @@ class XMTPModule : Module() {
             }
         }
 
-        AsyncFunction("sendSyncArchive") Coroutine { installationId: String, pin: String, serverUrl: String?, startNs: Int?, endNs: Int?, archiveElements: List<String>?, excludeDisappearingMessages: Boolean? ->
+        AsyncFunction("sendSyncArchive") Coroutine { installationId: String, pin: String, serverUrl: String?, startNs: Long?, endNs: Long?, archiveElements: List<String>?, excludeDisappearingMessages: Boolean? ->
             withContext(Dispatchers.IO) {
                 val client = clients[installationId] ?: throw XMTPException("No client")
                 val elements = archiveElements?.map { getArchiveElement(it) } ?: listOf(ArchiveElement.MESSAGES, ArchiveElement.CONSENT)
-                val opts = ArchiveOptions(startNs?.toLong(), endNs?.toLong(), elements, excludeDisappearingMessages ?: false)
+                val opts = ArchiveOptions(startNs, endNs, elements, excludeDisappearingMessages ?: false)
                 val url = serverUrl?.takeIf { it.isNotBlank() } ?: client.environment.getHistorySyncUrl()
                 client.sendSyncArchive(opts, url, pin)
             }
