@@ -1,5 +1,17 @@
 export type ArchiveElement = 'messages' | 'consent'
 
+/**
+ * Represents an available sync archive that can be processed (e.g. from another device).
+ * Native iOS may return only `pin`; Android may also include `metadata` and `sentByInstallation`.
+ */
+export interface AvailableArchive {
+  pin: string
+  /** JSON-encoded archive metadata, when provided by the native layer */
+  metadata?: string
+  /** Base64-encoded installation id that sent the archive, when provided */
+  sentByInstallation?: string
+}
+
 export class ArchiveOptions {
   startNs?: number
   endNs?: number

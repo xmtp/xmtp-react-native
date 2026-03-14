@@ -2998,6 +2998,59 @@ public class XMTPModule: Module {
 			return try ArchiveMetadataWrapper.encode(metadata)
 		}
 
+		AsyncFunction("sendSyncArchive") {
+			(
+				installationId: String, pin: String, serverUrl: String?,
+				startNs: Int64?, endNs: Int64?, archiveElements: [String]?,
+				excludeDisappearingMessages: Bool?
+			) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			let elements = try archiveElements?.map { try getArchiveElement($0) } ?? [.messages, .consent]
+			let opts = XMTP.ArchiveOptions(
+				startNs: startNs,
+				endNs: endNs,
+				archiveElements: elements,
+				excludeDisappearingMessages: excludeDisappearingMessages ?? false
+			)
+			try await client.sendSyncArchive(opts: opts, serverUrl: serverUrl, pin: pin)
+		}
+
+		AsyncFunction("processSyncArchive") {
+			(installationId: String, archivePin: String?) in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			try await client.processSyncArchive(archivePin: archivePin)
+		}
+
+		AsyncFunction("listAvailableArchives") {
+			(installationId: String, daysCutoff: Int64) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			let archives = try client.listAvailableArchives(daysCutoff: daysCutoff)
+			return try AvailableArchiveWrapper.encodeList(archives)
+		}
+
+		AsyncFunction("syncAllDeviceSyncGroups") {
+			(installationId: String) -> String in
+			guard
+				let client = await clientsManager.getClient(key: installationId)
+			else {
+				throw Error.noClient
+			}
+			let summary = try await client.syncAllDeviceSyncGroups()
+			return try GroupSyncSummaryWrapper(summary).toJson()
+		}
+
 		AsyncFunction("leaveGroup") { (
 			installationId: String,
 			groupId: String
@@ -3317,7 +3370,6 @@ public class XMTPModule: Module {
 			preAuthenticateToInboxCallback: preAuthenticateToInboxCallback,
 			dbEncryptionKey: dbEncryptionKey,
 			dbDirectory: authOptions.dbDirectory,
-			historySyncUrl: authOptions.historySyncUrl,
 			deviceSyncEnabled: authOptions.deviceSyncEnabled,
 			debugEventsEnabled: authOptions.debugEventsEnabled,
 			forkRecoveryOptions: authOptions.forkRecoveryOptions

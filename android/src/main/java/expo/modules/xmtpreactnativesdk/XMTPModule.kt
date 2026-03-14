@@ -13,6 +13,7 @@ import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.xmtpreactnativesdk.wrappers.ArchiveMetadataWrapper
+import expo.modules.xmtpreactnativesdk.wrappers.AvailableArchiveWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.AuthParamsWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ClientWrapper
 import expo.modules.xmtpreactnativesdk.wrappers.ConsentWrapper
@@ -226,12 +227,6 @@ class XMTPModule : Module() {
             dbEncryptionKey.foldIndexed(ByteArray(dbEncryptionKey.size)) { i, a, v ->
                 a.apply { set(i, v.toByte()) }
             }
-        val historySyncUrl = authOptions.historySyncUrl
-            ?: when (authOptions.environment) {
-                "production" -> "https://message-history.production.ephemera.network/"
-                "local" -> "http://10.0.2.2:5558"
-                else -> "https://message-history.dev.ephemera.network/"
-            }
         return ClientOptions(
             api = apiEnvironments(
                 authOptions.environment,
@@ -243,7 +238,6 @@ class XMTPModule : Module() {
             appContext = context,
             dbEncryptionKey = encryptionKeyBytes,
             dbDirectory = authOptions.dbDirectory,
-            historySyncUrl = historySyncUrl,
             deviceSyncEnabled = authOptions.deviceSyncEnabled,
             forkRecoveryOptions = authOptions.forkRecoveryOptions
         )
@@ -2175,6 +2169,39 @@ class XMTPModule : Module() {
                     }
                 val metadata = client.archiveMetadata(path, encryptionKeyBytes)
                 ArchiveMetadataWrapper.encode(metadata)
+            }
+        }
+
+        AsyncFunction("sendSyncArchive") Coroutine { installationId: String, pin: String, serverUrl: String?, startNs: Long?, endNs: Long?, archiveElements: List<String>?, excludeDisappearingMessages: Boolean? ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val elements = archiveElements?.map { getArchiveElement(it) } ?: listOf(ArchiveElement.MESSAGES, ArchiveElement.CONSENT)
+                val opts = ArchiveOptions(startNs, endNs, elements, excludeDisappearingMessages ?: false)
+                val url = serverUrl?.takeIf { it.isNotBlank() } ?: client.environment.getHistorySyncUrl()
+                client.sendSyncArchive(opts, url, pin)
+            }
+        }
+
+        AsyncFunction("processSyncArchive") Coroutine { installationId: String, archivePin: String? ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                client.processSyncArchive(archivePin)
+            }
+        }
+
+        AsyncFunction("listAvailableArchives") Coroutine { installationId: String, daysCutoff: Long ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val archives = client.listAvailableArchives(daysCutoff)
+                AvailableArchiveWrapper.encodeList(archives)
+            }
+        }
+
+        AsyncFunction("syncAllDeviceSyncGroups") Coroutine { installationId: String ->
+            withContext(Dispatchers.IO) {
+                val client = clients[installationId] ?: throw XMTPException("No client")
+                val summary = client.syncAllDeviceSyncGroups()
+                GroupSyncSummaryWrapper.encode(summary)
             }
         }
     }

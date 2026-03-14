@@ -10,7 +10,6 @@ import java.math.BigInteger
 class AuthParamsWrapper(
     val environment: String,
     val dbDirectory: String?,
-    val historySyncUrl: String?,
     val customLocalUrl: String?,
     val deviceSyncEnabled: Boolean,
     val debugEventsEnabled: Boolean,
@@ -83,7 +82,6 @@ class AuthParamsWrapper(
             return AuthParamsWrapper(
                 jsonOptions.get("environment").asString,
                 if (jsonOptions.has("dbDirectory")) jsonOptions.get("dbDirectory").asString else null,
-                if (jsonOptions.has("historySyncUrl")) jsonOptions.get("historySyncUrl").asString else null,
                 if (jsonOptions.has("customLocalUrl")) jsonOptions.get("customLocalUrl").asString else null,
                 if (jsonOptions.has("deviceSyncEnabled")) jsonOptions.get("deviceSyncEnabled").asBoolean else true,
                 if (jsonOptions.has("debugEventsEnabled")) jsonOptions.get("debugEventsEnabled").asBoolean else false,
