@@ -1,5 +1,6 @@
 import { Wallet } from 'ethers'
 import { Platform } from 'expo-modules-core'
+import Config from 'react-native-config'
 import {
   Client,
   GroupUpdatedCodec,
@@ -16,6 +17,8 @@ import {
   DeleteMessageCodec,
   ReplyCodec,
 } from 'xmtp-react-native-sdk'
+
+import { getTestEnv } from '../testEnv'
 
 // Debug logging state
 let debugLoggingEnabled = false
@@ -59,16 +62,37 @@ export async function createClients(
   env?: XMTPEnvironment | undefined,
   customCodecs?: JSContentCodec<any>[]
 ): Promise<Client[]> {
+  const keyBytes = new Uint8Array([
+    233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
+    166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135, 145,
+  ])
+
+  let resolvedEnv: XMTPEnvironment
+  let gatewayHost: string | undefined
+  if (env !== undefined) {
+    resolvedEnv = env
+  } else {
+    const testEnvOption = getTestEnv()
+    if (testEnvOption === 'd14n') {
+      debugLog('Using d14n test environment')
+      resolvedEnv = 'dev'
+      gatewayHost = Config.GATEWAY_HOST
+      if (!gatewayHost) {
+        throw new Error(
+          'Test env is "d14n" but GATEWAY_HOST is not set. Copy EXAMPLE.env to .env, set GATEWAY_HOST, and rebuild the app.'
+        )
+      }
+    } else {
+      resolvedEnv = testEnvOption
+    }
+  }
+
   const clients = []
   for (let i = 0; i < numClients; i++) {
-    const keyBytes = new Uint8Array([
-      233, 120, 198, 96, 154, 65, 132, 17, 132, 96, 250, 40, 103, 35, 125, 64,
-      166, 83, 208, 224, 254, 44, 205, 227, 175, 49, 234, 129, 74, 252, 135,
-      145,
-    ])
     const client = await Client.createRandom({
-      env: env ?? 'local',
+      env: resolvedEnv,
       dbEncryptionKey: keyBytes,
+      ...(gatewayHost !== undefined && { gatewayHost }),
     })
     Client.register(new GroupUpdatedCodec())
     Client.register(new RemoteAttachmentCodec())
