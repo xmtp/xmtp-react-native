@@ -1,7 +1,10 @@
 import { content, keystore } from '@xmtp/proto'
 import { EventEmitter, NativeModulesProxy } from 'expo-modules-core'
 
-import XMTPModule from './XMTPModule'
+import XMTPModule, {
+  getNativeArchitectureDiagnostics,
+  getXMTPModuleAccess,
+} from './XMTPModule'
 import { ArchiveMetadata, AvailableArchive } from './lib/ArchiveOptions'
 import {
   Address,
@@ -30,6 +33,10 @@ import { Member, MembershipResult } from './lib/Member'
 import { PublicIdentity } from './lib/PublicIdentity'
 import { SignerType } from './lib/Signer'
 import {
+  type XMTPArchitectureDiagnostics,
+  toArchitectureDiagnostics,
+} from './lib/XMTPArchitectureDiagnostics'
+import {
   KeyPackageStatuses,
   NetworkDebugInfo,
 } from './lib/XMTPDebugInformation'
@@ -56,6 +63,7 @@ import { PermissionPolicySet } from './lib/types/PermissionPolicySet'
 
 export * from './context'
 export * from './hooks'
+export * from './lib/XMTPArchitectureDiagnostics'
 export { GroupUpdatedCodec } from './lib/NativeCodecs/GroupUpdatedCodec'
 export { ReactionCodec } from './lib/NativeCodecs/ReactionCodec'
 export { ReactionV2Codec } from './lib/NativeCodecs/ReactionV2Codec'
@@ -1955,6 +1963,11 @@ export async function getNetworkDebugInformation(
 ): Promise<NetworkDebugInfo> {
   const info = await XMTPModule.getNetworkDebugInformation(installationId)
   return NetworkDebugInfo.from(info)
+}
+
+export async function getArchitectureDiagnostics(): Promise<XMTPArchitectureDiagnostics> {
+  const info = await getNativeArchitectureDiagnostics()
+  return toArchitectureDiagnostics(info, getXMTPModuleAccess())
 }
 
 export async function clearAllNetworkStatistics(

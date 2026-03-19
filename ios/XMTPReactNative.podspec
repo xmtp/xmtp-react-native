@@ -1,6 +1,8 @@
 require 'json'
 
 package = JSON.parse(File.read(File.join(__dir__, '..', 'package.json')))
+swift_flags = ['$(inherited)']
+swift_flags << '-D RCT_NEW_ARCH_ENABLED' if ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 
 Pod::Spec.new do |s|
   s.name           = 'XMTPReactNative'
@@ -20,7 +22,8 @@ Pod::Spec.new do |s|
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'SWIFT_COMPILATION_MODE' => 'wholemodule'
+    'SWIFT_COMPILATION_MODE' => 'wholemodule',
+    'OTHER_SWIFT_FLAGS' => swift_flags.join(' ')
   }
 
   s.source_files = "**/*.{h,m,swift}"

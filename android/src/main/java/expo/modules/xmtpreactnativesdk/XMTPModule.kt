@@ -177,6 +177,18 @@ class XMTPModule : Module() {
             return reactContext
         }
 
+    private fun readHostBuildConfigBoolean(fieldName: String): Boolean? {
+        val packageName = appContext.reactContext?.applicationContext?.packageName ?: return null
+
+        return try {
+            val buildConfigClass = Class.forName("$packageName.BuildConfig")
+            buildConfigClass.getField(fieldName).getBoolean(null)
+        } catch (e: Throwable) {
+            logV("Unable to read $fieldName from $packageName.BuildConfig: ${e.message}")
+            null
+        }
+    }
+
     private fun apiEnvironments(env: String, customLocalUrl: String? = null, appVersion: String? = null, gatewayHost: String? = null): ClientOptions.Api {
         return when (env) {
             "local" -> {
@@ -282,6 +294,22 @@ class XMTPModule : Module() {
             "preferencesClosed",
             "messageDeletionClosed"
         )
+
+        AsyncFunction("getArchitectureDiagnostics") {
+            val hostPackageName = appContext.reactContext?.applicationContext?.packageName.orEmpty()
+            val hostNewArchEnabled = readHostBuildConfigBoolean("IS_NEW_ARCHITECTURE_ENABLED")
+
+            mapOf(
+                "platform" to "android",
+                "moduleName" to "XMTP",
+                "moduleType" to "expo-module",
+                "moduleClassName" to this@XMTPModule::class.java.name,
+                "hostAppId" to hostPackageName,
+                "isNewArchitectureEnabled" to (hostNewArchEnabled ?: BuildConfig.IS_NEW_ARCHITECTURE_ENABLED),
+                "newArchitectureFlagSource" to "BuildConfig.IS_NEW_ARCHITECTURE_ENABLED",
+                "newArchitectureFlagProvider" to if (hostNewArchEnabled != null) "host-app" else "xmtp-module",
+            )
+        }
 
         Function("inboxId") { installationId: String ->
             logV("inboxId")
