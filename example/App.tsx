@@ -1,5 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native'
 // import { Ethereum } from '@thirdweb-dev/chains'
+import React, { useEffect, useState } from 'react'
 import 'react-native-get-random-values'
 import '@ethersproject/shims'
 import { Buffer as BufferPolyfill } from 'buffer'
@@ -21,12 +22,9 @@ import {
   StyleSheet,
   FlatList,
 } from 'react-native'
-import Config from 'react-native-config'
 // Used to polyfill webCrypto in react-native
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { XmtpProvider, Client } from 'xmtp-react-native-sdk'
-import { useState, useEffect } from 'react'
-import React from 'react'
 
 import ConversationCreateScreen from './src/ConversationCreateScreen'
 import ConversationScreen from './src/ConversationScreen'
@@ -135,7 +133,9 @@ const LogFilesModal: React.FC<LogFilesModalProps> = ({ visible, onClose }) => {
         }
       }
 
-      fetchLogFiles()
+      fetchLogFiles().catch((error) => {
+        console.error('Unexpected error fetching log files:', error)
+      })
     }
   }, [visible])
 
@@ -347,8 +347,53 @@ const AndroidDropdown: React.FC<AndroidDropdownProps> = ({
 }
 
 export default function App() {
-  // Uncomment below to ensure correct id loaded from .env
-  // console.log("Thirdweb client id: " + Config.THIRD_WEB_CLIENT_ID)
+  // New Architecture verification logging
+  useEffect(() => {
+    const checkNewArchitecture = async () => {
+      const diagnostics = await Client.getArchitectureDiagnostics()
+
+      console.log('=== XMTP ARCHITECTURE DIAGNOSTICS ===')
+      console.log(
+        `  Native new architecture flag (${diagnostics.newArchitectureFlagSource} via ${diagnostics.newArchitectureFlagProvider}): ${
+          diagnostics.isNewArchitectureEnabled ? 'ENABLED' : 'DISABLED'
+        }`
+      )
+      console.log(
+        `  XMTP module access path: ${diagnostics.moduleAccess.toUpperCase()}`
+      )
+      console.log(
+        `  Supports synchronous native methods: ${
+          diagnostics.supportsSynchronousFunctions ? 'YES' : 'NO'
+        }`
+      )
+      console.log(`  Native module type: ${diagnostics.moduleType}`)
+      console.log(`  Native module class: ${diagnostics.moduleClassName}`)
+      console.log(`  Host app id: ${diagnostics.hostAppId}`)
+      console.log(`  Platform: ${diagnostics.platform}`)
+      console.log('=====================================')
+
+      if (
+        diagnostics.isNewArchitectureEnabled &&
+        diagnostics.moduleAccess === 'jsi'
+      ) {
+        console.log(
+          'XMTP is running in a new-architecture app and is being resolved through the JSI module registry.'
+        )
+      } else if (diagnostics.isNewArchitectureEnabled) {
+        console.log(
+          'The app is built with the new architecture, but XMTP is currently being accessed through the bridge proxy.'
+        )
+      } else {
+        console.log(
+          'The app is not built with the new architecture, so XMTP cannot use the new-architecture runtime path.'
+        )
+      }
+    }
+
+    checkNewArchitecture().catch((error) => {
+      console.error('Failed to read XMTP architecture diagnostics:', error)
+    })
+  }, [])
 
   const [showAndroidDropdown, setShowAndroidDropdown] = useState<boolean>(false)
   const [showLogFilesModal, setShowLogFilesModal] = useState<boolean>(false)
@@ -362,7 +407,7 @@ export default function App() {
         return
       }
 
-      let successCount = await Client.clearXMTPLogs()
+      const successCount = await Client.clearXMTPLogs()
 
       if (successCount === files.length) {
         alert('All log files cleared successfully')
@@ -463,7 +508,12 @@ export default function App() {
                           },
                           (buttonIndex) => {
                             if (buttonIndex === 0) {
-                              clearLogFiles()
+                              clearLogFiles().catch((error) => {
+                                console.error(
+                                  'Unexpected error clearing log files:',
+                                  error
+                                )
+                              })
                             }
                           }
                         )

@@ -5,6 +5,11 @@ apply plugin: 'maven-publish'
 group = 'expo.modules.xmtpreactnativesdk'
 version = '0.1.0'
 
+def isNewArchEnabled =
+  ((findProperty('newArchEnabled') ?: rootProject.findProperty('newArchEnabled') ?: 'false')
+    .toString()
+    .toBoolean())
+
 buildscript {
   def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
   if (expoModulesCorePlugin.exists()) {
@@ -82,6 +87,7 @@ android {
     targetSdkVersion safeExtGet("targetSdkVersion", 31)
     versionCode 1
     versionName "0.1.0"
+    buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchEnabled.toString()
   }
   lintOptions {
     abortOnError false

@@ -2,6 +2,14 @@ import ExpoModulesCore
 import OSLog
 import XMTP
 
+private let xmtpIsNewArchitectureEnabled: Bool = {
+	#if RCT_NEW_ARCH_ENABLED
+		return true
+	#else
+		return false
+	#endif
+}()
+
 extension Conversation {
 	static func cacheKeyForTopic(installationId: String, topic: String)
 		-> String
@@ -151,6 +159,19 @@ public class XMTPModule: Module {
 			"preferencesClosed",
 			"messageDeletionClosed"
 		)
+
+		AsyncFunction("getArchitectureDiagnostics") { () -> [String: Any] in
+			return [
+				"platform": "ios",
+				"moduleName": "XMTP",
+				"moduleType": "expo-module",
+				"moduleClassName": String(describing: type(of: self)),
+				"hostAppId": Bundle.main.bundleIdentifier ?? "",
+				"isNewArchitectureEnabled": xmtpIsNewArchitectureEnabled,
+				"newArchitectureFlagSource": "RCT_NEW_ARCH_ENABLED",
+				"newArchitectureFlagProvider": "xmtp-module",
+			]
+		}
 
 		AsyncFunction("inboxId") { (installationId: String) -> String in
 			if let client = await clientsManager.getClient(key: installationId) {

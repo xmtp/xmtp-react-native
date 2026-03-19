@@ -1,5 +1,6 @@
 {
   "expo": {
+    "newArchEnabled": true,
     "name": "xmtp-react-native-sdk-example",
     "slug": "xmtp-react-native-sdk-example",
     "version": "1.0.0",

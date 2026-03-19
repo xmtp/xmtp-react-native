@@ -9,6 +9,7 @@ import type {
 } from './ContentCodec'
 import Conversations from './Conversations'
 import { InboxState } from './InboxState'
+import type { XMTPArchitectureDiagnostics } from './XMTPArchitectureDiagnostics'
 import { TextCodec } from './NativeCodecs/TextCodec'
 import PrivatePreferences from './PrivatePreferences'
 import { PublicIdentity } from './PublicIdentity'
@@ -48,6 +49,10 @@ export class Client<
 
   static async exportNativeLogs() {
     return XMTPModule.exportNativeLogs()
+  }
+
+  static async getArchitectureDiagnostics(): Promise<XMTPArchitectureDiagnostics> {
+    return XMTPModule.getArchitectureDiagnostics()
   }
 
   private static removeAllSubscriptions(
