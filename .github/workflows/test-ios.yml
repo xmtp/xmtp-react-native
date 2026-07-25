@@ -21,7 +21,10 @@ env:
 
 jobs:
   ios-tests:
-    timeout-minutes: 60
+    # The native build alone takes ~30-50 minutes; the rest of the budget is the
+    # unit test suite itself, which is bounded by the timeout in
+    # example/e2e/mainflow.yaml so that a hang fails with a readable message.
+    timeout-minutes: 120
     name: iOS Tests
     runs-on: macos-15-large
     permissions:

@@ -425,18 +425,37 @@ export default function TestScreen(): JSX.Element {
                 Failed: {summary.failedTestNames.join(', ')}
               </Text>
             )}
+            {/*
+              Machine-readable outcome of the whole run, kept in the fixed
+              header so it is always on screen for E2E tooling. Exactly one of
+              these renders, and only once every test has reported a result.
+            */}
+            {summary.failedTests > 0 ? (
+              <Text
+                testID="tests-failed"
+                accessible
+                accessibilityLabel="tests-failed"
+                style={{ marginTop: 4, fontSize: 12 }}
+              >
+                Result: tests-failed
+              </Text>
+            ) : (
+              <Text
+                testID="tests-passed"
+                accessible
+                accessibilityLabel="tests-passed"
+                style={{ marginTop: 4, fontSize: 12 }}
+              >
+                Result: tests-passed
+              </Text>
+            )}
           </View>
         )}
       </View>
 
       {/* Scrollable Test List */}
       <ScrollView style={{ flex: 1 }}>
-        <View
-          testID="tests"
-          accessible
-          accessibilityLabel="tests-complete"
-          style={{ paddingHorizontal: 12 }}
-        >
+        <View testID="tests" style={{ paddingHorizontal: 12 }}>
           {(filteredTests || [])
             .slice(0, autoRun ? completedTests + 1 : filteredTests.length)
             .map((test: Test, i) => {
