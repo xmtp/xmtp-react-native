@@ -4,11 +4,17 @@ appId: expo.modules.xmtpreactnativesdk.example
     clearState: true
 - tapOn: Unit-tests
 - assertVisible: Unit Tests
-- tapOn: 1,2,3
-- inputText: '1'
 - tapOn: RUN ALL
+# "tests-complete" renders only once every test in the suite has reported a
+# result, so this is what bounds the run. If a test hangs, this times out and
+# the job fails instead of reporting a green check.
 - extendedWaitUntil:
     visible: 'tests-complete'
-    timeout: 1200000
-- assertNotVisible:
-    id: 'FAIL'
+    timeout: 2400000
+# Capture the summary (pass/fail counts and the names of any failed tests) so
+# the uploaded artifact explains a failure without a local repro.
+- takeScreenshot: e2e/.maestro/test-summary
+# Positive assertion: "tests-passed" renders only when the completed run had
+# zero failures. Any failing test makes this assertion fail, which fails the
+# flow and therefore the CI job.
+- assertVisible: 'tests-passed'
